@@ -1,7 +1,7 @@
 # Make Way 개선형 멀티플레이 — Technical Artist 개발명세서
 
 **문서 번호:** MW-TA-SPEC-001  
-**버전:** v1.1 / 2026-10-22 (기존 파일명 유지)  
+**버전:** v1.2 / 2026-10-22 (기존 파일명 유지)\
 **상태:** 설계 초안 — D1 에셋 실측 및 자동화 코드 점검 후 동결할 항목 표시  
 **기준:** 기획 Draft v0.3 / TA 마일스톤 v1.1 / `05_클라이언트_개발순서_및_설계검토.md`  
 **책임자:** C (클라이언트 + TA), **TA 개발 예산 48h / C 클라이언트 72h / C 합계 120h**  
@@ -10,6 +10,8 @@
 > **구현 검증 상태:** 이 문서는 신규 설계안이다. 실제 Unreal 프로젝트 코드, 원본 추출물, 자동화 도구 브랜치를 **이번 문서 작성에서 검사하지 않았다.** 따라서 '이미 구현됨', 'AssetFlow가 지원함', '추출 가능', '원작과 동일 물리' 등은 주장하지 않는다. 에셋 출처·사용권·형식·오브젝트 계층은 D1에 확인한다.
 
 > **v1.1 적용:** 로컬 프로젝트 기본 모듈 `MW`와 설치 엔진 **5.8.3**을 확인했다. 아트/도구 구현 검증은 미실시다. TA 48h와 일별 시간은 유지하며 D5 체크포인트/복귀 데이터 인수, D8 슬롯/복귀 정적 확인, D2부터 패키지 검사를 반영한다. 기능 추가는 D14까지, D15부터 동결한다.
+
+> **v1.2 폴더 기준:** 실제 기본 디렉터리와 에셋 이름은 [공용 Content 기준](../CONTENT_STRUCTURE.md)을 따른다. 기존 맵/에셋을 이동하지 않으며, 과거 Content/Art·MakeWay 예시를 새 제작 경로로 사용하지 않는다. 에셋·주행·패키지 검증과 폴더 생성을 구분한다.
 
 ---
 
@@ -74,7 +76,7 @@
 | `RightsStatus` | `Approved/Restricted/Unknown` | 패키징·공개 허용 판정 |
 | `SourceFileHash` | SHA-256(가능할 경우) | 변환 전후 추적 |
 | `ConversionMethod` | 수동/도구명·버전·옵션 | 변환 재현 |
-| `TargetAssetPath` | `/Game/Art/Tracks/SM_...` | UE5 경로 및 참조 추적 |
+| `TargetAssetPath` | `/Game/Gameplay/Tracks/Art/SM_Track_...` | UE5 경로 및 참조 추적 |
 | `UnitsAxisPivot` | `cm`, `+X`, 원점 기준 | 연결 오류 원인 추적 |
 | `ValidationStatus` | `Pass/Fail/NotRun/Blocked` | 게임 투입 제한 |
 | `ValidatorReport` | 로그/JSON 파일 | 실패 증거 |
@@ -263,7 +265,7 @@ TrackValidationResult {
 | V-11 | Editor 모듈 제외 패키지 | Development/Shipping 중 목표 구성 패키지 성공 |
 | V-12 | B가 서버에서 실패 에셋 선택 RPC | 허용 후보 아님→배치 거절, 모든 클라 상태 일치 |
 
-테스트용 Fail 에셋은 `Content/Dev/ValidatorTests/` 등 릴리스 제외 위치에 두거나 검증 데이터로만 관리한다. 릴리스 후보 DataAsset 폴더와 혼합하지 않는다.
+테스트용 Fail 에셋은 `Content/Developers/<사용자>/ValidatorTests/` 등 개인 검증 영역에 두거나 검증 데이터로만 관리한다. 정식 카탈로그/릴리스 맵에서 참조하지 않으며 실제 패키지 제외 여부를 별도로 확인한다. 폴더 이름만으로 제외가 보장된다고 가정하지 않는다.
 
 ---
 
@@ -483,8 +485,8 @@ flowchart LR
 - Runtime DataAsset 스키마의 **최종 승인자는 B + C**. A는 주행/복귀 공간 계약에 승인권을 갖는다. 새 필드를 무조건 추가하지 않고 현재 구현이 실제 사용하는지 확인.
 - 필요 시 신설하는 `MWEditor` 모듈과 Validator 구현은 C 담당이다. 본인/다른 팀원의 수정 모두 공통 규칙에 따른 PR·독립 리뷰를 거친다.
 - 아트 `.uasset` 변경은 큰 바이너리 diff를 볼 수 없으므로 변경 기록(이전/이후 스크린샷, 변경 소켓 좌표, 검사 로그)을 추가한다.
-- 메인 `MP_Core.umap` 수정 권한은 B 우선. TA 테스트용 맵은 C가 별도 관리.
-- `Content/Art` 네이밍 예시: `SM_TRK_*`, `SM_VEH_*`, `M_Master_*`, `MI_*`, `T_*`, `DA_TRK_*`. 이 이름은 **규칙 제안**이지 기존 AssetFlow 출력과 일치한다고 확정하지 않는다.
+- 현재 공용 맵 `Content/Levels/L_Dev_Default.umap`의 통합은 B 우선. TA 테스트용 맵은 C가 별도 관리하며 기존 맵을 폴더 정리로 이동하지 않는다.
+- 전용 리소스는 `Content/Gameplay/<Feature>/Art`, 기능 정의는 해당 `Data`, 여러 기능의 공통 리소스는 `Content/Shared`에 둔다. 타입 접두사는 공용 기준을 적용하며 기존 AssetFlow 출력과 자동 일치한다고 가정하지 않는다.
 - 권리 미확인 에셋을 개인 PC 로컬 테스트에서 사용했다는 이유로 팀 저장소·외부 패키지에 자유롭게 공유 가능한 것으로 판정하지 않는다.
 
 ---

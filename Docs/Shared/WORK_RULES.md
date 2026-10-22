@@ -6,6 +6,7 @@
 
 - 이 폴더 직속 문서: 프로젝트 공용 규칙과 기획.
 - [3인 팀 Git 공통 규칙](GIT_COLLABORATION_GUIDE.md): 모든 분야 필독. 브랜치·독립 리뷰·순차 병합·LFS/에셋 예약·충돌/복구의 단일 기준이다.
+- [Content 폴더·에셋 배치 기준](CONTENT_STRUCTURE.md): Content Browser의 기능별 폴더·타입 접두사·Input/Data/Animation 배치의 단일 기준이다. 과거 명세의 폴더 예시보다 우선한다.
 - [TA 공유 문서](TA/WORK_RULES.md): 에셋 규격·TA 도구·마이그레이션·TA 일정.
 - [개발 공유 문서](Client,Server/WORK_RULES.md): Client/Server 계약·개발명세·통합 일정.
 - `Docs/Art`, `Docs/Engineering/Client`, `Docs/Engineering/Server`: 분야별 작업 지침과 이후 추가되는 분야 문서.

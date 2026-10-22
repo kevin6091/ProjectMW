@@ -1,11 +1,13 @@
 # Make Way 개선형 멀티플레이 — 클라이언트 C++ 개발명세서
 
 **문서 번호:** MW-CL-SPEC-001  
-**버전:** v1.3 / 2026-10-22 (파일명은 기존 참조 유지)\
+**버전:** v1.4 / 2026-10-22 (파일명은 기존 참조 유지)\
 **상태:** 차량 입력·효과 구조는 사용자 채택, 이동 백엔드·수치는 D3 검증 후 확정. 나머지 설계는 기존 합의 절차 적용.\
 **기준:** 기획 Draft v0.5, 클라이언트 마일스톤 v1.3, `05_클라이언트_개발순서_및_설계검토.md`\
 **환경:** Unreal Engine **5.8.3** C++/Blueprint, Windows, 3인 Listen Server 우선 / 4주 / 팀 전체 360인시  
-**이 문서의 의미:** 기능의 구현·컴파일·주행 검증 완료 문서가 아니다. 공용 기반의 실제 타입과 기록은 [06 이식 문서](06_공용_데이터_이식.md), 채택한 차량 구조·입력·효과의 상세 계약과 미정 항목은 [07 상세 설계](07_차량_입력_이동_효과_설계.md)를 따른다. 신규 클래스명·API·폴더는 구현 예정 설계다.
+**이 문서의 의미:** 기능의 구현·컴파일·주행 검증 완료 문서가 아니다. 공용 기반의 실제 타입과 기록은 [06 이식 문서](06_공용_데이터_이식.md), 채택한 차량 구조·입력·효과의 상세 계약과 미정 항목은 [07 상세 설계](07_차량_입력_이동_효과_설계.md)를 따른다. 신규 클래스명·API는 구현 예정 설계다. Content 폴더는 [공용 배치 기준](../CONTENT_STRUCTURE.md)을 적용한다.
+
+**v1.4 폴더 정리:** 기능별 Gameplay 폴더, 모드별 Input, 공용 카탈로그 Data/Catalogs를 채택한다. 기존 Levels의 맵과 C++/설정은 이동하지 않는다. 에셋 이름 예시는 제작 완료를 뜻하지 않는다.
 
 **v1.3 채택:** GAS 미도입, 공용 DriveConfig + 작은 DriveInput + 차량 Movement + VehicleEffectComponent. W 전방 추진, S 제동, A/D 바퀴 조향, LShift 기본 드리프트, SpaceBar 일회성 아이템 요청을 채택한다. 기본 드리프트와 선택 기능인 드리프트 부스트를 구분한다.
 
@@ -89,8 +91,8 @@
 | 건설/서버 규칙/복제 상태/점수 | **B** | `Construction/*`, `Game/*`, `Race/Score*`, `UI/Construction*` | 배치/Phase/결과 데이터·점수 최종 검사 |
 | 아이템/위험/보조/레이스 HUD | **C** | `Items/*`, `Hazards/*`, `UI/Race*`, `UI/Item*` | 아이템/효과·레이스 HUD 소비 |
 | 공통 트랙 DataAsset 스키마 | **B 승인 + C(TA) 제작** | `Data/TrackPieceDefinition.*`(D2부터 안정화) | Socket/Bounds/Slot/Checkpoint 계약, 필수/옵션 필드 |
-| 트랙/차량/이펙트 에셋 | **C(TA)** | `Content/Art/**`, `Content/Data/Tracks/**` | D3 초기 트랙 3종/차량 1종, D14 조건부 트랙 총 5종 |
-| 테스트 메인 맵·GameMode BP 연결 | **B** | `Content/Maps/MP_Core.umap`, `BP_*GameMode*` | 변경 전 파일 잠금, A/C는 별도 테스트 맵 활용 |
+| 트랙/차량/이펙트 에셋 | **C(TA)** | `Content/Gameplay/<Feature>/Art`, 기능별 `Data`, `Content/Shared` | D3 초기 트랙 3종/차량 1종, D14 조건부 트랙 총 5종 |
+| 테스트 메인 맵·GameMode BP 연결 | **B** | 기존 `Content/Levels/L_Dev_Default.umap`, `Content/System/BP_*GameMode*` | 변경 전 파일 잠금, A/C는 별도 테스트 맵 활용 |
 
 > 클래스/경로는 **제안 이름**이다. D1 실제 프로젝트 이름을 반영해 확정. 단순 소유권은 변경 권한의 독점이 아니라 사전 인터페이스 합의 및 리뷰 책임이다.
 
@@ -104,16 +106,24 @@ Source/MW/
   Race/         MWCheckpointTrigger, MWRaceProgressComponent, MWRaceRules
   Items/        MWItemComponent, MWItemDefinition, MWPickupBox, MWItemEffects
   Hazards/      MWHazardBase, MWUtilityBase, MWHazardDefinition
-  UI/           (C++ 데이터 바인딩) + Widget Blueprint
+  UI/           C++ 데이터 바인딩 (Widget Blueprint는 Content/UI)
 Content/
-  Maps/MP_Core.umap      # B 소유
-  Art/                    # C 소유
-  Data/Tracks/             # C 제작, 스키마 B 승인
-  UI/                      # 위젯 담당자별 파일 분리
+  Levels/                 # 기존 맵 유지, 실제 파일 경로로 예약
+  System/                 # GameMode/Controller 등 프레임워크 BP
+  Data/Catalogs/          # MWAssetData 카탈로그, /Game/Data 스캔 유지
+  Input/Driving/          # 주행 InputData + IMC + IA
+  Input/Construction/     # 건설 InputData + IMC + IA
+  Gameplay/               # Vehicles/Tracks/Items/Hazards/Utilities
+    Vehicles/             # BP + Data + Animation + Art
+    Tracks/               # BP + Data + Art (다른 기능도 같은 기준)
+  UI/                     # Common/Lobby/Construction/Race/Results
+  Shared/                 # 공용 Materials/Audio/VFX
 Source/MWEditor/           # 필요 시 C(TA)가 신설. Runtime에서 Editor 의존 금지
 ```
 
 비슷한 작은 기능에 Actor, Subsystem, Interface를 무조건 만들지 않는다. 실제 중복/교체 필요가 생겼을 때 추가한다.
+
+Content의 실제 기본 폴더·타입 접두사·파일 배치 예시는 [공용 폴더 기준](../CONTENT_STRUCTURE.md)이 원본이다. System에는 모든 BP를 모으지 않고, 기능별 BP는 해당 Gameplay 폴더에 둔다. 위 C++ Source 폴더는 제안/기존 구조이며 이번 Content 정리에서 신설·재배치하지 않았다.
 
 기본 조합은 `AGameModeBase`/`AGameStateBase`와 프로젝트 Phase enum이다. 엔진 MatchState와 별도 FSM을 중복 운영하지 않는다. GAS는 도입하지 않으며 게임 기능 플러그인 전면 도입도 첫 구현에서 제외한다. 선택한 차량 솔루션이 필요로 하는 네트워크 의존성은 함께 검증한다. 별도 Locomotion/Constraint/Policy 컴포넌트나 커스텀 Movement 래퍼를 필수로 만들지 않는다.
 
@@ -445,7 +455,7 @@ Widget 생성 시 현재 상태를 읽고 상태 변경 이벤트를 구독한�
 
 1. 오전 15분 현재 빌드/브랜치 상태 확인 → 개인 구현 → 중간 API 전달 → 통합 테스트 → PR 리뷰/버그 기록.
 2. 통합 PR에는 '재현 절차, 테스트한 서버/클라 수, 바뀐 게임플레이 규칙, 소유자 승인'을 포함한다.
-3. `.umap` 충돌 예방: 공용 맵은 B 통합, A/C는 개별 테스트 레벨/Actor BP 작업. `MP_Core.umap`은 제안 이름이므로 실제 경로를 확인해 예약하고 main 반영/인계 후 잠금을 해제한다.
+3. `.umap` 충돌 예방: 공용 맵은 B 통합, A/C는 개별 테스트 레벨/Actor BP 작업. 현재 공용 맵 `Content/Levels/L_Dev_Default.umap` 등 실제 경로를 확인해 예약하고 main 반영/인계 후 잠금을 해제한다. 폴더 정리로 기존 맵을 임의 이동하지 않는다.
 4. 게임 규칙 변경은 B 검토, 차량 효과 변경은 A 검토, 트랙 데이터/리소스 규격 변경은 C+ B 검토. 깨진 인터페이스 변경은 같은 검증 가능한 PR에 소비자 코드까지 포함한다. 승인/검증이 끝나지 않았으면 통합일을 맞추려고 병합하지 않는다.
 5. D5/D10 미통과 시 추가 아이템/배경/맵 제작을 중지하고 게이트를 복구한다.
 
