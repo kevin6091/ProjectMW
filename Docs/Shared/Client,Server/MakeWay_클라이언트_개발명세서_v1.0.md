@@ -1,13 +1,15 @@
 # Make Way 개선형 멀티플레이 — 클라이언트 C++ 개발명세서
 
 **문서 번호:** MW-CL-SPEC-001  
-**버전:** v1.4 / 2026-10-22 (파일명은 기존 참조 유지)\
+**버전:** v1.5 / 2026-10-22 (파일명은 기존 참조 유지)\
 **상태:** 차량 입력·효과 구조는 사용자 채택, 이동 백엔드·수치는 D3 검증 후 확정. 나머지 설계는 기존 합의 절차 적용.\
-**기준:** 기획 Draft v0.5, 클라이언트 마일스톤 v1.3, `05_클라이언트_개발순서_및_설계검토.md`\
+**기준:** 기획 Draft v0.6, 클라이언트 마일스톤 v1.4, `05_클라이언트_개발순서_및_설계검토.md`\
 **환경:** Unreal Engine **5.8.3** C++/Blueprint, Windows, 3인 Listen Server 우선 / 4주 / 팀 전체 360인시  
-**이 문서의 의미:** 기능의 구현·컴파일·주행 검증 완료 문서가 아니다. 공용 기반의 실제 타입과 기록은 [06 이식 문서](06_공용_데이터_이식.md), 채택한 차량 구조·입력·효과의 상세 계약과 미정 항목은 [07 상세 설계](07_차량_입력_이동_효과_설계.md)를 따른다. 신규 클래스명·API는 구현 예정 설계다. Content 폴더는 [공용 배치 기준](../CONTENT_STRUCTURE.md)을 적용한다.
+**이 문서의 의미:** 기능의 구현·컴파일·주행 검증 완료 문서가 아니다. 공용 기반의 실제 타입과 기록은 [06 이식 문서](06_공용_데이터_이식.md), 채택한 차량 구조·입력·효과의 상세 계약과 미정 항목은 [07 상세 설계](07_차량_입력_이동_효과_설계.md)를 따른다. 신규 클래스명·API는 구현 예정 설계다. Content 폴더는 [공용 배치 기준](<../폴더·에셋 배치 기준 및 규칙.md>)을 적용한다.
 
 **v1.4 폴더 정리:** 기능별 Gameplay 폴더, 모드별 Input, 공용 카탈로그 Data/Catalogs를 채택한다. 기존 Levels의 맵과 C++/설정은 이동하지 않는다. 에셋 이름 예시는 제작 완료를 뜻하지 않는다.
+
+**v1.5 건설 입력 정정:** SelectConstruction/PlaceConstruction을 로컬 입력 하위 모드로 구분한다. 배치의 `IA_Turn`은 휠을 통한 구조물 회전 입력이다. 취소 액션은 제외하고 줌은 추후 추가한다. 구체 입력과 최종 배치 연계의 미정 항목은 4.5절을 따른다.
 
 **v1.3 채택:** GAS 미도입, 공용 DriveConfig + 작은 DriveInput + 차량 Movement + VehicleEffectComponent. W 전방 추진, S 제동, A/D 바퀴 조향, LShift 기본 드리프트, SpaceBar 일회성 아이템 요청을 채택한다. 기본 드리프트와 선택 기능인 드리프트 부스트를 구분한다.
 
@@ -31,7 +33,7 @@
 - **D14 마감 / D15 시작:** 콘텐츠 조건부 목표(트랙 5, 아이템 3, 위험 2, 보조 2, 차량 1, 맵 1), **D15부터 신규 기능 동결**.
 - **D18:** 실제 3대 PC 릴리스 후보 회귀·기본 네트워크 QA 완료.
 - **D20:** 플레이 가능한 릴리스, README, 설계/디버깅/테스트 증거.
-- 기획 원안 수량(트랙 5/위험 2/보조 2/아이템 3)은 **D14 조건부 목표**다. D10/릴리스가 위험하면 기획 v0.5의 범위 조절에 따라 보류하고 릴리스 포함/보류를 기록한다.
+- 기획 원안 수량(트랙 5/위험 2/보조 2/아이템 3)은 **D14 조건부 목표**다. D10/릴리스가 위험하면 기획 v0.6의 범위 조절에 따라 보류하고 릴리스 포함/보류를 기록한다.
 
 ### 0.1 원안의 미해결 충돌과 이 문서의 적용 기준
 
@@ -48,6 +50,7 @@
 | DEC-09 | 중도 참여/호스트 이탈 | 경기 중 새 참가/재접속 거부, **호스트 이탈 시 매치 종료**, 로비에서 재접속 | v1.1 채택 |
 | DEC-10 | 결승선의 별도 Actor 여부 | '마지막 트랙의 Exit' 기반 논리적 결승 마커 우선, 이전 결승은 체크포인트 역할 | D3 |
 | DEC-11 | 차량 내부 구조와 기본 키 | GAS 없이 DriveConfig/DriveInput/Movement/VehicleEffectComponent 채택. W/S/A/D/LShift/SpaceBar 의미는 5.1절 및 07 상세 설계 적용 | 사용자 채택 / 구현·주행 미검증 |
+| DEC-12 | 건설 입력과 회전 | 선택/배치 IMC 분리, 휠로 배치 구조물 회전, 취소 액션 제외, 줌은 추후 추가. 회전 축·각도·최종 배치 반영 계약은 미정 | 사용자 입력 의도 확정 / 서버 연계·Runtime 미검증 |
 
 ---
 
@@ -112,7 +115,7 @@ Content/
   System/                 # GameMode/Controller 등 프레임워크 BP
   Data/Catalogs/          # MWAssetData 카탈로그, /Game/Data 스캔 유지
   Input/Driving/          # 주행 InputData + IMC + IA
-  Input/Construction/     # 건설 InputData + IMC + IA
+  Input/Construction/     # SelectConstruction / PlaceConstruction별 InputData + IMC + IA
   Gameplay/               # Vehicles/Tracks/Items/Hazards/Utilities
     Vehicles/             # BP + Data + Animation + Art
     Tracks/               # BP + Data + Art (다른 기능도 같은 기준)
@@ -123,7 +126,7 @@ Source/MWEditor/           # 필요 시 C(TA)가 신설. Runtime에서 Editor �
 
 비슷한 작은 기능에 Actor, Subsystem, Interface를 무조건 만들지 않는다. 실제 중복/교체 필요가 생겼을 때 추가한다.
 
-Content의 실제 기본 폴더·타입 접두사·파일 배치 예시는 [공용 폴더 기준](../CONTENT_STRUCTURE.md)이 원본이다. System에는 모든 BP를 모으지 않고, 기능별 BP는 해당 Gameplay 폴더에 둔다. 위 C++ Source 폴더는 제안/기존 구조이며 이번 Content 정리에서 신설·재배치하지 않았다.
+Content의 실제 기본 폴더·타입 접두사·파일 배치 예시는 [공용 폴더 기준](<../폴더·에셋 배치 기준 및 규칙.md>)이 원본이다. System에는 모든 BP를 모으지 않고, 기능별 BP는 해당 Gameplay 폴더에 둔다. 위 C++ Source 폴더는 제안/기존 구조이며 이번 Content 정리에서 신설·재배치하지 않았다.
 
 기본 조합은 `AGameModeBase`/`AGameStateBase`와 프로젝트 Phase enum이다. 엔진 MatchState와 별도 FSM을 중복 운영하지 않는다. GAS는 도입하지 않으며 게임 기능 플러그인 전면 도입도 첫 구현에서 제외한다. 선택한 차량 솔루션이 필요로 하는 네트워크 의존성은 함께 검증한다. 별도 Locomotion/Constraint/Policy 컴포넌트나 커스텀 Movement 래퍼를 필수로 만들지 않는다.
 
@@ -189,7 +192,7 @@ D2에 트랙 좌표계를 합의한다. 권장안은 다음과 같다.
 - 데이터: `PieceId`(안정적인 ID), `Mesh`, `EntrySocketName`, `ExitSocketName`, `PlacementFootprint`(중첩 테스트), `CheckpointLocalTransform`, `SafeRespawnLocalTransform`(필요 시), `HazardSlots[]`, `UtilitySlots[]`, `DriveWidth`, `CenterlineSamples`(최소 버전은 수동 설정 가능).
 - 연결 검증: 소켓 존재/축 오차/연결 규격/현재 Phase/플레이어 1인당 1회/중첩/위험한 스폰 공간 침범 방지. 직전 접합부의 정상 접촉은 검사에서 허용하되 다른 트랙과의 실질 교차는 거절.
 - '한 번에 전부 자동 생성'하지 않는다. D2~D3에는 **3종의 검증된 DataAsset**이 우선이다.
-- P0는 단일 In/Out 소켓 자동 정렬이다. 좌/우 커브는 별도 데이터 후보이며 임의 Q/E 회전·런타임 미러링은 제외한다. 회전 변형을 추가하면 허용 VariantId와 변환을 서버 계약에 포함한다.
+- P0는 단일 In/Out 소켓 자동 정렬을 기본으로 하며 좌/우 커브는 별도 데이터 후보다. 배치 중 휠 회전 입력은 4.5절을 따른다. 최종 배치 방향에 반영하려면 허용 방향/변형과 소켓 정합성을 서버 계약에 포함해야 한다. 구체 표현 방식은 미정이며 런타임 미러링은 제외한다.
 - 체크포인트와 안전 복귀 Transform은 D5 수동 인수, D8 정적 검사 대상으로 앞당긴다. 작은 고정 카탈로그에서 메시/DA 참조를 유지하고 Cook 포함 여부를 패키지에서 확인한다.
 
 **오버랩 설계 판단:** 단순 Actor Bounds Overlap은 인접한 도로 접합까지 충돌로 오판하기 쉽다. 게임 규칙용 `PlacementFootprint`를 메시 충돌과 분리하고, 접합부 여유값·이웃 조각 예외를 검사한다. P0는 1개 또는 소수의 단순 Box 후보로 처리하고 복잡한 도로 모양의 충돌 판정은 실제 문제 발생 시 확장한다.
@@ -211,6 +214,7 @@ ClientPlacementRejected(ClientRequestId, Reason, LatestTrackRevision);
 
 - **전제:** 요청 RPC는 **소유한 PlayerController**를 통해 서버로 도달한다. 단순 클라 생성 `ATrackPiece`에 Server RPC를 쏘지 않는다.
 - 클라는 후보 3개 가운데 서버가 허용한 `OfferedPieceId`만 전송. 임의 패키지 경로/ActorClass를 RPC로 보내지 않는다.
+- 위 의사 시그니처에는 회전 선택 인자가 아직 없다. `IA_Turn`을 추가한 것만으로 회전한 최종 배치를 요청할 수 있는 것은 아니다. 최종 방향에 영향을 주도록 정하면 허용 방향/변형 식별자 등의 표현을 결정하고 요청·서버 검증·확정 상태·Ghost를 함께 갱신한다. 클라이언트의 임의 월드 Transform을 그대로 수용하지 않는다.
 - 서버는 Epoch/선택 권한/남은 수량/중복 ID/Phase/마감/Revision을 검사한다. 요청 ID의 범위는 플레이어+RoundEpoch이며, 완료 상태도 함께 검사한다.
 - **게임 스레드의 동기 검증→Spawn/등록 성공→확정**을 기본으로 한다. 확정 시 완료 플래그/Revision/Exit를 갱신하고 실패 시 부분 상태를 남기지 않는다. 별도 FIFO는 비동기 처리가 필요할 때 추가한다. 서로 다른 Controller의 송신 순서를 추정하지 않고 서버 처리 순서를 쓴다.
 - **Stale 리비전은 명시 거절**한다. 선택을 보존하고 최신 Ghost에서 플레이어가 다시 확인한다. 자동 리베이스 후 서버 수용/무한 자동 재요청을 혼용하지 않는다.
@@ -250,6 +254,36 @@ sequenceDiagram
 - **AT-CON-04:** 소켓 없음/미승인 Piece/규격 불일치/트랙 간 충돌/레이스 중 RPC는 거절됨.
 - **AT-CON-05:** 1명 무입력→18초 후 유효 대체로 진행. 모든 대체가 실패하면 제한된 시간 안에 명시적 예외 결과. 중첩 스폰/교착 없음.
 - **AT-CON-06:** 누적 3→6→9 조각 확인, 기존 위험 요소·체크포인트와 연결 정보 유지.
+- **AT-CON-07:** 선택/배치/주행 Context의 중복 활성화가 없고, 선택 클릭 한 번이 곧바로 배치 확정까지 실행하지 않는다. 배치 휠은 구조물 회전이며 줌을 실행하지 않는다. 취소 액션의 제작을 필수 조건으로 요구하지 않는다.
+- **AT-CON-08:** 회전 축·각도·최종 배치 연계가 결정되면 그 계약으로 Ghost와 서버 확정 결과를 대조한다. 미승인 방향과 소켓 불일치는 거절한다. 계약 미정 상태에서는 최종 회전 배치 검증 완료로 기록하지 않는다.
+
+### 4.5 건설 입력 하위 모드와 구조물 회전
+
+이 구분은 기존 건설 Phase 내부의 **로컬 입력 모드**다. SelectConstruction/PlaceConstruction을 별도의 서버 Phase로 추가하지 않는다. `UMWInputData` 하나가 IMC 하나를 참조하므로 두 모드는 각각의 InputData로 제작한다. InputData 자체가 모드를 전환하지는 않으며 로컬 Controller가 현재 상태에 맞게 설치/해제한다.
+
+| 로컬 모드 | 실제 IMC | 실제 액션·키 | 의미 |
+|---|---|---|---|
+| SelectConstruction | `IMC_SelectConstruction` | `IA_MoveMouse` Axis2D ← Mouse2D, `IA_Select` Boolean ← 좌클릭 | 후보 가리키기·선택 |
+| PlaceConstruction | `IMC_PlaceConstruction` | `IA_MoveMouse` Axis2D ← Mouse2D, `IA_Accept` Boolean ← 좌클릭, `IA_Turn` Axis1D ← MouseWheelAxis | 배치 미리보기·구조물 회전·배치 요청 |
+
+`IA_MoveMouse`의 Mouse2D 값은 마우스 이동량이다. 화면상의 절대 커서 좌표나 월드 배치 좌표가 아니므로 Controller/UI에서 커서 위치·UI hit test 또는 월드 투영을 통해 대상과 미리보기를 갱신한다. Select/Accept는 누름당 한 번만 소비한다. 현재 두 액션에는 Pressed 트리거가 없으므로 후속 바인딩에서는 Started 등 단발 경로를 사용하거나 Pressed 설정과 Triggered를 조합한다. Triggered 유지 이벤트마다 배치 요청을 반복하지 않는다.
+
+```mermaid
+flowchart LR
+    Select["SelectConstruction<br/>마우스 + 좌클릭 선택"] --> Switch["선택 Context 해제<br/>배치 Context 설치<br/>같은 클릭의 중복 소비 방지"]
+    Switch --> Place["PlaceConstruction<br/>배치 Ghost"]
+    Wheel["MouseWheelAxis<br/>IA_Turn"] --> Rotate["구조물 회전 미리보기<br/>축·각도는 미정"]
+    Place --> Rotate
+    Rotate --> Place
+    Place --> Accept["좌클릭 IA_Accept<br/>배치 요청"]
+    Accept --> Server["서버 검증·최종 배치 확정<br/>회전 연계 계약은 별도 결정"]
+    Server -->|거절·최신 리비전| Place
+```
+
+- **확정:** Turn은 배치할 구조물을 회전시켜 보는 동작이다. 차량 조향이나 건설 카메라 줌에 연결하지 않는다. 취소 전용 InputAction은 제외한다. 확대·축소는 후속 기능이며 현재 휠에 중복 매핑하지 않는다.
+- **미정:** 회전 축/좌표계, 휠 부호별 방향, 회전 각도와 연속/단계 방식, 최종 트랙·슬롯 배치에 반영하는 방법. 회전 입력의 채택을 단순 관람 전용 기능으로 한정하거나 자유 회전 배치까지 승인된 것으로 해석하지 않는다. 최종 배치 연계가 필요하면 4.1~4.2절의 서버/TA 데이터 계약을 함께 확정한다.
+- **전환:** 주행·선택·배치 Context는 서로 배타적으로 사용한다. 선택 클릭이 배치의 Accept까지 이어지지 않게 하고 모드 종료 시 등록/바인딩과 임시 입력을 정리한다. stale 거절은 선택을 보존하고 최신 Ghost에서 재확인한다. 사용자 취소 액션의 제거와 Enhanced Input의 `Canceled` 이벤트·Phase 종료 정리는 별개다.
+- **구현 상태:** IA/IMC는 존재하지만 건설 InputData 인스턴스·태그 확장·Controller/Ghost 소비 로직은 아직 연결되지 않았다. 파일 제작과 실제 모드 전환·회전·서버 배치 검증을 구분한다.
 
 ---
 
@@ -447,7 +481,7 @@ Widget 생성 시 현재 상태를 읽고 상태 변경 이벤트를 구독한�
 
 ## 10. 개발 일정 및 공통 통합 게이트(D1~D20)
 
-일별 일정·시간의 단일 원본은 [클라이언트 마일스톤 v1.3](02_클라이언트_마일스톤_4주.md)의 2~3절이다. 큰 순서와 변경 근거는 [개발 순서 및 설계 검토](05_클라이언트_개발순서_및_설계검토.md)를 사용한다.
+일별 일정·시간의 단일 원본은 [클라이언트 마일스톤 v1.4](02_클라이언트_마일스톤_4주.md)의 2~3절이다. 큰 순서와 변경 근거는 [개발 순서 및 설계 검토](05_클라이언트_개발순서_및_설계검토.md)를 사용한다.
 
 **시간 예산 유지:** A/B 각 120h, C 클라이언트 72h+TA 48h. 일별 C의 TA+클라이언트 합은 6h이며 조기 패키징/QA도 이 안에 포함한다. D8 매치 목표, D10 필수 통합, D14 콘텐츠 마감, D15 동결, D18 릴리스 후보, D20 릴리스로 운영한다.
 
