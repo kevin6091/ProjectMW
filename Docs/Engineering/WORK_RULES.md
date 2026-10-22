@@ -2,6 +2,7 @@
 
 Client/Server와 TA 코드 작업은 공용 문서, 이 파일, `Docs/Shared/Client,Server` 전체를 먼저 읽는다. 그 뒤 실제 영향을 받는 분야 지침을 적용한다.
 
+- [Git 공통 규칙](../Shared/GIT_COLLABORATION_GUIDE.md): 작업 브랜치·공유 계약 변경·리뷰·main 순차 병합·충돌 복구.
 - [개발 전 필독 가이드](DEVELOPMENT_GUIDE.md): 요구·책임·계약·수명·코드 품질·검증·완료 기준. 개발/설계/리뷰 전에 읽고 작업에 해당하는 항목을 적용한다.
 - [Client 지침](Client/WORK_RULES.md): 로컬 입력·표시·예측·소유자 요청.
 - [Server 지침](Server/WORK_RULES.md): 권한·검증·규칙·복제·접속/매치 진행.
