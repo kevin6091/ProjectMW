@@ -13,7 +13,11 @@ public class MW : ModuleRules
 		// Data/..., System/...처럼 모듈 폴더를 기준으로 헤더를 포함할 수 있게 합니다.
 		PublicIncludePaths.Add(ModuleDirectory);
 		// 공개 헤더에서 필요한 기본 엔진 기능, 향상된 입력 처리, 게임플레이 태그 모듈을 연결합니다.
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags",
+			"UMG", "OnlineSubsystem", "OnlineSubsystemUtils"
+		});
 
 		// 이 모듈 내부에서만 사용할 추가 모듈을 등록하는 자리입니다.
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

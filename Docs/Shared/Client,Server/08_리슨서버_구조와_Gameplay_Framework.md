@@ -1,10 +1,12 @@
 # MW 리슨 서버 설계와 Gameplay Framework 이해
 
-**문서 번호:** MW-NET-DESIGN-001 / v1.0 / 2026-10-26\
+**문서 번호:** MW-NET-DESIGN-001 / v1.1 / 2026-10-26\
 **적용:** Client + Server, UE 5.8.3, `MW` Runtime 모듈, 호스트 1명 + 원격 2명 우선.\
 **상태:** 설계·학습 문서. 차량은 사용자 지시에 따라 `ACharacter` 기반으로 계획한다. 아래 신규 클래스와 요청 이름은 구현 예정이며 컴파일·멀티플레이 검증 완료를 뜻하지 않는다.
 
 게임 규칙과 수용 기준은 [개발명세](MakeWay_클라이언트_개발명세서_v1.0.md), 차량 내부의 입력·효과 계약은 [07 차량 설계](07_차량_입력_이동_효과_설계.md), 일정은 [02 마일스톤](02_클라이언트_마일스톤_4주.md)이 원본이다. 이 문서는 그 구조를 처음 배우는 개발자가 이해하고 구현할 수 있도록 설명한다. 과거 문서의 Chaos Vehicles 우선 검토는 이번 Character 방향으로 갱신했다.
+
+**v1.1 타이틀/방 흐름 추가:** 방 생성·검색·선택 참가와 여러 독립 호스트를 포함한 구현 순서는 [09 타이틀부터 게임플레이까지의 마일스톤](09_타이틀부터_게임플레이까지_마일스톤.md)을 따른다. 무료 EOS를 초기 인터넷 경로로 계획하며 유료 서버 구독을 전제로 두지 않는다. 아래 경기 Framework 앞에 세션 준비 단계를 연결한다.
 
 ## 1. 리슨 서버에서 서버와 클라이언트는 무엇인가
 
@@ -27,6 +29,14 @@ flowchart LR
 ```
 
 여기서 **권한(Authority)**은 게임 상태를 최종 확정할 책임을 말한다. **로컬 제어**는 이 컴퓨터의 플레이어가 입력하는 대상이라는 뜻이다. 호스트의 자기 차량은 두 조건을 함께 만족하므로, 서버 판정과 로컬 화면 처리를 상호 배타적인 분기로 만들면 한쪽 처리가 빠질 수 있다.
+
+### 1.1 방 목록을 관리하는 서비스와 실제 경기 서버는 다르다
+
+타이틀의 경기 생성은 방 이름·정원·테마를 받아 세션을 등록하고 생성자의 PC에서 Listen Server를 준비한다. 경기 참가는 세션 서비스에서 방 목록을 검색해 선택한 호스트로 접속한다. **무료 EOS는 방 검색·연결을 돕고, 실제 경기 규칙은 호스트 PC에서 실행한다.** 비용과 서비스 근거는 09 문서 2절을 따른다.
+
+접속 전의 목록은 다른 방의 GameState에서 읽을 수 없다. `UMWSessionSubsystem : UGameInstanceSubsystem`이 로컬 프로세스에서 생성·검색·참가·나가기와 맵 이동 사이의 작업을 관리하고, 입장 후에는 해당 방의 GameState/PlayerState를 읽는다. 이 Subsystem은 복제 객체가 아니다.
+
+누구나 방을 생성해 호스트가 될 수 있고 서로 다른 호스트의 방이 동시에 존재한다. 각 방은 고유 SessionId와 별도 경기 월드·GameMode·GameState를 사용한다. 방 이름은 표시용이므로 같은 이름만으로 같은 방이라고 판단하지 않는다. 한 인스턴스가 한 번에 참여/호스팅하는 방은 하나로 계획한다.
 
 ## 2. GameMode·GameState·PlayerState를 먼저 이해하기
 
@@ -141,6 +151,7 @@ PlayerController는 플레이어의 입력·요청·로컬 화면을 연결한�
 | `AMWPlayerState` | 서버가 기록하고 복제하는 개인 경기 기록 |
 | `AMWPlayerController` | 소유 플레이어의 요청 진입점과 로컬 입력·카메라·UI 연결 |
 | `AMWVehicleCharacter` | 차량 수명의 상태와 컴포넌트 연결 |
+| `UMWSessionSubsystem` | 프로세스 수명의 로컬 세션 작업·인증 연결·방 검색/참가/정리. 방 접속 전에도 사용 |
 | `UMWVehicleMovementComponent` | CharacterMovement 확장, 차량 이동 계산·예측·보정 |
 | `AMWTrackManager` | 서버 배치 검증·생성·연결 순서·코스 리비전. 확정 코스 상태 복제 |
 | `UMWItemComponent` | 차량의 아이템 한 칸과 서버 사용·소비 처리 |
@@ -156,6 +167,7 @@ GameState에 TrackManager의 코스 상태 전체를 중복 보관하지 않는�
 ## 5. 서버가 관리할 경기 흐름
 
 ```text
+타이틀 → 경기 생성 또는 방 검색·선택 참가 → 호스트의 경기 월드에 연결
 Lobby → TrackPlacement → HazardPlacement → Countdown → Racing → RoundResults
 RoundResults → 계속: TrackPlacement, 기존 트랙 유지·확장
 RoundResults → 단독 목표 달성: MatchResults
@@ -181,6 +193,7 @@ RPC는 다른 실행 주체의 함수를 호출하는 통신이고, 상태 복�
 sequenceDiagram
     participant UI as 원격 로비 Widget
     participant PC as 소유 PlayerController
+    participant H as 호스트 PlayerController
     participant GM as 서버 GameMode
     participant PS as 서버 PlayerState
     participant GS as 서버 GameState
@@ -190,13 +203,17 @@ sequenceDiagram
     GM->>PS: 해당 참가자의 Ready 확정
     PS-->>UI: 준비 상태 복제 후 표시
     GM->>GM: 전원 Ready와 시작 조건 검사
-    GM->>GS: 조건 충족 시 TrackPlacement 확정
+    H->>GM: 호스트의 시작 요청을 서버 검증 경로로 전달
+    GM->>GM: 호스트·Ready·참가자·준비 조건 재검사
+    GM->>GS: 조건 충족 시 입장 잠금·TrackPlacement 확정
     GS-->>UI: Phase 복제 후 건설 화면 표시
 ```
 
 그림에서 RPC는 **소유 Controller에서 서버 Controller로 도착**한다. 서버 Controller에서 GameMode를 호출하는 부분은 같은 서버 안의 일반 함수 호출이다. 클라이언트가 GameMode에 직접 RPC를 보내는 구조가 아니다.
 
 서버는 요청을 받은 Controller로 참가자를 식별한다. 클라이언트가 보낸 임의 PlayerId를 믿고 다른 사람의 Ready를 변경하지 않는다. 호스트 요청도 같은 서버 검증 함수를 거친다.
+
+현재 기본안은 Ready를 시작 가능 조건으로 사용하고, 전원 준비 후 호스트가 시작 버튼을 누르는 방식이다. 기존 자동 전환 예시를 이 흐름으로 구체화한다. 서비스의 검색용 상태와 서버의 실제 입장 잠금을 함께 관리한다.
 
 ### 6.2 트랙을 배치할 때
 
@@ -300,6 +317,8 @@ CMC를 사용한다고 차량 간 운동량 교환이 자동으로 구현되는 
 ## 10. 구현 순서와 첫 완료 조건
 
 서버 전체를 먼저 구현한 뒤 클라이언트를 붙이기보다, 각 단계에서 요청부터 화면까지 연결한다. 일별 예산·전체 게이트는 02 마일스톤을 따른다.
+
+아래 표는 경기 코어를 시험하는 최소 순서다. 실제 사용자의 타이틀·방 생성/검색/참가부터 출발까지의 순서와 인수 조건은 09 문서 LM-0~8을 따른다. 개발용 직접 접속은 정식 방 검색 완료를 대신하지 않는다.
 
 | 순서 | 최소 구현 | 확인할 결과 |
 |---|---|---|
