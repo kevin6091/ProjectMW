@@ -77,3 +77,8 @@ DerivedDataCache/*
 # 개인 개발 도구 설정과 자동 생성된 솔루션 파일
 .idea/
 *.slnx
+
+# Assets are managed in Unity Version Control
+/Content/
+/.plastic/
+/ignore.conf
