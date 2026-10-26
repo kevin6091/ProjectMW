@@ -28,10 +28,11 @@ namespace MWGameplayTags
 	
 	// Input_SelectConstruction
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Select);
-	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_MouseMove);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_SelectMouseMove);
 	
 	// Input_PlaceConstruction
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Accept);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_PlaceMouseMove);
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_ZoomInOut);
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Turn);
 }
