@@ -1,11 +1,13 @@
 # Make Way 개선형 멀티플레이 — 클라이언트 C++ 개발명세서
 
 **문서 번호:** MW-CL-SPEC-001  
-**버전:** v1.5 / 2026-10-22 (파일명은 기존 참조 유지)\
-**상태:** 차량 입력·효과 구조는 사용자 채택, 이동 백엔드·수치는 D3 검증 후 확정. 나머지 설계는 기존 합의 절차 적용.\
-**기준:** 기획 Draft v0.6, 클라이언트 마일스톤 v1.4, `05_클라이언트_개발순서_및_설계검토.md`\
+**버전:** v1.6 / 2026-10-26 (파일명은 기존 참조 유지)\
+**상태:** 차량은 사용자 지시에 따라 ACharacter + CharacterMovement 확장 방향. 세부 이동·충돌·보정·수치는 D3 검증 대상이며 Runtime 구현 완료를 뜻하지 않는다.\
+**기준:** 기획 Draft v0.6, 클라이언트 마일스톤 v1.5, `05_클라이언트_개발순서_및_설계검토.md`\
 **환경:** Unreal Engine **5.8.3** C++/Blueprint, Windows, 3인 Listen Server 우선 / 4주 / 팀 전체 360인시  
 **이 문서의 의미:** 기능의 구현·컴파일·주행 검증 완료 문서가 아니다. 공용 기반의 실제 타입과 기록은 [06 이식 문서](06_공용_데이터_이식.md), 채택한 차량 구조·입력·효과의 상세 계약과 미정 항목은 [07 상세 설계](07_차량_입력_이동_효과_설계.md)를 따른다. 신규 클래스명·API는 구현 예정 설계다. Content 폴더는 [공용 배치 기준](<../폴더·에셋 배치 기준 및 규칙.md>)을 적용한다.
+
+**v1.6 차량 기반 변경:** `AMWVehicleCharacter : ACharacter`와 `UMWVehicleMovementComponent : UCharacterMovementComponent`를 설계 이름으로 사용한다. 이전 Chaos Vehicles 우선 검토를 대체하며 조작·효과·경기 규칙은 유지한다. GameMode·GameState·PlayerState의 기초와 요청·복제 흐름은 [08 리슨 서버 설계](08_리슨서버_구조와_Gameplay_Framework.md)를 따른다. 과거 에셋·태그 상태 기록과 현재 소스는 08 문서 4절에서 구분한다.
 
 **v1.4 폴더 정리:** 기능별 Gameplay 폴더, 모드별 Input, 공용 카탈로그 Data/Catalogs를 채택한다. 기존 Levels의 맵과 C++/설정은 이동하지 않는다. 에셋 이름 예시는 제작 완료를 뜻하지 않는다.
 
@@ -26,7 +28,7 @@
 **시간과 우선순위**
 
 - 3명 × 6시간 × 주 5일 × 4주 = **360인시(계획)**. A 120h, B 120h, C 120h 가운데 C의 **클라이언트 작업 72h + TA 48h**. 이 문서는 C의 클라이언트 몫 72h만 다룬다.
-- **D2 첫 패키지 / D3:** 별도 프로세스·LAN 접속 및 3인 이동/충돌/가속/넉백/텔레포트 시험, 이동 방식 결정.
+- **D2 첫 패키지 / D3:** 별도 프로세스·LAN 접속 및 Character 차량의 3인 이동/충돌/가속/넉백/텔레포트 시험, CMC 확장 계약 검증.
 - **D5:** 실제 3PC 패키지 접속, 동시 트랙 선택과 서버 배치, 코스 주행 성공.
 - **D8 목표:** 아이템 없이 2라운드 이상·점수·거리 차 탈락/복귀·최종 결과. D9~D10 통합 복구 여유.
 - **D10:** 3인 2라운드 이상 진행해 최종 결과까지 완주. 최소 아이템 1종 + 위험 요소 1종.
@@ -46,7 +48,7 @@
 | DEC-05 | 트랙/위험 요소 설치 시간 명시 불완전 | **트랙 18초는 기획안 값**. 위험/보조 배치 타임아웃은 D5 UX 측정으로 결정 | D5 |
 | DEC-06 | 2~4인 설계, 실제 검증 범위 | **3인 우선 실증**, 2/4인은 추가 QA 후 지원 명시 | D18 |
 | DEC-07 | 원작 특정 트랙 명칭·특성 미확인 | 본 프로젝트 구현 항목과 원작 검증 항목을 분리 | 지속 |
-| DEC-08 | 차량 이동 구현 수단 미정 | 후보 최대 2개, D3 원격 충돌·가속/넉백/복귀 포함 판정. 검토 문서 4절 참조 | D3 |
+| DEC-08 | 차량 기반과 이동 검증 | ACharacter + CharacterMovement 확장 방향. 이동 모드·캡슐 충돌·커스텀 입력 기록·보정·가속/넉백/복귀는 초기 시험 | 사용자 방향 반영 / D3 검증 |
 | DEC-09 | 중도 참여/호스트 이탈 | 경기 중 새 참가/재접속 거부, **호스트 이탈 시 매치 종료**, 로비에서 재접속 | v1.1 채택 |
 | DEC-10 | 결승선의 별도 Actor 여부 | '마지막 트랙의 Exit' 기반 논리적 결승 마커 우선, 이전 결승은 체크포인트 역할 | D3 |
 | DEC-11 | 차량 내부 구조와 기본 키 | GAS 없이 DriveConfig/DriveInput/Movement/VehicleEffectComponent 채택. W/S/A/D/LShift/SpaceBar 의미는 5.1절 및 07 상세 설계 적용 | 사용자 채택 / 구현·주행 미검증 |
@@ -104,7 +106,7 @@
 ```text
 Source/MW/
   Game/         MWGameMode, MWGameState, MWPlayerState, MWPlayerController
-  Vehicle/      MWVehiclePawn, (채택한 차량 Movement), MWVehicleEffectComponent, MWVehicleCameraComponent
+  Vehicle/      MWVehicleCharacter, MWVehicleMovementComponent, MWVehicleEffectComponent, MWVehicleCameraComponent
   Construction/ MWTrackManager, MWTrackPiece, MWTrackPieceDefinition, MWPlacementTypes
   Race/         MWCheckpointTrigger, MWRaceProgressComponent, MWRaceRules
   Items/        MWItemComponent, MWItemDefinition, MWPickupBox, MWItemEffects
@@ -128,7 +130,7 @@ Source/MWEditor/           # 필요 시 C(TA)가 신설. Runtime에서 Editor �
 
 Content의 실제 기본 폴더·타입 접두사·파일 배치 예시는 [공용 폴더 기준](<../폴더·에셋 배치 기준 및 규칙.md>)이 원본이다. System에는 모든 BP를 모으지 않고, 기능별 BP는 해당 Gameplay 폴더에 둔다. 위 C++ Source 폴더는 제안/기존 구조이며 이번 Content 정리에서 신설·재배치하지 않았다.
 
-기본 조합은 `AGameModeBase`/`AGameStateBase`와 프로젝트 Phase enum이다. 엔진 MatchState와 별도 FSM을 중복 운영하지 않는다. GAS는 도입하지 않으며 게임 기능 플러그인 전면 도입도 첫 구현에서 제외한다. 선택한 차량 솔루션이 필요로 하는 네트워크 의존성은 함께 검증한다. 별도 Locomotion/Constraint/Policy 컴포넌트나 커스텀 Movement 래퍼를 필수로 만들지 않는다.
+기본 조합은 `AGameModeBase`/`AGameStateBase`와 프로젝트 Phase enum이다. 엔진 MatchState와 별도 FSM을 중복 운영하지 않는다. GAS는 도입하지 않으며 게임 기능 플러그인 전면 도입도 첫 구현에서 제외한다. 차량은 ACharacter/CharacterMovement를 확장하고 커스텀 입력의 이동 기록·전송·보정을 함께 구현·검증한다. 별도 Locomotion/Constraint/Policy 컴포넌트나 범용 Movement 래퍼는 추가하지 않는다.
 
 ---
 
@@ -139,10 +141,11 @@ Content의 실제 기본 폴더·타입 접두사·파일 배치 예시는 [공�
 | 클래스 | 서버/클라 | 주요 데이터 | 역할 / 금지 책임 |
 |---|---|---|---|
 | `AMWGameMode` | 서버만 | 규칙, 타임아웃, 점수 계산, 상태 전환 | 경기를 판정; 클라이언트 UI가 GameMode를 직접 읽도록 하지 않음 |
-| `AMWGameState` | 서버+복제 | `Phase`, `RoundIndex`, `PhaseEndServerTime`, `CurrentTrackRevision`, 종료 상태 | 모든 클라이언트가 봐야 하는 공용 상태; 부정행위 판정 X |
+| `AMWGameState` | 서버+복제 | `Phase`, `RoundIndex`, `RoundEpoch`, `PhaseEndServerTime`, 종료 상태 | 공용 경기 상태. 코스 리비전은 TrackManager가 원본; 부정행위 판정 X |
 | `AMWPlayerState` | 서버+복제 | 점수, 레이스 순위, 준비/배치 완료 | 라운드가 바뀌어도 남는 개인 게임 상태 |
 | `AMWPlayerController` | 서버+소유 클라 | 서버 RPC 진입점, 입력 모드, 개별 UI | 클라 권한의 요청을 서버에 보냄; 다른 클라의 Controller 참조 X |
-| `AMWVehiclePawn` | 서버+복제 | 차량 위치·회전·상태/이동 | 주행·충돌·피격·카메라 장착; 점수 소유 X |
+| `AMWVehicleCharacter` | 서버+복제 | 차량 상태·입력/허용 조건·컴포넌트 연결 | ACharacter 기반 차량; 점수 소유 X |
+| `UMWVehicleMovementComponent` | 소유 클라 예측·서버 재현/보정·원격 표시 | 차량 제어·이동 기록 | CharacterMovement 확장; 조향·제동·드리프트 계산, 소비/점수 확정 X |
 | `UMWVehicleEffectComponent` | Pawn 부착, 서버 확정+필요 상태 동기화 | 활성 지속 효과·출처별 입력 잠금 | 중첩·만료·해제·복귀 정리; 아이템 소비/투사체/경기 FSM 소유 X |
 | `AMWTrackManager` | 서버+복제 | 서버 트랙 목록, 마지막 연결점, 리비전 | 서버 스폰/배치 판정/현 코스 정보 |
 | `AMWTrackPiece` | 서버 스폰→복제 | PieceId, 연결 순서, Static Mesh/정적 메타데이터 | 개별 트랙의 주행 콜리전·체크포인트 부착 |
@@ -295,11 +298,11 @@ flowchart LR
 - A/D는 차체 Yaw 직접 가산이나 좌우 이동이 아니다. 정지·평지·외력 없는 상태에서 D만 누르면 바퀴만 우측 조향하고 자력 이동/회전하지 않는다. W+D는 전진 우회전이며, 이미 관성 주행 중이면 W 없이도 조향할 수 있다. W 여부로 조향을 차단하지 않는다.
 - 차량별 차이는 **외형만**, 이동 파라미터는 동일. 공용 `FMWVehicleDriveConfig`와 엔진 Movement 설정의 책임을 구분하고 동일 값을 이중 보관하지 않는다. 별도 DataAsset 컨테이너는 편집 필요 시 사용한다. 효과 중에는 기준 설정을 바꾸지 않는다.
 - `FMWVehicleDriveInput`은 Throttle/Brake [0,1], Steering [-1,1], bDriftRequested만 담는다. W+S는 최종 제어에서 제동 우선, A+D는 0이다. 조향 액션은 Negate/Cumulative 설정으로 상쇄를 보장한다.
-- Controller는 로컬 바인딩/모드 전환과 요청 전달, VehiclePawn은 현재 허용 조건과 작은 최종 제어 계산, Movement는 실제 차량 물리/예측, VehicleEffectComponent는 지속 효과와 잠금 수명을 맡는다. **GAS 및 별도 Locomotion/Constraint/Policy 시스템은 추가하지 않는다.**
+- Controller는 로컬 바인딩/모드 전환과 요청 전달, VehicleCharacter는 입력·현재 허용 조건 연결, Movement는 이동 실행 경로의 차량 제어 계산·이동 예측/보정, VehicleEffectComponent는 지속 효과와 잠금 수명을 맡는다. **GAS 및 별도 Locomotion/Constraint/Policy 시스템은 추가하지 않는다.**
 - 드리프트는 요청과 실제 제어/슬립 상태를 구분한다. 접지·속도·조향 진입 조건과 튜닝은 D3에 확정한다. SpaceBar는 Pressed 1회 요청이며 지속 입력은 Completed/Canceled 및 모드/소유권 전환에 정리한다.
 - 클래스 관계, 키/입력 조합표, 흐름·시퀀스·수명·검증 행렬의 상세 원본은 [07 차량 입력·이동·효과 설계](07_차량_입력_이동_효과_설계.md)다. 현재 없는 태그·타입을 구현 완료로 해석하지 않는다.
-- 서버 이동 권한과 시각적 부드러움은 별개. D3에 **호스트 1+원격 2**, 별도 프로세스/지연 조건에서 조향·차량 충돌·접지·시험 가속/넉백/텔레포트 후 회복까지 검증한다. 후보 최대 2개와 선택/실패 근거를 기록한다.
-- 엔진 내장 CharacterMovement 등을 그대로 차량에 억지로 사용하라고 강제하지 않는다. UE가 제공하는 컴포넌트의 네트워크 동작과 구현 비용을 검증한 뒤 선택한다.
+- 서버 이동 권한과 시각적 부드러움은 별개. D3에 **호스트 1+원격 2**, 별도 프로세스/지연 조건에서 조향·차량 충돌·접지·시험 가속/넉백/텔레포트 후 회복까지 검증한다. CMC 확장 범위·이동 기록/보정·실패 근거를 기록한다.
+- ACharacter 선택만으로 차량 거동이 완성되지는 않는다. 기본 CMC의 수직 캡슐 충돌과 강체 차량의 차이를 시험하고, 조향·제동·드리프트를 커스텀 이동 기록과 함께 구현한다. 기본 이동 모드 재사용 또는 MOVE_Custom 범위는 초기 시험에서 결정한다.
 - 위치를 모든 Tick마다 Reliable Server RPC로 전송하는 구조 금지. 권한 기반 입력/이동 시스템 또는 검증된 엔진 이동 솔루션을 쓴다.
 
 ### 5.2 외부 효과 API 계약 — A → C(D3 시험 / D5 계약 / D7~D8 통합)
@@ -317,7 +320,7 @@ flowchart LR
 
 지속 효과는 VehicleEffectComponent, 순간 충격은 Movement 지원 경로로 전달한다. 입력 차단이 차체 정지나 관성 제거를 뜻하지 않는다. 부스터 중첩·그립 합성식·넉백 Strength의 단위/질량 반영은 D3~D5 확정 항목이며 [07 설계 7절](07_차량_입력_이동_효과_설계.md#7-효과잠금순간-충격-계약)에 기록한다.
 
-입력 예측/재시뮬레이션 사용 시 효과·텔레포트를 해당 솔루션의 지원 경로에 연결한다. 점수/픽업/아이템 소모는 서버에서 1회만 처리하며 물리 재생 콜백의 중복 Overlap이나 효과 재생으로 재지급하지 않는다. 게임 스레드→물리 스레드에 필요한 상태를 전달하고 UObject 임의 접근을 피한다.
+효과·텔레포트는 CMC의 이동 기록·서버 재현·보정 경로에 연결한다. 점수/픽업/아이템 소모는 서버에서 1회만 처리하며 이동 재실행의 중복 감지나 효과 재생으로 재지급하지 않는다. 현재 효과값만 복제해 과거 이동을 재실행하지 않고 해당 이동 시점의 입력·효과를 재구성한다. 별도 물리 스레드 연동이 실제로 필요할 때는 그 API와 객체 접근 경계를 추가 검증한다.
 
 ### 5.3 서버 체크포인트 이벤트 및 복귀
 
@@ -481,7 +484,7 @@ Widget 생성 시 현재 상태를 읽고 상태 변경 이벤트를 구독한�
 
 ## 10. 개발 일정 및 공통 통합 게이트(D1~D20)
 
-일별 일정·시간의 단일 원본은 [클라이언트 마일스톤 v1.4](02_클라이언트_마일스톤_4주.md)의 2~3절이다. 큰 순서와 변경 근거는 [개발 순서 및 설계 검토](05_클라이언트_개발순서_및_설계검토.md)를 사용한다.
+일별 일정·시간의 단일 원본은 [클라이언트 마일스톤 v1.5](02_클라이언트_마일스톤_4주.md)의 2~3절이다. 큰 순서와 변경 근거는 [개발 순서 및 설계 검토](05_클라이언트_개발순서_및_설계검토.md)를 사용한다.
 
 **시간 예산 유지:** A/B 각 120h, C 클라이언트 72h+TA 48h. 일별 C의 TA+클라이언트 합은 6h이며 조기 패키징/QA도 이 안에 포함한다. D8 매치 목표, D10 필수 통합, D14 콘텐츠 마감, D15 동결, D18 릴리스 후보, D20 릴리스로 운영한다.
 
@@ -520,7 +523,7 @@ Widget 생성 시 현재 상태를 읽고 상태 변경 이벤트를 구독한�
 
 | 담당 | 증명할 기술 질문 | 남길 자료 |
 |---|---|---|
-| A | 서버 권한 이동에서 조작 반응과 일관성을 어떻게 확보했나? | Movement 선택 비교, 네트워크 재현 영상, RTT/손실 결과, 충돌·복귀 버그 PR |
+| A | 서버 권한 이동에서 조작 반응과 일관성을 어떻게 확보했나? | CharacterMovement 확장·이동 기록/보정 검증, 네트워크 재현 영상, RTT/손실 결과, 충돌·복귀 버그 PR |
 | B | 동시 트랙 건설을 어떻게 충돌 없이 순차 처리했나? | 요청→검증→스폰→복제 시퀀스, 동일 RPC/리비전 테스트, 점수·페이즈 상태 다이어그램 |
 | C | 아이템과 위험 요소를 어떻게 안정적으로 네트워크에 적용했나? | Item 소유/피격 흐름, 서버 중복/범위 거절 테스트, HUD 동기화, TA Validator 연동 증거 |
 
@@ -531,7 +534,7 @@ Widget 생성 시 현재 상태를 읽고 상태 변경 이벤트를 구독한�
 ## 13. D1에 반드시 닫을 결정 10개
 
 1. 확인한 Unreal Engine **5.8.3**, Windows 타겟과 빌드 구성, 공유 Git 저장소·Git LFS 추적/잠금·브랜치 보호 적용 상태 기록.
-2. 차량 이동 기술(시제품 비교 시작; **최종 선택은 D3**).
+2. ACharacter/CharacterMovement 확장 뼈대와 초기 검증 계획(세부 이동 모드·충돌·이동 기록/보정 계약은 **D3 검증**).
 3. `Snap_In`/`Snap_Out` 로컬 좌표 및 최소 폭·규격, `TrackPieceDefinition` 책임.
 4. 트랙/위험 요소/아이템 데이터 ID 타입과 소유 Runtime Module.
 5. `AMWPlayerController`의 Server RPC 호출 경로(Actor ownership).
