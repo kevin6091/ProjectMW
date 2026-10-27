@@ -1,0 +1,6 @@
+#pragma once
+
+
+DECLARE_LOG_CATEGORY_EXTERN(LogDefault, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogMWEOS, Log, All);
+
