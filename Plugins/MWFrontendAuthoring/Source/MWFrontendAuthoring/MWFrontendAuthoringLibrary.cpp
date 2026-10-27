@@ -75,7 +75,7 @@ namespace MWFrontendAuthoring
 	{
 		FSlateBrush Result;
 		Result.SetResourceObject(Texture);
-		// Slate's corner width uses ImageSize, independently of the source texture resolution.
+		// Source pixels stay intact; the imported GPU size determines the Box corners.
 		Result.ImageSize = FVector2D(64.f);
 		Result.DrawAs = ESlateBrushDrawType::Box;
 		Result.Margin = FMargin(Margin);
@@ -121,16 +121,43 @@ namespace MWFrontendAuthoring
 		return Tree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), Name);
 	}
 
+	FSlateBrush SolidBrush(const FLinearColor& Color)
+	{
+		FSlateBrush Result;
+		Result.DrawAs = ESlateBrushDrawType::Image;
+		Result.TintColor = FSlateColor(Color);
+		return Result;
+	}
+
 	void StyleCombo(UComboBoxString* Combo)
 	{
+		// Popup rows need their own opaque fill and padding, not a squeezed sign border.
+		FComboBoxStyle ComboStyle = Combo->GetWidgetStyle();
+		ComboStyle.SetMenuRowPadding(FMargin(24.f, 12.f));
+		FComboButtonStyle& ComboButton = ComboStyle.ComboButtonStyle;
+		FButtonStyle& ButtonStyle = ComboButton.ButtonStyle;
+		ButtonStyle.SetNormal(Brush(Sign, Yellow, 106.5f / 512.f));
+		ButtonStyle.SetHovered(Brush(Sign, Blue, 106.5f / 512.f));
+		ButtonStyle.SetPressed(Brush(Sign, Blue, 106.5f / 512.f));
+		ButtonStyle.SetDisabled(Brush(Sign, FLinearColor::FromSRGBColor(FColor(110, 115, 115)), 106.5f / 512.f));
+		ButtonStyle.SetNormalForeground(FSlateColor(Ink)).SetHoveredForeground(FSlateColor(Ink)).SetPressedForeground(FSlateColor(Ink));
+		ButtonStyle.SetNormalPadding(FMargin(0.f)).SetPressedPadding(FMargin(0.f));
+		ComboButton.SetMenuBorderBrush(SolidBrush(Ink)).SetMenuBorderPadding(FMargin(2.f));
+		ComboButton.SetDownArrowPadding(FMargin(12.f, 0.f, 6.f, 0.f));
+		ComboButton.DownArrowImage.ImageSize = FVector2D(16.f, 10.f);
+		ComboButton.DownArrowImage.TintColor = FSlateColor(Ink);
+		Combo->SetWidgetStyle(ComboStyle);
+		Combo->SetContentPadding(FMargin(40.f, 10.f, 32.f, 10.f));
+		Combo->SetMaxListHeight(240.f);
+
 		FTableRowStyle Style = Combo->GetItemStyle();
-		const FSlateBrush Normal = Brush(Sign, Yellow, 106.5f / 512.f);
-		const FSlateBrush Selected = Brush(Sign, Blue, 106.5f / 512.f);
+		const FSlateBrush Normal = SolidBrush(Yellow);
+		const FSlateBrush Selected = SolidBrush(Blue);
 		Style.SetEvenRowBackgroundBrush(Normal).SetOddRowBackgroundBrush(Normal);
 		Style.SetEvenRowBackgroundHoveredBrush(Selected).SetOddRowBackgroundHoveredBrush(Selected);
 		Style.SetActiveBrush(Selected).SetActiveHoveredBrush(Selected);
 		Style.SetInactiveBrush(Selected).SetInactiveHoveredBrush(Selected);
-		Style.SetTextColor(FSlateColor(Ink)).SetSelectedTextColor(FSlateColor(FLinearColor::White));
+		Style.SetTextColor(FSlateColor(Ink)).SetSelectedTextColor(FSlateColor(Ink));
 		Combo->SetItemStyle(Style);
 	}
 

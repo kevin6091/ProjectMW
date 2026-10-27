@@ -11,7 +11,16 @@ TArray<FMWFrontendTheme> UMWFrontendPreviewConnection::GetThemes_Implementation(
 	FMWFrontendTheme Theme;
 	Theme.Id = TEXT("UI_TEST_THEME");
 	Theme.DisplayName = FText::FromString(TEXT("UI 테스트 전용 테마"));
-	return {Theme};
+	TArray<FMWFrontendTheme> Themes = {Theme};
+	// Multiple explicit fixture options exercise scrolling without inventing production maps.
+	for (int32 Index = 2; Index <= 8; ++Index)
+	{
+		FMWFrontendTheme Extra;
+		Extra.Id = FName(*FString::Printf(TEXT("UI_TEST_THEME_%02d"), Index));
+		Extra.DisplayName = FText::FromString(FString::Printf(TEXT("UI 테스트 %02d · 스크롤 선택 확인"), Index));
+		Themes.Add(Extra);
+	}
+	return Themes;
 }
 
 TArray<FMWRoomSearchResult> UMWFrontendPreviewConnection::GetRooms_Implementation() const
@@ -63,6 +72,10 @@ bool UMWFrontendPreviewConnection::CreateRoom_Implementation(const FMWCreateRoom
 	if (Operation != EMWFrontendOperation::Idle || !Request.Validate(GetThemes(), Error)) { return false; }
 	++CreateCount;
 	Lobby.RoomName = FText::FromString(Request.RoomName); Lobby.MaxPlayers = Request.MaxPlayers;
+	for (const FMWFrontendTheme& Theme : GetThemes())
+	{
+		if (Theme.Id == Request.MapThemeId) { Lobby.ThemeName = Theme.DisplayName; break; }
+	}
 	Lobby.bConnectionReady = true; Operation = EMWFrontendOperation::Idle; OnChanged.Broadcast();
 	return true;
 }

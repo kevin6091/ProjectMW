@@ -92,7 +92,11 @@ bool FMWFrontendWidgetFlowTest::RunTest(const FString& Parameters)
 	Click(TEXT("CreateButton"));
 	TestEqual(TEXT("Invalid name never dispatches"), Connection->CreateCount, 0);
 	CastChecked<UEditableTextBox>(Widget->GetWidgetFromName(TEXT("RoomNameInput")))->SetText(FText::FromString(TEXT("  테스트 방  ")));
+	UComboBoxString* Themes = CastChecked<UComboBoxString>(Widget->GetWidgetFromName(TEXT("ThemeInput")));
+	Themes->SetSelectedIndex(Themes->GetOptionCount() - 1);
+	const FString SelectedTheme = Themes->GetSelectedOption();
 	Click(TEXT("CreateButton"));
+	TestEqual(TEXT("Selected dropdown theme reaches the confirmed lobby"), Connection->Lobby.ThemeName.ToString(), SelectedTheme);
 	TestEqual(TEXT("Valid create dispatched once"), Connection->CreateCount, 1);
 	TestEqual(TEXT("Prepared world enters same lobby"), Pages->GetActiveWidgetIndex(), 4);
 	TestEqual(TEXT("Trimmed name sent"), Connection->Lobby.RoomName.ToString(), FString(TEXT("테스트 방")));
