@@ -32,7 +32,25 @@ TArray<FMWRoomSearchResult> UMWFrontendPreviewConnection::GetRooms_Implementatio
 	FMWRoomSearchResult Full = Open;
 	Full.SessionId = TEXT("UI_TEST_ONLY_FULL"); Full.PlayerCount = 4; Full.bJoinable = false;
 	Full.UnavailableReason = FText::FromString(TEXT("만석 · UI 테스트"));
-	return {Open, Full};
+	TArray<FMWRoomSearchResult> Rooms={Open,Full};
+	for (int32 Index=2;Index<PreviewRoomCount;++Index)
+	{
+		FMWRoomSearchResult Extra=Open;
+		Extra.SessionId=FString::Printf(TEXT("UI_TEST_ONLY_SCROLL_%02d"),Index);
+		Extra.RoomName=FText::FromString(FString::Printf(TEXT("[UI 테스트] 스크롤 행 %02d"),Index));
+		Extra.bJoinable=false;
+		Extra.UnavailableReason=NSLOCTEXT("MWFrontendTest","ScrollOnly","스크롤 검증 전용");
+		Rooms.Add(Extra);
+	}
+	return Rooms;
+}
+
+bool UMWFrontendPreviewConnection::SetPreviewRoomCount(int32 Count)
+{
+	if (Count<2 || Count>64) { return false; }
+	PreviewRoomCount=Count;
+	OnChanged.Broadcast();
+	return true;
 }
 
 bool UMWFrontendPreviewConnection::SearchRooms_Implementation()
@@ -108,4 +126,28 @@ bool UMWFrontendPreviewConnection::StartMatch_Implementation()
 bool UMWFrontendPreviewConnection::CancelOperation_Implementation()
 {
 	Operation = EMWFrontendOperation::Idle; bSearchFinished = false; OnChanged.Broadcast(); return true;
+}
+
+bool UMWFrontendPreviewConnection::SetPreviewParticipantCount(int32 Count)
+{
+	APlayerController* Controller = OwnerController.Get();
+	AGameStateBase* State = Lobby.GameState;
+	if (!Controller || !IsValid(State) || Count < 1 || Count > Lobby.MaxPlayers) { return false; }
+	while (Lobby.Participants.Num() > Count)
+	{
+		APlayerState* Extra = Lobby.Participants.Last().PlayerState;
+		State->RemovePlayerState(Extra); Extra->Destroy(); Lobby.Participants.Pop();
+	}
+	while (Lobby.Participants.Num() < Count)
+	{
+		APlayerState* Extra = Controller->GetWorld()->SpawnActor<APlayerState>();
+		if (!Extra) { return false; }
+		Extra->SetPlayerName(FString::Printf(TEXT("UI 테스트 참가자 %d"), Lobby.Participants.Num()+1));
+		State->AddPlayerState(Extra);
+		FMWLobbyParticipantView Participant; Participant.PlayerState=Extra; Participant.bReady=true;
+		Lobby.Participants.Add(Participant);
+	}
+	Lobby.bCanStart = Count >= 2 && Lobby.Participants[0].bReady;
+	OnChanged.Broadcast();
+	return true;
 }
