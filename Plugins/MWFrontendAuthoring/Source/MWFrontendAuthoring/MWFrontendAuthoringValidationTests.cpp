@@ -14,7 +14,7 @@ bool FMWFrontendAuthoringDependencyTest::RunTest(const FString& Parameters)
 	FClassProperty* Login = FindFProperty<FClassProperty>(UMWFrontendWidget::StaticClass(), TEXT("LoginWidgetClass"));
 	FString Error;
 	TestTrue(TEXT("Real row property accepts the existing row class"), CheckWidgetClass(Entry, UMWRoomRowWidget::StaticClass(), UUserWidget::StaticClass(), Error));
-	UClass* LoginClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/UI/Lobby/WBP_LoginTest.WBP_LoginTest_C"));
+	UClass* LoginClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/UI/Frontend/WBP_FrontendLogin.WBP_FrontendLogin_C"));
 	TestTrue(TEXT("Existing login class remains assignable"), CheckWidgetClass(Login, LoginClass, UUserWidget::StaticClass(), Error));
 	TestFalse(TEXT("Missing reflected property fails safely"), CheckWidgetClass(nullptr, LoginClass, UUserWidget::StaticClass(), Error));
 	TestFalse(TEXT("Wrong property type is rejected by reflection"), CheckWidgetClass(FindFProperty<FClassProperty>(UListView::StaticClass(), TEXT("bIsFocusable")), LoginClass, UUserWidget::StaticClass(), Error));
@@ -26,7 +26,7 @@ bool FMWFrontendAuthoringDependencyTest::RunTest(const FString& Parameters)
 	UClass* Root = LoadClass<UMWFrontendWidget>(nullptr, TEXT("/Game/UI/Frontend/WBP_FrontendRoot.WBP_FrontendRoot_C"));
 	if (!TestNotNull(TEXT("Production root loads"), Root)) { return false; }
 	TestTrue(TEXT("Compiled root default object is valid"), CheckDefaults(Root->GetDefaultObject(), UMWFrontendWidget::StaticClass(), Error));
-	TestEqual(TEXT("Generated root retains original login class"), Login->GetObjectPropertyValue_InContainer(Root->GetDefaultObject()), static_cast<UObject*>(LoginClass));
+	TestEqual(TEXT("Generated root uses the separate frontend login class"), Login->GetObjectPropertyValue_InContainer(Root->GetDefaultObject()), static_cast<UObject*>(LoginClass));
 	return true;
 }
 #endif

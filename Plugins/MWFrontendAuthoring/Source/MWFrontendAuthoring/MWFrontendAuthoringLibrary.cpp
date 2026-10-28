@@ -335,7 +335,10 @@ namespace MWFrontendAuthoring
 		FClassProperty* EntryProperty=FindFProperty<FClassProperty>(UListView::StaticClass(),TEXT("EntryWidgetClass"));
 		FClassProperty* LoginProperty=FindFProperty<FClassProperty>(UMWFrontendWidget::StaticClass(),TEXT("LoginWidgetClass"));
 		FStructProperty* FontProperty=FindFProperty<FStructProperty>(UComboBoxString::StaticClass(),TEXT("Font"));
-		UClass* LoginClass=LoadClass<UUserWidget>(nullptr,TEXT("/Game/UI/Lobby/WBP_LoginTest.WBP_LoginTest_C"));
+		const TCHAR* LoginPath=FPackageName::DoesPackageExist(TEXT("/Game/UI/Frontend/WBP_FrontendLogin"))
+			?TEXT("/Game/UI/Frontend/WBP_FrontendLogin.WBP_FrontendLogin_C")
+			:TEXT("/Game/UI/Lobby/WBP_LoginTest.WBP_LoginTest_C");
+		UClass* LoginClass=LoadClass<UUserWidget>(nullptr,LoginPath);
 		FString Failure;
 		if (!CheckWidgetClass(EntryProperty,RowClass,UMWRoomRowWidget::StaticClass(),Failure) || !CheckWidgetClass(LoginProperty,LoginClass,UUserWidget::StaticClass(),Failure) || !FontProperty || FontProperty->Struct!=FSlateFontInfo::StaticStruct())
 		{
