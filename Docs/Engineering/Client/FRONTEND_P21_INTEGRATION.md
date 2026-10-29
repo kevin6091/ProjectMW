@@ -1,5 +1,7 @@
 # P2.1 Screen Space UI 통합 검토
 
+> **2026-10-29 후속 통합:** 아래는 P2.1 후보 브랜치의 당시 기록이다. 현재 로그인 Designer를 포함한 기존 MW WBP 7개에 Frontend 표현을 적용했고, 기능은 기존 MW 구현으로 실제 2인 참가까지 검증했다. 정식 맵은 L_Title이며 Frontend C++ 서비스/Controller는 사용하지 않는다. 현재 기준과 검증 범위는 [13번 통합 문서](../../Shared/Client,Server/13_Frontend_디자인과_MW_방참가_기능_통합.md)를 참고한다.
+
 이 브랜치는 P2.1의 버튼·생성 폼·방 목록·공통 로비 및 Editor authoring 안전성 변경을 가져온 검토 후보다. 전체 통합 완료 상태가 아니다. P1/P3A의 3D 레벨·카메라·World Space 코드는 포함하지 않는다.
 
 ## 실행과 알려진 미적용 부분

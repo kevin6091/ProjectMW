@@ -1,5 +1,7 @@
 # Frontend UI 연결 및 검증
 
+> **2026-10-29 현재 통합 기준:** 아래는 Frontend 제작 당시의 기록이다. 현재 정식 실행은 L_Title의 기존 MW Widget/Subsystem 경로를 사용하고, Frontend의 Designer와 Common 리소스만 이식했다. FrontendConnection 어댑터를 연결하지 않는다. 실제 방 목록·참가·2인 로비 검증과 수정 에셋은 [13번 통합 문서](../../Shared/Client,Server/13_Frontend_디자인과_MW_방참가_기능_통합.md)를 따른다. 아래의 “세션 API가 아직 없다”는 서술은 당시 상태다.
+
 분야: Client + Art/TA(UI 원작 리소스 임포트). 작업 시작 main: `987d402542ec2d099b093cc5e84a08d1599a5a31`. 최종 확인 origin/main: `678158c7436f9c87b7deb7fa864c76dd92c366c9` (추가 변경은 README만). 엔진: 설치된 UE 5.8.4 / CL 58902052. 브랜치: `feature/frontend-ui`. 추가 worktree 없음.
 
 ## 구현 범위와 원본
