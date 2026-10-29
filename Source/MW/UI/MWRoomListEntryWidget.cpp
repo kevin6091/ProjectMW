@@ -28,8 +28,9 @@ void UMWRoomListEntryWidget::SetRoom(const FMWRoomInfo& Info, int32 Revision)
 
 void UMWRoomListEntryWidget::SetSelected(bool bSelected)
 {
-	Button_Row->SetBackgroundColor(bSelected ? FLinearColor(0.12f, 0.45f, 0.67f, 1)
-		: FLinearColor(0.12f, 0.18f, 0.25f, 1));
+	// The Designer uses the Frontend sign brush; selection still belongs to the MW browser.
+	Button_Row->SetBackgroundColor(FLinearColor::FromSRGBColor(
+		bSelected ? FColor(0, 152, 248) : FColor(255, 178, 33)));
 }
 
 void UMWRoomListEntryWidget::HandleSelected()

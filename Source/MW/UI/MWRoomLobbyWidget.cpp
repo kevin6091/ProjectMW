@@ -73,6 +73,41 @@ void UMWRoomLobbyWidget::Refresh()
 						(PS->IsReady() ? TEXT("준비 완료") : TEXT("준비 대기"))));
 				}
 				Text_Players->SetText(FText::FromString(FString::Join(Rows, TEXT("\n"))));
+				// Designer-only participant boards. All values still come from MW replicated state.
+				TArray<const AMWPlayerState*> DisplayPlayers;
+				for (const APlayerState* Player : GS->PlayerArray)
+				{
+					if (const AMWPlayerState* PS = Cast<AMWPlayerState>(Player)) DisplayPlayers.Add(PS);
+				}
+				DisplayPlayers.Sort([](const AMWPlayerState& A, const AMWPlayerState& B)
+				{
+					return A.GetLobbyMemberId() < B.GetLobbyMemberId();
+				});
+				for (int32 Index = 0; Index < 4; ++Index)
+				{
+					const AMWPlayerState* PS = DisplayPlayers.IsValidIndex(Index) ? DisplayPlayers[Index] : nullptr;
+					const bool bSlotAvailable = Index < Settings.MaxPlayers;
+					if (UTextBlock* Label = Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantSlot%d"), Index)))))
+					{
+						const FString Name = PS && !PS->GetPlayerName().IsEmpty() ? PS->GetPlayerName() : TEXT("플레이어");
+						Label->SetText(FText::FromString(PS ? FString::Printf(TEXT("ID %02d  ·  %s"), PS->GetLobbyMemberId(), *Name)
+							: (bSlotAvailable ? TEXT("참가 대기") : TEXT("정원 외 슬롯"))));
+					}
+					if (UTextBlock* Label = Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantState%d"), Index)))))
+					{
+						Label->SetText(FText::FromString(PS ? FString::Printf(TEXT("%s\n%s"),
+							PS->IsRoomHost() ? TEXT("호스트") : TEXT("참가자"),
+							!PS->IsSessionRegistrationConfirmed() ? TEXT("연결 확인 중") : (PS->IsReady() ? TEXT("준비 완료") : TEXT("준비 대기"))) : TEXT("")));
+					}
+					if (UWidget* Icon = GetWidgetFromName(FName(*FString::Printf(TEXT("EmptySlotIcon%d"), Index))))
+					{
+						Icon->SetVisibility(PS || !bSlotAvailable ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+					}
+					if (UWidget* Board = GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantBoard%d"), Index))))
+					{
+						Board->SetRenderOpacity(bSlotAvailable ? 1.f : .4f);
+					}
+				}
 				Text_LeaveLabel->SetText(FText::FromString(OwnPS->IsRoomHost() ? TEXT("방 종료") : TEXT("나가기")));
 				Status = TEXT("로비에 입장했습니다. 경기 준비 기능은 준비 중입니다.");
 			}

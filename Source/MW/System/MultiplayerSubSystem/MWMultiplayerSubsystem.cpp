@@ -573,8 +573,7 @@ bool UMWMultiplayerSubsystem::HasPendingSessionWork() const
         bClientTravelPending || bWorldLoadPending || bHostRegistrationExpected;
 }
 
-bool UMWMultiplayerSubsystem::GetApprovedRoomSettingsForWorld(
-    const UWorld* World, FMWRoomSettings& OutSettings) const
+bool UMWMultiplayerSubsystem::GetApprovedRoomSettingsForWorld(const UWorld* World, FMWRoomSettings& OutSettings) const
 {
     OutSettings = FMWRoomSettings{};
 
@@ -603,8 +602,7 @@ void UMWMultiplayerSubsystem::RequestCreateRoom(
     // 중복 요청은 진행 중인 첫 작업을 건드리지 않습니다.
     if (SessionState != EMWSessionState::None)
     {
-        UE_LOG(LogMWEOS, Verbose,
-            TEXT("Create ignored: session state is not None."));
+        UE_LOG(LogMWEOS, Verbose, TEXT("Create ignored: session state is not None."));
         return;
     }
 
