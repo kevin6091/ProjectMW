@@ -2,12 +2,18 @@
 
 #include "Frontend/MWFrontendWidget.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Misc/PackageName.h"
 #include "LogChannel.h"
 
 AMWFrontendPlayerController::AMWFrontendPlayerController()
 {
-	static ConstructorHelpers::FClassFinder<UMWFrontendWidget> Widget(TEXT("/Game/UI/Frontend/WBP_FrontendRoot"));
-	FrontendClass = Widget.Class;
+	// A blank authoring validation copy must be able to create this asset before it exists.
+	// Runtime creation still reports an explicit error below if the dependency is absent.
+	if (FPackageName::DoesPackageExist(TEXT("/Game/UI/Frontend/WBP_FrontendRoot")))
+	{
+		static ConstructorHelpers::FClassFinder<UMWFrontendWidget> Widget(TEXT("/Game/UI/Frontend/WBP_FrontendRoot"));
+		FrontendClass = Widget.Class;
+	}
 }
 
 void AMWFrontendPlayerController::BeginPlay()

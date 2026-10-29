@@ -17,7 +17,7 @@ void UMWRoomRowWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 		Room.RoomName, FText::AsNumber(Room.PlayerCount), FText::AsNumber(Room.MaxPlayers), Room.ThemeName,
 		Room.IsJoinable() ? FText::GetEmpty() : Room.UnavailableReason));
 	SetToolTipText(Room.UnavailableReason);
-	SetRenderOpacity(Room.IsJoinable() ? 1.f : .55f);
+	SetRenderOpacity(Room.IsJoinable() ? 1.f : .78f);
 	NativeOnItemSelectionChanged(IsListItemSelected());
 }
 

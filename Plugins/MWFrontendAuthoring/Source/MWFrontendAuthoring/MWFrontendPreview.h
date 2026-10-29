@@ -31,6 +31,10 @@ public:
 	virtual bool CancelOperation_Implementation() override;
 	void PrepareLobby(APlayerController* Controller);
 	void CompleteSearch();
+	UFUNCTION(BlueprintCallable, Category="MW|Frontend|Test") bool SetPreviewParticipantCount(int32 Count);
+	/** Editor-only overflow rows for real mouse wheel/virtualized-list regression. */
+	UFUNCTION(BlueprintCallable, Category="MW|Frontend|Test") bool SetPreviewRoomCount(int32 Count);
+	int32 PreviewRoomCount = 2;
 	EMWFrontendOperation Operation = EMWFrontendOperation::Idle;
 	int32 SearchCount = 0;
 	int32 CreateCount = 0;

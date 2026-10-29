@@ -1,8 +1,11 @@
 #include "MWFrontendPreview.h"
+#include "MWFrontendAuthoringLibrary.h"
 
 #include "Frontend/MWRoadButtonWidget.h"
 #include "Frontend/MWRoomRowWidget.h"
 #include "Components/ComboBoxString.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
 #include "Components/EditableTextBox.h"
 #include "Components/ListView.h"
 #include "Components/WidgetSwitcher.h"
@@ -73,12 +76,11 @@ bool FMWFrontendWidgetFlowTest::RunTest(const FString& Parameters)
 	Controller->PlayerState = World->SpawnActor<APlayerState>();
 	AGameStateBase* GameState = World->SpawnActor<AGameStateBase>();
 	GameState->AddPlayerState(Controller->PlayerState); World->SetGameState(GameState);
-	UClass* RootClass = LoadClass<UMWFrontendWidget>(nullptr, TEXT("/Game/Developers/FrontendTests/WBP_FrontendPreview.WBP_FrontendPreview_C"));
-	if (!TestNotNull(TEXT("Editor-only preview Blueprint exists"), RootClass))
+	UMWFrontendWidget* Widget=Cast<UMWFrontendWidget>(UMWFrontendAuthoringLibrary::CreateTransientTestWidget(Controller));
+	if (!TestNotNull(TEXT("Unsaved Editor fixture uses the current production widget tree"), Widget))
 	{
 		Instance->Shutdown(); GEngine->DestroyWorldContext(World); World->DestroyWorld(false); Instance->RemoveFromRoot(); return false;
 	}
-	UMWFrontendWidget* Widget = CreateWidget<UMWFrontendWidget>(Controller, RootClass);
 	Widget->AddToRoot();
 	UMWFrontendPreviewConnection* Connection = NewObject<UMWFrontendPreviewConnection>(Widget);
 	Connection->PrepareLobby(Controller); Widget->SetConnection(Connection);
@@ -100,9 +102,19 @@ bool FMWFrontendWidgetFlowTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Valid create dispatched once"), Connection->CreateCount, 1);
 	TestEqual(TEXT("Prepared world enters same lobby"), Pages->GetActiveWidgetIndex(), 4);
 	TestEqual(TEXT("Trimmed name sent"), Connection->Lobby.RoomName.ToString(), FString(TEXT("테스트 방")));
+	TestEqual(TEXT("Displayed lobby title uses the confirmed room name"), CastChecked<UTextBlock>(Widget->GetWidgetFromName(TEXT("LobbyTitle")))->GetText().ToString(), FString(TEXT("테스트 방")));
+	UWidget* FourthSlot=Widget->GetWidgetFromName(TEXT("ParticipantBoard3"));
+	if (TestNotNull(TEXT("Current production tree contains the fourth participant slot"),FourthSlot))
+	{
+		TestEqual(TEXT("Fourth slot is hidden for a three-player capacity"),FourthSlot->GetVisibility(),ESlateVisibility::Collapsed);
+	}
+	TestNotNull(TEXT("Road button retains named original arrow"), CastChecked<UMWRoadButtonWidget>(Widget->GetWidgetFromName(TEXT("ReadyButton")))->GetWidgetFromName(TEXT("Arrow")));
 	Click(TEXT("ReadyButton"));
 	TestTrue(TEXT("Ready reads service-confirmed value"), Connection->Lobby.Participants[0].bReady);
 	TestFalse(TEXT("One-player fixture cannot start"), Widget->GetWidgetFromName(TEXT("StartButton"))->GetIsEnabled());
+	TestTrue(TEXT("Editor-only fixture can prepare a second valid PlayerState"), Connection->SetPreviewParticipantCount(2));
+	TestTrue(TEXT("Confirmed two-player start state reaches button availability"), Widget->GetWidgetFromName(TEXT("StartButton"))->GetIsEnabled());
+	TestTrue(TEXT("Editor-only fixture can return to one participant"), Connection->SetPreviewParticipantCount(1));
 	Click(TEXT("LeaveButton"));
 	TestEqual(TEXT("Confirmed leave returns to choice"), Pages->GetActiveWidgetIndex(), 1);
 	Click(TEXT("OpenBrowserButton"));
@@ -120,6 +132,7 @@ bool FMWFrontendWidgetFlowTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Full row disables join"), Widget->GetWidgetFromName(TEXT("JoinButton"))->GetIsEnabled());
 	List->SetSelectedItem(List->GetItemAt(0));
 	TestTrue(TEXT("Open row enables join"), Widget->GetWidgetFromName(TEXT("JoinButton"))->GetIsEnabled());
+	TestTrue(TEXT("Selecting an open room clears the previous full-room error"), CastChecked<UTextBlock>(Widget->GetWidgetFromName(TEXT("StatusLabel")))->GetText().IsEmpty());
 	Click(TEXT("JoinButton"));
 	TestEqual(TEXT("Selected session enters common lobby"), Pages->GetActiveWidgetIndex(), 4);
 	Connection->Lobby.bConnectionReady = false; Connection->OnChanged.Broadcast();
