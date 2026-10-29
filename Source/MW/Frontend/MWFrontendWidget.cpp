@@ -20,6 +20,8 @@ void UMWFrontendWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetIsFocusable(true);
+	// Original match-choice signs use right and down-right arrows respectively.
+	OpenBrowserButton->SetIconAngle(135.f);
 	bScreenActive = true;
 	Multiplayer = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>() : nullptr;
 	if (Multiplayer)
@@ -67,19 +69,19 @@ void UMWFrontendWidget::NativeConstruct()
 void UMWFrontendWidget::NativeDestruct()
 {
 	bScreenActive = false;
-	if (Multiplayer) { Multiplayer->OnLoginFinished.RemoveDynamic(this, &ThisClass::HandleLoginFinished); }
+	if (IsValid(Multiplayer)) { Multiplayer->OnLoginFinished.RemoveDynamic(this, &ThisClass::HandleLoginFinished); }
 	UnbindConnection();
-	RoomList->OnItemSelectionChanged().RemoveAll(this);
-	OpenCreateButton->OnClicked.RemoveDynamic(this, &ThisClass::OpenCreate);
-	OpenBrowserButton->OnClicked.RemoveDynamic(this, &ThisClass::OpenBrowser);
-	CreateButton->OnClicked.RemoveDynamic(this, &ThisClass::SubmitCreate);
-	RefreshButton->OnClicked.RemoveDynamic(this, &ThisClass::RefreshRooms);
-	JoinButton->OnClicked.RemoveDynamic(this, &ThisClass::JoinSelectedRoom);
-	CreateBackButton->OnClicked.RemoveDynamic(this, &ThisClass::GoBack);
-	BrowserBackButton->OnClicked.RemoveDynamic(this, &ThisClass::GoBack);
-	ReadyButton->OnClicked.RemoveDynamic(this, &ThisClass::ToggleReady);
-	StartButton->OnClicked.RemoveDynamic(this, &ThisClass::StartMatch);
-	LeaveButton->OnClicked.RemoveDynamic(this, &ThisClass::LeaveRoom);
+	if (IsValid(RoomList)) { RoomList->OnItemSelectionChanged().RemoveAll(this); }
+	if (IsValid(OpenCreateButton)) { OpenCreateButton->OnClicked.RemoveDynamic(this, &ThisClass::OpenCreate); }
+	if (IsValid(OpenBrowserButton)) { OpenBrowserButton->OnClicked.RemoveDynamic(this, &ThisClass::OpenBrowser); }
+	if (IsValid(CreateButton)) { CreateButton->OnClicked.RemoveDynamic(this, &ThisClass::SubmitCreate); }
+	if (IsValid(RefreshButton)) { RefreshButton->OnClicked.RemoveDynamic(this, &ThisClass::RefreshRooms); }
+	if (IsValid(JoinButton)) { JoinButton->OnClicked.RemoveDynamic(this, &ThisClass::JoinSelectedRoom); }
+	if (IsValid(CreateBackButton)) { CreateBackButton->OnClicked.RemoveDynamic(this, &ThisClass::GoBack); }
+	if (IsValid(BrowserBackButton)) { BrowserBackButton->OnClicked.RemoveDynamic(this, &ThisClass::GoBack); }
+	if (IsValid(ReadyButton)) { ReadyButton->OnClicked.RemoveDynamic(this, &ThisClass::ToggleReady); }
+	if (IsValid(StartButton)) { StartButton->OnClicked.RemoveDynamic(this, &ThisClass::StartMatch); }
+	if (IsValid(LeaveButton)) { LeaveButton->OnClicked.RemoveDynamic(this, &ThisClass::LeaveRoom); }
 	SelectedRoom = nullptr;
 	Multiplayer = nullptr;
 	Super::NativeDestruct();
@@ -87,7 +89,7 @@ void UMWFrontendWidget::NativeDestruct()
 
 void UMWFrontendWidget::UnbindConnection()
 {
-	if (Connection)
+	if (IsValid(Connection))
 	{
 		Connection->OnChanged.RemoveDynamic(this, &ThisClass::HandleConnectionChanged);
 		Connection->OnError.RemoveDynamic(this, &ThisClass::HandleConnectionError);
@@ -261,6 +263,7 @@ void UMWFrontendWidget::HandleRoomSelection(UObject* Item)
 {
 	SelectedRoom = Cast<UMWRoomListItem>(Item);
 	if (SelectedRoom && !SelectedRoom->Room.IsJoinable()) { SetStatus(SelectedRoom->Room.UnavailableReason); }
+	else { SetStatus(FText::GetEmpty()); }
 	RefreshAvailability();
 }
 
@@ -282,15 +285,49 @@ bool UMWFrontendWidget::HasPreparedLobby(FMWLobbyView& OutLobby) const
 
 void UMWFrontendWidget::RefreshLobby(const FMWLobbyView& Lobby)
 {
-	LobbyTitle->SetText(FText::Format(LOCTEXT("LobbyTitle", "{0}  |  {1}  |  {2}/{3}명"), Lobby.RoomName, Lobby.ThemeName,
-		FText::AsNumber(Lobby.Participants.Num()), FText::AsNumber(Lobby.MaxPlayers)));
+	LobbyTitle->SetText(Lobby.RoomName);
+	LobbyTitle->SetToolTipText(Lobby.RoomName);
 	FString Lines;
+	int32 ReadyCount = 0;
 	for (const FMWLobbyParticipantView& Participant : Lobby.Participants)
 	{
-		Lines += FString::Printf(TEXT("%s%s    %s\n\n"), *Participant.PlayerState->GetPlayerName(),
-			Participant.bHost ? TEXT("  [호스트]") : TEXT(""), Participant.bReady ? TEXT("준비 완료") : TEXT("준비 중"));
+		Lines += FString::Printf(TEXT("%s%s    %s\n\n"), *Participant.PlayerState->GetPlayerName(), Participant.bHost ? TEXT(" [호스트]") : TEXT(""), Participant.bReady ? TEXT("준비 완료") : TEXT("준비 중"));
+		ReadyCount += Participant.bReady ? 1 : 0;
 	}
 	ParticipantLabel->SetText(FText::FromString(Lines));
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		const bool bOccupied = Lobby.Participants.IsValidIndex(Index);
+		if (UWidget* Board = GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantBoard%d"), Index))))
+		{
+			Board->SetVisibility(Index < Lobby.MaxPlayers ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+		if (UTextBlock* Name = Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantSlot%d"), Index)))))
+		{
+			Name->SetText(bOccupied ? FText::FromString(Lobby.Participants[Index].PlayerState->GetPlayerName() + (Lobby.Participants[Index].bHost ? TEXT(" [호스트]") : TEXT(""))) : LOCTEXT("EmptyLobbySlot", "참가자 대기 중"));
+			Name->SetToolTipText(Name->GetText());
+			Name->SetColorAndOpacity(FSlateColor(bOccupied && Index == 0 ? FLinearColor::White : FLinearColor::FromSRGBColor(FColor(55,52,53))));
+		}
+		if (UTextBlock* State = Cast<UTextBlock>(GetWidgetFromName(FName(*FString::Printf(TEXT("ParticipantState%d"), Index)))))
+		{
+			State->SetText(bOccupied ? (Lobby.Participants[Index].bReady ? LOCTEXT("SlotReady", "준비 완료") : LOCTEXT("SlotWaiting", "준비 중")) : FText::GetEmpty());
+			State->SetColorAndOpacity(FSlateColor(Index == 0 ? FLinearColor::White : FLinearColor::FromSRGBColor(FColor(55,52,53))));
+		}
+		if (UWidget* Icon = GetWidgetFromName(FName(*FString::Printf(TEXT("EmptySlotIcon%d"), Index))))
+		{
+			// Decorative available-slot icon; never invent a participant's platform or input device.
+			Icon->SetVisibility(bOccupied ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+		}
+	}
+	if (UTextBlock* Status = Cast<UTextBlock>(GetWidgetFromName(TEXT("LobbyStatus"))))
+	{
+		Status->SetText(Lobby.bCanStart ? LOCTEXT("ServerStartAllowed", "서버 시작 가능") : LOCTEXT("ServerStartWaiting", "시작 준비 중…"));
+	}
+	if (UTextBlock* Theme = Cast<UTextBlock>(GetWidgetFromName(TEXT("LobbyTheme")))) { Theme->SetText(Lobby.ThemeName); }
+	if (UTextBlock* Info = Cast<UTextBlock>(GetWidgetFromName(TEXT("LobbyInfo"))))
+	{
+		Info->SetText(FText::Format(LOCTEXT("LobbyDetails", "참가 인원    {0} / {1}\n\n준비 완료    {2} / {0}\n\n서버 시작    {3}"), FText::AsNumber(Lobby.Participants.Num()), FText::AsNumber(Lobby.MaxPlayers), FText::AsNumber(ReadyCount), Lobby.bCanStart ? LOCTEXT("StartAllowed", "가능") : LOCTEXT("StartWaiting", "대기")));
+	}
 	const FMWLobbyParticipantView* Local = Lobby.FindLocalParticipant();
 	ReadyButton->SetLabel(Local && Local->bReady ? LOCTEXT("Unready", "준비 취소") : LOCTEXT("Ready", "준비 완료"));
 }

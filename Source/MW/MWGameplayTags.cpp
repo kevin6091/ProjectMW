@@ -11,6 +11,8 @@ namespace MWGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_SelectConstruction, "Asset.Input.SelectConstruction");
 	
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_Default, "Asset.Vehicle.Default");
+	
+	UE_DEFINE_GAMEPLAY_TAG(Asset_MapTheme_DevDefault, "Asset.MapTheme.DevDefault");
 
 	// 실제 키 대신 입력의 목적을 나타냅니다. 키와 액션의 연결은 모드별 MWInputData에서 정합니다.
 	// Input_Driving

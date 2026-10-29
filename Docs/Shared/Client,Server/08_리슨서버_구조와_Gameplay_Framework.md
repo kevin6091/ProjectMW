@@ -1,6 +1,6 @@
 # MW 리슨 서버 설계와 Gameplay Framework 이해
 
-**문서 번호:** MW-NET-DESIGN-001 / v1.1 / 2026-10-26\
+**문서 번호:** MW-NET-DESIGN-001 / v1.2 / 2026-10-28\
 **적용:** Client + Server, UE 5.8.3, `MW` Runtime 모듈, 호스트 1명 + 원격 2명 우선.\
 **상태:** 설계·학습 문서. 차량은 사용자 지시에 따라 `ACharacter` 기반으로 계획한다. 아래 신규 클래스와 요청 이름은 구현 예정이며 컴파일·멀티플레이 검증 완료를 뜻하지 않는다.
 
@@ -34,7 +34,9 @@ flowchart LR
 
 타이틀의 경기 생성은 방 이름·정원·테마를 받아 세션을 등록하고 생성자의 PC에서 Listen Server를 준비한다. 경기 참가는 세션 서비스에서 방 목록을 검색해 선택한 호스트로 접속한다. **무료 EOS는 방 검색·연결을 돕고, 실제 경기 규칙은 호스트 PC에서 실행한다.** 비용과 서비스 근거는 09 문서 2절을 따른다.
 
-접속 전의 목록은 다른 방의 GameState에서 읽을 수 없다. `UMWSessionSubsystem : UGameInstanceSubsystem`이 로컬 프로세스에서 생성·검색·참가·나가기와 맵 이동 사이의 작업을 관리하고, 입장 후에는 해당 방의 GameState/PlayerState를 읽는다. 이 Subsystem은 복제 객체가 아니다.
+접속 전의 목록은 다른 방의 GameState에서 읽을 수 없다. 실제 타입인 `UMWMultiplayerSubsystem : UGameInstanceSubsystem`이 로컬 프로세스에서 생성·검색·참가·나가기와 맵 이동 사이의 작업을 관리하고, 입장 후에는 해당 방의 GameState/PlayerState를 읽는다. 이 Subsystem은 복제 객체가 아니다. 과거 제안명 `UMWSessionSubsystem`을 별도 클래스로 추가하지 않는다.
+
+2026-10-28 맵 테마 연동은 [06 문서 6.3절](06_공용_데이터_이식.md)의 AssetData/AssetManager 경로를 정본으로 채택했다. 승인된 테마 ID를 카탈로그의 UWorld 참조로 해석하고, 생성한 Listen 월드에서 GameMode가 승인 설정을 GameState에 반영한다. 추가 코드와 연결 순서는 [10 방 생성 구현 가이드](10_AssetManager_맵테마_기반_방생성_구현가이드.md)를 따른다.
 
 누구나 방을 생성해 호스트가 될 수 있고 서로 다른 호스트의 방이 동시에 존재한다. 각 방은 고유 SessionId와 별도 경기 월드·GameMode·GameState를 사용한다. 방 이름은 표시용이므로 같은 이름만으로 같은 방이라고 판단하지 않는다. 한 인스턴스가 한 번에 참여/호스팅하는 방은 하나로 계획한다.
 
@@ -151,7 +153,7 @@ PlayerController는 플레이어의 입력·요청·로컬 화면을 연결한�
 | `AMWPlayerState` | 서버가 기록하고 복제하는 개인 경기 기록 |
 | `AMWPlayerController` | 소유 플레이어의 요청 진입점과 로컬 입력·카메라·UI 연결 |
 | `AMWVehicleCharacter` | 차량 수명의 상태와 컴포넌트 연결 |
-| `UMWSessionSubsystem` | 프로세스 수명의 로컬 세션 작업·인증 연결·방 검색/참가/정리. 방 접속 전에도 사용 |
+| `UMWMultiplayerSubsystem` | 프로세스 수명의 로컬 세션 작업·인증 연결·방 검색/참가/정리. 방 접속 전에도 사용 |
 | `UMWVehicleMovementComponent` | CharacterMovement 확장, 차량 이동 계산·예측·보정 |
 | `AMWTrackManager` | 서버 배치 검증·생성·연결 순서·코스 리비전. 확정 코스 상태 복제 |
 | `UMWItemComponent` | 차량의 아이템 한 칸과 서버 사용·소비 처리 |
@@ -162,7 +164,7 @@ PlayerController는 플레이어의 입력·요청·로컬 화면을 연결한�
 
 GameState에 TrackManager의 코스 상태 전체를 중복 보관하지 않는다. 코스의 `Revision/Count/ExitTransform`은 TrackManager를 원본으로 둔다. 참가자의 체크포인트 지급 이력처럼 판정에만 필요한 상세 자료는 서버 규칙에 두고, HUD에 필요한 진행도만 공개한다. 개인 후보 목록은 소유 Controller의 소유자 대상 상태로 전달할 수 있다.
 
-2026-10-26 소스 확인 기준으로 DataAsset 타입·AssetManager·네이티브 입력 태그는 존재한다. `Content/Data`에 입력 데이터와 카탈로그 파일도 있지만 실제 연결·로드 성공은 이번 작업에서 검사하지 않았다. `StartupAssetData` 설정은 비어 있으며 경기 Framework·차량 Runtime 클래스는 아직 없다. 과거 문서의 에셋·태그 누락 기록은 당시 스냅샷으로 읽는다.
+2026-10-26 초기 작성 당시에는 시작 카탈로그가 연결되지 않았다. 2026-10-28 현재는 `StartupAssetData`에 기존 카탈로그가 연결되고 `Asset.MapTheme.DevDefault`의 레벨 조회·방 설정 검사까지 구현/검증되었다. EOS 로그인도 존재하지만 실제 방 생성 본문·경기 Framework·차량 Runtime 클래스는 아직 없다. 상세 현재 상태와 검증 범위는 06 문서 6.3절과 10 문서를 따른다. 과거 에셋·태그 누락 기록은 당시 스냅샷으로 읽는다.
 
 ## 5. 서버가 관리할 경기 흐름
 
