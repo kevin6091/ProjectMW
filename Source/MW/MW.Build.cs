@@ -16,11 +16,17 @@ public class MW : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags",
-			"UMG", "OnlineSubsystem", "OnlineSubsystemUtils"
+			"UMG", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils"
 		});
 
 		// 이 모듈 내부에서만 사용할 추가 모듈을 등록하는 자리입니다.
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"AssetRegistry",
+			"EngineSettings",
+			"OnlineBase",
+			"OnlineSubsystemEOS"
+		});
 
 		// Slate 화면 위젯을 사용하면 아래 줄의 주석을 지웁니다.
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

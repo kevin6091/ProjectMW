@@ -17,7 +17,11 @@ namespace MWGameplayTags
 	
 	/** 기본 차량의 생성 클래스와 주행 입력 설정을 찾는 ID입니다. */
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_Default);
+	
+	// MapTheme
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_MapTheme_DevDefault);
 
+	
 	
 	// Input_Driving
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Input_Accel);

@@ -166,3 +166,28 @@ void UMWAssetManager::ReleaseAllAssets()
 	// 관리자의 참조만 지웁니다. 다른 코드나 엔진이 사용 중인 객체는 남아 있을 수 있습니다.
 	LoadedAssets.Reset();
 }
+
+TArray<FGameplayTag> UMWAssetManager::GetAssetIdsUnderRoot(FGameplayTag Root) const
+{
+	check(IsInGameThread());
+
+	TArray<FGameplayTag> Result;
+	if (!HasCatalog() || !Root.IsValid())
+	{
+		return Result;
+	}
+
+	for (const auto& Pair : AssetPaths)
+	{
+		if (Pair.Key != Root && Pair.Key.MatchesTag(Root))
+		{
+			Result.Add(Pair.Key);
+		}
+	}
+
+	Result.Sort([](const FGameplayTag& A, const FGameplayTag& B)
+	{
+		return A.ToString() < B.ToString();
+	});
+	return Result;
+}

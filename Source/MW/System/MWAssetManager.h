@@ -76,6 +76,8 @@ public:
 	{
 		return Cast<AssetType>(LoadAssetSynchronous(AssetId));
 	}
+	
+	TArray<FGameplayTag> GetAssetIdsUnderRoot(FGameplayTag Root) const;
 
 private:
 	// 게임 시작 때 불러올 원본 에셋 목록입니다. 초기 제작 중에는 비워 둘 수 있습니다.
