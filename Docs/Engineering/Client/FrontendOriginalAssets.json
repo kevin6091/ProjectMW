@@ -1,0 +1,39 @@
+[
+  {
+    "source": "AssetStudio/Sprite/T_listMenuOptionSignStandard.png",
+    "sha256": "4dec73efc92cf81b8fc6dd1c0a33a7f75200288938b6f17501e32f336b4c365a",
+    "target": "/Game/UI/Common/T_MW_MenuSign",
+    "reused_own_import": true,
+    "rights_status": "Unknown; local development only; not approved for redistribution"
+  },
+  {
+    "source": "AssetStudio/Sprite/T_listMenuOptionSignOverlay.png",
+    "sha256": "19e0e0f9d83864c052d41caaa237ece847bb33007252a328f56f8e50c1eb5a68",
+    "target": "/Game/UI/Common/T_MW_MenuOverlay",
+    "reused_own_import": true,
+    "rights_status": "Unknown; local development only; not approved for redistribution"
+  },
+  {
+    "source": "AssetStudio/Sprite/T_listMenuOptionSignDiamond.png",
+    "sha256": "bc442aa7fa946600837569a6dbfc47a9e7803e0215441e57ee5b78a6fb2c791a",
+    "target": "/Game/UI/Common/T_MW_MenuDiamond",
+    "reused_own_import": true,
+    "rights_status": "Unknown; local development only; not approved for redistribution"
+  },
+  {
+    "source": "AssetStudio/Sprite/Arrow Rounded.png",
+    "sha256": "5758e4506d48aaf861d5c35ad7fccdd6a968b045bfc3193dbbc1545bb723d4d0",
+    "target": "/Game/UI/Common/T_MW_Arrow",
+    "reused_own_import": true,
+    "rights_status": "Unknown; local development only; not approved for redistribution"
+  },
+  {
+    "source": "AssetStudio/Font/NotoSansKR-Bold.otf",
+    "sha256": "e7be1cdb169344a75bdf09f8563dcf5e662194be3064873b6b4ca57e0ba0774f",
+    "target": "/Game/UI/Common/F_NotoSansKR_Bold",
+    "imported": [
+      "/Game/UI/Common/F_NotoSansKR_Bold.F_NotoSansKR_Bold"
+    ],
+    "rights_status": "Unknown; local development only; not approved for redistribution"
+  }
+]
