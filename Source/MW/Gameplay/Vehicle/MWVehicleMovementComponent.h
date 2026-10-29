@@ -23,6 +23,11 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void PhysicsRotation(float DeltaTime) override;
 	
+	UFUNCTION(BlueprintPure, Category="MW|Drive")
+	bool IsDriftControlActive() const;
+	
+	virtual void CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration) override;
+	
 protected:
 	// 관성 감속
 	UPROPERTY(EditDefaultsOnly, Category="MW|Drive")
@@ -43,7 +48,19 @@ protected:
 	// 최소 조향 속도
 	UPROPERTY(EditDefaultsOnly, Category="MW|Drive")
 	float MinSteeringSpeed = 20.f;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category="MW|Drive", meta=(ClampMin=0.f, Units="cm/s"))
+	float MinDriftSpeed = 500.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="MW|Drive", meta=(ClampMin=0.f, ClampMax=1.0f))
+	float MinDriftSteering = 0.1f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="MW|Drive", meta=(ClampMin=0.f, ClampMax=1.0f))
+	float DriftFrictionMultiplier = 0.2f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="MW|Drive", meta=(ClampMin=0.f))
+	float DriftTurnRateMultiplier = 1.25f;
+	
 private:
 	FMWVehicleDriveInput DriveInput;
 };

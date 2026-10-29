@@ -47,4 +47,7 @@ private:
 	void StopAccel();
 	void StopBrake();
 	void StopSteer();
+	
+	void StartDrift();
+	void StopDrift();
 };

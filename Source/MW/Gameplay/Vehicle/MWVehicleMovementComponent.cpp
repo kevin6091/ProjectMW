@@ -2,6 +2,7 @@
 
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/Controller.h"
 
 UMWVehicleMovementComponent::UMWVehicleMovementComponent()
 {
@@ -53,8 +54,55 @@ void UMWVehicleMovementComponent::PhysicsRotation(float DeltaTime)
 
 	// 저속에서는 회전량을 줄이고 FullSteeringSpeed 이상에서는 설정 회전 속도를 사용
 	const float SpeedFactor = FMath::Clamp(ForwardSpeed / FMath::Max(FullSteeringSpeed, 1.f), 0.f, 1.f);
-	const float DeltaYaw = DriveInput.Steering * TurnRateDegPerSecond * SpeedFactor * DeltaTime;
+	const float TurnMultiplier = IsDriftControlActive() ? FMath::Max(DriftTurnRateMultiplier, 0.f) : 1.f;
+	const float DeltaYaw = DriveInput.Steering * TurnRateDegPerSecond * TurnMultiplier * SpeedFactor * DeltaTime;
 	const float NewYaw = UpdatedComponent->GetComponentRotation().Yaw + DeltaYaw;
 
 	MoveUpdatedComponent(FVector::ZeroVector, FRotator(0.f, NewYaw, 0.f).Quaternion(), true);
+}
+
+bool UMWVehicleMovementComponent::IsDriftControlActive() const
+{
+	if (!HasValidData() || !IsMovingOnGround())
+	{
+		return false;
+	}
+	
+	const AController* Controller = CharacterOwner->GetController();
+	
+	if (!Controller || Controller->IsMoveInputIgnored())
+	{
+		return false;
+	}
+	
+	if (!DriveInput.bDriftRequested)
+	{
+		return false;
+	}
+	
+	if (DriveInput.Brake > KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+	
+	if (FMath::Abs(DriveInput.Steering) <= MinDriftSteering)
+	{
+		return false;
+	}
+	
+	const float ForwardSpeed = FVector::DotProduct(Velocity, UpdatedComponent->GetForwardVector());
+
+	return ForwardSpeed > MinDriftSpeed;
+}
+
+void UMWVehicleMovementComponent::CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration)
+{
+	float EffectiveFriction = Friction;
+	
+	if (IsDriftControlActive())
+	{
+		EffectiveFriction *= FMath::Clamp(DriftFrictionMultiplier, 0.f, 1.f);
+	}
+	
+	Super::CalcVelocity(DeltaTime, EffectiveFriction, bFluid, BrakingDeceleration);
 }

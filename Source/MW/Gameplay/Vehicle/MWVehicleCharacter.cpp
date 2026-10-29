@@ -12,6 +12,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 
+#include "InputAction.h"
+#include "InputMappingContext.h"
+
 // 기본 CharacterMovement를 차량용 이동 컴포넌트로 교체
 AMWVehicleCharacter::AMWVehicleCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMWVehicleMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -53,27 +56,112 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (!DrivingInputData) return;
-
 	APlayerController* PC = Cast<APlayerController>(GetController());
+	
+	if (!PC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerController is not valid on %s"), *GetName());
+		return;
+	}
+	
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	
-	if (!PC || !EIC) return;
-
-	if (ULocalPlayer* LP = PC->GetLocalPlayer())
+	if (!EIC)
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
-		{
-			if (const UInputMappingContext* Context = DrivingInputData->GetMappingContext())
-				Subsystem->AddMappingContext(Context, 0);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent is not valid on %s"), *GetName());
+		return;
 	}
+	
+	if (!DrivingInputData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DrivingInputData is not set on %s"), *GetName());
+		return;
+	}
+	
+	const UInputMappingContext* MappingContext = DrivingInputData->GetMappingContext();
 	
 	const UInputAction* Accel = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Accel);
 	const UInputAction* Brake = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Brake);
 	const UInputAction* Steer = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Steer);
-	// const UInputAction* Drift = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Drift);
+	const UInputAction* Drift = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Drift);
 	// const UInputAction* UseItem = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_UseItem);
+	
+	if (!MappingContext ||
+		!Accel ||
+		!Brake ||
+		!Steer ||
+		!Drift)
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT(
+				"%s: Driving input is incomplete. "
+				"IMC=%s Accel=%s Brake=%s Steer=%s Drift=%s"),
+			*GetNameSafe(this),
+			*GetNameSafe(MappingContext),
+			*GetNameSafe(Accel),
+			*GetNameSafe(Brake),
+			*GetNameSafe(Steer),
+			*GetNameSafe(Drift));
+
+		return;
+	}
+	
+	if (Accel->ValueType != EInputActionValueType::Axis1D ||
+		Brake->ValueType != EInputActionValueType::Axis1D ||
+		Steer->ValueType != EInputActionValueType::Axis1D)
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT(
+				"%s: Accel, Brake and Steer "
+				"must use Axis1D."),
+			*GetNameSafe(this));
+
+		return;
+	}
+	
+	if (Drift->ValueType != EInputActionValueType::Boolean)
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("%s: Drift must use Boolean."),
+			*GetNameSafe(this));
+
+		return;
+	}
+	
+	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+
+	if (!LocalPlayer)
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("%s: LocalPlayer is unavailable."),
+			*GetNameSafe(this));
+
+		return;
+	}
+	
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+
+	if (!InputSubsystem)
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("%s: Enhanced Input subsystem is unavailable."),
+			*GetNameSafe(this));
+
+		return;
+	}
+	
+	DriveInput = FMWVehicleDriveInput{};
+	SubmitDriveInput(DriveInput);
 	
 	EIC->BindAction(Accel, ETriggerEvent::Triggered, this, &ThisClass::HandleAccel);
 	EIC->BindAction(Accel, ETriggerEvent::Completed, this, &ThisClass::StopAccel);
@@ -86,6 +174,18 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	EIC->BindAction(Steer, ETriggerEvent::Triggered, this, &ThisClass::HandleSteer);
 	EIC->BindAction(Steer, ETriggerEvent::Completed, this, &ThisClass::StopSteer);
 	EIC->BindAction(Steer, ETriggerEvent::Canceled, this, &ThisClass::StopSteer);
+	
+	EIC->BindAction(Drift, ETriggerEvent::Triggered, this, &ThisClass::StartDrift);
+	EIC->BindAction(Drift, ETriggerEvent::Completed, this, &ThisClass::StopDrift);
+	EIC->BindAction(Drift, ETriggerEvent::Canceled, this, &ThisClass::StopDrift);
+	
+	InputSubsystem->AddMappingContext(MappingContext, 0);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("%s: Driving input setup completed."),
+		*GetNameSafe(this));
 }
 
 void AMWVehicleCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -144,6 +244,18 @@ void AMWVehicleCharacter::StopBrake()
 void AMWVehicleCharacter::StopSteer()
 {
 	DriveInput.Steering = 0.0f;
+	SubmitDriveInput(DriveInput);
+}
+
+void AMWVehicleCharacter::StartDrift()
+{
+	DriveInput.bDriftRequested = true;
+	SubmitDriveInput(DriveInput);
+}
+
+void AMWVehicleCharacter::StopDrift()
+{
+	DriveInput.bDriftRequested = false;
 	SubmitDriveInput(DriveInput);
 }
 
