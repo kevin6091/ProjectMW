@@ -12,7 +12,7 @@ struct MW_API FMWVehicleDriveInput
 	float Throttle = 0.f;
 
 	UPROPERTY(BlueprintReadWrite)
-	float Brake = 0.f;
+	float Reverse = 0.f;
 
 	UPROPERTY(BlueprintReadWrite)
 	float Steering = 0.f;

@@ -41,11 +41,11 @@ private:
 	FMWVehicleDriveInput DriveInput;
 
 	void HandleAccel(const FInputActionValue& Value);
-	void HandleBrake(const FInputActionValue& Value);
+	void HandleReverse(const FInputActionValue& Value);
 	void HandleSteer(const FInputActionValue& Value);
 
 	void StopAccel();
-	void StopBrake();
+	void StopReverse();
 	void StopSteer();
 	
 	void StartDrift();

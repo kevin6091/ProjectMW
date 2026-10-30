@@ -81,7 +81,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	const UInputMappingContext* MappingContext = DrivingInputData->GetMappingContext();
 	
 	const UInputAction* Accel = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Accel);
-	const UInputAction* Brake = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Brake);
+	const UInputAction* Brake = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Reverse);
 	const UInputAction* Steer = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Steer);
 	const UInputAction* Drift = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Drift);
 	// const UInputAction* UseItem = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_UseItem);
@@ -167,9 +167,9 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	EIC->BindAction(Accel, ETriggerEvent::Completed, this, &ThisClass::StopAccel);
 	EIC->BindAction(Accel, ETriggerEvent::Canceled, this, &ThisClass::StopAccel);
 
-	EIC->BindAction(Brake, ETriggerEvent::Triggered, this, &ThisClass::HandleBrake);
-	EIC->BindAction(Brake, ETriggerEvent::Completed, this, &ThisClass::StopBrake);
-	EIC->BindAction(Brake, ETriggerEvent::Canceled, this, &ThisClass::StopBrake);
+	EIC->BindAction(Brake, ETriggerEvent::Triggered, this, &ThisClass::HandleReverse);
+	EIC->BindAction(Brake, ETriggerEvent::Completed, this, &ThisClass::StopReverse);
+	EIC->BindAction(Brake, ETriggerEvent::Canceled, this, &ThisClass::StopReverse);
 
 	EIC->BindAction(Steer, ETriggerEvent::Triggered, this, &ThisClass::HandleSteer);
 	EIC->BindAction(Steer, ETriggerEvent::Completed, this, &ThisClass::StopSteer);
@@ -217,9 +217,9 @@ void AMWVehicleCharacter::HandleAccel(const FInputActionValue& Value)
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::HandleBrake(const FInputActionValue& Value)
+void AMWVehicleCharacter::HandleReverse(const FInputActionValue& Value)
 {
-	DriveInput.Brake = Value.Get<float>();
+	DriveInput.Reverse = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
@@ -235,9 +235,9 @@ void AMWVehicleCharacter::StopAccel()
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopBrake()
+void AMWVehicleCharacter::StopReverse()
 {
-	DriveInput.Brake = 0.0f;
+	DriveInput.Reverse = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
