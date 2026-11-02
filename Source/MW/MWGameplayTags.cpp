@@ -17,7 +17,7 @@ namespace MWGameplayTags
 	// 실제 키 대신 입력의 목적을 나타냅니다. 키와 액션의 연결은 모드별 MWInputData에서 정합니다.
 	// Input_Driving
 	UE_DEFINE_GAMEPLAY_TAG(Input_Accel, "Input.Action.Drive.Accel");
-	UE_DEFINE_GAMEPLAY_TAG(Input_Brake, "Input.Action.Drive.Brake");
+	UE_DEFINE_GAMEPLAY_TAG(Input_Reverse, "Input.Action.Drive.Reverse");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Drift, "Input.Action.Drive.Drift");
 	UE_DEFINE_GAMEPLAY_TAG(Input_Steer, "Input.Action.Drive.Steer");
 	UE_DEFINE_GAMEPLAY_TAG(Input_UseItem, "Input.Action.Drive.UseItem");
