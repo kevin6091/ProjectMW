@@ -2,6 +2,12 @@
 #include "System/MWGameState.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Gameplay/Construction/MWPlayerConstructionComponent.h"
+
+AMWPlayerState::AMWPlayerState()
+{
+	PlayerConstruction = CreateDefaultSubobject<UMWPlayerConstructionComponent>(TEXT("PlayerConstruction"));
+}
 
 void AMWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

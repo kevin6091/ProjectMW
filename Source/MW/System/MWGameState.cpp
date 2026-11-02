@@ -2,6 +2,12 @@
 #include "Player/MWPlayerController.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+
+AMWGameState::AMWGameState()
+{
+	TrackConstruction = CreateDefaultSubobject<UMWTrackConstructionComponent>(TEXT("TrackConstruction"));
+}
 
 void AMWGameState::BeginPlay()
 {

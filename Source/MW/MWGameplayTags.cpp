@@ -2,6 +2,9 @@
 
 namespace MWGameplayTags
 {
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Straight, "Asset.Track.Straight");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Curve, "Asset.Track.Curve");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Ramp, "Asset.Track.Ramp");
 	// 선언한 에셋 ID와 분류 태그의 실제 이름을 등록해, 설정 데이터와 C++에서 같은 태그를 사용합니다.
 	UE_DEFINE_GAMEPLAY_TAG(AssetLabel_Preload, "AssetLabel.Preload");
 	

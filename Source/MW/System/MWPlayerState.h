@@ -4,12 +4,18 @@
 #include "GameFramework/PlayerState.h"
 #include "MWPlayerState.generated.h"
 
+class UMWPlayerConstructionComponent;
+
 UCLASS()
 class MW_API AMWPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
 public:
+	AMWPlayerState();
+	UFUNCTION(BlueprintPure, Category="MW|Construction")
+	UMWPlayerConstructionComponent* GetPlayerConstructionComponent() const { return PlayerConstruction; }
+
 	virtual void GetLifetimeReplicatedProps(
 		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_PlayerName() override;
@@ -32,6 +38,9 @@ public:
 	void SetSessionRegistrationConfirmedFromServer(bool bConfirmed);
 
 private:
+	UPROPERTY(VisibleAnywhere, Category="MW|Construction")
+	TObjectPtr<UMWPlayerConstructionComponent> PlayerConstruction;
+
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	bool bRoomHost = false;
 

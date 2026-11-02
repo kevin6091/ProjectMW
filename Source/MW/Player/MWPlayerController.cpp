@@ -21,7 +21,8 @@ void AMWPlayerController::BeginPlay()
         Sessions->OnSessionError.AddUniqueDynamic(this, &AMWPlayerController::HandleSessionError);
     }
 
-    CreateLobbyScreen();
+    bLobbyPresentationEnabled = bCreateLobbyScreen;
+    if (bCreateLobbyScreen) CreateLobbyScreen();
     RefreshLobbyScreen();
 }
 
@@ -53,7 +54,9 @@ void AMWPlayerController::RefreshLobbyScreen()
     {
         Sessions->NotifyClientLobbyReady(this);
     }
-    OnLobbyScreenRefresh();
+    RebindConstructionSources();
+    RefreshConstructionPresentation();
+    if (bLobbyPresentationEnabled) OnLobbyScreenRefresh();
 }
 
 void AMWPlayerController::HandleLobbyChanged()
@@ -80,6 +83,9 @@ void AMWPlayerController::OnRep_PlayerState()
 
 void AMWPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    bConstructionShuttingDown = true;
+    StopConstructionPresentation();
+    UnbindConstructionSources();
     if (AMWGameState* GS = BoundGameState.Get())
     {
         GS->OnLobbyChanged.RemoveDynamic(

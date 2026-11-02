@@ -6,6 +6,7 @@
 #include "MWGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWLobbyChanged);
+class UMWTrackConstructionComponent;
 
 UCLASS()
 class MW_API AMWGameState : public AGameStateBase
@@ -13,6 +14,10 @@ class MW_API AMWGameState : public AGameStateBase
 	GENERATED_BODY()
 
 public:
+	AMWGameState();
+	UFUNCTION(BlueprintPure, Category="MW|Construction")
+	UMWTrackConstructionComponent* GetTrackConstructionComponent() const { return TrackConstruction; }
+
 	virtual void BeginPlay() override;
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
@@ -29,6 +34,9 @@ public:
 	void NotifyLobbyChanged();
 
 private:
+	UPROPERTY(VisibleAnywhere, Category="MW|Construction")
+	TObjectPtr<UMWTrackConstructionComponent> TrackConstruction;
+
 	UPROPERTY(ReplicatedUsing = OnRep_RoomSettings)
 	FMWRoomSettings RoomSettings;
 	UPROPERTY(ReplicatedUsing = OnRep_RoomSettings)

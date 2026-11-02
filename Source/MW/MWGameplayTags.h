@@ -5,6 +5,9 @@
 /** 에셋과 입력 기능을 같은 이름으로 찾기 위해 프로젝트 전체에서 함께 쓰는 태그입니다. */
 namespace MWGameplayTags
 {
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Straight);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Curve);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Ramp);
 	/** 게임 시작 때 미리 불러올 에셋을 묶는 분류 태그입니다. */
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(AssetLabel_Preload);
 	

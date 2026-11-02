@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "GameplayTagContainer.h"
 #include "MWGameMode.generated.h"
 
 UCLASS()
@@ -24,8 +25,13 @@ public:
 
     void TryPrepareLobby();
     void SetLobbyAdmission(bool bOpen) { bAcceptingPlayers = bOpen; }
+    bool BeginTrackSelection(FText& OutError);
+    void EndTrackSelection();
 
 private:
+    UPROPERTY(EditDefaultsOnly, Category="MW|Construction")
+    TArray<FGameplayTag> TrackSelectionDefinitionIds;
+
     bool bAcceptingPlayers = false;
     bool bRoomSettingsApplied = false;
 	int32 NextLobbyMemberId = 1;

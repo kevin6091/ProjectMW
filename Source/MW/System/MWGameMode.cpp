@@ -8,6 +8,8 @@
 #include "Engine/World.h"
 #include "GameFramework/GameSession.h"
 #include "OnlineSubsystemUtils.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "MWGameplayTags.h"
 
 AMWGameMode::AMWGameMode()
 {
@@ -17,6 +19,26 @@ AMWGameMode::AMWGameMode()
 
     // 첫 로비에서는 차량을 자동 생성하지 않습니다.
     DefaultPawnClass = nullptr;
+    TrackSelectionDefinitionIds = { MWGameplayTags::Asset_Track_Straight,
+        MWGameplayTags::Asset_Track_Curve, MWGameplayTags::Asset_Track_Ramp };
+}
+
+bool AMWGameMode::BeginTrackSelection(FText& OutError)
+{
+    AMWGameState* GS = GetWorld()->GetGameState<AMWGameState>();
+    if (!HasAuthority() || !GS || !GS->GetTrackConstructionComponent())
+    {
+        OutError = FText::FromString(TEXT("건설 기능을 준비할 수 없습니다."));
+        return false;
+    }
+    return GS->GetTrackConstructionComponent()->BeginSelection(TrackSelectionDefinitionIds, OutError);
+}
+
+void AMWGameMode::EndTrackSelection()
+{
+    if (!HasAuthority()) return;
+    AMWGameState* GS = GetWorld()->GetGameState<AMWGameState>();
+    if (GS && GS->GetTrackConstructionComponent()) GS->GetTrackConstructionComponent()->EndSelection();
 }
 
 void AMWGameMode::InitGameState()
