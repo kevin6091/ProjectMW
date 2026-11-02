@@ -1,50 +1,37 @@
-#include "System/MWGameState.h"
+#include "System/GameState/MWLobbyGameState.h"
 
 #include "LogChannel.h"
-#include "Player/MWPlayerController.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 #include "System/MWPlayerState.h"
 
-void AMWGameState::BeginPlay()
+void AMWLobbyGameState::BeginPlay()
 {
-	Super::BeginPlay();
-	
-	// GameState가 Controller보다 늦게 준비된 경로도 연결합니다.
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (AMWPlayerController* PC = Cast<AMWPlayerController>(It->Get()))
-		{
-			if (PC->IsLocalController())
-			{
-				PC->RefreshLobbyScreen();
-			}
-		}
-	}
-	NotifyLobbyChanged();
+    Super::BeginPlay();
+    // Controller나 Widget을 찾지 않고 상태 변경만 알립니다. HUD는 초기 조회 후 변경을 구독합니다.
+    NotifyLobbyChanged();
 }
 
-void AMWGameState::AddPlayerState(APlayerState* PlayerState)
+void AMWLobbyGameState::AddPlayerState(APlayerState* PlayerState)
 {
 	Super::AddPlayerState(PlayerState);
 	NotifyLobbyChanged();
 }
 
-void AMWGameState::RemovePlayerState(APlayerState* PlayerState)
+void AMWLobbyGameState::RemovePlayerState(APlayerState* PlayerState)
 {
 	Super::RemovePlayerState(PlayerState);
 	NotifyLobbyChanged();
 }
 
-void AMWGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AMWLobbyGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AMWGameState, RoomSettings);
-	DOREPLIFETIME(AMWGameState, RoomPhase);
-	DOREPLIFETIME(AMWGameState, CountdownEndServerTime);
+	DOREPLIFETIME(AMWLobbyGameState, RoomSettings);
+	DOREPLIFETIME(AMWLobbyGameState, RoomPhase);
 }
 
-void AMWGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings)
+void AMWLobbyGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings)
 {
 	if (!HasAuthority())
 	{
@@ -56,33 +43,17 @@ void AMWGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings)
 	NotifyLobbyChanged(); // Listen Host의 표시도 갱신합니다.
 }
 
-void AMWGameState::NotifyLobbyChanged()
+void AMWLobbyGameState::NotifyLobbyChanged()
 {
 	OnLobbyChanged.Broadcast();
 }
 
-void AMWGameState::NotifyRoomStateChanged()
-{
-	UE_LOG(LogMWServer, Log, TEXT("[MWRoomState] World=%s Authority=%d Phase=%s CountdownEnd=%.2f"),
-	   *GetNameSafe(GetWorld()),
-	   HasAuthority() ? 1 : 0,
-	   *UEnum::GetValueAsString(RoomPhase),
-	   CountdownEndServerTime);
-
-	NotifyLobbyChanged();
-}
-
-void AMWGameState::OnRep_RoomSettings()
+void AMWLobbyGameState::OnRep_RoomSettings()
 {
     NotifyLobbyChanged();
 }
 
-void AMWGameState::OnRep_RoomState()
-{
-	NotifyRoomStateChanged();
-}
-
-bool AMWGameState::ValidateReadyPlayers(FString& OutError) const
+bool AMWLobbyGameState::ValidateReadyPlayers(FString& OutError) const
 {
 	OutError.Reset();
 	if (PlayerArray.Num() < 2 || PlayerArray.Num() > RoomSettings.MaxPlayers)
@@ -113,13 +84,13 @@ bool AMWGameState::ValidateReadyPlayers(FString& OutError) const
 	return true;
 }
 
-bool AMWGameState::CanStartGame() const
+bool AMWLobbyGameState::CanStartGame() const
 {
 	FString Error;
 	return RoomPhase == EMWRoomPhase::Lobby && ValidateReadyPlayers(Error);
 }
 
-void AMWGameState::SetRoomPhaseFromServer(EMWRoomPhase Phase)
+void AMWLobbyGameState::SetRoomPhaseFromServer(EMWRoomPhase Phase)
 {
 	if (!HasAuthority() || RoomPhase == Phase) return;
 	RoomPhase = Phase;

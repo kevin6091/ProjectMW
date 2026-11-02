@@ -6,8 +6,17 @@
 UENUM(BlueprintType)
 enum class EMWRoomPhase : uint8
 {
-    Lobby, Starting, VehicleSelection, Traveling, PreparingConstruction,
-    TrackPlacement, ElementPlacement, PreparingRace, Countdown, Racing, Failed
+    Lobby,
+    Starting, 
+    VehicleSelection, 
+    Traveling, 
+    PreparingConstruction,
+    TrackPlacement,
+    ElementPlacement, 
+    PreparingRace, 
+    Countdown,
+    Racing, 
+    Failed
 };
 
 USTRUCT(BlueprintType)

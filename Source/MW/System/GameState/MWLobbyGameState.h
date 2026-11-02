@@ -1,14 +1,17 @@
+
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 #include "System/MWRoomTypes.h"
-#include "MWGameState.generated.h"
+#include "MWLobbyGameState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWLobbyChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWLobbyStateChanged);
 
+// 방 설정과 로비 Phase를 복제합니다. 화면 생성/갱신은 로컬 HUD가 맡습니다.
 UCLASS()
-class MW_API AMWGameState : public AGameStateBase
+class MW_API AMWLobbyGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
@@ -20,39 +23,24 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "MW|Lobby")
 	FMWRoomSettings GetRoomSettings() const { return RoomSettings; }
-
 	UFUNCTION(BlueprintPure, Category = "MW|Lobby")
-
 	EMWRoomPhase GetRoomPhase() const { return RoomPhase; }
 	UFUNCTION(BlueprintPure, Category = "MW|Lobby")
-
 	bool CanStartGame() const;
+
 	bool ValidateReadyPlayers(FString& OutError) const;
+	void ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings);
 	void SetRoomPhaseFromServer(EMWRoomPhase Phase);
+	void NotifyLobbyChanged();
 
 	UPROPERTY(BlueprintAssignable, Category = "MW|Lobby")
-	FMWLobbyChanged OnLobbyChanged;
-
-	void ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings);
-	void NotifyLobbyChanged();
+	FMWLobbyStateChanged OnLobbyChanged;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_RoomSettings)
-	EMWRoomPhase RoomPhase = EMWRoomPhase::Lobby;
-
-	UPROPERTY(ReplicatedUsing = OnRep_RoomSettings)
 	FMWRoomSettings RoomSettings;
-
-// 남은 시간이 아니라 서버 기준 종료 시각입니다.
-	// 카운트다운이 아니면 0을 사용합니다.
-	UPROPERTY(ReplicatedUsing = OnRep_RoomState)
-	double CountdownEndServerTime = 0.0;
-
+	UPROPERTY(ReplicatedUsing = OnRep_RoomSettings)
+	EMWRoomPhase RoomPhase = EMWRoomPhase::Lobby;
 	UFUNCTION()
 	void OnRep_RoomSettings();
-
-	UFUNCTION()
-	void OnRep_RoomState();
-
-	void NotifyRoomStateChanged();
 };

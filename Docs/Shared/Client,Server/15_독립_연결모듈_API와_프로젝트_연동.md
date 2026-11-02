@@ -1,5 +1,9 @@
 # 독립 연결 모듈 API와 ProjectMW 연동
 
+> 2026-11-02 후속 설계 채택: 로비/게임플레이의 GameMode·GameState·PlayerController 분리와 `GameStart → VehicleSelection → 전원 선택 확정 → 테마 이동`의 정본은 [16번 문서](16_로비_게임플레이_분리와_차량선택_전환_계약.md)다. 이 문서의 기존 클래스 구성·즉시 이동 흐름과 검증은 분리 이전 구현 기록이다. 후속 설계의 구현·실행 검증 완료를 뜻하지 않는다.
+
+> 후속 기능 이전: 로비/게임플레이 클래스 분리와 기존 기능 이전 결과는 16번 문서 9절을 따른다. 미구현 기능을 추가하지 말라는 사용자 지시로 차량 선택은 추가하지 않았으며 기존 즉시 테마 이동을 유지했다. 연결 모듈 API와 구현은 변경하지 않았다.
+
 2026-11-02 / Client + Server / UE 5.8.4
 
 사용자 지시에 따라 EOS·세션 처리를 `Plugins/MWConnection` Runtime 플러그인으로 분리했다. 게임 코드는 연결 모듈의 공개 API만 사용한다. 차량·건설·Ready·게임 Phase를 추가할 때 EOS 내부를 수정하지 않는 구조다.
@@ -221,7 +225,7 @@ Asset.MapTheme.DevDefault
 
 **계획된 차량 선택·건설·배치·카운트다운·주행은 이 분리 작업에서 추가하지 않았다.** 현재 시작 코드는 기존 동작대로 테마로 바로 이동한다. 최종 기획인 `시작 → 차량 선택 → 테마 이동`을 구현할 때는 `AMWGameMode::HandleStartPrepared` 이후에 차량 선택 단계를 연결하고, 선택 완료 후 현재 ServerTravel을 실행하도록 바꾼다. EOS 플러그인은 변경할 필요가 없다.
 
-차량 선택은 이후 사용자가 정한 대로 PlayerState의 `VehicleAssetID` 하나, 소유 클라이언트의 기본 ID 자동 제출 RPC를 기준으로 별도 구현한다. 이번 작업은 그 선택 멤버·RPC를 구현한 것이 아니다. 게임 진행용 Token·MatchInstanceId·RoundEpoch·PhaseRevision·RequiredChecks를 추가하지 않았다. 플러그인 Private의 비동기 콜백 구분 번호는 게임 데이터나 공개 API로 전달하지 않는다.
+차량 선택은 PlayerState의 `VehicleAssetID` 하나, 소유 클라이언트의 기본 ID 자동 제출 RPC를 기준으로 구현한다. 문서 최초 작성 후 사용자가 선택 멤버·CopyProperties 복사 코드를 추가했으나, 선택 RPC·서버 확정·전원 선택 대기·복제 등록까지 완성된 것은 아니다. 현재 확인 상태와 초기값 주의점은 16번 문서 7절을 따른다. 게임 진행용 Token·MatchInstanceId·RoundEpoch·PhaseRevision·RequiredChecks를 추가하지 않았다. 플러그인 Private의 비동기 콜백 구분 번호는 게임 데이터나 공개 API로 전달하지 않는다.
 
 ## 7. 실패·정리 계약
 
@@ -283,8 +287,8 @@ Asset.MapTheme.DevDefault
 | 추가할 기능 | 수정 위치 |
 |---|---|
 | 차량 목록·Definition | MW 데이터·AssetManager 계약 |
-| 차량 선택·자동 기본 ID 제출 | MWPlayerController RPC / MWGameMode 검증 / MWPlayerState.VehicleAssetID |
-| 건설·배치 완료 조건 | MWGameMode와 게임 상태·배치 시스템 |
+| 차량 선택·자동 기본 ID 제출 | 채택 설계의 LobbyPlayerController RPC / LobbyGameMode 검증 / 공용 MWPlayerState.VehicleAssetID |
+| 건설·배치 완료 조건 | 채택 설계의 GameplayGameMode·GameplayGameState 및 배치 시스템 |
 | 생성·Possess·입력 준비·카운트다운 | 게임 규칙과 차량·로컬 입력 코드 |
 | Widget 표시·버튼 | 기존 MW Widget / GameInstance의 공개 Blueprint API |
 | 로그인·연결·세션 서비스의 결함 | MWConnection Private 내부 |

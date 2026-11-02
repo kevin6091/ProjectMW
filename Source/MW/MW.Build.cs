@@ -28,9 +28,6 @@ public class MW : ModuleRules
             "EngineSettings",
             "MWConnection"
         });
-
-		// Slate 화면 위젯을 사용하면 아래 줄의 주석을 지웁니다.
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
 		// 온라인 서비스 구현은 MWConnection 내부에 둡니다.
 	}

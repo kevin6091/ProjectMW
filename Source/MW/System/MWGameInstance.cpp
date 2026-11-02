@@ -5,8 +5,8 @@
 #include "GameMapsSettings.h"
 #include "Misc/PackageName.h"
 #include "System/MWAssetManager.h"
-#include "System/MWGameMode.h"
-#include "System/MWGameState.h"
+#include "System/GameMode/MWLobbyGameMode.h"
+#include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
 namespace
@@ -219,7 +219,7 @@ void UMWGameInstance::RequestJoinAddress(const FString& Address)
 void UMWGameInstance::RequestLeaveRoom()
 {
     StartCompletion.Unbind();
-    if (auto* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AMWGameMode>() : nullptr) GM->SetLobbyAdmission(false);
+    if (auto* GM = GetWorld() ? GetWorld()->GetAuthGameMode<AMWLobbyGameMode>() : nullptr) GM->SetLobbyAdmission(false);
     FText Error;
     if (!Connection.IsValid() || !Connection->RequestLeaveRoom(Error)) ReportError(Error.ToString());
 }
@@ -235,7 +235,7 @@ bool UMWGameInstance::IsGameplayWorld(const UWorld* W) const
 {
     if (!W || W->GetGameInstance() != this || W->GetNetMode() == NM_Standalone) return false;
     FMWRoomSettings Settings;
-    if (const auto* GS = W->GetGameState<AMWGameState>()) Settings = GS->GetRoomSettings();
+    if (const auto* GS = W->GetGameState<AMWGameplayGameState>()) Settings = GS->GetRoomSettings();
     if (!Settings.MapThemeId.IsValid()) Settings = CurrentRoomSettings;
     FString Error;
     return Settings.MapThemeId.IsValid() && MapPackage(W) == ResolveMapTheme(Settings.MapThemeId, Error);
@@ -323,6 +323,6 @@ void UMWGameInstance::HandleOperation(EMWConnectionAction Action, const FMWConne
 void UMWGameInstance::HandleWorld(UWorld* W)
 {
     if (!W || W->GetGameInstance() != this) return;
-    if (auto* GM = W->GetAuthGameMode<AMWGameMode>()) GM->TryInitializeRoom();
+    // 게임 규칙 초기화는 각 GameMode가 담당합니다. 연결 알림은 상태 갱신만 전달합니다.
     HandleSnapshot();
 }

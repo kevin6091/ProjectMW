@@ -6,9 +6,9 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
-#include "System/MWGameState.h"
+#include "System/GameState/MWLobbyGameState.h"
 #include "System/MWPlayerState.h"
-#include "Player/MWPlayerController.h"
+#include "Player/MWLobbyPlayerController.h"
 #include "System/MWGameInstance.h"
 
 void UMWRoomLobbyWidget::NativeConstruct()
@@ -50,7 +50,7 @@ void UMWRoomLobbyWidget::Refresh()
 	UMWGameInstance* Sessions = Subsystem.Get();
 	const EMWSessionState State = Sessions ? Sessions->GetSessionState() : EMWSessionState::None;
 	const bool bInRoom = State == EMWSessionState::Hosting || State == EMWSessionState::Joined;
-	const AMWGameState* RoomGS = GetWorld() ? GetWorld()->GetGameState<AMWGameState>() : nullptr;
+	const AMWLobbyGameState* RoomGS = GetWorld() ? GetWorld()->GetGameState<AMWLobbyGameState>() : nullptr;
 	const AMWPlayerState* OwnPlayer = GetOwningPlayer() ? GetOwningPlayer()->GetPlayerState<AMWPlayerState>() : nullptr;
 	const bool bLobbyPhase = RoomGS && RoomGS->GetRoomPhase() == EMWRoomPhase::Lobby;
 	const bool bNetworkLobby = Sessions && Sessions->IsLobbyWorld(GetWorld()) && GetWorld()->GetNetMode() != NM_Standalone;
@@ -70,7 +70,7 @@ void UMWRoomLobbyWidget::Refresh()
 		? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Button_RetryCleanup->SetIsEnabled(Sessions && State == EMWSessionState::CleanupRequired);
 	Box_RoomInfo->SetVisibility(ESlateVisibility::Collapsed);
-	const AMWPlayerController* LocalPC = Cast<AMWPlayerController>(GetOwningPlayer());
+	const AMWLobbyPlayerController* LocalPC = Cast<AMWLobbyPlayerController>(GetOwningPlayer());
 	const FString ActionError = LocalPC ? LocalPC->GetLobbyActionError() : FString();
 	Text_Error->SetText(FText::FromString(!ActionError.IsEmpty() ? ActionError : (Sessions ? Sessions->GetLastSessionError() : FString())));
 
@@ -82,7 +82,7 @@ void UMWRoomLobbyWidget::Refresh()
 	{
 		const APlayerController* PC = GetOwningPlayer();
 		const AMWPlayerState* OwnPS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-		const AMWGameState* GS = GetWorld() ? GetWorld()->GetGameState<AMWGameState>() : nullptr;
+		const AMWLobbyGameState* GS = GetWorld() ? GetWorld()->GetGameState<AMWLobbyGameState>() : nullptr;
 		if (OwnPS && GS)
 		{
 			const FMWRoomSettings Settings = GS->GetRoomSettings();
@@ -208,13 +208,13 @@ void UMWRoomLobbyWidget::HandleRetryClicked()
 
 void UMWRoomLobbyWidget::HandleReadyClicked()
 {
-	AMWPlayerController* PC = Cast<AMWPlayerController>(GetOwningPlayer());
+	AMWLobbyPlayerController* PC = Cast<AMWLobbyPlayerController>(GetOwningPlayer());
 	const AMWPlayerState* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
 	if (PC && PS && Button_Ready->GetIsEnabled()) PC->RequestSetReady(!PS->IsReady());
 }
 
 void UMWRoomLobbyWidget::HandleStartClicked()
 {
-	if (AMWPlayerController* PC = Cast<AMWPlayerController>(GetOwningPlayer()); PC && Button_Start->GetIsEnabled())
+	if (AMWLobbyPlayerController* PC = Cast<AMWLobbyPlayerController>(GetOwningPlayer()); PC && Button_Start->GetIsEnabled())
 		PC->RequestStartGame();
 }

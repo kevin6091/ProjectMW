@@ -2,7 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "GameplayTagContainer.h"
+#include "MWGameplayTags.h"
 #include "MWPlayerState.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWPlayerStateChanged);
 
 UCLASS()
 class MW_API AMWPlayerState : public APlayerState
@@ -11,8 +15,7 @@ class MW_API AMWPlayerState : public APlayerState
 
 public:
 	virtual void CopyProperties(APlayerState* PlayerState) override;
-	virtual void GetLifetimeReplicatedProps(
-		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_PlayerName() override;
 	virtual void OnRep_UniqueId() override;
 
@@ -28,17 +31,27 @@ public:
 	void SetLobbyFlagsFromServer(bool bInHost, bool bInReady);
 	void SetLobbyMemberIdFromServer(int32 Id);
 
+	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
+	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
+	FMWPlayerStateChanged OnPlayerStateChanged;
+
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	bool bRoomHost = false;
 
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	bool bReady = false;
+	
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	int32 LobbyMemberId = INDEX_NONE;
 
+	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
+	FGameplayTag VehicleAssetID = FGameplayTag::EmptyTag;
+	
+	
+	
 	UFUNCTION()
 	void OnRep_LobbyFlags();
 
-	void NotifyLobby();
+	void NotifyPlayerStateChanged();
 };
