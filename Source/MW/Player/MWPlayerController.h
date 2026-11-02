@@ -2,11 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerTypes.h"
 #include "MWPlayerController.generated.h"
 
 class AMWGameState;
-class UMWMultiplayerSubsystem;
 
 UCLASS()
 class MW_API AMWPlayerController : public APlayerController
@@ -20,6 +18,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "MW|Lobby")
 	void RefreshLobbyScreen();
+	UFUNCTION(BlueprintCallable, Category = "MW|Lobby")
+	void RequestSetReady(bool bReady);
+	UFUNCTION(BlueprintCallable, Category = "MW|Lobby")
+	void RequestStartGame();
+	FString GetLobbyActionError() const { return LobbyActionError; }
+	virtual void PostSeamlessTravel() override;
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "MW|Lobby")
@@ -29,16 +33,12 @@ protected:
 	void OnLobbyScreenRefresh();
 
 private:
+	FString LobbyActionError;
+	UFUNCTION(Server, Reliable) void ServerSetReady(bool bReady);
+	UFUNCTION(Server, Reliable) void ServerStartGame();
+	UFUNCTION(Client, Reliable) void ClientLobbyActionFailed(const FString& Error);
 	TWeakObjectPtr<AMWGameState> BoundGameState;
-	TWeakObjectPtr<UMWMultiplayerSubsystem> BoundSubsystem;
 
 	UFUNCTION()
 	void HandleLobbyChanged();
-
-	UFUNCTION()
-	void HandleSessionError(const FString& ErrorMessage);
-
-	UFUNCTION()
-	void HandleSessionStateChanged(
-		EMWSessionState PreviousState, EMWSessionState NewState);
 };

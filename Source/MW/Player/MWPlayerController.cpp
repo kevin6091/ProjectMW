@@ -1,6 +1,7 @@
 #include "MWPlayerController.h"
 #include "System/MWGameState.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
+#include "System/MWGameMode.h"
+#include "GameMapsSettings.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 
@@ -10,15 +11,6 @@ void AMWPlayerController::BeginPlay()
     if (!IsLocalController())
     {
         return;
-    }
-
-    UMWMultiplayerSubsystem* Sessions = GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>();
-    BoundSubsystem = Sessions;
-    
-    if (Sessions)
-    {
-        Sessions->OnSessionStateChanged.AddUniqueDynamic(this, &AMWPlayerController::HandleSessionStateChanged);
-        Sessions->OnSessionError.AddUniqueDynamic(this, &AMWPlayerController::HandleSessionError);
     }
 
     CreateLobbyScreen();
@@ -37,38 +29,70 @@ void AMWPlayerController::RefreshLobbyScreen()
     {
         if (AMWGameState* Old = BoundGameState.Get())
         {
-            Old->OnLobbyChanged.RemoveDynamic(
-                this, &AMWPlayerController::HandleLobbyChanged);
+            Old->OnLobbyChanged.RemoveDynamic(this, &AMWPlayerController::HandleLobbyChanged);
         }
 
         BoundGameState = GS;
         if (GS)
         {
-            GS->OnLobbyChanged.AddUniqueDynamic(
-                this, &AMWPlayerController::HandleLobbyChanged);
+            GS->OnLobbyChanged.AddUniqueDynamic(this, &AMWPlayerController::HandleLobbyChanged);
         }
     }
 
-    if (UMWMultiplayerSubsystem* Sessions = BoundSubsystem.Get())
+    const FName CurrentMap(*UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName()));
+    if (GetWorld()->GetNetMode() != NM_Standalone && CurrentMap != FName(*UGameMapsSettings::GetGameDefaultMap()))
     {
-        Sessions->NotifyClientLobbyReady(this);
+        SetInputMode(FInputModeGameOnly());
+        bShowMouseCursor = false;
     }
     OnLobbyScreenRefresh();
 }
 
 void AMWPlayerController::HandleLobbyChanged()
 {
+    LobbyActionError.Reset();
     RefreshLobbyScreen();
 }
 
-void AMWPlayerController::HandleSessionError(const FString& ErrorMessage)
+void AMWPlayerController::PostSeamlessTravel()
 {
+    Super::PostSeamlessTravel();
     RefreshLobbyScreen();
 }
 
-void AMWPlayerController::HandleSessionStateChanged(
-    EMWSessionState PreviousState, EMWSessionState NewState)
+void AMWPlayerController::RequestSetReady(bool bReady)
 {
+    if (!IsLocalController()) return;
+    LobbyActionError.Reset();
+    ServerSetReady(bReady);
+}
+
+void AMWPlayerController::RequestStartGame()
+{
+    if (!IsLocalController()) return;
+    LobbyActionError.Reset();
+    ServerStartGame();
+}
+
+void AMWPlayerController::ServerSetReady_Implementation(bool bReady)
+{
+    AMWGameMode* GM = GetWorld()->GetAuthGameMode<AMWGameMode>();
+    FString Error;
+    if (!GM || !GM->RequestSetReady(this, bReady, Error))
+        ClientLobbyActionFailed(Error.IsEmpty() ? TEXT("로비를 확인할 수 없습니다.") : Error);
+}
+
+void AMWPlayerController::ServerStartGame_Implementation()
+{
+    AMWGameMode* GM = GetWorld()->GetAuthGameMode<AMWGameMode>();
+    FString Error;
+    if (!GM || !GM->RequestStartGame(this, Error))
+        ClientLobbyActionFailed(Error.IsEmpty() ? TEXT("경기를 시작할 수 없습니다.") : Error);
+}
+
+void AMWPlayerController::ClientLobbyActionFailed_Implementation(const FString& Error)
+{
+    LobbyActionError = Error;
     RefreshLobbyScreen();
 }
 
@@ -82,16 +106,8 @@ void AMWPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     if (AMWGameState* GS = BoundGameState.Get())
     {
-        GS->OnLobbyChanged.RemoveDynamic(
-            this, &AMWPlayerController::HandleLobbyChanged);
+        GS->OnLobbyChanged.RemoveDynamic(this, &AMWPlayerController::HandleLobbyChanged);
     }
-    if (UMWMultiplayerSubsystem* Sessions = BoundSubsystem.Get())
-    {
-        Sessions->OnSessionStateChanged.RemoveDynamic(this, &AMWPlayerController::HandleSessionStateChanged);
-        Sessions->OnSessionError.RemoveDynamic(this, &AMWPlayerController::HandleSessionError);
-    }
-
     BoundGameState.Reset();
-    BoundSubsystem.Reset();
     Super::EndPlay(EndPlayReason);
 }

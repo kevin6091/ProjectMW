@@ -3,27 +3,29 @@
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 
+void AMWPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+	if (AMWPlayerState* Target = Cast<AMWPlayerState>(PlayerState))
+	{
+		Target->bRoomHost = bRoomHost;
+		Target->bReady = bReady;
+		Target->LobbyMemberId = LobbyMemberId;
+	}
+}
+
 void AMWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AMWPlayerState, bRoomHost);
 	DOREPLIFETIME(AMWPlayerState, bReady);
 	DOREPLIFETIME(AMWPlayerState, LobbyMemberId);
-	DOREPLIFETIME(AMWPlayerState, bSessionRegistrationConfirmed);
 }
 
 void AMWPlayerState::SetLobbyMemberIdFromServer(int32 Id)
 {
 	if (!HasAuthority() || Id < 1 || LobbyMemberId != INDEX_NONE) return;
 	LobbyMemberId = Id;
-	ForceNetUpdate();
-	NotifyLobby();
-}
-
-void AMWPlayerState::SetSessionRegistrationConfirmedFromServer(bool bConfirmed)
-{
-	if (!HasAuthority()) return;
-	bSessionRegistrationConfirmed = bConfirmed;
 	ForceNetUpdate();
 	NotifyLobby();
 }

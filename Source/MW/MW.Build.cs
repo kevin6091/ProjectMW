@@ -16,7 +16,7 @@ public class MW : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayTags",
-			"UMG", "SlateCore", "OnlineSubsystem", "OnlineSubsystemUtils"
+			"UMG", "SlateCore"
 		});
 
 		// 이 모듈 내부에서만 사용할 추가 모듈을 등록하는 자리입니다.
@@ -26,17 +26,12 @@ public class MW : ModuleRules
 			"SlateCore",
 			"AssetRegistry",
             "EngineSettings",
-            "OnlineBase",
-            "OnlineSubsystemEOS"
+            "MWConnection"
         });
 
 		// Slate 화면 위젯을 사용하면 아래 줄의 주석을 지웁니다.
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
-		// 온라인 기능을 사용하면 아래 줄의 주석을 지웁니다.
-		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-		// Steam 온라인 기능을 사용하려면 MW.uproject의 Plugins 항목에 OnlineSubsystemSteam을 추가하고
-		// Enabled를 true로 설정합니다.
+		// 온라인 서비스 구현은 MWConnection 내부에 둡니다.
 	}
 }

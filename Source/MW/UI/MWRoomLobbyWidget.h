@@ -2,12 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "UI/MWMenuTypes.h"
 #include "MWRoomLobbyWidget.generated.h"
 
 class UButton;
 class UTextBlock;
 class UVerticalBox;
-class UMWMultiplayerSubsystem;
+class UMWGameInstance;
 
 UCLASS(Abstract)
 class MW_API UMWRoomLobbyWidget : public UUserWidget
@@ -36,7 +37,11 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_Start;
 
 private:
-	TWeakObjectPtr<UMWMultiplayerSubsystem> Subsystem;
+	TWeakObjectPtr<UMWGameInstance> Subsystem;
+	UFUNCTION() void HandleSessionStateChanged(EMWSessionState PreviousState, EMWSessionState NewState);
+	UFUNCTION() void HandleSessionError(const FString& ErrorMessage);
 	UFUNCTION() void HandleLeaveClicked();
 	UFUNCTION() void HandleRetryClicked();
+	UFUNCTION() void HandleReadyClicked();
+	UFUNCTION() void HandleStartClicked();
 };

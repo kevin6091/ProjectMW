@@ -1,239 +1,152 @@
-
-#include "MWGameMode.h"
+#include "System/MWGameMode.h"
+#include "System/MWGameInstance.h"
 #include "System/MWGameState.h"
 #include "System/MWPlayerState.h"
 #include "Player/MWPlayerController.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
-#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GameFramework/GameSession.h"
-#include "OnlineSubsystemUtils.h"
+#include "HAL/IConsoleManager.h"
+#include "LogChannel.h"
 
 AMWGameMode::AMWGameMode()
 {
     GameStateClass = AMWGameState::StaticClass();
     PlayerStateClass = AMWPlayerState::StaticClass();
     PlayerControllerClass = AMWPlayerController::StaticClass();
-
-    // 첫 로비에서는 차량을 자동 생성하지 않습니다.
     DefaultPawnClass = nullptr;
+    bUseSeamlessTravel = true;
 }
 
 void AMWGameMode::InitGameState()
 {
     Super::InitGameState();
-    if (GetWorld() && GetWorld()->IsGameWorld())
-    {
-        RegistrationApi = Online::GetSessionInterface(GetWorld());
-        if (RegistrationApi.IsValid())
-        {
-            PlayerRegistrationHandle = RegistrationApi->AddOnRegisterPlayersCompleteDelegate_Handle(
-                FOnRegisterPlayersCompleteDelegate::CreateUObject(this, &ThisClass::HandlePlayersRegistered));
-        }
-        ApplyApprovedRoomSettings();
-    }
+    TryInitializeRoom();
 }
 
-bool AMWGameMode::ApplyApprovedRoomSettings()
-{
-    // PIE is also an editor world. Permit game worlds and reject editor previews.
-    UWorld* World = GetWorld();
-    if (!World || !World->IsGameWorld())
-    {
-        return false;
-    }
-
-    // 2. GameInstance 유효성 검사 (에디터 BP 열기 시 nullptr일 가능성 높음)
-    UGameInstance* GameInstance = GetGameInstance();
-    if (!GameInstance)
-    {
-        return false;
-    }
-
-    // 3. 서브시스템 검사
-    UMWMultiplayerSubsystem* Sessions = GameInstance->GetSubsystem<UMWMultiplayerSubsystem>();
-    if (!Sessions)
-    {
-        return false;
-    }
-
-    // 4. GameState 및 GameSession 검사
-    AMWGameState* GS = World->GetGameState<AMWGameState>();
-    if (!GS || !GameSession)
-    {
-        return false;
-    }
-
-    // 5. 방 설정 가져오기 및 적용
-    FMWRoomSettings Approved;
-    if (!Sessions->GetApprovedRoomSettingsForWorld(World, Approved))
-    {
-        return false;
-    }
-
-    const FString SessionId = Sessions->GetActiveRoomSessionId();
-    if (SessionId.IsEmpty()) return false;
-    GS->ApplyRoomSettingsFromServer(Approved, SessionId);
-    GameSession->MaxPlayers = Approved.MaxPlayers;
-    GameSession->MaxSpectators = 0;
-    bRoomSettingsApplied = true;
-
-    return true;
-}
 void AMWGameMode::StartPlay()
 {
     Super::StartPlay();
-    TryPrepareLobby();
+    TryInitializeRoom();
 }
 
-FString AMWGameMode::InitNewPlayer(
-    APlayerController* NewPlayerController,
-    const FUniqueNetIdRepl& UniqueId,
-    const FString& Options, const FString& Portal)
+void AMWGameMode::TryInitializeRoom()
 {
-    if (GetNetMode() == NM_ListenServer && UniqueId.IsValid() &&
-        NewPlayerController->IsLocalController())
-    {
-        GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>()
-            ->ExpectHostRegistration(GetWorld());
-    }
-
-    // 기본 GameSession/PlayerState 등록 경로를 그대로 실행합니다.
-    return Super::InitNewPlayer(
-        NewPlayerController, UniqueId, Options, Portal);
+    if (bRoomSettingsApplied || !GetWorld() || !GetWorld()->IsGameWorld()) return;
+    auto* App = GetGameInstance<UMWGameInstance>();
+    auto* GS = GetGameState<AMWGameState>();
+    FMWRoomSettings Settings;
+    if (!App || !GS || !GameSession || !App->GetRoomSettingsForWorld(GetWorld(), Settings)) return;
+    GS->ApplyRoomSettingsFromServer(Settings);
+    const bool Lobby = App->IsLobbyWorld(GetWorld());
+    GS->SetRoomPhaseFromServer(Lobby ? EMWRoomPhase::Lobby : EMWRoomPhase::PreparingConstruction);
+    GameSession->MaxPlayers = Settings.MaxPlayers;
+    GameSession->MaxSpectators = 0;
+    bRoomSettingsApplied = true;
+    bAcceptingPlayers = Lobby;
 }
 
-void AMWGameMode::PostLogin(APlayerController* NewPlayer)
+void AMWGameMode::PostLogin(APlayerController* Player)
 {
-    Super::PostLogin(NewPlayer);
-
-    AMWGameState* GS = GetWorld()->GetGameState<AMWGameState>();
-    const bool bLocalHost =
-        GetNetMode() == NM_ListenServer && NewPlayer->IsLocalController();
-
-    // PreLogin 후 입장 잠금/정원이 바뀐 경로를 다시 검사합니다.
-    if (!bLocalHost && (!bAcceptingPlayers || !GS ||
-        GetNumPlayers() > GS->GetRoomSettings().MaxPlayers))
+    Super::PostLogin(Player);
+    TryInitializeRoom();
+    const bool Host = GetNetMode() == NM_ListenServer && Player->IsLocalController();
+    if (GetNetMode() != NM_Standalone && !Host && (!bAcceptingPlayers || !bRoomSettingsApplied ||
+        !GetGameState<AMWGameState>() || GetNumPlayers() > GetGameState<AMWGameState>()->GetRoomSettings().MaxPlayers))
     {
-        if (GameSession)
-        {
-            GameSession->KickPlayer(NewPlayer,
-                FText::FromString(TEXT("방이 닫혔거나 정원이 찼습니다.")));
-        }
+        if (GameSession) GameSession->KickPlayer(Player, FText::FromString(TEXT("방이 닫혔거나 정원이 찼습니다.")));
         return;
     }
-
-    if (AMWPlayerState* PS = NewPlayer->GetPlayerState<AMWPlayerState>())
+    if (auto* PS = Player->GetPlayerState<AMWPlayerState>())
     {
         PS->SetLobbyMemberIdFromServer(NextLobbyMemberId++);
-        PS->SetLobbyFlagsFromServer(bLocalHost, false);
-    }
-    TryPrepareLobby();
-}
-
-void AMWGameMode::HandlePlayersRegistered(FName SessionName,
-    const TArray<FUniqueNetIdRef>& Players, bool bWasSuccessful)
-{
-    if (SessionName != NAME_GameSession || !GetWorld()) return;
-    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-    {
-        APlayerController* PC = It->Get();
-        AMWPlayerState* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-        if (!PS || !PS->GetUniqueId().IsValid()) continue;
-        const bool bIncluded = Players.ContainsByPredicate([PS](const FUniqueNetIdRef& Id)
-        {
-            return *PS->GetUniqueId().GetUniqueNetId() == *Id;
-        });
-        if (!bIncluded) continue;
-        PS->SetSessionRegistrationConfirmedFromServer(bWasSuccessful);
-        if (!bWasSuccessful && !PC->IsLocalController() && GameSession)
-        {
-            GameSession->KickPlayer(PC, FText::FromString(TEXT("온라인 세션 참가자 등록에 실패했습니다.")));
-        }
+        PS->SetLobbyFlagsFromServer(Host, false);
     }
 }
 
-void AMWGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AMWGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& Id, FString& Error)
 {
-    if (RegistrationApi.IsValid() && PlayerRegistrationHandle.IsValid())
-    {
-        RegistrationApi->ClearOnRegisterPlayersCompleteDelegate_Handle(PlayerRegistrationHandle);
-    }
-    PlayerRegistrationHandle.Reset();
-    RegistrationApi.Reset();
-    Super::EndPlay(EndPlayReason);
-}
-
-void AMWGameMode::PreLogin(const FString& Options,
-    const FString& Address, const FUniqueNetIdRepl& UniqueId,
-    FString& ErrorMessage)
-{
-    Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-    if (!ErrorMessage.IsEmpty())
-    {
-        return;
-    }
-
+    Super::PreLogin(Options, Address, Id, Error);
+    if (!Error.IsEmpty()) return;
     if (!bRoomSettingsApplied || !bAcceptingPlayers)
-    {
-        ErrorMessage = TEXT("방을 준비 중이거나 입장이 닫혔습니다.");
-        return;
-    }
-    if (!UniqueId.IsValid())
-    {
-        ErrorMessage = TEXT("온라인 사용자 정보를 확인할 수 없습니다.");
-        return;
-    }
-    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-    {
-        const APlayerController* PC = It->Get();
-        const APlayerState* PS = PC ? PC->PlayerState : nullptr;
-        if (PS && PS->GetUniqueId() == UniqueId)
-        {
-            ErrorMessage = TEXT("같은 계정이 이미 이 방에 참가 중입니다.");
-            return;
-        }
-    }
+    { Error = TEXT("방을 준비 중이거나 입장이 닫혔습니다."); return; }
+    // Account identity/admission belongs to the connection module. Local players need no account.
 }
 
-void AMWGameMode::HandleStartingNewPlayer_Implementation(
-    APlayerController* NewPlayer)
+void AMWGameMode::HandleStartingNewPlayer_Implementation(APlayerController*)
 {
-    // 로비에서는 Super의 기본 Pawn 자동 스폰 경로를 실행하지 않습니다.
-    // 차량은 이후 승인 VehicleDefinition을 사용하는 한 경로에서 생성합니다.
+    // Vehicle spawning remains a separate gameplay feature. Never auto-spawn lobby pawns.
 }
 
-void AMWGameMode::TryPrepareLobby()
+bool AMWGameMode::RequestSetReady(AMWPlayerController* PC, bool Ready, FString& Error)
 {
-    if (GetNetMode() != NM_ListenServer || !GetWorld()->HasBegunPlay())
-    {
-        return;
-    }
-    UMWMultiplayerSubsystem* Sessions =
-        GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>();
-    if (!Sessions || Sessions->GetSessionState() != EMWSessionState::Creating)
-    {
-        return;
-    }
+    const auto* GS = GetGameState<AMWGameState>();
+    auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+    if (GetNetMode() != NM_ListenServer || !bRoomSettingsApplied || !bAcceptingPlayers || !GS ||
+        GS->GetRoomPhase() != EMWRoomPhase::Lobby || !PC || PC->GetWorld() != GetWorld() ||
+        !PS || PS->IsInactive() || PS->GetLobbyMemberId() < 1 || !GS->PlayerArray.Contains(PS))
+    { Error = TEXT("현재 로비 참가자만 자신의 준비 상태를 변경할 수 있습니다."); return false; }
+    PS->SetLobbyFlagsFromServer(PS->IsRoomHost(), Ready);
+    return true;
+}
 
-    if (!bRoomSettingsApplied && !ApplyApprovedRoomSettings())
-    {
-        return;
-    }
+bool AMWGameMode::ValidateStartRequest(const AMWPlayerController* PC, bool Starting, FString& Error) const
+{
+    const auto* GS = GetGameState<AMWGameState>();
+    const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+    if (GetNetMode() != NM_ListenServer || !bRoomSettingsApplied || !GS ||
+        GS->GetRoomPhase() != (Starting ? EMWRoomPhase::Starting : EMWRoomPhase::Lobby) ||
+        !PC || PC->GetWorld() != GetWorld() || !PC->IsLocalController() || !PS || !PS->IsRoomHost() ||
+        !GS->PlayerArray.Contains(PS))
+    { Error = TEXT("로비에서 호스트만 경기를 시작할 수 있습니다."); return false; }
+    return GS->ValidateReadyPlayers(Error);
+}
 
-    for (FConstPlayerControllerIterator It =
-        GetWorld()->GetPlayerControllerIterator(); It; ++It)
+bool AMWGameMode::RequestStartGame(AMWPlayerController* Host, FString& Error)
+{
+    if (!ValidateStartRequest(Host, false, Error)) return false;
+    auto* App = GetGameInstance<UMWGameInstance>();
+    if (!App) { Error = TEXT("프로젝트 GameInstance 설정을 확인하세요."); return false; }
+    TArray<int32> Players;
+    for (const APlayerState* Player : GetGameState<AMWGameState>()->PlayerArray)
+        if (const auto* PS = Cast<AMWPlayerState>(Player)) Players.Add(PS->GetLobbyMemberId());
+    Players.Sort();
+    bAcceptingPlayers = false;
+    GetGameState<AMWGameState>()->SetRoomPhaseFromServer(EMWRoomPhase::Starting);
+    if (!App->PrepareForGameStart(Players, FMWStartPrepared::CreateUObject(this, &ThisClass::HandleStartPrepared), Error))
+    { FailStart(Error); return false; }
+    return true;
+}
+
+void AMWGameMode::HandleStartPrepared(bool Success, const FString& Message)
+{
+    auto* GS = GetGameState<AMWGameState>();
+    auto* App = GetGameInstance<UMWGameInstance>();
+    if (!GS || !App || GS->GetRoomPhase() != EMWRoomPhase::Starting) return;
+    FString Error = Message;
+    TArray<int32> Players;
+    for (const APlayerState* Player : GS->PlayerArray)
+        if (const auto* PS = Cast<AMWPlayerState>(Player)) Players.Add(PS->GetLobbyMemberId());
+    Players.Sort();
+    if (!Success || Players != App->GetStartingPlayers() || !GS->ValidateReadyPlayers(Error))
+    { FailStart(Error.IsEmpty() ? TEXT("시작 중 참가자 또는 준비 상태가 바뀌었습니다.") : Error); return; }
+    const FName Destination = App->ResolveMapTheme(GS->GetRoomSettings().MapThemeId, Error);
+    if (Destination.IsNone()) { FailStart(Error); return; }
+#if WITH_EDITOR
+    if (GetWorld()->WorldType == EWorldType::PIE)
     {
-        APlayerController* PC = It->Get();
-        if (PC && PC->IsLocalController())
-        {
-            AMWPlayerState* PS = PC->GetPlayerState<AMWPlayerState>();
-            if (PS && PS->GetUniqueId().IsValid())
-            {
-                PS->SetLobbyFlagsFromServer(true, false);
-                Sessions->NotifyListenWorldReady(GetWorld());
-                return;
-            }
-        }
+        const auto* Setting = IConsoleManager::Get().FindConsoleVariable(TEXT("net.AllowPIESeamlessTravel"));
+        if (!Setting || Setting->GetInt() == 0) { FailStart(TEXT("PIE Seamless Travel 설정이 필요합니다.")); return; }
     }
+#endif
+    // Preserves the existing implemented flow. Vehicle selection is inserted here later.
+    GS->SetRoomPhaseFromServer(EMWRoomPhase::Traveling);
+    if (!GetWorld()->ServerTravel(Destination.ToString(), true)) FailStart(TEXT("테마 이동을 시작하지 못했습니다."));
+}
+
+void AMWGameMode::FailStart(const FString& Error)
+{
+    bAcceptingPlayers = false;
+    if (auto* GS = GetGameState<AMWGameState>()) GS->SetRoomPhaseFromServer(EMWRoomPhase::Failed);
+    UE_LOG(LogMWServer, Warning, TEXT("Start failed: %s"), *Error);
+    if (auto* App = GetGameInstance<UMWGameInstance>()) App->RequestLeaveRoom();
 }
