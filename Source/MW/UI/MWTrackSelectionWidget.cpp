@@ -10,6 +10,7 @@
 void UMWTrackSelectionWidget::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
+    // 첫 화면 구성 전에 네이티브 WidgetTree를 만든다. 별도 Widget BP 없이 사용할 수 있다.
     if (!WidgetTree->RootWidget)
     {
         UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>();
@@ -20,6 +21,7 @@ void UMWTrackSelectionWidget::NativeOnInitialized()
         UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(Panel);
         CanvasSlot->SetPosition(FVector2D(24, 24));
         CanvasSlot->SetAutoSize(true);
+        // 제목·참가자 현황·요청 상태를 세로로 배치하고, 내용 변경 시 TextBlock만 갱신한다.
         UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>();
         Panel->SetContent(Box);
         UTextBlock* Heading = WidgetTree->ConstructWidget<UTextBlock>();
@@ -36,6 +38,7 @@ void UMWTrackSelectionWidget::NativeOnInitialized()
         StatusText->SetWrapTextAt(440.f);
         Box->AddChildToVerticalBox(StatusText);
     }
+    // 안내 패널이 커서 입력을 가로채 선택판 조작을 방해하지 않도록 한다.
     SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 

@@ -5,6 +5,7 @@
 /** 에셋과 입력 기능을 같은 이름으로 찾기 위해 프로젝트 전체에서 함께 쓰는 태그입니다. */
 namespace MWGameplayTags
 {
+	// 후보 데이터와 카탈로그가 공통으로 사용하는 트랙 정의 조회 키.
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Straight);
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Curve);
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_Ramp);

@@ -2,6 +2,7 @@
 
 namespace MWGameplayTags
 {
+	// 문자열 이름을 네이티브 태그로 등록해 C++와 DataAsset이 동일한 정의를 조회한다.
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Straight, "Asset.Track.Straight");
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Curve, "Asset.Track.Curve");
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_Ramp, "Asset.Track.Ramp");

@@ -25,10 +25,12 @@ public:
 
     void TryPrepareLobby();
     void SetLobbyAdmission(bool bOpen) { bAcceptingPlayers = bOpen; }
+    // 서버 진행 코드용 진입점. 선택 내부 규칙은 GameState의 컴포넌트가 처리한다.
     bool BeginTrackSelection(FText& OutError);
     void EndTrackSelection();
 
 private:
+    // 이번 예제의 공통 후보 세 종류. BP 기본값에서 카탈로그에 등록된 태그로 교체할 수 있다.
     UPROPERTY(EditDefaultsOnly, Category="MW|Construction")
     TArray<FGameplayTag> TrackSelectionDefinitionIds;
 

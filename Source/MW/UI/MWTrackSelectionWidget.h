@@ -6,6 +6,7 @@
 
 class UTextBlock;
 
+// 선택 현황을 표시하는 로컬 패널. 서버 상태 해석과 문자열 구성은 Controller가 담당한다.
 UCLASS()
 class MW_API UMWTrackSelectionWidget : public UUserWidget
 {

@@ -21,6 +21,7 @@ void AMWPlayerController::BeginPlay()
         Sessions->OnSessionError.AddUniqueDynamic(this, &AMWPlayerController::HandleSessionError);
     }
 
+    // 테스트용 자식 BP는 로비 생성을 생략하되 세션 이벤트·상태 연결은 동일하게 유지한다.
     bLobbyPresentationEnabled = bCreateLobbyScreen;
     if (bCreateLobbyScreen) CreateLobbyScreen();
     RefreshLobbyScreen();
@@ -54,6 +55,7 @@ void AMWPlayerController::RefreshLobbyScreen()
     {
         Sessions->NotifyClientLobbyReady(this);
     }
+    // 기존 로비 준비 통지는 유지한다. 참가자 목록 변화는 선택 상태 구독에도 반영한다.
     RebindConstructionSources();
     RefreshConstructionPresentation();
     if (bLobbyPresentationEnabled) OnLobbyScreenRefresh();
@@ -83,6 +85,7 @@ void AMWPlayerController::OnRep_PlayerState()
 
 void AMWPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    // 정리 중 들어오는 이벤트로 화면이 다시 만들어지지 않도록 종료 표식부터 설정한다.
     bConstructionShuttingDown = true;
     StopConstructionPresentation();
     UnbindConstructionSources();

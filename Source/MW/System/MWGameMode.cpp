@@ -31,6 +31,7 @@ bool AMWGameMode::BeginTrackSelection(FText& OutError)
         OutError = FText::FromString(TEXT("건설 기능을 준비할 수 없습니다."));
         return false;
     }
+    // 후보 준비·참가자 고정·개인 초기화·공개는 컴포넌트의 한 시작 경로로 모은다.
     return GS->GetTrackConstructionComponent()->BeginSelection(TrackSelectionDefinitionIds, OutError);
 }
 

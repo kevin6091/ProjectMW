@@ -6,6 +6,7 @@
 
 AMWGameState::AMWGameState()
 {
+	// 선택 시작·종료마다 만들지 않고 GameState의 기본 컴포넌트로 유지한다.
 	TrackConstruction = CreateDefaultSubobject<UMWTrackConstructionComponent>(TEXT("TrackConstruction"));
 }
 

@@ -15,6 +15,7 @@ AMWTrackOfferPreview::AMWTrackOfferPreview()
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
     SelectionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("SelectionBox"));
     SelectionBox->SetupAttachment(RootComponent);
+    // 메시 대신 단순 Box로 커서를 받는다. Overlap 이벤트나 주행 물리 충돌은 발생시키지 않는다.
     SelectionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     SelectionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
     SelectionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -26,6 +27,7 @@ AMWTrackOfferPreview::AMWTrackOfferPreview()
     Marker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     SourceMesh = Cube.Object;
+    // BP의 기본 구성요소로 미리 확보하고 형상에 필요한 구간만 활성화한다.
     for (int32 I = 0; I < 12; ++I)
     {
         UStaticMeshComponent* Section = CreateDefaultSubobject<UStaticMeshComponent>(
@@ -45,9 +47,11 @@ void AMWTrackOfferPreview::OnConstruction(const FTransform& Transform)
 
 void AMWTrackOfferPreview::RebuildGeometry()
 {
+    // 인접한 두 점을 하나의 메시 구간으로 연결한다. 경로 데이터는 테스트 화면용이다.
     TArray<FVector> Points;
     if (PreviewShape == EMWTrackPreviewShape::Curve)
     {
+        // 반지름 350의 90도 커브를 여덟 직선 구간으로 근사한다.
         for (int32 I = 0; I <= 8; ++I)
         {
             const double A = static_cast<double>(I) / 8.0 * UE_HALF_PI;
@@ -56,6 +60,7 @@ void AMWTrackOfferPreview::RebuildGeometry()
     }
     else if (PreviewShape == EMWTrackPreviewShape::Ramp)
     {
+        // 평지 → 상승 구간 → 높은 평지 순서로 경사 형태를 표시한다.
         Points = { FVector(-400, 0, 0), FVector(-200, 0, 0), FVector(200, 0, 150), FVector(400, 0, 150) };
     }
     else Points = { FVector(-400, 0, 0), FVector(400, 0, 0) };
@@ -70,12 +75,15 @@ void AMWTrackOfferPreview::RebuildGeometry()
         if (!bUsed) continue;
         const FVector Delta = Points[I + 1] - Points[I];
         const bool bAuthored = PreviewShape == EMWTrackPreviewShape::AuthoredMesh;
+        // 작성된 메시에는 정의의 변환을 적용한다. 테스트 Cube는 길이·중심·방향에 맞춰 늘린다.
+        // Cube 기본 길이 100을 기준으로 스케일을 구하고, 3만큼 겹쳐 구간 사이 틈을 줄인다.
         Section->SetRelativeTransform(bAuthored ? AuthoredPreviewTransform : FTransform(
             Delta.Rotation(), (Points[I] + Points[I + 1]) * 0.5 + FVector(0, 0, 15),
             FVector((Delta.Size() + 3.f) / 100.f, 2.6f, 0.3f)));
         if (PreviewMaterial) Section->SetMaterial(0, PreviewMaterial);
         Bounds += Section->CalcBounds(Section->GetRelativeTransform()).GetBox();
     }
+    // 전체 형상을 감싸는 선택 영역을 만든다. 커브 내부 빈 공간까지 포함하는 단순 외곽 Box다.
     if (Bounds.IsValid)
     {
         SelectionBox->SetRelativeLocation(Bounds.GetCenter());
@@ -97,11 +105,13 @@ void AMWTrackOfferPreview::InitializeOffer(int32 Id, UMWTrackPieceDefinition* De
 void AMWTrackOfferPreview::RefreshAppearance(bool bHovered, bool bConfirmed,
     const FText& Players, const FVector& CameraLocation)
 {
+    // 확정 표시를 Hover보다 우선한다. 금색=누군가 확정, 파란색=자기 Hover, 기본색=그 외.
     const FLinearColor Color = bConfirmed ? FLinearColor(1.f, 0.65f, 0.08f)
         : (bHovered ? FLinearColor(0.05f, 0.75f, 1.f) : FLinearColor(0.38f, 0.48f, 0.65f));
     for (UStaticMeshComponent* Section : Sections)
     {
         if (!Section->IsVisible()) continue;
+        // 공유 원본 머티리얼은 바꾸지 않고 이 구간의 동적 인스턴스 색상만 갱신한다.
         UMaterialInstanceDynamic* MI = Cast<UMaterialInstanceDynamic>(Section->GetMaterial(0));
         if (!MI) MI = Section->CreateDynamicMaterialInstance(0);
         if (MI) MI->SetVectorParameterValue(TEXT("Color"), Color);

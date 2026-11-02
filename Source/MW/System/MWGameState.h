@@ -34,6 +34,7 @@ public:
 	void NotifyLobbyChanged();
 
 private:
+	// 공용 선택 기능을 별도 컴포넌트에 위임한다. 로비 정보와 선택 데이터의 책임을 분리한다.
 	UPROPERTY(VisibleAnywhere, Category="MW|Construction")
 	TObjectPtr<UMWTrackConstructionComponent> TrackConstruction;
 

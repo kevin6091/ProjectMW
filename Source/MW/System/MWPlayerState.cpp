@@ -6,6 +6,7 @@
 
 AMWPlayerState::AMWPlayerState()
 {
+	// Pawn이 없어도 선택 상태를 유지하고 공유할 수 있도록 PlayerState에 붙인다.
 	PlayerConstruction = CreateDefaultSubobject<UMWPlayerConstructionComponent>(TEXT("PlayerConstruction"));
 }
 

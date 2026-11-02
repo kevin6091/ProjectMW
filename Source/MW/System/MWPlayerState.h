@@ -38,6 +38,7 @@ public:
 	void SetSessionRegistrationConfirmedFromServer(bool bConfirmed);
 
 private:
+	// 다른 플레이어에게도 보여줄 개인 선택을 저장한다. Controller는 입력·요청만 담당한다.
 	UPROPERTY(VisibleAnywhere, Category="MW|Construction")
 	TObjectPtr<UMWPlayerConstructionComponent> PlayerConstruction;
 
