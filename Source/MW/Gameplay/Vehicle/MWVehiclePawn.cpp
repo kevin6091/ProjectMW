@@ -1,10 +1,11 @@
 
 
-#include "Gameplay/Vehicle/MWVehicleCharacter.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Data/MWInputData.h"
 #include "MWGameplayTags.h"
 
+#include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -16,43 +17,49 @@
 #include "InputMappingContext.h"
 
 // 기본 CharacterMovement를 차량용 이동 컴포넌트로 교체
-AMWVehicleCharacter::AMWVehicleCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMWVehicleMovementComponent>(ACharacter::CharacterMovementComponentName))
+AMWVehiclePawn::AMWVehiclePawn()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	bReplicates = true;
 	bUseControllerRotationYaw = false;
 
+	CollisionRoot = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionRoot"));
+	SetRootComponent(CollisionRoot);
+	
+	CollisionRoot->InitBoxExtent(FVector(100.f, 50.f, 30.f));
+	CollisionRoot->SetCollisionProfileName(TEXT("Pawn"));
+	CollisionRoot->SetSimulatePhysics(false);
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 550.f;
 	CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 100.f);
-	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->bDoCollisionTest = false;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 }
 
-void AMWVehicleCharacter::SubmitDriveInput(const FMWVehicleDriveInput& NewInput)
+void AMWVehiclePawn::SubmitDriveInput(const FMWVehicleDriveInput& NewInput)
 {
-	if (UMWVehicleMovementComponent* Movement = Cast<UMWVehicleMovementComponent>(GetCharacterMovement()))
+	if (UMWVehicleMovementComponent* Movement = Cast<UMWVehicleMovementComponent>(GetMovementComponent()))
 	{
 		Movement->SetDriveInput(NewInput);
 	}
 }
 
 // Called when the game starts or when spawned
-void AMWVehicleCharacter::BeginPlay()
+void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called to bind functionality to input
-void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AMWVehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -188,7 +195,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		*GetNameSafe(this));
 }
 
-void AMWVehicleCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AMWVehiclePawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	DriveInput = FMWVehicleDriveInput();
 	SubmitDriveInput(DriveInput);
@@ -211,49 +218,49 @@ void AMWVehicleCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AMWVehicleCharacter::HandleAccel(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleAccel(const FInputActionValue& Value)
 {
 	DriveInput.Throttle = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::HandleReverse(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleReverse(const FInputActionValue& Value)
 {
 	DriveInput.Reverse = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::HandleSteer(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleSteer(const FInputActionValue& Value)
 {
 	DriveInput.Steering = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopAccel()
+void AMWVehiclePawn::StopAccel()
 {
 	DriveInput.Throttle = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopReverse()
+void AMWVehiclePawn::StopReverse()
 {
 	DriveInput.Reverse = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopSteer()
+void AMWVehiclePawn::StopSteer()
 {
 	DriveInput.Steering = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StartDrift()
+void AMWVehiclePawn::StartDrift()
 {
 	DriveInput.bDriftRequested = true;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopDrift()
+void AMWVehiclePawn::StopDrift()
 {
 	DriveInput.bDriftRequested = false;
 	SubmitDriveInput(DriveInput);

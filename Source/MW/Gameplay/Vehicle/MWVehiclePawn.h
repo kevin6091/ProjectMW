@@ -3,22 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GameFramework/Pawn.h"
 #include "InputActionValue.h"
 #include "MWVehicleDriveInput.h"
-#include "MWVehicleCharacter.generated.h"
+#include "MWVehiclePawn.generated.h"
 
 class UMWInputData;
 class USpringArmComponent;
 class UCameraComponent;
+class UBoxComponent;
 
 UCLASS()
-class MW_API AMWVehicleCharacter : public ACharacter
+class MW_API AMWVehiclePawn : public APawn
 {
 	GENERATED_BODY()
 
 public:
-	AMWVehicleCharacter(const FObjectInitializer& ObjectInitializer);
+	AMWVehiclePawn();
 	
 	void SubmitDriveInput(const FMWVehicleDriveInput& NewInput);
 	
@@ -28,6 +29,9 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Collision")
+	TObjectPtr<UBoxComponent> CollisionRoot;
+	
 	UPROPERTY(EditDefaultsOnly, Category="MW|Input")
 	TObjectPtr<UMWInputData> DrivingInputData;
 
