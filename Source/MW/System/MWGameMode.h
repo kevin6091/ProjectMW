@@ -30,7 +30,8 @@ public:
     void EndTrackSelection();
 
 private:
-    // 이번 예제의 공통 후보 세 종류. BP 기본값에서 카탈로그에 등록된 태그로 교체할 수 있다.
+    // 이번 선택판에 제시할 세 후보. 전체 트랙 종류 수를 제한하는 목록이 아니다.
+    // BP 기본값에서 카탈로그에 등록한 개별 트랙의 고유 태그로 교체할 수 있다.
     UPROPERTY(EditDefaultsOnly, Category="MW|Construction")
     TArray<FGameplayTag> TrackSelectionDefinitionIds;
 

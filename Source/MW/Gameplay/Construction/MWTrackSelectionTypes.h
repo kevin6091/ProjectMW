@@ -6,12 +6,13 @@
 
 // 선택 기능의 데이터 계약. 전체 경기 Phase나 라운드 진행 상태는 외부 진행 코드가 관리한다.
 // 이번 선택판에 제시한 후보 한 칸. 같은 트랙 정의도 서로 다른 후보 번호로 제시할 수 있다.
+// 한 유형의 서로 다른 트랙은 각자 고유 DefinitionAssetId로 구분한다.
 USTRUCT(BlueprintType)
 struct MW_API FMWTrackOffer
 {
 	GENERATED_BODY()
 
-	// 이번 선택 안에서 식별하는 후보 번호. 트랙 종류를 식별하는 에셋 ID와 구분한다.
+	// 이번 선택 안에서 식별하는 후보 번호. 개별 트랙 정의를 식별하는 에셋 ID와 구분한다.
 	UPROPERTY(BlueprintReadOnly)
 	int32 OfferId = INDEX_NONE;
 

@@ -1,6 +1,6 @@
 # 트랙 선택·실시간 공유 구현
 
-2026-11-02 · Client + Server + Art/TA · feature/track-construction
+2026-11-03 · Client + Server + Art/TA · feature/track-construction-test
 
 ## 구현 범위
 
@@ -20,9 +20,42 @@ GameState의 MWTrackConstructionComponent가 공용 후보·선택 세션·서�
 | `/Game/Gameplay/Tracks/Tests/BP_Track_Ramp_Test` | 경사 표시 |
 | `/Game/Gameplay/Tracks/Tests/M_TrackSelection_Test` | 후보 강조 재질 |
 | `/Game/Gameplay/Tracks/Data/DA_Track_*_Test` | 종류별 메시·BP 정의 |
-| `/Game/Data/Catalogs/DA_TrackConstructionTestAssets` | 기존 항목을 보존한 테스트 카탈로그 |
+| `/Game/Data/DA_AssetData` | 일반 게임과 테스트 맵에서 함께 쓰는 공통 카탈로그 |
 
 기존 DA_AssetData의 입력·차량·맵 항목을 보존하고 Asset.Track.Straight/Curve/Ramp 정의를 추가했다. 기존 시작 맵·공유 경기 맵·차량 시험 맵은 변경하지 않았다. Content는 UVCS 관리 대상이다.
+
+테스트 전용 카탈로그는 제거했다. 테스트 GameMode BP에 저장되어 있던 참조도 비웠으며, 네이티브 클래스의 TestCatalog 속성과 InitGameState의 별도 초기화를 제거했다. 모든 경로에서 DefaultGame.ini의 StartupAssetData로 초기화한 공통 카탈로그를 사용한다.
+
+## 트랙 추가와 변형 구분
+
+트랙마다 UMWTrackPieceDefinition DataAsset을 만들고 DA_AssetData의 Entries에 고유 AssetId로 등록한다. 같은 커브 유형이어도 길이·곡률·메시가 다른 트랙은 별도 정의와 별도 AssetId를 사용한다. 카탈로그는 동일한 AssetId를 두 항목에 등록하는 것을 거절한다.
+
+다음은 추가할 때 사용할 수 있는 이름 예시이며, 실제 등록된 트랙 목록은 아니다.
+
+| 개별 트랙 AssetId | 연결할 정의 예시 | 공통 분류 Labels 예시 |
+|---|---|---|
+| `Asset.Track.Straight.Short` | `DA_Track_Straight_Short` | `AssetLabel.Track.Straight` |
+| `Asset.Track.Straight.Long` | `DA_Track_Straight_Long` | `AssetLabel.Track.Straight` |
+| `Asset.Track.Curve90.Short` | `DA_Track_Curve90_Short` | `AssetLabel.Track.Curve` |
+| `Asset.Track.Curve90.Wide` | `DA_Track_Curve90_Wide` | `AssetLabel.Track.Curve` |
+
+- AssetId는 특정 트랙 정의 하나를 찾는 키다. 네트워크 후보의 DefinitionAssetId도 이 값을 사용한다.
+- Labels는 여러 트랙을 같은 유형으로 묶는 분류다. 같은 Label을 여러 항목에 지정할 수 있다. 현재 선택 코드는 이 분류로 후보를 자동 추첨하지 않는다.
+- PieceId는 정의 내부의 FName이다. 카탈로그 조회 키로 사용하지 않으며 새 정의마다 구분되는 이름을 지정한다.
+- OfferId는 이번 선택판 안의 후보 번호다. 트랙의 영구 ID나 유형 ID가 아니다.
+- PreviewShape의 Straight/Curve/Ramp는 테스트 메시를 그리는 방식이다. 지원할 전체 트랙 유형을 제한하는 enum이 아니다. 실제 메시를 표시할 때는 AuthoredMesh를 사용한다.
+
+새 트랙을 추가할 때 고유 태그는 필요하지만 매번 C++의 MWGameplayTags.h/.cpp에 선언·정의를 추가할 필요는 없다. 이 프로젝트는 ImportTagsFromConfig=True이므로 Project Settings → Gameplay Tags에서 데이터 태그를 등록할 수 있다. C++에서 직접 이름을 참조해야 하는 공용 키만 네이티브 태그 상수로 둔다. 에셋이나 BP 이름을 바꾸더라도 기존 AssetId를 유지하면 호출부의 조회 키를 유지할 수 있다.
+
+수동 추가 순서는 다음과 같다.
+
+1. MWTrackPieceDefinition 기반 DataAsset을 생성하고 PieceId·DisplayName·Mesh·PreviewActorClass를 지정한다.
+2. Gameplay Tags 설정에서 고유 AssetId를 등록한다. 유형별 조회가 필요하면 분류 Label도 등록한다.
+3. DA_AssetData.Entries에 해당 AssetId와 정의 DataAsset을 연결하고 필요한 Labels를 지정한다.
+4. 원하는 선택판의 GameMode 기본값에서 TrackSelectionDefinitionIds 또는 TestDefinitionIds에 그 태그를 지정한다.
+5. 이미 카탈로그가 초기화된 실행은 종료한 뒤 다시 시작해 수정된 목록을 적용한다.
+
+현재 한 번에 제시하는 후보 수는 세 개다. 트랙을 더 등록할 수 있지만 자동 후보 추첨은 별도 기능이며, 카탈로그 항목 추가만으로 선택판 후보가 바뀌지는 않는다. 제작용 파이썬 스크립트는 삭제했으며, 이후 추가 작업은 에디터에서 위 절차로 수행한다.
 
 ## 직접 사용하는 방법
 
@@ -55,4 +88,4 @@ GameState의 MWTrackConstructionComponent가 공용 후보·선택 세션·서�
 
 사용자의 지시에 따라 별도 검증 절차를 수행하지 않았다. 새 C++ 클래스를 부모로 BP·DataAsset을 생성하기 위한 에디터 모듈 컴파일과 에셋 생성 명령만 사용했다. 게임 실행·PIE·자동화 테스트·에셋 검증기·Game 타깃/Cook/패키징은 실행하지 않았다. 사용자가 재현하기 전까지 실제 화면·멀티플레이 동작을 검증 완료로 기록하지 않는다.
 
-에셋 제작 스크립트는 `Scripts/Editor/CreateTrackConstructionAssets.py`다. 자신이 생성한 에셋만 재사용하며 동일 경로의 기존 다른 에셋은 덮어쓰지 않는다. 생성 경로 목록은 Saved/TrackConstructionAuthoring에 남긴다. Git commit/push와 UVCS checkin은 수행하지 않았다.
+초기 에셋 생성에 사용했던 파이썬 스크립트는 사용자 요청으로 삭제했다. 2026-11-03 정리에서는 에셋 편집 명령으로 테스트 GameMode BP의 중복 카탈로그 참조를 비우고 해당 카탈로그를 삭제했다. 이 편집을 위해 별도 C++ 빌드·게임 실행·검증 절차를 수행하지 않았다. 생성 경로의 과거 기록은 Saved/TrackConstructionAuthoring에 남아 있으며 현재 에셋 목록의 정본으로 사용하지 않는다. Git commit/push와 UVCS checkin은 수행하지 않았다.

@@ -1,8 +1,6 @@
 #include "System/MWTrackConstructionTestGameMode.h"
 #include "System/MWGameState.h"
 #include "System/MWPlayerState.h"
-#include "System/MWAssetManager.h"
-#include "Data/MWAssetData.h"
 #include "Player/MWPlayerController.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "MWGameplayTags.h"
@@ -17,20 +15,6 @@ AMWTrackConstructionTestGameMode::AMWTrackConstructionTestGameMode()
     DefaultPawnClass = nullptr;
     TestDefinitionIds = { MWGameplayTags::Asset_Track_Straight,
         MWGameplayTags::Asset_Track_Curve, MWGameplayTags::Asset_Track_Ramp };
-}
-
-void AMWTrackConstructionTestGameMode::InitGameState()
-{
-    Super::InitGameState();
-#if !UE_BUILD_SHIPPING
-    if (TestCatalog)
-    {
-        // 일반 게임의 로그인 경로 없이도 카탈로그 기반 입력·트랙 조회가 가능하도록 연결한다.
-        TArray<FText> Errors;
-        if (!UMWAssetManager::Get().InitializeCatalog(TestCatalog, Errors))
-            for (const FText& Error : Errors) UE_LOG(LogTemp, Error, TEXT("%s"), *Error.ToString());
-    }
-#endif
 }
 
 void AMWTrackConstructionTestGameMode::StartPlay()

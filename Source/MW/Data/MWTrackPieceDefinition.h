@@ -7,13 +7,15 @@
 class UStaticMesh;
 class AMWTrackOfferPreview;
 
-// 트랙 종류별 표시 설정. 후보에는 이 객체 대신 카탈로그 조회용 태그를 전달한다.
+// 개별 트랙의 표시 설정. 같은 유형이어도 길이·곡률·외형이 다르면 별도 정의를 만든다.
+// 각 정의는 MWAssetData에 고유 AssetId로 등록하고, 후보에는 그 조회 태그를 전달한다.
 UCLASS(BlueprintType)
 class MW_API UMWTrackPieceDefinition : public UDataAsset
 {
     GENERATED_BODY()
 public:
-	// 트랙 정의 자체의 ID. 선택마다 다시 부여하는 OfferId와 구분한다.
+	// 정의 내부 식별용 이름. 카탈로그 조회·선택 요청에는 FMWAssetEntry.AssetId를 사용한다.
+	// 같은 유형의 변형도 이름을 구분한다. 예: Track.Curve90.Short / Track.Curve90.Wide.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Track")
     FName PieceId;
 
