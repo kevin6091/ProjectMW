@@ -17,9 +17,11 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "InputAction.h"
+#include "UnrealClient.h"
 
 namespace
 {
@@ -52,6 +54,9 @@ void AMWPlayerController::PlayerTick(float DeltaTime)
     // 커서 검사는 조작 중인 로컬 화면에서만 한다. 확정 응답 대기 중에는 Hover를 고정한다.
     if (IsLocalController() && bSelectionInputInstalled && !bConfirmPending)
         UpdateLocalTrackHover(FindHoveredTrackOffer());
+    // 확정 후 입력이 잠겨도 다른 사람과 커서를 공유하고, 원격 커서는 매 프레임 보간한다.
+    if (IsLocalController() && bSelectionPresentationActive)
+        UpdateLocalTrackCursor(DeltaTime);
 }
 
 void AMWPlayerController::RegisterTrackSelectionBoard(AMWTrackSelectionBoard* Board)
@@ -225,6 +230,11 @@ void AMWPlayerController::DisableSelectionInput()
 
 void AMWPlayerController::StopConstructionPresentation()
 {
+    // 화면만 닫힌 경우에도 서버에 숨김을 알린다. 이 패킷이 유실되면 서버의 만료 타이머가 정리한다.
+    if (bSelectionPresentationActive && !bConstructionShuttingDown && NextCursorSequence < MAX_int32)
+        ServerUpdateTrackCursor(DisplaySessionId, DisplayOffersRevision, ++NextCursorSequence,
+            false, FVector::ZeroVector);
+    LastCursorSendTime = -1.0;
     // 화면용 자원과 대기 요청만 정리한다. 서버 PlayerState의 확정 결과는 지우지 않는다.
     DisableSelectionInput();
     if (bSelectionPresentationActive && SelectionBoard.IsValid()) SelectionBoard->ClearOffers();
@@ -242,6 +252,56 @@ void AMWPlayerController::StopConstructionPresentation()
     LastSentHoveredOfferId = INDEX_NONE;
     DisplaySessionId = DisplayOffersRevision = 0;
     // 다음 화면은 외부 진행 코드가 결정한다. 로비를 자동 재표시하지 않는다.
+}
+
+bool AMWPlayerController::FindTrackCursorWorldPosition(FVector& OutPosition) const
+{
+    OutPosition = FVector::ZeroVector;
+    if (!bShowMouseCursor || !SelectionBoard.IsValid()) return false;
+    const ULocalPlayer* LP = GetLocalPlayer();
+    const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
+    if (!Viewport || !Viewport->IsForegroundWindow()) return false;
+
+    float MouseX, MouseY;
+    int32 Width, Height;
+    GetViewportSize(Width, Height);
+    if (!GetMousePosition(MouseX, MouseY) || MouseX < 0 || MouseY < 0
+        || MouseX >= Width || MouseY >= Height) return false;
+
+    FVector RayOrigin, RayDirection;
+    if (!DeprojectMousePositionToWorld(RayOrigin, RayDirection)) return false;
+    // 후보에 맞지 않아도 위치를 공유하도록 선택판의 기준 평면에 광선을 투영한다.
+    // 현재 후보 Anchor 높이는 80cm다. Board를 이동·회전해도 같은 상대 평면을 사용한다.
+    const FVector PlaneOrigin = SelectionBoard->GetActorTransform().TransformPosition(FVector(0, 0, 80));
+    const FVector PlaneNormal = SelectionBoard->GetActorUpVector();
+    const double Denominator = FVector::DotProduct(RayDirection, PlaneNormal);
+    if (FMath::Abs(Denominator) < KINDA_SMALL_NUMBER) return false;
+    const double Distance = FVector::DotProduct(PlaneOrigin - RayOrigin, PlaneNormal) / Denominator;
+    if (Distance < 0.0 || Distance > 100000.0) return false;
+    OutPosition = RayOrigin + RayDirection * Distance;
+    return !OutPosition.ContainsNaN() && OutPosition.GetAbsMax() <= 1000000.0;
+}
+
+void AMWPlayerController::UpdateLocalTrackCursor(float DeltaTime)
+{
+    if (SelectionWidget)
+        SelectionWidget->UpdateRemoteCursors(DisplaySessionId, DisplayOffersRevision, DeltaTime);
+
+    // 정지·숨김 상태도 20Hz로 보낸다. 마지막 이동/숨김 패킷이 유실되어도 다음 전송으로 보완한다.
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (Now - LastCursorSendTime < 0.05 || NextCursorSequence == MAX_int32) return;
+    LastCursorSendTime = Now;
+    FVector WorldPosition;
+    const bool bVisible = FindTrackCursorWorldPosition(WorldPosition);
+    ServerUpdateTrackCursor(DisplaySessionId, DisplayOffersRevision, ++NextCursorSequence, bVisible, WorldPosition);
+}
+
+void AMWPlayerController::ServerUpdateTrackCursor_Implementation(int32 SessionId, int32 Revision,
+    int32 Sequence, bool bVisible, FVector_NetQuantize WorldPosition)
+{
+    AMWGameState* GS = GetWorld()->GetGameState<AMWGameState>();
+    if (GS && GS->GetTrackConstructionComponent())
+        GS->GetTrackConstructionComponent()->UpdateCursor(this, SessionId, Revision, Sequence, bVisible, WorldPosition);
 }
 
 int32 AMWPlayerController::FindHoveredTrackOffer() const

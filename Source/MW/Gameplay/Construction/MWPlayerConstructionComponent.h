@@ -16,9 +16,13 @@ class MW_API UMWPlayerConstructionComponent : public UActorComponent
 public:
 	UMWPlayerConstructionComponent();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(BlueprintPure, Category="MW|Construction")
 	FMWPlayerTrackSelection GetSelection() const { return Selection; }
+
+	UFUNCTION(BlueprintPure, Category="MW|Construction")
+	FMWPlayerConstructionCursor GetCursor() const { return Cursor; }
 
 	UPROPERTY(BlueprintAssignable, Category="MW|Construction")
 	FMWPlayerConstructionChanged OnSelectionChanged;
@@ -34,6 +38,11 @@ public:
 	int32 GetCachedReplyCount() const { return ReplyCache.Num(); }
 	bool ConsumeHoverBudgetForServer();
 
+	// 공용 컴포넌트가 참가자·선택 세션을 검사한 뒤 호출한다. 순서 번호로 늦게 온 이동 패킷을 무시한다.
+	void UpdateCursorForServer(int32 Sequence, bool bVisible, const FVector& WorldPosition);
+	// 선택 종료·화면 이탈·갱신 중단 시 커서를 숨긴다. 확정한 트랙은 그대로 유지한다.
+	void ClearCursorForServer();
+
 	// 초기 시험용 상한이다. 실측 후 설정 데이터로 이동할 수 있다.
 	static constexpr int32 MaxCachedReplies = 32;
 
@@ -41,6 +50,10 @@ private:
 	// Hover와 확정 상태는 소유자뿐 아니라 다른 참가자에게도 공유한다.
 	UPROPERTY(ReplicatedUsing=OnRep_Selection)
 	FMWPlayerTrackSelection Selection;
+
+	// 커서 전용 OnRep/선택 이벤트는 필요 없다. Widget이 매 프레임 현재 목표 위치를 읽어 보간한다.
+	UPROPERTY(Replicated)
+	FMWPlayerConstructionCursor Cursor;
 
 	UFUNCTION()
 	void OnRep_Selection();
@@ -51,4 +64,10 @@ private:
 	// 최대 20개를 보관하고 초당 20개를 회복하는 토큰 방식의 Hover 처리 예산.
 	double HoverTokens = 20.0;
 	double LastHoverBudgetTime = 0.0;
+
+	// Hover 예산과 분리해 커서 이동 때문에 후보 Hover 요청이 막히지 않게 한다.
+	int32 LastCursorSequence = 0;
+	double CursorTokens = 30.0;
+	double LastCursorBudgetTime = 0.0;
+	FTimerHandle CursorExpiryTimer;
 };

@@ -124,6 +124,11 @@ void UMWTrackConstructionComponent::EndSelection()
 {
 	if (!HasServerAuthority() || !SelectionSession.bIsOpen) return;
 	SelectionSession.bIsOpen = false;
+	// 확정 결과는 보존하되 선택 화면의 커서는 즉시 숨기고 만료 타이머를 정리한다.
+	for (const auto& WeakPlayer : Participants)
+		if (AMWPlayerState* PS = WeakPlayer.Get())
+			if (UMWPlayerConstructionComponent* Player = PS->GetPlayerConstructionComponent())
+				Player->ClearCursorForServer();
 	Participants.Reset();
 	GetOwner()->ForceNetUpdate();
 	OnSelectionSessionChanged.Broadcast();
@@ -170,7 +175,7 @@ bool UMWTrackConstructionComponent::ValidateRequest(APlayerController* Requester
         OutReason = EMWTrackSelectionRejectReason::NotParticipant;
         return false;
     }
-    // 후보 밖으로 커서를 옮긴 Hover는 허용하지만, 아무것도 없는 상태의 확정은 거절한다.
+    // Hover 해제·커서 공유는 후보 번호가 없어도 되지만, 아무것도 없는 상태의 확정은 거절한다.
     const bool bValidOffer = (bAllowNone && OfferId == INDEX_NONE)
         || SelectionSession.Offers.ContainsByPredicate([OfferId](const FMWTrackOffer& Offer)
         {
@@ -198,6 +203,16 @@ void UMWTrackConstructionComponent::UpdateHover(APlayerController* Requester,
         || !Player->ConsumeHoverBudgetForServer()) return;
     Current.HoveredOfferId = OfferId;
     Player->ApplySelectionForServer(Current);
+}
+
+void UMWTrackConstructionComponent::UpdateCursor(APlayerController* Requester,
+    int32 SessionId, int32 Revision, int32 Sequence, bool bVisible, const FVector& WorldPosition)
+{
+    UMWPlayerConstructionComponent* Player = nullptr;
+    EMWTrackSelectionRejectReason Reason;
+    // 기존 세션·등록·참가자 검사를 재사용한다. 커서는 특정 후보를 가리키지 않아도 유효하다.
+    if (!ValidateRequest(Requester, SessionId, Revision, INDEX_NONE, true, Player, Reason)) return;
+    Player->UpdateCursorForServer(Sequence, bVisible, WorldPosition);
 }
 
 FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(

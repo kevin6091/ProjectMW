@@ -84,6 +84,22 @@ GameState의 MWTrackConstructionComponent가 공용 후보·선택 세션·서�
 - 선택 종료 시 후보 표시·IMC·Pending을 정리하며 확정 결과는 보존한다. 로비·주행 전환을 자동 결정하지 않는다.
 - 실제 코스 상태의 원본은 후속 TrackManager이며 건설 컴포넌트에 중복 저장하지 않는다.
 
+## 플레이어 커서 공유
+
+커서 공유는 feature/track-construction-test에 추가했다. 새 Actor·BP·아이콘 에셋은 만들지 않고 기존 PlayerController → 공용 컴포넌트 → 개인 컴포넌트 → 선택 Widget 경로를 사용한다.
+
+1. Controller.FindTrackCursorWorldPosition이 마우스를 월드 광선으로 변환한다. 후보 밖에서도 표시되도록 Board의 로컬 Z=80cm 평면과 교차시킨다. 창이 비활성 상태이거나 커서가 뷰포트 밖이면 숨김 상태를 보낸다.
+2. Controller.UpdateLocalTrackCursor가 선택 화면이 열린 동안 최대 20Hz로 서버에 위치·표시 여부를 보낸다. 확정/Pending 여부와 독립적이므로 트랙 확정 후에도 커서는 공유된다. 자기 커서는 기본 마우스 커서를 사용한다.
+3. ServerUpdateTrackCursor는 Unreliable RPC다. 정지·숨김 상태도 주기적으로 보내 마지막 패킷 유실을 보완한다. 증가하는 Sequence로 이전 위치가 뒤늦게 도착해 현재 위치를 덮는 것을 막는다.
+4. 공용 컴포넌트는 현재 선택 세션·후보 버전·등록·참가자 조건을 기존 검사로 확인한다. 후보 번호는 필요하지 않으므로 INDEX_NONE을 허용한다. 커서 위치를 선택 승인이나 설치 판정에 사용하지 않는다.
+5. 개인 컴포넌트는 FMWPlayerConstructionCursor를 Selection과 별도로 복제한다. NetQuantize는 1cm 단위이며 좌표는 각 축 ±1,000,000cm 범위로 제한한다. 커서 전용 처리 예산은 최대 30개·초당 30개 회복이며 Hover 예산과 분리한다.
+6. 서버는 표시 중인 커서의 마지막 유효 요청 이후 0.75초 동안 갱신이 없으면 숨긴다. 같은 위치의 주기 전송도 만료 타이머를 갱신하지만 값이 바뀌지 않으면 ForceNetUpdate를 반복하지 않는다. 선택 종료에는 커서만 숨기고 확정 결과는 유지한다.
+7. Widget.UpdateRemoteCursors는 다른 플레이어의 현재 세션과 일치하는 커서만 읽는다. 월드 위치를 VInterpTo로 보간한 뒤 ProjectWorldLocationToWidgetPosition으로 DPI가 반영된 화면 좌표를 구한다. 색상과 '+ P번호 이름'으로 표시하며 입력을 가로채지 않는다. 퇴장한 참가자의 표시를 제거한다.
+
+코드 위치는 MWTrackSelectionTypes.h(데이터), MWPlayerConstructionComponent(저장·복제·만료), MWTrackConstructionComponent(참가 조건 검사), MWPlayerControllerConstruction.cpp(좌표 계산·전송), MWTrackSelectionWidget(보간·투영·표시)다. 컴포넌트 Tick이나 선택 상태 변경 이벤트를 커서 이동에 사용하지 않는다.
+
+현재 좌표는 선택 화면의 공통 평면을 기준으로 한다. 실제 경사 트랙 표면의 충돌점이나 OS 커서의 픽셀 좌표를 공유하는 기능과 구분한다. 다른 카메라에서도 같은 평면상의 지점으로 표시한다. 최초 구현 때는 별도 빌드·PIE·멀티플레이 실행 검증을 수행하지 않았다. 이후 사용자 요청으로 컴파일 오류를 확인해 Widget의 지역 변수 Cursor가 UWidget::Cursor를 가리는 C4458 오류를 RemoteCursor로 이름을 바꿔 수정했다. 2026-11-03 MWEditor / Win64 / Development 빌드는 성공했으며 PIE·멀티플레이 실행 검증은 수행하지 않았다.
+
 ## 제작과 검증의 구분
 
 사용자의 지시에 따라 별도 검증 절차를 수행하지 않았다. 새 C++ 클래스를 부모로 BP·DataAsset을 생성하기 위한 에디터 모듈 컴파일과 에셋 생성 명령만 사용했다. 게임 실행·PIE·자동화 테스트·에셋 검증기·Game 타깃/Cook/패키징은 실행하지 않았다. 사용자가 재현하기 전까지 실제 화면·멀티플레이 동작을 검증 완료로 기록하지 않는다.

@@ -72,6 +72,9 @@ private:
 	void HandleTrackSelectPressed();
 	bool IsDisplayedTrackOffer(int32 OfferId, bool bAllowNone) const;
 	void RefreshSelectionText(const FMWTrackSelectionSession& Session);
+	// 커서 공유는 선택 확정/Pending과 독립적으로, 선택 화면이 열려 있는 동안 처리한다.
+	void UpdateLocalTrackCursor(float DeltaTime);
+	bool FindTrackCursorWorldPosition(FVector& OutPosition) const;
 
 	UFUNCTION() void HandleConstructionSessionChanged();
 	UFUNCTION() void HandlePlayerConstructionChanged();
@@ -80,6 +83,10 @@ private:
 	void ServerUpdateTrackHover(int32 SessionId, int32 Revision, int32 OfferId);
 	UFUNCTION(Server, Reliable)
 	void ServerConfirmTrackSelection(int32 SessionId, int32 Revision, int32 OfferId, int32 RequestId);
+	// 이동은 최신 값이 중요하므로 재전송 대기를 쌓지 않는다. 주기 전송과 순서 번호로 유실·역전을 처리한다.
+	UFUNCTION(Server, Unreliable)
+	void ServerUpdateTrackCursor(int32 SessionId, int32 Revision, int32 Sequence,
+		bool bVisible, FVector_NetQuantize WorldPosition);
 	// 공용 상태 복제와 별개로 이 요청을 보낸 소유자에게만 성공·실패를 알려준다.
 	UFUNCTION(Client, Reliable)
 	void ClientTrackSelectionResult(const FMWTrackSelectionReply& Reply);
@@ -113,6 +120,9 @@ private:
 	int32 PendingSelectionRequestId = 0;
 	int32 PendingSelectedOfferId = INDEX_NONE;
 	double LastHoverSendTime = 0.0;
+	// 순서 번호는 화면을 닫아도 초기화하지 않는다. 같은 선택 화면을 다시 열 때 과거 패킷과 구별한다.
+	int32 NextCursorSequence = 0;
+	double LastCursorSendTime = -1.0;
 	FText SelectionStatus;
 
 	TWeakObjectPtr<AMWGameState> BoundGameState;

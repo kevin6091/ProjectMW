@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/NetSerialization.h"
 #include "GameplayTagContainer.h"
 #include "MWTrackSelectionTypes.generated.h"
 
@@ -62,6 +63,27 @@ struct MW_API FMWPlayerTrackSelection
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bConfirmed = false; // 확정 뒤에는 다른 후보로 변경할 수 없다.
+};
+
+// 다른 사람의 커서를 표시하기 위한 데이터. Hover/확정과 별도로 복제해 이동마다 선택 UI를 다시 만들지 않는다.
+// 화면 픽셀이 아닌 월드 위치를 공유하고, 각 화면에서 자기 카메라 기준으로 투영한다.
+USTRUCT(BlueprintType)
+struct MW_API FMWPlayerConstructionCursor
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 SelectionSessionId = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 OffersRevision = 0;
+
+	// 1cm 단위로 전송한다. 선택 승인이나 실제 설치 위치를 판단하는 데 사용하지 않는다.
+	UPROPERTY(BlueprintReadOnly)
+	FVector_NetQuantize WorldPosition = FVector::ZeroVector;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsVisible = false;
 };
 
 // 서버 판정 결과. Controller가 사용자에게 보여줄 안내 문구로 변환한다.

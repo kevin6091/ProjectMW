@@ -37,6 +37,9 @@ public:
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
 	void UpdateHover(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId);
+	// 커서는 후보 밖에서도 표시하며, 선택 확정 뒤에도 접수가 열린 동안 계속 공유할 수 있다.
+	void UpdateCursor(APlayerController* Requester, int32 SessionId, int32 Revision,
+		int32 Sequence, bool bVisible, const FVector& WorldPosition);
 	FMWTrackSelectionReply ConfirmSelection(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId, int32 RequestId);
 	
 private:
@@ -48,7 +51,7 @@ private:
 	void OnRep_SelectionSession();
 
 	bool HasServerAuthority() const;
-	// Hover와 확정의 공통 검사. bAllowNone은 커서가 후보 밖으로 나간 Hover에만 허용한다.
+	// 요청의 공통 검사. bAllowNone은 Hover 해제·커서 공유처럼 특정 후보가 필요 없는 경우에 허용한다.
 	bool ValidateRequest(APlayerController* Requester,
 		int32 SessionId, int32 Revision, int32 OfferId, bool bAllowNone,
 		UMWPlayerConstructionComponent*& OutPlayer,
