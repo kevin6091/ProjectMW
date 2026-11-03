@@ -23,5 +23,7 @@ public:
 private:
 	// 기존 GameMode의 테마 초기화 분기만 이전했습니다. 건설/주행 진행 기능은 아직 없습니다.
 	void TryInitializeGameplay();
+	void TryPrepareRace();
+
 	bool bRoomSettingsApplied = false;
 };

@@ -6,7 +6,6 @@
 #include "MWVehicleDefinitionData.generated.h"
 
 class UMWVehicleDriveData;
-class APawn;
 class UMWInputData;
 
 // 생성할 차량과 조작 입력만 미리 설정합니다.
