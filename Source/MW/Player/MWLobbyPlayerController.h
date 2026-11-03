@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "GameplayTagContainer.h"
 #include "MWLobbyPlayerController.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWLobbyActionErrorChanged);
@@ -25,6 +26,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "MW|Lobby")
 	FMWLobbyActionErrorChanged OnLobbyActionErrorChanged;
 
+	// 서버가 이 플레이어에게 차량 선택을 시작하도록 알립니다.
+	UFUNCTION(Client, Reliable)
+	void ClientBeginVehicleSelection();
+
+	// 자동 선택과 이후 차량 선택 UI가 함께 사용하는 요청 진입점입니다.
+	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle")
+	void RequestConfirmVehicle(FGameplayTag VehicleAssetID);
+	
 private:
 	FString LobbyActionError;
 	UFUNCTION(Server, Reliable)
@@ -33,4 +42,7 @@ private:
 	void ServerStartGame();
 	UFUNCTION(Client, Reliable)
 	void ClientLobbyActionFailed(const FString& Error);
+	
+	UFUNCTION(Server, Reliable)
+	void ServerConfirmVehicle(FGameplayTag VehicleAssetID);
 };

@@ -4,6 +4,7 @@ namespace MWGameplayTags
 {
 	// 선언한 에셋 ID와 분류 태그의 실제 이름을 등록해, 설정 데이터와 C++에서 같은 태그를 사용합니다.
 	UE_DEFINE_GAMEPLAY_TAG(AssetLabel_Preload, "AssetLabel.Preload");
+	UE_DEFINE_GAMEPLAY_TAG(AssetLabel_Vehicles, "AssetLabel.Vehicles");
 	
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_Driving, "Asset.Input.Driving");
 	
@@ -11,7 +12,11 @@ namespace MWGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_SelectConstruction, "Asset.Input.SelectConstruction");
 	
 	// VehicleAsset ID
-	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_Default, "Asset.Vehicle.Default");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_SMIET, "Asset.Vehicle.SMIET");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_MAMMOTH, "Asset.Vehicle.MAMMOTH");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_UFOLOGY, "Asset.Vehicle.UFOLOGY");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_DOUG, "Asset.Vehicle.DOUG");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_FRED, "Asset.Vehicle.FRED");
 	
 	// MapTheme
 	UE_DEFINE_GAMEPLAY_TAG(Asset_MapTheme_DevDefault, "Asset.MapTheme.DevDefault");

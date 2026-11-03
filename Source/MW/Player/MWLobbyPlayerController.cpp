@@ -3,7 +3,9 @@
 
 #include "Player/MWLobbyPlayerController.h"
 #include "System/GameMode/MWLobbyGameMode.h"
+#include "MWGameplayTags.h"
 #include "Engine/World.h"
+#include "System/MWPlayerState.h"
 
 void AMWLobbyPlayerController::RequestSetReady(bool bReady)
 {
@@ -44,3 +46,36 @@ void AMWLobbyPlayerController::ClientLobbyActionFailed_Implementation(const FStr
 	OnLobbyActionErrorChanged.Broadcast();
 }
 
+void AMWLobbyPlayerController::ClientBeginVehicleSelection_Implementation()
+{
+	// UI 없는 초기 버전에서는 각 클라이언트가 기본 후보를 제출합니다.
+	// 서버가 PlayerState에 기본 ID를 미리 채우는 방식이 아닙니다.
+	RequestConfirmVehicle(MWGameplayTags::Asset_Vehicle_SMIET);
+	//AMWPlayerState* PS = Cast<AMWPlayerState>(PlayerState);
+}
+
+void AMWLobbyPlayerController::RequestConfirmVehicle(FGameplayTag VehicleAssetID)
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	LobbyActionError.Reset();
+	OnLobbyActionErrorChanged.Broadcast();
+
+	// GameState의 Phase 복제가 아직 늦게 도착했을 수도 있으므로
+	// 로컬 Phase로 제출을 막지 않습니다. 서버에서 최종 검사합니다.
+	ServerConfirmVehicle(VehicleAssetID);
+}
+
+void AMWLobbyPlayerController::ServerConfirmVehicle_Implementation(FGameplayTag VehicleAssetID)
+{
+	auto* GM = GetWorld()->GetAuthGameMode<AMWLobbyGameMode>();
+
+	FString Error; 
+	if (!GM || !GM->RequestConfirmVehicle(this, VehicleAssetID, Error))
+	{
+		ClientLobbyActionFailed(Error.IsEmpty() ? TEXT("차량 선택을 확정할 수 없습니다.") : Error);
+	}
+}

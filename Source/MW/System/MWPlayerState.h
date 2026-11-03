@@ -31,6 +31,15 @@ public:
 	void SetLobbyFlagsFromServer(bool bInHost, bool bInReady);
 	void SetLobbyMemberIdFromServer(int32 Id);
 
+	UFUNCTION(BlueprintPure, Category = "MW|Vehicle")
+	FGameplayTag GetVehicleAssetID() const
+	{
+		return VehicleAssetID;
+	}
+
+	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
+	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
+	
 	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
 	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
 	FMWPlayerStateChanged OnPlayerStateChanged;
@@ -44,14 +53,14 @@ private:
 	
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	int32 LobbyMemberId = INDEX_NONE;
-
-	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
-	FGameplayTag VehicleAssetID = FGameplayTag::EmptyTag;
-	
-	
-	
 	UFUNCTION()
 	void OnRep_LobbyFlags();
+	
+	UPROPERTY(ReplicatedUsing = OnRep_VehicleAssetID)
+	FGameplayTag VehicleAssetID = FGameplayTag::EmptyTag;
+	
+	UFUNCTION()
+	void OnRep_VehicleAssetID();
 
 	void NotifyPlayerStateChanged();
 };

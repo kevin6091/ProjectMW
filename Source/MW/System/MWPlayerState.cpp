@@ -21,6 +21,7 @@ void AMWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AMWPlayerState, bRoomHost);
 	DOREPLIFETIME(AMWPlayerState, bReady);
 	DOREPLIFETIME(AMWPlayerState, LobbyMemberId);	
+	DOREPLIFETIME(AMWPlayerState, VehicleAssetID);
 }
 
 void AMWPlayerState::SetLobbyMemberIdFromServer(int32 Id)
@@ -28,6 +29,34 @@ void AMWPlayerState::SetLobbyMemberIdFromServer(int32 Id)
 	if (!HasAuthority() || Id < 1 || LobbyMemberId != INDEX_NONE) return;
 	LobbyMemberId = Id;
 	ForceNetUpdate();
+	NotifyPlayerStateChanged();
+}
+
+bool AMWPlayerState::ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID)
+{
+	// 클라이언트 직접 변경과 빈 ID 확정을 막습니다.
+	if (!HasAuthority() || !InVehicleAssetID.IsValid())
+	{
+		return false;
+	}
+
+	// 동일 요청은 성공으로 처리하고, 확정 후 다른 차량으로의 변경은 거절합니다.
+	if (VehicleAssetID.IsValid())
+	{
+		return VehicleAssetID == InVehicleAssetID;
+	}
+
+	VehicleAssetID = InVehicleAssetID;
+	ForceNetUpdate();
+
+	// 호스트도 원격 클라이언트와 같은 변경 알림을 받습니다.
+	NotifyPlayerStateChanged();
+	return true;
+}
+
+void AMWPlayerState::OnRep_VehicleAssetID()
+{
+	// 원격 클라이언트가 복제된 결과를 받았을 때 알립니다.
 	NotifyPlayerStateChanged();
 }
 
