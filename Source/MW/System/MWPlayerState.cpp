@@ -1,6 +1,12 @@
 #include "System/MWPlayerState.h"
+#include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+
+AMWPlayerState::AMWPlayerState()
+{
+	PlayerConstructionComponent = CreateDefaultSubobject<UMWPlayerConstructionComponent>(TEXT("PlayerConstructionComponent"));
+}
 
 void AMWPlayerState::CopyProperties(APlayerState* PlayerState)
 {

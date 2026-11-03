@@ -1,6 +1,8 @@
 ﻿#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+
+#include "Data/MWTrackDefinitionData.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
-#include "Data/MWTrackPieceDefinition.h"
+#include "Data/MWTrackDefinitionData.h"
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "Engine/World.h"
@@ -34,7 +36,10 @@ void UMWTrackConstructionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	DOREPLIFETIME(UMWTrackConstructionComponent, SelectionSession);
 }
 
-bool UMWTrackConstructionComponent::BeginSelection(const TArray<FGameplayTag>& DefinitionIds, FText& OutError)
+bool UMWTrackConstructionComponent::BeginSelection(
+	const TArray<FGameplayTag>& DefinitionIds, 
+	const TArray<AMWPlayerState*>& SelectionPlayers,
+	FText& OutError)
 {
 	OutError = FText::GetEmpty();
 	AGameStateBase* GS = Cast<AGameStateBase>(GetOwner());
@@ -54,60 +59,88 @@ bool UMWTrackConstructionComponent::BeginSelection(const TArray<FGameplayTag>& D
 	
 	TGuardValue<bool> PreparingGuard(bPreparingSelection, true);
 
+	// 실제 상태를 초기화하기 전에 모든 정의를 준비한다.
 	UMWAssetManager& Assets = UMWAssetManager::Get();
-	for (const FGameplayTag Id : DefinitionIds)
+	
+	for (const FGameplayTag DefinitionId : DefinitionIds)
 	{
-		const UMWTrackPieceDefinition* Definition = Assets.LoadAssetSynchronous<UMWTrackPieceDefinition>(Id);
-		
-		if (!Definition || Definition->PieceId.IsNone() || !Definition->Mesh)
+		const UMWTrackDefinitionData* Definition =
+			Assets.LoadAssetSynchronous<UMWTrackDefinitionData>(DefinitionId);
+
+		if (!Definition)
 		{
-			OutError = FText::FromString(TEXT("트랙 정의나 메시가 없습니다."));
+			OutError = FText::FromString(TEXT("트랙 정의를 불러오지 못했습니다."));
+			return false;
+		}
+
+		if (!Definition->ValidateDefinition(OutError))
+		{
 			return false;
 		}
 	}
 	
-	TArray<AMWPlayerState*> ReadyPlayers;
-	for (APlayerState* BasePS : GS->PlayerArray)
-	{
-		AMWPlayerState* PS = Cast<AMWPlayerState>(BasePS);
-		APlayerController* PC = PS ? Cast<APlayerController>(PS->GetOwner()) : nullptr;
-		if (PS && PC && PC->GetPlayerState<AMWPlayerState>() == PS
-			&& PS->GetLobbyMemberId() > 0 && PS->IsSessionRegistrationConfirmed()
-			&& PS->GetPlayerConstructionComponent())
-		{
-			ReadyPlayers.Add(PS);
-		}
-	}
+	// GameMode가 전달한 목록도 실제 월드의 정상 참가자인지 검사한다.
+	TSet<int32> SeenMemberIds;
 	
-	if (ReadyPlayers.IsEmpty())
+	for (AMWPlayerState* PS : SelectionPlayers)
 	{
-		OutError = FText::FromString(TEXT("선택에 참여할 플레이어가 없습니다."));
-		return false;
+		APlayerController* PC = IsValid(PS) ? Cast<APlayerController>(PS->GetOwner()) : nullptr;
+
+		if (!IsValid(PS)
+			|| PS->IsInactive()
+			|| !IsValid(PC)
+			|| PC->GetWorld() != GetWorld()
+			|| PC->GetPlayerState<AMWPlayerState>() != PS
+			|| !GS->PlayerArray.Contains(PS)
+			|| PS->GetLobbyMemberId() <= 0
+			|| !PS->GetPlayerConstructionComponent())
+		{
+			OutError = FText::FromString(TEXT("트랙 선택 참가자 정보를 확인할 수 없습니다."));
+			return false;
+		}
+
+		if (SeenMemberIds.Contains(PS->GetLobbyMemberId()))
+		{
+			OutError = FText::FromString(TEXT("중복된 참가자가 있습니다."));
+			return false;
+		}
+
+		SeenMemberIds.Add(PS->GetLobbyMemberId());
 	}
 	
 	FMWTrackSelectionSession NewSession;
 	NewSession.SelectionSessionId = ++NextSelectionSessionId;
 	NewSession.OffersRevision = 1;
 	NewSession.bIsOpen = true;
+
 	for (int32 Index = 0; Index < DefinitionIds.Num(); ++Index)
 	{
 		FMWTrackOffer Offer;
 		Offer.OfferId = Index + 1;
 		Offer.DefinitionAssetId = DefinitionIds[Index];
 		Offer.BoardSlotIndex = Index;
+
 		NewSession.Offers.Add(Offer);
 	}
-	
+
 	Participants.Reset();
-	for (AMWPlayerState* PS : ReadyPlayers)
+
+	for (AMWPlayerState* PS : SelectionPlayers)
 	{
 		Participants.Add(TWeakObjectPtr<AMWPlayerState>(PS));
-		PS->GetPlayerConstructionComponent()->ResetSelectionForServer(NewSession.SelectionSessionId, NewSession.OffersRevision);
+
+		PS->GetPlayerConstructionComponent()->ResetSelectionForServer(
+			NewSession.SelectionSessionId,
+			NewSession.OffersRevision);
 	}
-	// 준비가 끝난 뒤에 공개한다. 개인 상태와 이 속성의 복제 순서는 UI에서 가정하지 않는다.
+	
+	// 개인 상태 준비 후 공용 상태를 공개한다.
+	// 실제 클라이언트 수신 순서는 화면 구현에서 따로 처리한다.
 	SelectionSession = NewSession;
+
 	GetOwner()->ForceNetUpdate();
 	OnSelectionSessionChanged.Broadcast();
+	
 	return true;
 }
 
@@ -147,9 +180,13 @@ bool UMWTrackConstructionComponent::ValidateRequest(APlayerController* Requester
         OutReason = EMWTrackSelectionRejectReason::StaleOffers;
     else if (!SelectionSession.bIsOpen)
         OutReason = EMWTrackSelectionRejectReason::NotOpen;
-    else if (!GS->PlayerArray.Contains(PS) || !PS->IsSessionRegistrationConfirmed()
-        || !Participants.Contains(TWeakObjectPtr<AMWPlayerState>(PS)))
-        OutReason = EMWTrackSelectionRejectReason::NotParticipant;
+    else if (PS->IsInactive() 
+    	|| PS->GetOwner() != Requester
+		|| !GS->PlayerArray.Contains(PS)
+		|| !Participants.Contains(TWeakObjectPtr<AMWPlayerState>(PS)))
+    {
+    	OutReason = EMWTrackSelectionRejectReason::NotParticipant;
+    }
     if (OutReason != EMWTrackSelectionRejectReason::None) return false;
 
     const FMWPlayerTrackSelection Current = Player->GetSelection();

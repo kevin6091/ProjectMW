@@ -28,7 +28,10 @@ public:
 	FMWTrackConstructionSessionChanged OnSelectionSessionChanged;
 	
 	// 서버의 외부 진행 코드가 호출하는 일반 C++ API.
-	bool BeginSelection(const TArray<FGameplayTag>& DefinitionIds, FText& OutError);
+	bool BeginSelection(
+		const TArray<FGameplayTag>& DefinitionIds, 
+		const TArray<AMWPlayerState*>& SelectionPlayers, 
+		FText& OutError);
 	void EndSelection();
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
