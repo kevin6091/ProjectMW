@@ -5,18 +5,21 @@
 /** 에셋과 입력 기능을 같은 이름으로 찾기 위해 프로젝트 전체에서 함께 쓰는 태그입니다. */
 namespace MWGameplayTags
 {
-	/** 게임 시작 때 미리 불러올 에셋을 묶는 분류 태그입니다. */
+	// Labels
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(AssetLabel_Preload);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(AssetLabel_Vehicles);
 	
-	/** 주행 모드의 입력 설정 에셋을 찾는 ID입니다. */
+	// Input Data
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Input_Driving);
-	
-	/** 건설 모드의 입력 설정 에셋을 찾는 ID입니다. */
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Input_PlaceConstruction);
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Input_SelectConstruction);
 	
-	/** 기본 차량의 생성 클래스와 주행 입력 설정을 찾는 ID입니다. */
-	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_Default);
+	// VehicleAsset ID
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_SMIET);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_MAMMOTH);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_UFOLOGY);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_DOUG);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_FRED);
 	
 	// MapTheme
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_MapTheme_DevDefault);

@@ -1,5 +1,7 @@
 # Frontend 디자인과 MW 방 참가 기능 통합
 
+> 후속 맵 흐름 변경: 현재 로비도 L_Title을 사용하고, 전원 Ready·호스트 시작 후 선택한 Theme 레벨로 이동한다. 아래 통합 시점의 L_Dev_Default 로비 및 Ready/시작 비활성 기록은 당시 결과다. 현재 동작은 [14번 문서](14_L_Title_로비_Ready_및_테마레벨_이동.md)를 따른다.
+
 작업·검증일: 2026-10-29. 분야: Client + Server. UE 5.8.4.
 
 > 후속 정리: 사용자 요청으로 통합에 사용하지 않는 Frontend 원본 WBP·L_Frontend·테스트 프리뷰·RoadButton WBP, Frontend 런타임 클래스와 MWFrontendAuthoring 플러그인을 삭제했다. 미사용 MenuDiamond/MenuOverlay 텍스처도 제거했다. 아래 원본 분석과 테스트 기록은 통합 당시의 이력이며, 현재 실행은 `L_Title`과 `Content/UI/Lobby`의 MW 위젯 7개다. 정식 UI가 참조하는 Common 이미지·폰트는 유지한다.

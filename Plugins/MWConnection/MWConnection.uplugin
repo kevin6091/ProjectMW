@@ -1,0 +1,15 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "MW Connection",
+  "Description": "Game-independent connection lifecycle. EOS and Local IP use the same public API.",
+  "Category": "Networking",
+  "CanContainContent": false,
+  "EnabledByDefault": true,
+  "Modules": [{ "Name": "MWConnection", "Type": "Runtime", "LoadingPhase": "Default" }],
+  "Plugins": [
+    { "Name": "OnlineSubsystem", "Enabled": true },
+    { "Name": "OnlineSubsystemUtils", "Enabled": true }
+  ]
+}

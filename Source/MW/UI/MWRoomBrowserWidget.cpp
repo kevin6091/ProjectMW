@@ -3,14 +3,14 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Engine/GameInstance.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
+#include "System/MWGameInstance.h"
 #include "UI/MWRoomListEntryWidget.h"
 
 void UMWRoomBrowserWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetIsFocusable(true);
-	UMWMultiplayerSubsystem* Sessions = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>() : nullptr;
+	UMWGameInstance* Sessions = GetGameInstance() ? Cast<UMWGameInstance>(GetGameInstance()) : nullptr;
 	Subsystem = Sessions;
 	if (Sessions)
 	{
@@ -28,7 +28,7 @@ void UMWRoomBrowserWidget::NativeConstruct()
 
 void UMWRoomBrowserWidget::NativeDestruct()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get())
+	if (UMWGameInstance* Sessions = Subsystem.Get())
 	{
 		Sessions->OnRoomsUpdated.RemoveDynamic(this, &ThisClass::HandleRoomsUpdated);
 		Sessions->OnSessionStateChanged.RemoveDynamic(this, &ThisClass::HandleStateChanged);
@@ -56,7 +56,7 @@ void UMWRoomBrowserWidget::RebuildRows()
 	Box_Rooms->ClearChildren();
 	Entries.Reset();
 	Rows.Reset();
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	UMWGameInstance* Sessions = Subsystem.Get();
 	if (!Sessions || !RoomEntryWidgetClass) return;
 	Rows = Sessions->GetAvailableRooms();
 	for (const FMWRoomInfo& Room : Rows)
@@ -72,9 +72,9 @@ void UMWRoomBrowserWidget::RebuildRows()
 
 void UMWRoomBrowserWidget::RefreshView()
 {
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	UMWGameInstance* Sessions = Subsystem.Get();
 	const EMWSessionState State = Sessions ? Sessions->GetSessionState() : EMWSessionState::None;
-	const bool bIdle = Sessions && Sessions->IsLoggedIn() && State == EMWSessionState::None;
+	const bool bIdle = Sessions && (!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) && State == EMWSessionState::None;
 	const FMWRoomInfo* Selected = Rows.FindByPredicate([this](const FMWRoomInfo& R) { return R.SessionId == SelectedSessionId; });
 	const bool bCurrentSelection = Sessions && SelectedRevision == Sessions->GetRoomListRevision();
 	Button_Refresh->SetIsEnabled(bIdle);
@@ -98,7 +98,7 @@ void UMWRoomBrowserWidget::RefreshView()
 
 void UMWRoomBrowserWidget::HandleRefresh()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::None)
+	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::None)
 	{
 		SelectedSessionId.Reset();
 		SelectedRevision = 0;
@@ -110,24 +110,24 @@ void UMWRoomBrowserWidget::HandleRefresh()
 
 void UMWRoomBrowserWidget::HandleBack()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::None) OnBackRequested.Broadcast();
+	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::None) OnBackRequested.Broadcast();
 }
 
 void UMWRoomBrowserWidget::HandleJoin()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get()) Sessions->RequestJoinRoom(SelectedSessionId, SelectedRevision);
+	if (UMWGameInstance* Sessions = Subsystem.Get()) Sessions->RequestJoinRoom(SelectedSessionId, SelectedRevision);
 	RefreshView();
 }
 
 void UMWRoomBrowserWidget::HandleRetry()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::CleanupRequired) Sessions->RetrySessionCleanup();
+	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions && Sessions->GetSessionState() == EMWSessionState::CleanupRequired) Sessions->RetrySessionCleanup();
 	RefreshView();
 }
 
 void UMWRoomBrowserWidget::HandleRoomSelected(const FString& SessionId, int32 Revision)
 {
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	UMWGameInstance* Sessions = Subsystem.Get();
 	if (!Sessions || Sessions->GetSessionState() != EMWSessionState::None || Revision != Sessions->GetRoomListRevision()) return;
 	SelectedSessionId = SessionId;
 	SelectedRevision = Revision;

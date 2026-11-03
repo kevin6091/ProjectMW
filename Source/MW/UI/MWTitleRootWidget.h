@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerTypes.h"
+#include "UI/MWMenuTypes.h"
 #include "MWTitleRootWidget.generated.h"
 
 class UButton;
 class UWidgetSwitcher;
 class UMWCreateRoomWidget;
-class UMWMultiplayerSubsystem;
+class UMWGameInstance;
 class UMWRoomBrowserWidget;
 
 UCLASS(Abstract)
@@ -37,7 +37,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UMWRoomBrowserWidget> RoomBrowserScreen;
 	UPROPERTY(Transient) TObjectPtr<UButton> CreateButton;
 	UPROPERTY(Transient) TObjectPtr<UButton> JoinButton;
-	TWeakObjectPtr<UMWMultiplayerSubsystem> Subsystem;
+	TWeakObjectPtr<UMWGameInstance> Subsystem;
 	enum class EEntryScreen : uint8 { Menu, CreateRoom, RoomList };
 	EEntryScreen SelectedScreen = EEntryScreen::Menu;
 	FString EntryMessage;

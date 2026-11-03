@@ -4,7 +4,8 @@
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
 #include "Engine/GameInstance.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
+#include "Engine/World.h"
+#include "System/MWGameInstance.h"
 #include "UI/MWCreateRoomWidget.h"
 #include "UI/MWRoomBrowserWidget.h"
 
@@ -12,8 +13,8 @@ void UMWTitleRootWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetIsFocusable(true);
-	UMWMultiplayerSubsystem* Sessions = GetGameInstance()
-		? GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>() : nullptr;
+	UMWGameInstance* Sessions = GetGameInstance()
+		? Cast<UMWGameInstance>(GetGameInstance()) : nullptr;
 	Subsystem = Sessions;
 	if (Sessions)
 	{
@@ -49,7 +50,7 @@ void UMWTitleRootWidget::NativeConstruct()
 
 void UMWTitleRootWidget::NativeDestruct()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get())
+	if (UMWGameInstance* Sessions = Subsystem.Get())
 	{
 		Sessions->OnLoginFinished.RemoveDynamic(this, &ThisClass::HandleLoginFinished);
 		Sessions->OnSessionStateChanged.RemoveDynamic(this, &ThisClass::HandleSessionStateChanged);
@@ -67,9 +68,12 @@ void UMWTitleRootWidget::NativeDestruct()
 
 void UMWTitleRootWidget::RefreshEntryScreen()
 {
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
-	const bool bLoggedIn = Sessions && Sessions->IsLoggedIn();
+	UMWGameInstance* Sessions = Subsystem.Get();
+	const bool bLoggedIn = Sessions && (!Sessions->IsLoginRequired() || Sessions->IsLoggedIn());
 	const EMWSessionState State = Sessions ? Sessions->GetSessionState() : EMWSessionState::None;
+	// The same title level is also the networked room. Its menu must not cover the lobby.
+	SetVisibility(GetWorld() && GetWorld()->GetNetMode() == NM_Standalone
+		? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	const bool bNeedsCleanup = State == EMWSessionState::CleanupRequired;
 	if (bNeedsCleanup && SelectedScreen == EEntryScreen::Menu) SelectedScreen = EEntryScreen::CreateRoom;
 	UUserWidget* Screen = TitleScreen;
@@ -80,7 +84,7 @@ void UMWTitleRootWidget::RefreshEntryScreen()
 	WidgetSwitcher_2->SetActiveWidget(Screen);
 	if (bChanged) Screen->SetKeyboardFocus();
 	if (CreateButton) CreateButton->SetIsEnabled(bLoggedIn && State == EMWSessionState::None && CreateRoomScreen);
-	if (JoinButton) JoinButton->SetIsEnabled(bLoggedIn && State == EMWSessionState::None && RoomBrowserScreen);
+	if (JoinButton) JoinButton->SetIsEnabled(Sessions && Sessions->CanBrowseRooms() && State == EMWSessionState::None && RoomBrowserScreen);
 	if (UTextBlock* Status = Cast<UTextBlock>(TitleScreen->GetWidgetFromName(TEXT("Text_EntryStatus"))))
 	{
 		const FString Error = Sessions ? Sessions->GetLastSessionError() : FString();
@@ -92,8 +96,8 @@ void UMWTitleRootWidget::RefreshEntryScreen()
 
 void UMWTitleRootWidget::HandleCreateRequested()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions &&
-		Sessions->IsLoggedIn() && Sessions->GetSessionState() == EMWSessionState::None)
+	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions &&
+		(!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) && Sessions->GetSessionState() == EMWSessionState::None)
 	{
 		SelectedScreen = EEntryScreen::CreateRoom;
 		EntryMessage.Reset();
@@ -109,7 +113,7 @@ void UMWTitleRootWidget::HandleBackRequested()
 
 void UMWTitleRootWidget::HandleJoinRequested()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions && Sessions->IsLoggedIn() &&
+	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions && (!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) &&
 		Sessions->GetSessionState() == EMWSessionState::None && RoomBrowserScreen)
 	{
 		EntryMessage.Reset();
