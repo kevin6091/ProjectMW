@@ -19,7 +19,7 @@ namespace MWGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_FRED, "Asset.Vehicle.FRED");
 	
 	// MapTheme
-	UE_DEFINE_GAMEPLAY_TAG(Asset_MapTheme_DevDefault, "Asset.MapTheme.DevDefault");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_MapTheme_DriveDefault, "Asset.MapTheme.DriveDefault");
 
 	// 실제 키 대신 입력의 목적을 나타냅니다. 키와 액션의 연결은 모드별 MWInputData에서 정합니다.
 	// Input_Driving
