@@ -203,7 +203,22 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Scene.Step(0.5f);
 	TestTrue(TEXT("Wall blocks forward translation"), Scene.Vehicle->GetActorLocation().X <= 280.5f);
 	TestTrue(TEXT("Oblique collision slides along wall"), Scene.Vehicle->GetActorLocation().Y > 100);
+	TestTrue(TEXT("Oblique collision removes speed into the wall"), FMath::Abs(Scene.Movement->Velocity.X) < 1);
 	Wall->GetOwner()->Destroy();
+
+	// Both walls are reached in one simulation step. Clipping against the second
+	// wall alone would restore a speed component pointing into the first wall.
+	Scene.Reset();
+	Wall = Scene.AddBox(FVector(140.5, 0, 200), FVector(20, 1000, 200));
+	UBoxComponent* AngledWall = Scene.AddBox(FVector(-65.38, 113.25, 200), FVector(20, 1000, 200), FRotator(0, 120, 0));
+	Scene.Movement->Velocity = FVector(6000, 6000, 0);
+	Scene.Step(1.f / 120.f, 1.f / 120.f);
+	const FVector CornerLocation = Scene.Vehicle->GetActorLocation();
+	TestTrue(TEXT("Vehicle reached both faces of the corner"), CornerLocation.X > 15 && CornerLocation.Y > 25);
+	TestTrue(TEXT("The corner consumes the blocked planar velocity"), Scene.Movement->Velocity.Size2D() < 1);
+	AngledWall->GetOwner()->Destroy();
+	Wall->GetOwner()->Destroy();
+
 	Scene.Floor->SetBoxExtent(FVector(500, 500, 50));
 	Scene.Reset();
 	Scene.Input(1);
