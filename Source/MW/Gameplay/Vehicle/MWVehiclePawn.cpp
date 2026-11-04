@@ -22,6 +22,7 @@ AMWVehiclePawn::AMWVehiclePawn()
 	PrimaryActorTick.bCanEverTick = false;
 
 	bReplicates = true;
+	SetReplicateMovement(false);
 	bUseControllerRotationYaw = false;
 
 	CollisionRoot = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionRoot"));
@@ -60,12 +61,25 @@ UPawnMovementComponent* AMWVehiclePawn::GetMovementComponent() const
 	return VehicleMovement;
 }
 
+void AMWVehiclePawn::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	if (HasActorBegunPlay())
+	{
+		ResetDriveStream();
+	}
+}
+
 void AMWVehiclePawn::UnPossessed()
 {
 	DriveInput = FMWVehicleDriveInput{};
 	VehicleMovement->ResetDriveInput();
 	RemoveDrivingMappingContext();
 	Super::UnPossessed();
+	if (HasActorBegunPlay())
+	{
+		ResetDriveStream();
+	}
 }
 
 void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
@@ -74,6 +88,10 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 	if (!bIsATest)
 	{
 		DriveInput = FMWVehicleDriveInput{};
+		if (HasActorBegunPlay())
+		{
+			ResetDriveStream();
+		}
 	}
 }
 
@@ -81,7 +99,12 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
-
+	if (HasAuthority())
+	{
+		// 기존 Blueprint에서 기본 이동 복제가 켜져 있어도 두 위치 갱신 경로가 경쟁하지 않게 한다.
+		SetReplicateMovement(false);
+		ResetDriveStream();
+	}
 }
 
 // Called to bind functionality to input
