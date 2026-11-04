@@ -14,6 +14,7 @@ void UMWRoomLobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetIsFocusable(true);
+	Button_Leave->SetVisibility(ESlateVisibility::Visible);
 	Subsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>() : nullptr;
 	Button_Leave->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleLeaveClicked);
 	Button_RetryCleanup->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleRetryClicked);
@@ -22,8 +23,14 @@ void UMWRoomLobbyWidget::NativeConstruct()
 
 void UMWRoomLobbyWidget::NativeDestruct()
 {
-	Button_Leave->OnClicked.RemoveDynamic(this, &ThisClass::HandleLeaveClicked);
-	Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetryClicked);
+	if (IsValid(Button_Leave))
+	{
+		Button_Leave->OnClicked.RemoveDynamic(this, &ThisClass::HandleLeaveClicked);
+	}
+	if (IsValid(Button_RetryCleanup))
+	{
+		Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetryClicked);
+	}
 	Subsystem.Reset();
 	Super::NativeDestruct();
 }
@@ -39,7 +46,7 @@ void UMWRoomLobbyWidget::Refresh()
 	Button_RetryCleanup->SetVisibility(State == EMWSessionState::CleanupRequired
 		? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Button_RetryCleanup->SetIsEnabled(Sessions && State == EMWSessionState::CleanupRequired);
-	Box_RoomInfo->SetVisibility(ESlateVisibility::Collapsed);
+	if (State != EMWSessionState::Leaving) Box_RoomInfo->SetVisibility(ESlateVisibility::Collapsed);
 	Text_Error->SetText(FText::FromString(Sessions ? Sessions->GetLastSessionError() : FString()));
 
 	FString Status = TEXT("로비 정보를 준비 중입니다...");
@@ -121,6 +128,7 @@ void UMWRoomLobbyWidget::HandleLeaveClicked()
 	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get(); Sessions &&
 		(Sessions->GetSessionState() == EMWSessionState::Hosting || Sessions->GetSessionState() == EMWSessionState::Joined))
 	{
+		UE_LOG(LogTemp, Display, TEXT("MW_RETURN LOBBY_LEAVE_CLICK_ACCEPTED"));
 		Sessions->RequestLeaveRoom();
 		Refresh();
 	}

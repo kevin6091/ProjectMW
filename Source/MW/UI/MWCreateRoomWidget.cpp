@@ -63,10 +63,22 @@ void UMWCreateRoomWidget::NativeDestruct()
 		Sessions->OnSessionError.RemoveDynamic(this, &ThisClass::HandleSessionError);
 		Sessions->OnCreateRoomFinished.RemoveDynamic(this, &ThisClass::HandleCreateFinished);
 	}
-	Button_CreateRoom->OnClicked.RemoveDynamic(this, &ThisClass::HandleCreateClicked);
-	Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBackClicked);
-	Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetryClicked);
-	Select_MapTheme->OnSelectionChanged.RemoveDynamic(this, &ThisClass::HandleThemeSelected);
+	if (IsValid(Button_CreateRoom))
+	{
+		Button_CreateRoom->OnClicked.RemoveDynamic(this, &ThisClass::HandleCreateClicked);
+	}
+	if (IsValid(Button_Back))
+	{
+		Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBackClicked);
+	}
+	if (IsValid(Button_RetryCleanup))
+	{
+		Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetryClicked);
+	}
+	if (IsValid(Select_MapTheme))
+	{
+		Select_MapTheme->OnSelectionChanged.RemoveDynamic(this, &ThisClass::HandleThemeSelected);
+	}
 	Subsystem.Reset();
 	Super::NativeDestruct();
 }
@@ -98,6 +110,8 @@ void UMWCreateRoomWidget::RefreshForm()
 	Text_Status->SetText(FText::FromString(Status));
 	const FString Error = !LocalError.IsEmpty() ? LocalError : (Sessions ? Sessions->GetLastSessionError() : FString());
 	Text_Error->SetText(FText::FromString(Error));
+	Text_Error->SetVisibility(Text_Error->GetText().IsEmpty()
+		? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 }
 
 void UMWCreateRoomWidget::HandleCreateClicked()

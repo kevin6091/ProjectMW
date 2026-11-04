@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Containers/Ticker.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineSessionInterface.h"
@@ -25,6 +26,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMWJoinRoomFinished, bool, bSuccess
 
 // Subsystem이 Widget에 전달할 로그인 결과입니다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMWLoginFinished, bool, bSuccess, const FString&, ErrorMessage);
+
+// Optional local presentation may defer the already-authorized title travel.
+DECLARE_DELEGATE_RetVal_TwoParams(bool, FMWTitleTravelGate, FName, FSimpleDelegate);
 
 UCLASS(BlueprintType)
 class MW_API UMWMultiplayerSubsystem : public UGameInstanceSubsystem
@@ -93,6 +97,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "MW|Multiplayer|Session")
 	void RequestLeaveRoom();
+	FMWTitleTravelGate& GetTitleTravelGate() { return TitleTravelGate; }
 
 	UFUNCTION(BlueprintCallable, Category = "MW|Multiplayer|Session")
 	void RetrySessionCleanup();
@@ -224,6 +229,12 @@ private:
 	void CloseServerAdmission();
 	void StartCleanup();
 	void BeginReturnToTitle();
+	void OpenReturnMap(uint64 RequestId, uint64 AttemptId);
+	void ClearTitleTravelGateTimeout();
+	FMWTitleTravelGate TitleTravelGate;
+	FTSTicker::FDelegateHandle TitleTravelGateTimeoutHandle;
+	uint64 TitleTravelAttemptId = 0;
+	bool bTitleTravelIssued = false;
 	void FinishCleanup();
 
 	IOnlineSessionPtr SessionApi;

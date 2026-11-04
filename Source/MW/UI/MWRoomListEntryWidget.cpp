@@ -10,7 +10,10 @@ void UMWRoomListEntryWidget::NativeConstruct()
 
 void UMWRoomListEntryWidget::NativeDestruct()
 {
-	Button_Row->OnClicked.RemoveDynamic(this, &ThisClass::HandleSelected);
+	if (IsValid(Button_Row))
+	{
+		Button_Row->OnClicked.RemoveDynamic(this, &ThisClass::HandleSelected);
+	}
 	Super::NativeDestruct();
 }
 

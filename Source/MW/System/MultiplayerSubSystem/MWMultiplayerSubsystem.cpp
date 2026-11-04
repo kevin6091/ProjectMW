@@ -92,6 +92,7 @@ void UMWMultiplayerSubsystem::Deinitialize()
 
     OnLoginFinished.Clear();
     OnSessionStateChanged.Clear();
+    TitleTravelGate.Unbind();
     OnCreateRoomFinished.Clear();
     OnSessionError.Clear();
     OnRoomsUpdated.Clear();
@@ -1166,6 +1167,11 @@ void UMWMultiplayerSubsystem::HandleDestroySessionComplete(
 
 void UMWMultiplayerSubsystem::BeginReturnToTitle()
 {
+    if (bReturningToTitle)
+    {
+        return;
+    }
+
     if (ReturnMapPackageName.IsNone())
     {
         FString Error;
@@ -1178,6 +1184,9 @@ void UMWMultiplayerSubsystem::BeginReturnToTitle()
         }
     }
 
+    const uint64 RequestId = SessionRequestId;
+    const uint64 AttemptId = ++TitleTravelAttemptId;
+    bTitleTravelIssued = false;
     bReturningToTitle = true;
     SetSessionState(EMWSessionState::Leaving);
     ArmSessionTimeout();
@@ -1191,9 +1200,49 @@ void UMWMultiplayerSubsystem::BeginReturnToTitle()
         return;
     }
 
-    // 절대 이동 + 빈 옵션: Listen 옵션을 메뉴로 상속하지 않습니다.
-    UGameplayStatics::OpenLevel(
-        this, ReturnMapPackageName, true, FString());
+    FSimpleDelegate Travel = FSimpleDelegate::CreateUObject(this, &ThisClass::OpenReturnMap, RequestId, AttemptId);
+    if (!TitleTravelGate.IsBound() || !TitleTravelGate.Execute(ReturnMapPackageName, Travel))
+    {
+        Travel.ExecuteIfBound();
+    }
+    else if (!bTitleTravelIssued && SessionState == EMWSessionState::Leaving)
+    {
+        // An accepted presentation callback can be lost while the world timer is paused.
+        TitleTravelGateTimeoutHandle = FTSTicker::GetCoreTicker().AddTicker(
+            FTickerDelegate::CreateWeakLambda(this, [this, RequestId, AttemptId](float)
+            {
+                if (IsCurrentSessionRequest(RequestId) && AttemptId == TitleTravelAttemptId &&
+                    bReturningToTitle && !bTitleTravelIssued && SessionState == EMWSessionState::Leaving)
+                {
+                    TitleTravelGateTimeoutHandle.Reset();
+                    UE_LOG(LogTemp, Warning, TEXT("MW_RETURN TRAVEL_GATE_CALLBACK_TIMEOUT ATTEMPT=%llu"), AttemptId);
+                    HandleSessionTimeout(RequestId);
+                }
+                return false;
+            }), SessionOperationTimeoutSeconds);
+    }
+}
+
+void UMWMultiplayerSubsystem::OpenReturnMap(uint64 RequestId, uint64 AttemptId)
+{
+    if (IsCurrentSessionRequest(RequestId) && AttemptId == TitleTravelAttemptId &&
+        bReturningToTitle && !bTitleTravelIssued && SessionState == EMWSessionState::Leaving)
+    {
+        bTitleTravelIssued = true;
+        ClearTitleTravelGateTimeout();
+        UE_LOG(LogTemp, Display, TEXT("MW_RETURN LOCAL_TRAVEL_DISPATCH ATTEMPT=%llu"), AttemptId);
+        // 절대 이동 + 빈 옵션: Listen 옵션을 메뉴로 상속하지 않습니다.
+        UGameplayStatics::OpenLevel(this, ReturnMapPackageName, true, FString());
+    }
+}
+
+void UMWMultiplayerSubsystem::ClearTitleTravelGateTimeout()
+{
+    if (TitleTravelGateTimeoutHandle.IsValid())
+    {
+        FTSTicker::RemoveTicker(TitleTravelGateTimeoutHandle);
+        TitleTravelGateTimeoutHandle.Reset();
+    }
 }
 
 void UMWMultiplayerSubsystem::FinishCleanup()
@@ -1278,6 +1327,7 @@ void UMWMultiplayerSubsystem::ArmSessionTimeout()
 
 void UMWMultiplayerSubsystem::ClearSessionTimeout()
 {
+    ClearTitleTravelGateTimeout();
     if (UGameInstance* GI = GetGameInstance())
     {
         GI->GetTimerManager().ClearTimer(SessionTimeoutHandle);
