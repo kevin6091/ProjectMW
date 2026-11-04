@@ -8,6 +8,9 @@
 #include "Data/MWVehicleDriveData.h"
 #include "MWVehicleMovementComponent.generated.h"
 
+class AMWVehiclePawn;
+struct FMWVehicleDriveSnapshot;
+
 /**
  *
  */
@@ -41,6 +44,12 @@ protected:
 	TObjectPtr<UMWVehicleDriveData> DriveData;
 
 private:
+	friend class AMWVehiclePawn;
+
+	void SimulateDriveStep(float DeltaTime);
+	void CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const;
+	void ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot);
+
 	UPROPERTY(Transient)
 	FMWVehicleDriveConfig DriveConfig;
 

@@ -1,6 +1,7 @@
 
 
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
@@ -35,10 +36,17 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		return;
 	}
 
-	// 이번 단계는 로컬 주행이다. 원격 입력 전송/서버 재현은 별도 구현한다.
-	if (GetNetMode() != NM_Standalone && !PawnOwner->IsLocallyControlled())
+	if (GetNetMode() != NM_Standalone)
 	{
-		return;
+		if (AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner))
+		{
+			Vehicle->TickNetworkDrive(DeltaTime);
+			return;
+		}
+		if (!PawnOwner->IsLocallyControlled())
+		{
+			return;
+		}
 	}
 
 	ConsumeInputVector();
@@ -49,21 +57,49 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 	while (RemainingTime > SMALL_NUMBER && IsValid(PawnOwner) && IsValid(UpdatedComponent))
 	{
 		const float Step = FMath::Min(RemainingTime, MaxSimulationStep);
-		UpdateGroundState();
-		UpdateSteering(Step);
-		if (bGrounded)
-		{
-			UpdateDriveVelocity(Step);
-		}
-		else
-		{
-			UpdateAirVelocity(Step);
-		}
-		MoveVehicle(Step);
-		UpdateGroundState();
-		AdjustGroundHeight();
+		SimulateDriveStep(Step);
 		RemainingTime -= Step;
 	}
+}
+
+// 독립 실행, 서버 재현, 소유자의 예측과 재실행이 같은 충돌·접지 계산을 사용한다.
+void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime)
+{
+	UpdateGroundState();
+	UpdateSteering(DeltaTime);
+	if (bGrounded)
+	{
+		UpdateDriveVelocity(DeltaTime);
+	}
+	else
+	{
+		UpdateAirVelocity(DeltaTime);
+	}
+	MoveVehicle(DeltaTime);
+	UpdateGroundState();
+	AdjustGroundHeight();
+	UpdateComponentVelocity();
+}
+
+void UMWVehicleMovementComponent::CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const
+{
+	const USceneComponent* SnapshotRoot = UpdatedComponent ? UpdatedComponent.Get() : GetOwner()->GetRootComponent();
+	if (SnapshotRoot)
+	{
+		OutSnapshot.Location = SnapshotRoot->GetComponentLocation();
+		OutSnapshot.Rotation = SnapshotRoot->GetComponentRotation();
+	}
+	OutSnapshot.Velocity = Velocity;
+	OutSnapshot.bGrounded = bGrounded;
+}
+
+void UMWVehicleMovementComponent::ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot)
+{
+	// 서버 위치를 복원할 때 Sweep하거나 Pawn의 텔레포트 콜백으로 입력을 초기화하지 않는다.
+	UpdatedComponent->SetWorldLocationAndRotation(Snapshot.Location, Snapshot.Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+	Velocity = Snapshot.Velocity;
+	bGrounded = Snapshot.bGrounded;
+	TargetRotation = UpdatedComponent->GetComponentQuat();
 	UpdateComponentVelocity();
 }
 
@@ -538,44 +574,68 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		return;
 	}
 
-	const FVector MoveDelta = Velocity * DeltaTime;
-
-	FHitResult Hit(1.f);
-
-	SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
-
-	if (Hit.IsValidBlockingHit())
+	constexpr int32 MaxMoveAttempts = 3;
+	TArray<FVector, TInlineAllocator<MaxMoveAttempts>> BlockingNormals;
+	float RemainingTime = DeltaTime;
+	FQuat MoveRotation = TargetRotation;
+	for (int32 Attempt = 0; Attempt < MaxMoveAttempts; ++Attempt)
 	{
-		HandleImpact(Hit, DeltaTime, MoveDelta);
+		const FVector MoveDelta = Velocity * RemainingTime;
+		FHitResult Hit(1.f);
+		SafeMoveUpdatedComponent(MoveDelta, MoveRotation, true, Hit);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
 		{
 			return;
 		}
 
-		// 충돌면 안쪽으로 향하는 속도만 제거한다.
-		const float IntoSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
-
-		if (IntoSurfaceSpeed < 0.f)
+		// SafeMove의 겹침 해소가 실패하면 막힌 이동 속도를 다음 스텝에 남기지 않는다.
+		if (Hit.bStartPenetrating)
 		{
-			Velocity -= Hit.Normal * IntoSurfaceSpeed;
+			Velocity = FVector::ZeroVector;
+			break;
+		}
+		if (!Hit.IsValidBlockingHit())
+		{
+			break;
 		}
 
-		// 처음 요청한 이동 중 남은 부분을 표면을 따라 시도한다.
-		SlideAlongSurface(MoveDelta, 1.f - Hit.Time, Hit.Normal, Hit, true);
-
-		// 미끄러지는 도중 다른 면에도 막혔다면 속도를 정리한다.
-		if (Hit.IsValidBlockingHit())
+		HandleImpact(Hit, RemainingTime, MoveDelta);
+		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
 		{
-			const float IntoSecondSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
+			return;
+		}
 
-			if (IntoSecondSurfaceSpeed < 0.f)
+		const double IntoSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
+		Velocity -= Hit.Normal * FMath::Min(IntoSurfaceSpeed, 0.0);
+
+		// 다음 벽에 투영한 속도가 앞선 벽 안쪽을 향하면 두 면의 교선으로 제한한다.
+		for (const FVector& PreviousNormal : BlockingNormals)
+		{
+			if (FVector::DotProduct(Velocity, PreviousNormal) < -KINDA_SMALL_NUMBER)
 			{
-				Velocity -= Hit.Normal * IntoSecondSurfaceSpeed;
+				const FVector Edge = FVector::CrossProduct(PreviousNormal, Hit.Normal).GetSafeNormal();
+				Velocity = Edge * FVector::DotProduct(Velocity, Edge);
+				break;
 			}
 		}
-	}
+		BlockingNormals.Add(Hit.Normal);
 
-	UpdateComponentVelocity();
+		if (BlockingNormals.ContainsByPredicate([this](const FVector& Normal)
+		{
+			return FVector::DotProduct(Velocity, Normal) < -KINDA_SMALL_NUMBER;
+		}))
+		{
+			Velocity = FVector::ZeroVector;
+			break;
+		}
+
+		RemainingTime *= 1.f - Hit.Time;
+		if (RemainingTime <= SMALL_NUMBER || Velocity.IsNearlyZero())
+		{
+			break;
+		}
+		MoveRotation = UpdatedComponent->GetComponentQuat();
+	}
 }
 
 void UMWVehicleMovementComponent::AdjustGroundHeight()
