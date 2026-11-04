@@ -4,14 +4,14 @@
 #include "Components/EditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Engine/GameInstance.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
+#include "System/MWGameInstance.h"
 
 void UMWCreateRoomWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetIsFocusable(true);
-	UMWMultiplayerSubsystem* Sessions = GetGameInstance()
-		? GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>() : nullptr;
+	UMWGameInstance* Sessions = GetGameInstance()
+		? Cast<UMWGameInstance>(GetGameInstance()) : nullptr;
 	Subsystem = Sessions;
 	if (Sessions)
 	{
@@ -56,7 +56,7 @@ void UMWCreateRoomWidget::NativeConstruct()
 
 void UMWCreateRoomWidget::NativeDestruct()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get())
+	if (UMWGameInstance* Sessions = Subsystem.Get())
 	{
 		Sessions->OnLoginFinished.RemoveDynamic(this, &ThisClass::HandleLoginFinished);
 		Sessions->OnSessionStateChanged.RemoveDynamic(this, &ThisClass::HandleSessionStateChanged);
@@ -85,10 +85,10 @@ void UMWCreateRoomWidget::NativeDestruct()
 
 void UMWCreateRoomWidget::RefreshForm()
 {
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	UMWGameInstance* Sessions = Subsystem.Get();
 	const EMWSessionState State = Sessions ? Sessions->GetSessionState() : EMWSessionState::None;
 	const bool bIdle = Sessions && State == EMWSessionState::None;
-	const bool bCanCreate = bIdle && Sessions->IsLoggedIn() && !Sessions->IsLoginInProgress();
+	const bool bCanCreate = bIdle && (!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) && !Sessions->IsLoginInProgress();
 	Input_RoomName->SetIsEnabled(bCanCreate);
 	Select_MaxPlayers->SetIsEnabled(bCanCreate);
 	Select_MapTheme->SetIsEnabled(bCanCreate && !AvailableMapThemeIds.IsEmpty());
@@ -104,7 +104,7 @@ void UMWCreateRoomWidget::RefreshForm()
 	else if (State == EMWSessionState::Creating) Status = TEXT("방을 생성하고 서버와 맵을 준비하고 있습니다...");
 	else if (State == EMWSessionState::Leaving) Status = TEXT("세션을 정리하고 타이틀로 돌아가고 있습니다...");
 	else if (State != EMWSessionState::None) Status = TEXT("진행 중인 세션 작업을 완료해 주세요.");
-	else if (!Sessions->IsLoggedIn()) Status = TEXT("먼저 로그인해 주세요.");
+	else if (!(!Sessions->IsLoginRequired() || Sessions->IsLoggedIn())) Status = TEXT("먼저 로그인해 주세요.");
 	else if (AvailableMapThemeIds.IsEmpty()) Status = TEXT("사용 가능한 맵 테마가 없습니다. 게임 콘텐츠 설정을 확인해 주세요.");
 	else Status = TEXT("방 이름, 최대 인원, 맵 테마를 선택해 주세요. 최대 인원에는 호스트가 포함됩니다.");
 	Text_Status->SetText(FText::FromString(Status));
@@ -116,9 +116,9 @@ void UMWCreateRoomWidget::RefreshForm()
 
 void UMWCreateRoomWidget::HandleCreateClicked()
 {
-	UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	UMWGameInstance* Sessions = Subsystem.Get();
 	if (!Sessions || Sessions->GetSessionState() != EMWSessionState::None ||
-		!Sessions->IsLoggedIn() || Sessions->IsLoginInProgress())
+		!(!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) || Sessions->IsLoginInProgress())
 	{
 		RefreshForm();
 		return;
@@ -143,7 +143,7 @@ void UMWCreateRoomWidget::HandleCreateClicked()
 
 void UMWCreateRoomWidget::HandleBackClicked()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	if (UMWGameInstance* Sessions = Subsystem.Get();
 		Sessions && Sessions->GetSessionState() == EMWSessionState::None)
 	{
 		OnBackRequested.Broadcast();
@@ -152,7 +152,7 @@ void UMWCreateRoomWidget::HandleBackClicked()
 
 void UMWCreateRoomWidget::HandleRetryClicked()
 {
-	if (UMWMultiplayerSubsystem* Sessions = Subsystem.Get();
+	if (UMWGameInstance* Sessions = Subsystem.Get();
 		Sessions && Sessions->GetSessionState() == EMWSessionState::CleanupRequired)
 	{
 		LocalError.Reset();

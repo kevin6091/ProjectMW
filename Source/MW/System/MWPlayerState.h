@@ -2,7 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "GameplayTagContainer.h"
+#include "MWGameplayTags.h"
 #include "MWPlayerState.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWPlayerStateChanged);
 
 UCLASS()
 class MW_API AMWPlayerState : public APlayerState
@@ -10,8 +14,8 @@ class MW_API AMWPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
-	virtual void GetLifetimeReplicatedProps(
-		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_PlayerName() override;
 	virtual void OnRep_UniqueId() override;
 
@@ -24,12 +28,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "MW|Lobby")
 	int32 GetLobbyMemberId() const { return LobbyMemberId; }
 
-	UFUNCTION(BlueprintPure, Category = "MW|Lobby")
-	bool IsSessionRegistrationConfirmed() const { return bSessionRegistrationConfirmed; }
-
 	void SetLobbyFlagsFromServer(bool bInHost, bool bInReady);
 	void SetLobbyMemberIdFromServer(int32 Id);
-	void SetSessionRegistrationConfirmedFromServer(bool bConfirmed);
+
+	UFUNCTION(BlueprintPure, Category = "MW|Vehicle")
+	FGameplayTag GetVehicleAssetID() const
+	{
+		return VehicleAssetID;
+	}
+
+	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
+	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
+	
+	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
+	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
+	FMWPlayerStateChanged OnPlayerStateChanged;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
@@ -37,13 +50,17 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	bool bReady = false;
+	
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	int32 LobbyMemberId = INDEX_NONE;
-	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
-	bool bSessionRegistrationConfirmed = false;
-
 	UFUNCTION()
 	void OnRep_LobbyFlags();
+	
+	UPROPERTY(ReplicatedUsing = OnRep_VehicleAssetID)
+	FGameplayTag VehicleAssetID = FGameplayTag::EmptyTag;
+	
+	UFUNCTION()
+	void OnRep_VehicleAssetID();
 
-	void NotifyLobby();
+	void NotifyPlayerStateChanged();
 };

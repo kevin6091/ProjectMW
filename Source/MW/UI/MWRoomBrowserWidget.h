@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerTypes.h"
+#include "UI/MWMenuTypes.h"
 #include "MWRoomBrowserWidget.generated.h"
 
 class UButton;
 class UTextBlock;
 class UVerticalBox;
-class UMWMultiplayerSubsystem;
+class UMWGameInstance;
 class UMWRoomListEntryWidget;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWRoomBrowserBackRequested);
 
@@ -36,7 +36,7 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_RetryCleanup;
 
 private:
-	TWeakObjectPtr<UMWMultiplayerSubsystem> Subsystem;
+	TWeakObjectPtr<UMWGameInstance> Subsystem;
 	UPROPERTY(Transient) TArray<TObjectPtr<UMWRoomListEntryWidget>> Entries;
 	TArray<FMWRoomInfo> Rows;
 	FString SelectedSessionId;

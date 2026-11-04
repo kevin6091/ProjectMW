@@ -1,5 +1,9 @@
 # AssetManager 맵 테마 기반 방 생성 구현 가이드
 
+> 2026-11-02 연결 구조 변경: EOS·세션은 독립 MWConnection 플러그인, 게임의 테마·UI 연결은 MWGameInstance가 담당한다. 아래 Subsystem 전체 예제로 현재 Source를 덮어쓰지 않는다. 현재 공개 API·사용법은 [15번 문서](15_독립_연결모듈_API와_프로젝트_연동.md)를 따른다.
+
+> 2026-10-29 맵 흐름 변경: 현재 방 생성·참가 로비는 L_Title이며, 전원 Ready·호스트 시작 후 선택 Theme 레벨로 이동한다. 이 문서의 생성 직후 Theme 맵 이동 코드는 이전 단계의 예시다. 최신 구현과 실제 검증은 [14번 문서](14_L_Title_로비_Ready_및_테마레벨_이동.md)를 따른다.
+
 **문서 번호:** MW-ROOM-IMPLEMENTATION-001 / v1.0 / 2026-10-28\
 **분야:** Client + Server / MW Runtime / Listen Server\
 **정본:** [06 공용 데이터 이식 6.3절](06_공용_데이터_이식.md)\

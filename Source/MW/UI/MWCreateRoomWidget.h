@@ -3,13 +3,14 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ComboBoxString.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerTypes.h"
+#include "UI/MWMenuTypes.h"
+#include "System/MWRoomTypes.h"
 #include "MWCreateRoomWidget.generated.h"
 
 class UButton;
 class UEditableTextBox;
 class UTextBlock;
-class UMWMultiplayerSubsystem;
+class UMWGameInstance;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWCreateRoomBackRequested);
 
@@ -46,7 +47,7 @@ protected:
 	FName SelectedMapThemeId;
 
 private:
-	TWeakObjectPtr<UMWMultiplayerSubsystem> Subsystem;
+	TWeakObjectPtr<UMWGameInstance> Subsystem;
 	FString LocalError;
 
 	UFUNCTION() void HandleCreateClicked();
