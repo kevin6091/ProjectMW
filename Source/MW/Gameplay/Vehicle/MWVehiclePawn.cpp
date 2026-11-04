@@ -1,10 +1,11 @@
 
 
-#include "Gameplay/Vehicle/MWVehicleCharacter.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Data/MWInputData.h"
 #include "MWGameplayTags.h"
 
+#include "Components/BoxComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -15,77 +16,109 @@
 #include "InputAction.h"
 #include "InputMappingContext.h"
 
-// 기본 CharacterMovement를 차량용 이동 컴포넌트로 교체
-AMWVehicleCharacter::AMWVehicleCharacter(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMWVehicleMovementComponent>(ACharacter::CharacterMovementComponentName))
+// 충돌 루트와 Pawn 전용 이동 컴포넌트를 연결한다.
+AMWVehiclePawn::AMWVehiclePawn()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	bReplicates = true;
 	bUseControllerRotationYaw = false;
 
+	CollisionRoot = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionRoot"));
+	SetRootComponent(CollisionRoot);
+
+	CollisionRoot->InitBoxExtent(FVector(100.f, 50.f, 30.f));
+	CollisionRoot->SetCollisionProfileName(TEXT("Pawn"));
+	CollisionRoot->SetSimulatePhysics(false);
+
+	VehicleMovement = CreateDefaultSubobject<UMWVehicleMovementComponent>(TEXT("VehicleMovement"));
+	VehicleMovement->SetUpdatedComponent(CollisionRoot);
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 550.f;
 	CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 100.f);
-	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->bDoCollisionTest = false;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 }
 
-void AMWVehicleCharacter::SubmitDriveInput(const FMWVehicleDriveInput& NewInput)
+void AMWVehiclePawn::SubmitDriveInput(const FMWVehicleDriveInput& NewInput)
 {
-	if (UMWVehicleMovementComponent* Movement = Cast<UMWVehicleMovementComponent>(GetCharacterMovement()))
+	DriveInput = NewInput;
+	if (UMWVehicleMovementComponent* Movement = Cast<UMWVehicleMovementComponent>(GetMovementComponent()))
 	{
 		Movement->SetDriveInput(NewInput);
 	}
 }
 
+UPawnMovementComponent* AMWVehiclePawn::GetMovementComponent() const
+{
+	return VehicleMovement;
+}
+
+void AMWVehiclePawn::UnPossessed()
+{
+	DriveInput = FMWVehicleDriveInput{};
+	VehicleMovement->ResetDriveInput();
+	RemoveDrivingMappingContext();
+	Super::UnPossessed();
+}
+
+void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
+{
+	Super::TeleportSucceeded(bIsATest);
+	if (!bIsATest)
+	{
+		DriveInput = FMWVehicleDriveInput{};
+	}
+}
+
 // Called when the game starts or when spawned
-void AMWVehicleCharacter::BeginPlay()
+void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called to bind functionality to input
-void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AMWVehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	
+
 	if (!PC)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("PlayerController is not valid on %s"), *GetName());
 		return;
 	}
-	
+
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	
+
 	if (!EIC)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent is not valid on %s"), *GetName());
 		return;
 	}
-	
+
 	if (!DrivingInputData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DrivingInputData is not set on %s"), *GetName());
 		return;
 	}
-	
+
 	const UInputMappingContext* MappingContext = DrivingInputData->GetMappingContext();
-	
+
 	const UInputAction* Accel = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Accel);
 	const UInputAction* Brake = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Reverse);
 	const UInputAction* Steer = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Steer);
 	const UInputAction* Drift = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_Drift);
 	// const UInputAction* UseItem = DrivingInputData->FindInputActionByTag(MWGameplayTags::Input_UseItem);
-	
+
 	if (!MappingContext ||
 		!Accel ||
 		!Brake ||
@@ -107,7 +140,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		return;
 	}
-	
+
 	if (Accel->ValueType != EInputActionValueType::Axis1D ||
 		Brake->ValueType != EInputActionValueType::Axis1D ||
 		Steer->ValueType != EInputActionValueType::Axis1D)
@@ -122,7 +155,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		return;
 	}
-	
+
 	if (Drift->ValueType != EInputActionValueType::Boolean)
 	{
 		UE_LOG(
@@ -133,7 +166,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		return;
 	}
-	
+
 	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
 
 	if (!LocalPlayer)
@@ -146,7 +179,7 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		return;
 	}
-	
+
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 
 	if (!InputSubsystem)
@@ -159,10 +192,10 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 		return;
 	}
-	
+
 	DriveInput = FMWVehicleDriveInput{};
 	SubmitDriveInput(DriveInput);
-	
+
 	EIC->BindAction(Accel, ETriggerEvent::Triggered, this, &ThisClass::HandleAccel);
 	EIC->BindAction(Accel, ETriggerEvent::Completed, this, &ThisClass::StopAccel);
 	EIC->BindAction(Accel, ETriggerEvent::Canceled, this, &ThisClass::StopAccel);
@@ -174,11 +207,11 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	EIC->BindAction(Steer, ETriggerEvent::Triggered, this, &ThisClass::HandleSteer);
 	EIC->BindAction(Steer, ETriggerEvent::Completed, this, &ThisClass::StopSteer);
 	EIC->BindAction(Steer, ETriggerEvent::Canceled, this, &ThisClass::StopSteer);
-	
+
 	EIC->BindAction(Drift, ETriggerEvent::Triggered, this, &ThisClass::StartDrift);
 	EIC->BindAction(Drift, ETriggerEvent::Completed, this, &ThisClass::StopDrift);
 	EIC->BindAction(Drift, ETriggerEvent::Canceled, this, &ThisClass::StopDrift);
-	
+
 	InputSubsystem->AddMappingContext(MappingContext, 0);
 
 	UE_LOG(
@@ -188,11 +221,16 @@ void AMWVehicleCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		*GetNameSafe(this));
 }
 
-void AMWVehicleCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AMWVehiclePawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	DriveInput = FMWVehicleDriveInput();
 	SubmitDriveInput(DriveInput);
+	RemoveDrivingMappingContext();
+	Super::EndPlay(EndPlayReason);
+}
 
+void AMWVehiclePawn::RemoveDrivingMappingContext()
+{
 	if (DrivingInputData)
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -207,53 +245,52 @@ void AMWVehicleCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			}
 		}
 	}
-	
-	Super::EndPlay(EndPlayReason);
+
 }
 
-void AMWVehicleCharacter::HandleAccel(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleAccel(const FInputActionValue& Value)
 {
 	DriveInput.Throttle = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::HandleReverse(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleReverse(const FInputActionValue& Value)
 {
 	DriveInput.Reverse = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::HandleSteer(const FInputActionValue& Value)
+void AMWVehiclePawn::HandleSteer(const FInputActionValue& Value)
 {
 	DriveInput.Steering = Value.Get<float>();
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopAccel()
+void AMWVehiclePawn::StopAccel()
 {
 	DriveInput.Throttle = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopReverse()
+void AMWVehiclePawn::StopReverse()
 {
 	DriveInput.Reverse = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopSteer()
+void AMWVehiclePawn::StopSteer()
 {
 	DriveInput.Steering = 0.0f;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StartDrift()
+void AMWVehiclePawn::StartDrift()
 {
 	DriveInput.bDriftRequested = true;
 	SubmitDriveInput(DriveInput);
 }
 
-void AMWVehicleCharacter::StopDrift()
+void AMWVehiclePawn::StopDrift()
 {
 	DriveInput.bDriftRequested = false;
 	SubmitDriveInput(DriveInput);
