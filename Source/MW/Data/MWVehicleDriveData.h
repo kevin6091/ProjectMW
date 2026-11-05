@@ -93,6 +93,22 @@ struct MW_API FMWVehicleDriveConfig
 	// 최대 낙하 속도. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Air", meta = (ClampMin = "1.0", Units = "cm/s"))
 	float MaxFallSpeed = 4000.f;
+
+	// 차량 간 충돌에 사용하는 질량
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "1.0", Units = "kg"))
+	float VehicleMass = 1000.f;
+
+	// 반발 계수
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CollisionRestitution = 0.1f;
+
+	// 반발이 적용되는 최소 접근 속도. 단위: cm/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", Units = "cm/s"))
+	float MinBounceSpeed = 100.f;
+
+	// 차량끼리 부딪힌 뒤 접촉 법선 방향의 공통 운동량을 유지하는 비율
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float CollisionMomentumRetention = 0.35f;
 };
 
 UCLASS()
