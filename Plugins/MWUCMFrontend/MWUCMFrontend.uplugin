@@ -1,0 +1,10 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "MW UCM frontend connection",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Modules": [{"Name": "MWUCMFrontend", "Type": "Runtime", "LoadingPhase": "Default"}],
+  "Plugins": [{"Name": "UCMTitlePreview", "Enabled": true}]
+}

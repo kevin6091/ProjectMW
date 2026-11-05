@@ -34,11 +34,29 @@ void UMWRoomBrowserWidget::NativeDestruct()
 		Sessions->OnSessionStateChanged.RemoveDynamic(this, &ThisClass::HandleStateChanged);
 		Sessions->OnSessionError.RemoveDynamic(this, &ThisClass::HandleError);
 	}
-	for (UMWRoomListEntryWidget* Entry : Entries) Entry->OnRoomSelected.RemoveDynamic(this, &ThisClass::HandleRoomSelected);
-	Button_Refresh->OnClicked.RemoveDynamic(this, &ThisClass::HandleRefresh);
-	Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBack);
-	Button_Join->OnClicked.RemoveDynamic(this, &ThisClass::HandleJoin);
-	Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetry);
+	for (UMWRoomListEntryWidget* Entry : Entries)
+	{
+		if (IsValid(Entry))
+		{
+			Entry->OnRoomSelected.RemoveDynamic(this, &ThisClass::HandleRoomSelected);
+		}
+	}
+	if (IsValid(Button_Refresh))
+	{
+		Button_Refresh->OnClicked.RemoveDynamic(this, &ThisClass::HandleRefresh);
+	}
+	if (IsValid(Button_Back))
+	{
+		Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBack);
+	}
+	if (IsValid(Button_Join))
+	{
+		Button_Join->OnClicked.RemoveDynamic(this, &ThisClass::HandleJoin);
+	}
+	if (IsValid(Button_RetryCleanup))
+	{
+		Button_RetryCleanup->OnClicked.RemoveDynamic(this, &ThisClass::HandleRetry);
+	}
 	Subsystem.Reset();
 	Super::NativeDestruct();
 }
@@ -84,6 +102,8 @@ void UMWRoomBrowserWidget::RefreshView()
 	Button_RetryCleanup->SetVisibility(State == EMWSessionState::CleanupRequired ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Button_RetryCleanup->SetIsEnabled(Sessions && State == EMWSessionState::CleanupRequired);
 	Text_Error->SetText(FText::FromString(Sessions ? Sessions->GetLastSessionError() : TEXT("온라인 시스템을 확인할 수 없습니다.")));
+	Text_Error->SetVisibility(Text_Error->GetText().IsEmpty()
+		? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	FString Status;
 	if (State == EMWSessionState::Searching) Status = TEXT("현재 열려 있는 방 목록을 불러오고 있습니다...");
 	else if (State == EMWSessionState::Joining) Status = TEXT("선택한 방에 연결하고 로비 정보를 확인하고 있습니다...");
