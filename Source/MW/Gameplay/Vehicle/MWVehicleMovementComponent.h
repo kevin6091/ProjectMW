@@ -75,5 +75,7 @@ private:
 
 	void MoveVehicle(float DeltaTime);
 
+	bool TryResolveVehicleContact(const FHitResult& Hit);
+
 	void AdjustGroundHeight();
 };

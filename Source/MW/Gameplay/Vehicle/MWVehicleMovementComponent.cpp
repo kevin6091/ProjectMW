@@ -605,8 +605,23 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 			return;
 		}
 
-		const double IntoSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
-		Velocity -= Hit.Normal * FMath::Min(IntoSurfaceSpeed, 0.0);
+		if (TryResolveVehicleContact(Hit))
+		{
+			break;
+		}
+
+		const double BlockedSpeed = FMath::Max(-FVector::DotProduct(Velocity, Hit.Normal), 0.0);
+		Velocity += Hit.Normal * BlockedSpeed;
+
+		if (bGrounded && BlockedSpeed > 0.0 && !Cast<AMWVehiclePawn>(Hit.GetActor())
+			&& FMath::Abs(FVector::DotProduct(Hit.ImpactNormal, GroundNormal)) < 0.5)
+		{
+			// 바닥과 벽의 교선 방향만 감속한다. 가볍게 스치면 벽이 막은 속도도 작다.
+			const FVector WallTangent = FVector::CrossProduct(GroundNormal, Hit.Normal).GetSafeNormal();
+			const double SlideSpeed = FVector::DotProduct(Velocity, WallTangent);
+			const double SpeedLoss = FMath::Min(FMath::Abs(SlideSpeed), BlockedSpeed * DriveConfig.WallSlideFriction);
+			Velocity -= WallTangent * (FMath::Sign(SlideSpeed) * SpeedLoss);
+		}
 
 		// 다음 벽에 투영한 속도가 앞선 벽 안쪽을 향하면 두 면의 교선으로 제한한다.
 		for (const FVector& PreviousNormal : BlockingNormals)
@@ -636,6 +651,68 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		}
 		MoveRotation = UpdatedComponent->GetComponentQuat();
 	}
+}
+
+bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit)
+{
+	if (!IsValid(PawnOwner) || !PawnOwner->HasAuthority() || !Hit.IsValidBlockingHit())
+	{
+		return false;
+	}
+
+	const AMWVehiclePawn* OtherPawn = Cast<AMWVehiclePawn>(Hit.GetActor());
+	if (!IsValid(OtherPawn) || OtherPawn == PawnOwner)
+	{
+		return false;
+	}
+
+	auto* Other = Cast<UMWVehicleMovementComponent>(OtherPawn->GetMovementComponent());
+	if (!IsValid(Other) ||
+		!Other->bDriveConfigReady ||
+		!IsValid(Other->UpdatedPrimitive) ||
+		Hit.GetComponent() != Other->UpdatedPrimitive)
+	{
+		return false;
+	}
+
+	// B 표면에서 A를 향하는 수평 법선. 수직 접촉은 기존 처리로 보낸다.
+	const FVector Normal = FVector(Hit.ImpactNormal).GetSafeNormal2D();
+	if (Normal.IsNearlyZero())
+	{
+		return false;
+	}
+
+	const double SpeedA = FVector::DotProduct(Velocity, Normal);
+	const double SpeedB = FVector::DotProduct(Other->Velocity, Normal);
+	const double ClosingSpeed = SpeedB - SpeedA;
+	if (ClosingSpeed <= KINDA_SMALL_NUMBER)
+	{
+		return true;
+	}
+
+	// 저속에서도 서로 밀 수 있다. 반발만 일정 접근 속도 이상에서 적용한다.
+	const double MinBounceSpeed = FMath::Max(DriveConfig.MinBounceSpeed, Other->DriveConfig.MinBounceSpeed);
+	const double Restitution = ClosingSpeed >= MinBounceSpeed
+		? FMath::Min(DriveConfig.CollisionRestitution, Other->DriveConfig.CollisionRestitution)
+		: 0.0;
+
+	const double MassA = DriveConfig.VehicleMass;
+	const double MassB = Other->DriveConfig.VehicleMass;
+	const double InvMassA = 1.0 / MassA;
+	const double InvMassB = 1.0 / MassB;
+	const double Impulse = (1.0 + Restitution) * ClosingSpeed / (InvMassA + InvMassB);
+
+	// 두 차량의 공통 속도를 같은 양만큼 감속해 밀림을 줄이고, 충돌 후 분리 속도는 유지한다.
+	// 속도 차이가 작은 접촉에서는 나란히 달리던 차량을 갑자기 감속시키지 않는다.
+	const double Retention = FMath::Min(DriveConfig.CollisionMomentumRetention, Other->DriveConfig.CollisionMomentumRetention);
+	const double CommonSpeed = (SpeedA * MassA + SpeedB * MassB) / (MassA + MassB);
+	const double MaxCommonSpeedLoss = ClosingSpeed * 0.5;
+	const double CommonSpeedLoss = FMath::Clamp(CommonSpeed, -MaxCommonSpeedLoss, MaxCommonSpeedLoss) * (1.0 - Retention);
+	Velocity += Normal * (Impulse * InvMassA - CommonSpeedLoss);
+	Other->Velocity -= Normal * (Impulse * InvMassB + CommonSpeedLoss);
+	Other->UpdateComponentVelocity();
+
+	return true;
 }
 
 void UMWVehicleMovementComponent::AdjustGroundHeight()

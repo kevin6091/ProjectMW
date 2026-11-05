@@ -118,6 +118,9 @@ bool FMWDriveConfigTest::RunTest(const FString& Parameters)
 	Reject(TEXT("Negative gravity scale"), [](auto& C) { C.GravityScale = -1; });
 	Reject(TEXT("Drift multiplier outside range"), [](auto& C) { C.DriftFrictionMultiplier = 2; });
 	Reject(TEXT("Negative detach speed"), [](auto& C) { C.GroundDetachSpeed = -1; });
+	Reject(TEXT("Zero vehicle mass"), [](auto& C) { C.VehicleMass = 0; });
+	Reject(TEXT("Momentum retention outside range"), [](auto& C) { C.CollisionMomentumRetention = 2; });
+	Reject(TEXT("Negative wall friction"), [](auto& C) { C.WallSlideFriction = -1; });
 	return true;
 }
 
@@ -204,11 +207,30 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Wall blocks forward translation"), Scene.Vehicle->GetActorLocation().X <= 280.5f);
 	TestTrue(TEXT("Oblique collision slides along wall"), Scene.Vehicle->GetActorLocation().Y > 100);
 	TestTrue(TEXT("Oblique collision removes speed into the wall"), FMath::Abs(Scene.Movement->Velocity.X) < 1);
+
+	Scene.Reset(FVector(0, 0, 31), FRotator(0, 45, 0));
+	Scene.Movement->Velocity = FVector(900, 900, 0);
+	Scene.Input(1);
+	Scene.Step(0.6f);
+	const FVector AtWall = Scene.Vehicle->GetActorLocation();
+	TestTrue(TEXT("Diagonal impact reaches the wall"), AtWall.X > 260);
+	Scene.Step(1.f);
+	const double WallSlideDistance = FMath::Abs(Scene.Vehicle->GetActorLocation().Y - AtWall.Y);
+	AddInfo(FString::Printf(TEXT("Wall slide under throttle: %.2f cm in one second, final speed %.2f cm/s"),
+		WallSlideDistance, Scene.Movement->Velocity.Size2D()));
+	TestTrue(TEXT("Throttle into the wall does not keep sliding"), WallSlideDistance < 5);
+	TestTrue(TEXT("Diagonal wall contact clears sustained planar speed"), Scene.Movement->Velocity.Size2D() < 5);
+
+	Scene.Reset(FVector(240, 0, 31), FRotator(0, 75, 0));
+	Scene.Movement->Velocity = Scene.Vehicle->GetActorForwardVector() * 900;
+	Scene.Step(0.6f);
+	TestTrue(TEXT("A shallow scrape still moves along the wall"), Scene.Vehicle->GetActorLocation().Y > 300);
+	TestTrue(TEXT("A shallow scrape cannot pass through the wall"), Scene.Vehicle->GetActorLocation().X < 308);
 	Wall->GetOwner()->Destroy();
 
 	// Both walls are reached in one simulation step. Clipping against the second
 	// wall alone would restore a speed component pointing into the first wall.
-	Scene.Reset();
+	Scene.Reset(FVector(0, 0, 100));
 	Wall = Scene.AddBox(FVector(140.5, 0, 200), FVector(20, 1000, 200));
 	UBoxComponent* AngledWall = Scene.AddBox(FVector(-65.38, 113.25, 200), FVector(20, 1000, 200), FRotator(0, 120, 0));
 	Scene.Movement->Velocity = FVector(6000, 6000, 0);
@@ -246,6 +268,27 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Scene.Reset(FVector(0, 0, 500));
 	Scene.Step(1.f);
 	TestFalse(TEXT("Steep surface is not drivable ground"), Scene.Movement->IsGrounded());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveVehicleContactTest, "MW.Vehicle.VehicleContact",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWDriveVehicleContactTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	AMWVehiclePawn* OtherPawn = Scene.World->SpawnActor<AMWVehiclePawn>(FVector(202, 0, 31), FRotator::ZeroRotator);
+	UMWVehicleMovementComponent* Other = CastChecked<UMWVehicleMovementComponent>(OtherPawn->GetMovementComponent());
+	FObjectPropertyBase* Property = FindFProperty<FObjectPropertyBase>(Other->GetClass(), TEXT("DriveData"));
+	check(Property);
+	Property->SetObjectPropertyValue_InContainer(Other, NewObject<UMWVehicleDriveData>(OtherPawn));
+	OtherPawn->DispatchBeginPlay();
+
+	Scene.Movement->Velocity = FVector(900, 0, 0);
+	Scene.Step(1.f / 120.f, 1.f / 120.f);
+	AddInfo(FString::Printf(TEXT("Vehicle contact speed: striker %.2f, target %.2f cm/s"),
+		Scene.Movement->Velocity.X, Other->Velocity.X));
+	TestTrue(TEXT("A rear impact pushes the target without launching it"), Other->Velocity.X > 100 && Other->Velocity.X < 300);
+	TestTrue(TEXT("Contact leaves vehicles separating"), Other->Velocity.X > Scene.Movement->Velocity.X);
 	return true;
 }
 
