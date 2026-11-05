@@ -183,10 +183,15 @@ void UMWTitleRootWidget::HandleCreateRequested()
 	if (UMWGameInstance* Sessions = Subsystem.Get(); Sessions &&
 		(!Sessions->IsLoginRequired() || Sessions->IsLoggedIn()) && Sessions->GetSessionState() == EMWSessionState::None)
 	{
-		SelectedScreen = EEntryScreen::CreateRoom;
-		EntryMessage.Reset();
-		RefreshEntryScreen();
+		OpenCreateRoomForm();
 	}
+}
+
+void UMWTitleRootWidget::OpenCreateRoomForm()
+{
+	SelectedScreen = EEntryScreen::CreateRoom;
+	EntryMessage.Reset();
+	RefreshEntryScreen();
 }
 
 void UMWTitleRootWidget::HandleBackRequested()

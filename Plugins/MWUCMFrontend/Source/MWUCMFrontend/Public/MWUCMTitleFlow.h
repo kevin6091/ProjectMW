@@ -97,6 +97,7 @@ public:
     UPROPERTY(Transient) TObjectPtr<AMWUCMTitleFlow> Flow;
     UPROPERTY(EditDefaultsOnly, Category="MW Integration") TSubclassOf<UUserWidget> MainMenuWidgetClass;
     void ActivateSourceMenu(int32 Index);
+    void RestoreCreateRoomForm() { OpenCreateRoomForm(); }
     void RestoreRoomBrowser() { OpenRoomBrowser(); }
 protected:
     virtual void NativeConstruct() override;

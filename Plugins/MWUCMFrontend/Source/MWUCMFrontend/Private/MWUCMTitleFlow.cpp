@@ -585,11 +585,10 @@ bool AMWUCMTitleFlow::StartRoomReturn(const UMWUCMIntroSession& Session)
 {
     auto* PC = GetWorld()->GetFirstPlayerController();
     const auto* LobbyRoute = FindRoute(TEXT("Lobby"));
-    const auto* MainRoute = FindRoute(TEXT("RoomPanel"));
     FTransform Pose;
     float FOV = 0.f;
     if (!PC || !PC->PlayerCameraManager || !WorldRouteCamera || !LobbyRoute || LobbyRoute->Reverse.Num() < 2 ||
-        !MainRoute || MainRoute->Reverse.Num() < 2 || !Session.GetReturnView(GetWorld(), Pose, FOV))
+        !Session.GetReturnView(GetWorld(), Pose, FOV))
         return false;
 
     PreviewStage = 2;
@@ -785,12 +784,7 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
     }
     if (WorldRouteTime < Samples.Last().Time) return;
     bWorldRouteActive = false;
-    if (bReturning && ActiveRegion == TEXT("ReturningFromLobby"))
-    {
-        if (!Session->ShouldReturnToRoomBrowser())
-            StartWorldRoute(TEXT("RoomPanel"), true, TEXT("Main"));
-        return;
-    }
+    if (bReturning && ActiveRegion == TEXT("ReturningFromLobby")) return;
     if (ActiveRegion == TEXT("Main") && !bReturning)
     {
         bSuppressPreviewInput = false;
@@ -958,8 +952,7 @@ void AMWUCMTitleFlow::Tick(float DeltaTime)
         return;
 
     const bool bRoomBrowser = Session->ShouldReturnToRoomBrowser();
-    if (bRoomBrowser && ActiveRegion == TEXT("Main") &&
-        StartWorldRoute(TEXT("RoomPanel"), false, TEXT("ReturningFromLobby")))
+    if (ActiveRegion == TEXT("Main") && StartWorldRoute(TEXT("RoomPanel"), false, TEXT("ReturningFromLobby")))
         return;
 
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -967,16 +960,16 @@ void AMWUCMTitleFlow::Tick(float DeltaTime)
     if (ViewTarget && (ViewTarget == WorldRouteCamera || ViewTarget == MenuCamera) &&
         Session->FinishReturnPresentation(PC, ViewTarget, RootWidget))
     {
+        ActiveRegion = TEXT("RoomPanel");
         if (bRoomBrowser)
         {
-            ActiveRegion = TEXT("RoomPanel");
             RootWidget->RestoreRoomBrowser();
             RecordRoomReturn(TEXT("ROOM_BROWSER_RESTORED"));
         }
         else
         {
-            RefreshRoot();
-            if (!bSuppressPreviewInput) RecordRoomReturn(TEXT("MENU_INPUT_ENABLED"));
+            RootWidget->RestoreCreateRoomForm();
+            RecordRoomReturn(TEXT("CREATE_ROOM_FORM_RESTORED"));
         }
     }
 }

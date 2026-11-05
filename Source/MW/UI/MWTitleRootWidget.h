@@ -27,6 +27,7 @@ protected:
 	virtual bool CanPresentEntryMenu(bool bLoggedIn) { return bLoggedIn; }
 	virtual void OnEntryPresentationUpdated(bool bLoggedIn, bool bMenuRequested) {}
 	virtual UWidget* ResolveEntryPresentation(UWidget* Screen, bool bMenuRequested) { return Screen; }
+	void OpenCreateRoomForm();
 	void OpenRoomBrowser();
 
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidgetSwitcher> WidgetSwitcher_2;
