@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "InputActionValue.h"
 #include "MWVehicleNetworkTypes.h"
 #include "MWVehiclePawn.generated.h"
 
@@ -23,6 +22,8 @@ public:
 	AMWVehiclePawn();
 
 	void SubmitDriveInput(const FMWVehicleDriveInput& NewInput);
+	const FMWVehicleDriveInput& GetDriveInput() const { return DriveInput; }
+	UMWInputData* GetDrivingInputData() const { return DrivingInputData; }
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
@@ -31,7 +32,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TeleportSucceeded(bool bIsATest) override;
 
@@ -90,15 +90,4 @@ private:
 	void PublishDriveSnapshot(bool bNewStream = false);
 	void ReconcilePredictedDrive();
 
-	void HandleAccel(const FInputActionValue& Value);
-	void HandleReverse(const FInputActionValue& Value);
-	void HandleSteer(const FInputActionValue& Value);
-
-	void StopAccel();
-	void StopReverse();
-	void StopSteer();
-
-	void StartDrift();
-	void StopDrift();
-	void RemoveDrivingMappingContext();
 };

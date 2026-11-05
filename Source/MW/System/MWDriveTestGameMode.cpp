@@ -4,11 +4,11 @@
 #include "System/MWDriveTestGameMode.h"
 
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
-#include "Player/MWDriveTestPlayerController.h"
+#include "Player/MWGameplayPlayerController.h"
 
 AMWDriveTestGameMode::AMWDriveTestGameMode()
 {
-	PlayerControllerClass = AMWDriveTestPlayerController::StaticClass();
+	PlayerControllerClass = AMWGameplayPlayerController::StaticClass();
 
 	DefaultPawnClass = AMWVehiclePawn::StaticClass();
 

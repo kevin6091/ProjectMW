@@ -2,8 +2,7 @@
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogMWVehicleNet, Log, All);
+#include "LogChannel.h"
 
 namespace
 {

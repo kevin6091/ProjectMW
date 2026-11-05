@@ -10,6 +10,8 @@
 - `UMWVehicleMovementComponent : UPawnMovementComponent`의 UpdatedComponent는 CollisionRoot다.
 - 루트는 물리 시뮬레이션을 끈 BoxComponent이며 Query Collision을 사용한다. Blueprint에서 Box Extent/충돌 설정을 조정한다.
 - Blueprint의 VehicleMovement에 DriveData, Pawn에 DrivingInputData를 지정해야 한다. 에셋 경로를 C++에 하드코딩하지 않는다.
+- 주행 Action 바인딩과 Mapping Context 수명은 `MWGameplayPlayerController`에서 관리한다. 기존 차량 BP의 DrivingInputData를 읽어 현재 조종 중인 Pawn에 `SubmitDriveInput()`으로 입력을 전달한다. Pawn은 이동·네트워크 처리와 입력 초기화를 담당한다.
+- `MWDriveTestGameMode`의 C++ 기본 Controller는 `MWGameplayPlayerController`다. 기존 테스트 Controller 클래스 삭제 후 개발자 주행 GameMode BP는 `/Game/System/BP_GameplayPlayerController`를 사용한다.
 - BeginPlay에서 충돌 루트와 DriveData를 검증한다. 필수 설정 누락/오류이면 로그를 남기고 속도 초기화 및 Tick 중단으로 실패한다.
 - DriveConfig는 DriveData의 사본이다. 실행 중 원본 DataAsset을 수정하지 않는다.
 
@@ -47,7 +49,9 @@ GroundProbeDistance > GroundClearance, FullBrakeDeceleration >= CoastDeceleratio
 FullSteeringSpeed > MinSteeringSpeed 관계를 확인한다.
 MinDriftSteering 및 DriftFrictionMultiplier는 [0,1], MaxGroundAngle은 [0,89], MaxFallSpeed는 1 이상이다.
 
-UnPossessed에서는 저장 입력과 자신이 설치한 Driving Context를 정리한다.
+Controller는 Pawn 교체·입력 컴포넌트 재생성·종료 시 등록한 바인딩과 Driving Context를 정리하고 이전 차량의 입력을 초기화한다. 같은 조종 상태를 다시 통지받아도 바인딩을 중복 등록하지 않는다.
+Pawn의 UnPossessed에서도 저장 입력을 초기화한다.
+Controller의 입력 핸들러는 Pawn의 현재 입력을 읽어 한 항목씩 갱신하므로 텔레포트로 초기화된 가속 입력을 다시 적용하지 않는다.
 TeleportTo 성공 시 Pawn/Movement의 저장 입력과 접지/회전 캐시를 초기화한다.
 텔레포트 자체가 속도를 지우지는 않는다. 체크포인트 복귀에서 정지가 필요하면 StopMovementImmediately를 함께 사용한다.
 EndPlay에서도 입력과 Driving Context를 정리한다. 카운트다운/Phase 허용 조건 통합은 후속 작업이다.
@@ -117,3 +121,5 @@ UE 5.8.4에서 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자�
 수정 후 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자동화 6개를 통과했다. `L_Dev_Drive`의 기존 북쪽 벽을 3인 Listen Server에서 65·75·85도 접근으로 재현했다. 후진, 탈출 방향 조향, 입력 해제의 9개 케이스 모두 서버와 소유 클라이언트의 접지를 유지했다. 75도 접근에서 후진 후 벽과의 간격이 28cm 늘었고, 탈출 방향 조향에서 서버 Yaw가 59.2도 바뀌었다. 측정 결과는 로컬 `Saved/Codex/VehicleGroundContact`에 있다.
 
 아이템 충격 효과와 경기 단계 전체 통합은 후속 범위다.
+
+주행 입력 Controller 이전 후 Win64 Development의 MWEditor·MW 빌드와 차량 자동화 6개를 통과했다. 기존 테스트 Controller BP와 native Gameplay Controller 각각에서 W, W+D, W+S, S, 드리프트 누름·해제, 조종 해제와 재조종을 PIE로 확인했다. native Controller 검증은 주행 테스트 GameMode의 Controller 클래스만 프로세스 안에서 바꿔 실행했다. 3인 Listen Server에서도 같은 native Controller로 원격 주행과 호스트 주행이 전달됐다. 결과는 로컬 `Saved/Codex/ControllerDrivingInput`에 있다.
