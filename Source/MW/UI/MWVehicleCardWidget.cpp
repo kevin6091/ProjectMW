@@ -13,6 +13,7 @@ void UMWVehicleCardWidget::NativeConstruct()
 	Super::NativeConstruct();
 	if (IsValid(Button_Vehicle))
 	{
+		Button_Vehicle->SetClickMethod(EButtonClickMethod::PreciseClick);
 		Button_Vehicle->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleChosen);
 		Button_Vehicle->OnHovered.AddUniqueDynamic(this, &ThisClass::HandleHovered);
 		Button_Vehicle->OnUnhovered.AddUniqueDynamic(this, &ThisClass::HandleUnhovered);

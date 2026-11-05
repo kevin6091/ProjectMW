@@ -9,6 +9,7 @@
 #include "UI/MWLobbyHUD.h"
 #include "GameFramework/Character.h"
 #include "Data/MWVehicleDefinitionData.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "MWGameplayTags.h"
 #include "System/MWAssetManager.h"
 
@@ -186,20 +187,7 @@ void AMWLobbyGameMode::BeginVehicleSelection()
 
     UE_LOG(LogMWServer, Log, TEXT("[MWVehicleSelection] 차량 선택을 시작합니다."));
 
-    // 직전 HandleStartPrepared에서 시작 대상과 현재 참가자가 같은지 검사했습니다.
-    // 현재 참가자 각각의 소유 클라이언트에 자동 제출을 요청합니다.
-    for (APlayerState* Player : GS->PlayerArray)
-    {
-        auto* PC = IsValid(Player) ? Cast<AMWLobbyPlayerController>(Player->GetOwner()) : nullptr;
-
-        if (!IsValid(PC))
-        {
-            FailStart(TEXT("참가자의 LobbyPlayerController를 확인할 수 없습니다."));
-            return;
-        }
-
-        PC->ClientBeginVehicleSelection();
-    }
+    // 각 로컬 HUD가 복제된 Phase를 보고 실제 선택 화면을 표시합니다.
 }
 
 bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID, FString& Error)
@@ -248,13 +236,6 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
 
     if (!ValidateVehicleAssetID(VehicleAssetID, Error))
     {
-        // 임의 ID는 요청만 거절합니다.
-        // 정상 기본 ID의 데이터가 사라진 경우에는 진행할 수 없으므로 방을 정리합니다.
-        if (VehicleAssetID == MWGameplayTags::Asset_Vehicle_SMIET)
-        {
-            FailStart(Error);
-        }
-
         return false;
     }
 
@@ -362,6 +343,12 @@ bool AMWLobbyGameMode::ValidateVehicleAssetLabel(FGameplayTag AssetLabelVehicles
 bool AMWLobbyGameMode::ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FString& Error) const
 {
     Error.Reset();
+    const FGameplayTag Root = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Vehicle")), false);
+    if (!Root.IsValid() || VehicleAssetID == Root || !VehicleAssetID.MatchesTag(Root))
+    {
+        Error = TEXT("선택할 수 없는 차량 ID입니다.");
+        return false;
+    }
     
     // AssetData에 등록된 ID를 통해 차량 Definition을 불러옵니다.
     const UMWVehicleDefinitionData* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWVehicleDefinitionData>(VehicleAssetID);
@@ -372,6 +359,14 @@ bool AMWLobbyGameMode::ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FStri
         return false;
     }
 
+    const UClass* PawnClass = Definition->GetPawnClass().LoadSynchronous();
+    TArray<FText> Errors;
+    if (!PawnClass || PawnClass->HasAnyClassFlags(CLASS_Abstract) ||
+        !Definition->ValidateDefinition(Errors))
+    {
+        Error = TEXT("이 차량의 주행 설정을 불러오지 못했습니다. 다른 차량을 선택하세요.");
+        return false;
+    }
     return true;
 }
 

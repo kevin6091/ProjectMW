@@ -1,6 +1,5 @@
 #include "MWUCMTitleFlow.h"
 
-#include "Algo/Count.h"
 #include "ProfilingDebugging/CsvProfiler.h"
 #include "Components/WidgetComponent.h"
 #include "Components/Button.h"
@@ -28,7 +27,7 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Misc/PackageName.h"
 #include "UI/MWCreateRoomWidget.h"
 #include "UI/MWRoomBrowserWidget.h"
 #include "UI/MWRoomLobbyWidget.h"
@@ -37,15 +36,12 @@
 #include "UI/MWPointerCursor.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "UI/MWVehicleSelectionPreviewActor.h"
-#include "System/MultiplayerSubSystem/MWMultiplayerSubsystem.h"
+#include "System/MWGameInstance.h"
 
 IMPLEMENT_MODULE(FDefaultModuleImpl, MWUCMFrontend)
 
 namespace
 {
-constexpr double ReturnFadeOutSeconds = .28;
-constexpr double ReturnFadeInSeconds = .32;
-constexpr double ReturnPaintWarningSeconds = 2.;
 constexpr double ReturnSessionWarningSeconds = 6.;
 constexpr double ReturnPreparationTimeoutSeconds = 8.;
 constexpr float VehiclePreviewBoardScale = 1.33f;
@@ -87,38 +83,13 @@ void RecordRoomReturn(const TCHAR* Event)
         Event, FPlatformTime::Seconds() * 1000., GFrameCounter);
 }
 
-class SMWRoomReturnCover : public SBorder
-{
-public:
-    using FArguments = SBorder::FArguments;
-
-    void Construct(const FArguments& Args, FSimpleDelegate InOnPainted)
-    {
-        OnPainted = MoveTemp(InOnPainted);
-        SBorder::Construct(Args);
-    }
-
-    virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& Geometry,
-        const FSlateRect& CullRect, FSlateWindowElementList& Elements, int32 Layer,
-        const FWidgetStyle& Style, bool bParentEnabled) const override
-    {
-        const int32 Result = SBorder::OnPaint(Args, Geometry, CullRect, Elements, Layer, Style, bParentEnabled);
-        OnPainted.ExecuteIfBound();
-        return Result;
-    }
-
-private:
-    FSimpleDelegate OnPainted;
-};
 }
 
 void UMWUCMIntroSession::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
-    Collection.InitializeDependency<UMWMultiplayerSubsystem>();
-    if (auto* Sessions = GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>())
+    if (auto* Sessions = Cast<UMWGameInstance>(GetGameInstance()))
     {
-        Sessions->GetTitleTravelGate().BindUObject(this, &ThisClass::DeferRoomReturnTravel);
         Sessions->OnSessionStateChanged.AddUniqueDynamic(this, &ThisClass::HandleRoomPresentationState);
         Sessions->OnSessionError.AddUniqueDynamic(this, &ThisClass::HandleRoomReturnError);
     }
@@ -129,10 +100,8 @@ void UMWUCMIntroSession::Initialize(FSubsystemCollectionBase& Collection)
 
 void UMWUCMIntroSession::Deinitialize()
 {
-    PendingReturnTravel.Unbind();
-    if (auto* Sessions = GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>())
+    if (auto* Sessions = Cast<UMWGameInstance>(GetGameInstance()))
     {
-        if (Sessions->GetTitleTravelGate().IsBoundToObject(this)) Sessions->GetTitleTravelGate().Unbind();
         Sessions->OnSessionStateChanged.RemoveDynamic(this, &ThisClass::HandleRoomPresentationState);
         Sessions->OnSessionError.RemoveDynamic(this, &ThisClass::HandleRoomReturnError);
     }
@@ -199,8 +168,8 @@ void UMWUCMIntroSession::SetRoomPresentationWorld(UWorld* World)
 
 void UMWUCMIntroSession::SetReturnPhase(EReturnCoverPhase Phase)
 {
-    static const TCHAR* const Names[] = {TEXT("Hidden"), TEXT("FadingOut"), TEXT("WaitingForPaint"),
-        TEXT("WaitingForSession"), TEXT("Traveling"), TEXT("WorldReady"), TEXT("FadingIn"), TEXT("AwaitingInput"), TEXT("Failed")};
+    static const TCHAR* const Names[] = {TEXT("Hidden"), TEXT("WaitingForSession"), TEXT("Traveling"),
+        TEXT("WorldReady"), TEXT("Failed")};
     UE_LOG(LogTemp, Display, TEXT("MW_RETURN PHASE %s -> %s MS=%.3f"), Names[int32(ReturnCoverPhase)],
         Names[int32(Phase)], FPlatformTime::Seconds() * 1000.);
     ReturnCoverPhase = Phase;
@@ -213,41 +182,33 @@ void UMWUCMIntroSession::EnsureReturnCover()
     if (!Viewport) return;
     if (ReturnCover && CoverViewport.Get() == Viewport) return;
     if (ReturnCover && CoverViewport.IsValid()) CoverViewport->RemoveViewportWidgetContent(ReturnCover.ToSharedRef());
-    ReturnCover = SNew(SMWRoomReturnCover, FSimpleDelegate::CreateUObject(this, &ThisClass::CoverPainted))
+    ReturnCover = SNew(SBorder)
         .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-        .BorderBackgroundColor(FLinearColor(0, 0, 0, CoverAlpha)).Visibility(EVisibility::HitTestInvisible);
+        .BorderBackgroundColor(FLinearColor(0, 0, 0, .85f));
     CoverViewport = Viewport;
     Viewport->AddViewportWidgetContent(ReturnCover.ToSharedRef(), 10000);
-    OpaquePaintFrame = MAX_uint64;
-    if (!StatusMessage.IsEmpty()) ShowReturnStatus(StatusMessage, bStatusRetry);
 }
 
-bool UMWUCMIntroSession::BeginRoomReturnCover(UWorld* World)
+void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
 {
-    if (!World || World != RoomPresentationWorld.Get() || !GetGameInstance()->GetGameViewportClient()) return false;
-    if (ReturnCoverPhase != EReturnCoverPhase::Hidden && ReturnCoverPhase != EReturnCoverPhase::Failed) return false;
-    if (ReturnCoverPhase == EReturnCoverPhase::Failed && World != ReturnSourceWorld.Get()) return false;
+    if (!World || World != RoomPresentationWorld.Get() || !GetGameInstance()->GetGameViewportClient()) return;
+    if (ReturnCoverPhase != EReturnCoverPhase::Hidden && ReturnCoverPhase != EReturnCoverPhase::Failed) return;
+    if (ReturnCoverPhase == EReturnCoverPhase::Failed && World != ReturnSourceWorld.Get()) return;
+    if (ReturnCoverPhase == EReturnCoverPhase::Hidden) bReturnToRoomBrowser = bWasParticipant;
     ReturnSourceWorld = World;
     ReturnTargetWorld.Reset();
-    ReturnController.Reset();
-    ReturnViewTarget.Reset();
-    ReturnMenuRoot.Reset();
+    ReturnViewFOV = 0.f;
     PreparationFailure.Reset();
     ExpectedReturnMap = NAME_None;
-    EnsureReturnCover();
     ClearReturnStatus();
-    RevealFromAlpha = CoverAlpha;
-    OpaquePaintFrame = MAX_uint64;
-    SetReturnPhase(EReturnCoverPhase::FadingOut);
-    RecordRoomReturn(TEXT("FADE_OUT_START"));
-    return true;
+    SetReturnPhase(EReturnCoverPhase::WaitingForSession);
 }
 
 void UMWUCMIntroSession::HandleRoomPresentationState(EMWSessionState PreviousState, EMWSessionState NewState)
 {
     if (NewState == EMWSessionState::Leaving)
-        BeginRoomReturnCover(GetGameInstance()->GetWorld());
-    else if (NewState == EMWSessionState::CleanupRequired && IsRoomReturnCovered())
+        BeginRoomReturn(GetGameInstance()->GetWorld(), PreviousState == EMWSessionState::Joined);
+    else if (NewState == EMWSessionState::CleanupRequired && IsRoomReturnPending())
         FailReturn(TEXT("SessionCleanupRequired"), NSLOCTEXT("MWReturn", "CleanupFailed", "방 종료를 완료하지 못했습니다."), true);
 }
 
@@ -260,32 +221,29 @@ void UMWUCMIntroSession::HandleRoomReturnError(const FString& Error)
     }
 }
 
-bool UMWUCMIntroSession::DeferRoomReturnTravel(FName Map, FSimpleDelegate Travel)
-{
-    if (!Travel.IsBound() || !ReturnSourceWorld.IsValid() || ReturnSourceWorld.Get() != GetGameInstance()->GetWorld()
-        || (ReturnCoverPhase != EReturnCoverPhase::FadingOut && ReturnCoverPhase != EReturnCoverPhase::WaitingForPaint
-            && ReturnCoverPhase != EReturnCoverPhase::WaitingForSession)) return false;
-    if (!PendingReturnTravel.IsBound())
-    {
-        ExpectedReturnMap = Map;
-        PendingReturnTravel = MoveTemp(Travel);
-        RecordRoomReturn(TEXT("TITLE_TRAVEL_AUTHORIZED"));
-    }
-    return true;
-}
-
-void UMWUCMIntroSession::CoverPainted()
-{
-    if ((ReturnCoverPhase != EReturnCoverPhase::WaitingForPaint && ReturnCoverPhase != EReturnCoverPhase::WaitingForSession)
-        || OpaquePaintFrame != MAX_uint64 || CoverAlpha < 1.f) return;
-    OpaquePaintFrame = GFrameCounter;
-    RecordRoomReturn(TEXT("OPAQUE_SLATE_PAINT"));
-}
-
 void UMWUCMIntroSession::CoverMapBoundary(const FWorldContext& Context, const FString& MapName)
 {
-    if (ReturnCoverPhase == EReturnCoverPhase::Traveling && Context.OwningGameInstance == GetGameInstance())
+    if (Context.OwningGameInstance == GetGameInstance() && ReturnCoverPhase == EReturnCoverPhase::WaitingForSession)
     {
+        ExpectedReturnMap = FName(*FPackageName::ObjectPathToPackageName(UWorld::RemovePIEPrefix(MapName)));
+        UWorld* Source = ReturnSourceWorld.Get();
+        if (Source && ExpectedReturnMap == FName(*UWorld::RemovePIEPrefix(Source->GetOutermost()->GetName())))
+        {
+            const auto* PC = GetGameInstance()->GetFirstLocalPlayerController(Source);
+            if (const auto* Camera = PC ? PC->PlayerCameraManager.Get() : nullptr)
+            {
+                const FMinimalViewInfo& View = Camera->GetCameraCacheView();
+                if (!View.Location.ContainsNaN() && !View.Rotation.ContainsNaN() && FMath::IsFinite(View.FOV) && View.FOV > 0.f)
+                {
+                    // Use the last visible lobby pose as the first view in the reloaded scene.
+                    ReturnViewPose = FTransform(View.Rotation, View.Location);
+                    ReturnViewFOV = View.FOV;
+                    RecordRoomReturn(TEXT("LOBBY_CAMERA_SAVED"));
+                }
+            }
+        }
+        ClearReturnStatus();
+        SetReturnPhase(EReturnCoverPhase::Traveling);
         RecordRoomReturn(TEXT("MAP_LOAD_START"));
     }
 }
@@ -319,33 +277,19 @@ void UMWUCMIntroSession::SetPreparationFailure(const UWorld* World, const TCHAR*
     }
 }
 
-void UMWUCMIntroSession::RevealReturnedWorld(APlayerController* PC, AActor* ViewTarget, UUserWidget* Root)
+bool UMWUCMIntroSession::GetReturnView(const UWorld* World, FTransform& Pose, float& FOV) const
 {
-    if (!IsValid(PC) || !IsReturnWorldReady(PC->GetWorld())) return;
-    ReturnController = PC;
-    ReturnViewTarget = ViewTarget;
-    ReturnMenuRoot = Root;
-    if (!IsReadyViewCurrent()) return;
-    RecordRoomReturn(TEXT("CAMERA_AND_MENU_READY"));
-    RevealFromAlpha = CoverAlpha;
-    SetReturnPhase(EReturnCoverPhase::FadingIn);
-    RecordRoomReturn(TEXT("FADE_IN_START"));
+    if (!IsReturnWorldReady(World) || ReturnViewFOV <= 0.f) return false;
+    Pose = ReturnViewPose;
+    FOV = ReturnViewFOV;
+    return true;
 }
 
-bool UMWUCMIntroSession::IsReadyViewCurrent() const
+bool UMWUCMIntroSession::FinishReturnPresentation(APlayerController* PC, AActor* ViewTarget, UUserWidget* Root)
 {
-    const auto* World = ReturnTargetWorld.Get();
-    const auto* PC = ReturnController.Get();
-    const auto* Camera = ReturnViewTarget.Get();
-    const auto* Root = ReturnMenuRoot.Get();
-    return World && World == GetGameInstance()->GetWorld() && PC && PC->IsLocalController() && PC->GetWorld() == World
-        && Camera && Camera->GetWorld() == World && PC->GetViewTarget() == Camera && Root && Root->IsInViewport()
-        && Root->GetOwningPlayer() == PC;
-}
-
-bool UMWUCMIntroSession::FinishReturnPresentation(UWorld* World)
-{
-    if (ReturnCoverPhase != EReturnCoverPhase::AwaitingInput || World != ReturnTargetWorld.Get() || !IsReadyViewCurrent())
+    if (!IsValid(PC) || !PC->IsLocalController() || !IsReturnWorldReady(PC->GetWorld()) ||
+        !IsValid(ViewTarget) || ViewTarget->GetWorld() != PC->GetWorld() || PC->GetViewTarget() != ViewTarget ||
+        !IsValid(Root) || !Root->IsInViewport() || Root->GetOwningPlayer() != PC)
         return false;
     RemoveReturnCover();
     return true;
@@ -355,6 +299,7 @@ void UMWUCMIntroSession::ShowReturnStatus(const FText& Message, bool bRetry)
 {
     StatusMessage = Message;
     bStatusRetry = bRetry;
+    EnsureReturnCover();
     if (!ReturnCover) return;
     ReturnCover->SetVisibility(EVisibility::Visible);
     TSharedPtr<SButton> ExitButton;
@@ -383,22 +328,19 @@ void UMWUCMIntroSession::ClearReturnStatus()
     StatusMessage = FText::GetEmpty();
     bStatusRetry = false;
     if (!ReturnCover) return;
-    ReturnCover->SetContent(SNullWidget::NullWidget);
-    ReturnCover->SetVisibility(EVisibility::HitTestInvisible);
+    ReturnCover->SetVisibility(EVisibility::Collapsed);
 }
 
 void UMWUCMIntroSession::FailReturn(const TCHAR* Reason, const FText& Message, bool bRetry)
 {
-    PendingReturnTravel.Unbind();
     UE_LOG(LogTemp, Warning, TEXT("MW_RETURN FAILED %s PREPARATION=%s"), Reason, *PreparationFailure);
     if (ReturnCoverPhase != EReturnCoverPhase::Failed) SetReturnPhase(EReturnCoverPhase::Failed);
-    SetReturnCoverAlpha(1.f);
     ShowReturnStatus(Message, bRetry);
 }
 
 FReply UMWUCMIntroSession::RetryReturn()
 {
-    if (auto* Sessions = GetGameInstance()->GetSubsystem<UMWMultiplayerSubsystem>(); Sessions && ReturnSourceWorld.IsValid()
+    if (auto* Sessions = Cast<UMWGameInstance>(GetGameInstance()); Sessions && ReturnSourceWorld.IsValid()
         && ReturnSourceWorld.Get() == GetGameInstance()->GetWorld())
         Sessions->RetrySessionCleanup();
     return FReply::Handled();
@@ -417,100 +359,40 @@ FReply UMWUCMIntroSession::ExitAfterReturnFailure()
     return FReply::Handled();
 }
 
-void UMWUCMIntroSession::SetReturnCoverAlpha(float Alpha)
-{
-    CoverAlpha = Alpha;
-    if (ReturnCover) ReturnCover->SetBorderBackgroundColor(FLinearColor(0, 0, 0, Alpha));
-    if (FrontendCursor) FrontendCursor->SetRenderOpacity(StatusMessage.IsEmpty() ? 1.f - Alpha : 1.f);
-}
-
 void UMWUCMIntroSession::RemoveReturnCover()
 {
     if (CoverViewport.IsValid() && ReturnCover.IsValid())
         CoverViewport->RemoveViewportWidgetContent(ReturnCover.ToSharedRef());
     ReturnCover.Reset();
     CoverViewport.Reset();
-    CoverAlpha = 0.f;
     ClearReturnStatus();
-    PendingReturnTravel.Unbind();
     ReturnSourceWorld.Reset();
     ReturnTargetWorld.Reset();
-    ReturnController.Reset();
-    ReturnViewTarget.Reset();
-    ReturnMenuRoot.Reset();
-    if (IsRoomReturnCovered()) SetReturnPhase(EReturnCoverPhase::Hidden);
+    ReturnViewFOV = 0.f;
+    bReturnToRoomBrowser = false;
+    if (IsRoomReturnPending()) SetReturnPhase(EReturnCoverPhase::Hidden);
     if (FrontendCursor) FrontendCursor->SetRenderOpacity(1.f);
 }
 
 bool UMWUCMIntroSession::TickReturnCover(float DeltaTime)
 {
-    if (!IsRoomReturnCovered()) return true;
-    EnsureReturnCover();
+    if (!IsRoomReturnPending()) return true;
     const double Elapsed = FPlatformTime::Seconds() - CoverChangedAt;
-    if (ReturnCoverPhase == EReturnCoverPhase::FadingOut)
-    {
-        const float Progress = FMath::SmoothStep(0.f, 1.f, float(Elapsed / ReturnFadeOutSeconds));
-        SetReturnCoverAlpha(FMath::Lerp(RevealFromAlpha, 1.f, Progress));
-        if (Progress >= 1.f)
-        {
-            SetReturnPhase(EReturnCoverPhase::WaitingForPaint);
-            RecordRoomReturn(TEXT("FADE_OUT_COMPLETE"));
-        }
-    }
-    else if (ReturnCoverPhase == EReturnCoverPhase::WaitingForPaint || ReturnCoverPhase == EReturnCoverPhase::WaitingForSession)
+    if (ReturnCoverPhase == EReturnCoverPhase::WaitingForSession)
     {
         if (!ReturnSourceWorld.IsValid() || ReturnSourceWorld.Get() != GetGameInstance()->GetWorld())
         {
             FailReturn(TEXT("ReturnSourceWorldLost"), NSLOCTEXT("MWReturn", "SourceLost", "이전 로비를 확인할 수 없습니다. 게임을 다시 실행해 주세요."));
         }
-        else if (OpaquePaintFrame != MAX_uint64 && GFrameCounter > OpaquePaintFrame)
+        else if (Elapsed >= ReturnSessionWarningSeconds && StatusMessage.IsEmpty())
         {
-            if (PendingReturnTravel.IsBound())
-            {
-                ClearReturnStatus();
-                SetReturnCoverAlpha(1.f);
-                SetReturnPhase(EReturnCoverPhase::Traveling);
-                FSimpleDelegate Travel = MoveTemp(PendingReturnTravel);
-                PendingReturnTravel.Unbind();
-                Travel.ExecuteIfBound();
-            }
-            else if (ReturnCoverPhase == EReturnCoverPhase::WaitingForPaint)
-            {
-                ClearReturnStatus();
-                SetReturnCoverAlpha(1.f);
-                SetReturnPhase(EReturnCoverPhase::WaitingForSession);
-            }
-            else if (Elapsed >= ReturnSessionWarningSeconds && StatusMessage.IsEmpty())
-            {
-                RecordRoomReturn(TEXT("SESSION_RESPONSE_DELAYED"));
-                ShowReturnStatus(NSLOCTEXT("MWReturn", "WaitForSession", "방 종료 응답을 기다리는 중입니다."), false);
-            }
-        }
-        else if (Elapsed >= ReturnPaintWarningSeconds && StatusMessage.IsEmpty())
-        {
-            RecordRoomReturn(TEXT("PAINT_ACK_DELAYED"));
-            ShowReturnStatus(NSLOCTEXT("MWReturn", "WaitForPaint", "게임 창이 다시 그려지면 타이틀로 이동합니다."), false);
+            ShowReturnStatus(NSLOCTEXT("MWReturn", "WaitForSession", "방 종료 응답을 기다리는 중입니다."), false);
         }
     }
     else if (ReturnCoverPhase == EReturnCoverPhase::Traveling && Elapsed >= ReturnPreparationTimeoutSeconds)
         FailReturn(TEXT("TravelCompletionMissing"), NSLOCTEXT("MWReturn", "TravelTimeout", "타이틀 맵 이동을 확인할 수 없습니다. 게임을 다시 실행해 주세요."));
     else if (ReturnCoverPhase == EReturnCoverPhase::WorldReady && Elapsed >= ReturnPreparationTimeoutSeconds)
         FailReturn(TEXT("TitlePresentationNotReady"), NSLOCTEXT("MWReturn", "TitleNotReady", "타이틀 카메라 또는 메뉴를 준비하지 못했습니다. 게임을 다시 실행해 주세요."));
-    else if ((ReturnCoverPhase == EReturnCoverPhase::FadingIn || ReturnCoverPhase == EReturnCoverPhase::AwaitingInput) && !IsReadyViewCurrent())
-        FailReturn(TEXT("ReadyViewInvalidated"), NSLOCTEXT("MWReturn", "ViewLost", "타이틀 화면 연결이 끊겼습니다. 게임을 다시 실행해 주세요."));
-    else if (ReturnCoverPhase == EReturnCoverPhase::FadingIn)
-    {
-        const float Progress = FMath::SmoothStep(0.f, 1.f, float(Elapsed / ReturnFadeInSeconds));
-        SetReturnCoverAlpha(RevealFromAlpha * (1.f - Progress));
-        if (Progress >= 1.f)
-        {
-            SetReturnPhase(EReturnCoverPhase::AwaitingInput);
-            RecordRoomReturn(TEXT("FADE_IN_COMPLETE"));
-        }
-    }
-
-    else if (ReturnCoverPhase == EReturnCoverPhase::AwaitingInput && Elapsed >= ReturnPreparationTimeoutSeconds)
-        FailReturn(TEXT("TitleInputNotReady"), NSLOCTEXT("MWReturn", "InputNotReady", "메인 메뉴 입력을 연결하지 못했습니다. 게임을 다시 실행해 주세요."));
     else if (ReturnCoverPhase == EReturnCoverPhase::Failed && bStatusRetry
         && (!ReturnSourceWorld.IsValid() || ReturnSourceWorld.Get() != GetGameInstance()->GetWorld()))
     {
@@ -560,7 +442,7 @@ UWidget* UMWUCMTitleRootWidget::ResolveEntryPresentation(UWidget* Screen, bool b
     if (IsValid(Flow))
     {
         Flow->PresentEntryWidget(Screen, bMenuRequested);
-        if (WorldMenuPlaceholder && bMenuRequested)
+        if (WorldMenuPlaceholder && (bMenuRequested || !Flow->IsEntryPanelReady()))
             return WorldMenuPlaceholder;
     }
     return Screen;
@@ -578,6 +460,7 @@ AMWUCMTitleFlow::AMWUCMTitleFlow()
 void AMWUCMTitleFlow::BeginPlay()
 {
     Super::BeginPlay();
+    if (GetNetMode() == NM_DedicatedServer) return;
     if (auto* Session = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>())
     {
         Session->InstallFrontendCursor();
@@ -612,12 +495,13 @@ void AMWUCMTitleFlow::InitializeRoot()
     if (!IsValid(PC) || !PC->IsLocalController() || PC->GetWorld() != GetWorld() || !RootWidgetClass)
     {
         if (Session) Session->SetPreparationFailure(GetWorld(), RootWidgetClass ? TEXT("LocalControllerMissing") : TEXT("RootWidgetClassMissing"));
-        if (RootWidgetClass && Session && Session->IsReturnWorldReady(GetWorld()))
+        if (!RootWidgetClass)
+            UE_LOG(LogTemp, Error, TEXT("MW_UCM RootWidgetClass is missing in %s"), *GetPathName());
+        if (RootWidgetClass)
             InitializeHandle = GetWorld()->GetTimerManager().SetTimerForNextTick(this, &ThisClass::InitializeRoot);
         return;
     }
-    // A room reloads this same UCM world through MW's unmodified session travel.
-    // The existing controller owns its real lobby widget and registration state.
+    // The streamed scene presents the real HUD widgets in the network lobby.
     if (GetWorld()->GetNetMode() != NM_Standalone)
     {
         if (Session)
@@ -638,10 +522,16 @@ void AMWUCMTitleFlow::InitializeRoot()
     RootWidget = CreateWidget<UMWUCMTitleRootWidget>(PC, RootWidgetClass);
     if (!RootWidget)
     {
+        UE_LOG(LogTemp, Error, TEXT("MW_UCM Failed to create %s in %s"), *GetNameSafe(RootWidgetClass.Get()), *GetPathName());
         if (Session) Session->SetPreparationFailure(GetWorld(), TEXT("RootWidgetCreationFailed"));
         return;
     }
     RootWidget->Flow = this;
+    if (Session && Session->IsReturnWorldReady(GetWorld()))
+    {
+        const auto* App = GetGameInstance<UMWGameInstance>();
+        IsMenuReady(App && (!App->IsLoginRequired() || App->IsLoggedIn()));
+    }
     RootWidget->AddToViewport();
 }
 
@@ -662,7 +552,11 @@ bool AMWUCMTitleFlow::IsMenuReady(bool bLoggedIn)
         Session->bIntroStarted = true;
         SetActorTickEnabled(true);
         StartFidelity();
-        if (bAlreadyStarted)
+        if (Session->IsReturnWorldReady(GetWorld()) && StartRoomReturn(*Session))
+        {
+            UE_LOG(LogTemp, Display, TEXT("MW_UCM SESSION_RETURN_NO_INTRO"));
+        }
+        else if (bAlreadyStarted)
         {
             RestoreTitlePose();
             // RestoreTitlePose changes the view target before the usual camera tick.
@@ -671,9 +565,6 @@ bool AMWUCMTitleFlow::IsMenuReady(bool bLoggedIn)
             {
                 if (PC->PlayerCameraManager) PC->PlayerCameraManager->UpdateCamera(0.f);
             }
-            ReturnCameraStartedAt = GetWorld()->GetTimeSeconds();
-            // This is a programmatic camera transition, even while player input
-            // remains blocked by the cover across the newly loaded world.
             {
                 TGuardValue<bool> AllowTransition(bSuppressPreviewInput, false);
                 AcceptPreviewInput();
@@ -690,6 +581,24 @@ bool AMWUCMTitleFlow::IsMenuReady(bool bLoggedIn)
     return PreviewStage == 2;
 }
 
+bool AMWUCMTitleFlow::StartRoomReturn(const UMWUCMIntroSession& Session)
+{
+    auto* PC = GetWorld()->GetFirstPlayerController();
+    const auto* LobbyRoute = FindRoute(TEXT("Lobby"));
+    const auto* MainRoute = FindRoute(TEXT("RoomPanel"));
+    FTransform Pose;
+    float FOV = 0.f;
+    if (!PC || !PC->PlayerCameraManager || !WorldRouteCamera || !LobbyRoute || LobbyRoute->Reverse.Num() < 2 ||
+        !MainRoute || MainRoute->Reverse.Num() < 2 || !Session.GetReturnView(GetWorld(), Pose, FOV))
+        return false;
+
+    PreviewStage = 2;
+    WorldRouteCamera->SetActorTransform(Pose);
+    WorldRouteCamera->GetCameraComponent()->SetFieldOfView(FOV);
+    PC->SetViewTarget(WorldRouteCamera);
+    return StartWorldRoute(TEXT("Lobby"), true, TEXT("ReturningFromLobby"));
+}
+
 void AMWUCMTitleFlow::ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested)
 {
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -703,11 +612,11 @@ void AMWUCMTitleFlow::ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested
     if (!bStarted) return;
     const bool bMain = bMenuRequested && ActiveRegion == TEXT("Main")
         && (!bWorldRouteActive || bWorldRoutePresentationReady);
-    bMainPresentationRequested = bMain;
     const auto* IntroSession = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();
-    const bool bCovered = IntroSession && IntroSession->IsRoomReturnCovered();
-    bSuppressPreviewInput = !bMain || bCovered;
-    SetSourceMenuPresentation(bMain && (PreviewStage == 2 || PreviewStage == 3), bMain && PreviewStage == 2 && !bCovered);
+    const bool bReturning = IntroSession && IntroSession->IsRoomReturnPending();
+    bSuppressPreviewInput = !bMain || bReturning;
+    SetSourceMenuPresentation(!bReturning && bMain && (PreviewStage == 2 || PreviewStage == 3),
+        !bReturning && bMain && PreviewStage == 2);
     if (!bMain) TitleCanvas->SetVisibility(false);
     TitleCanvas->SetCollisionEnabled(bMain && PreviewStage == 1
         ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
@@ -849,7 +758,9 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
     const float EndpointDistanceCm = FVector::Distance(Blended.GetLocation(), Endpoint.GetLocation());
     const float EndpointAngleDegrees = FMath::RadiansToDegrees(Blended.GetRotation().AngularDistance(Endpoint.GetRotation()));
     const bool bCameraSettled = EndpointDistanceCm <= 3.f && EndpointAngleDegrees <= .1f;
-    const bool bPresentationEligible = U >= 1.f && (ActiveRegion == TEXT("Main") || bCameraSettled);
+    const auto* Session = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();
+    const bool bReturning = Session && Session->IsReturnWorldReady(GetWorld());
+    const bool bPresentationEligible = !bReturning && U >= 1.f && (ActiveRegion == TEXT("Main") || bCameraSettled);
     if (!bWorldRoutePresentationReady && bPresentationEligible)
     {
         bWorldRoutePresentationReady = true;
@@ -868,12 +779,19 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
             MWWorldSurface->SetVisibility(true);
             MWWorldSurface->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         }
-        if (ActiveRegion != TEXT("RoomPanel")) UseWorldMouse();
+        if (ActiveRegion == TEXT("RoomPanel")) RefreshRoot();
+        else UseWorldMouse();
         UE_LOG(LogTemp, Display, TEXT("MW_UCM WORLD_ROUTE_PRESENTABLE REGION=%s SECONDS=%.3f ENDPOINT_DISTANCE_CM=%.3f ENDPOINT_ANGLE_DEG=%.3f MONOTONIC_MS=%.3f"), *ActiveRegion.ToString(), WorldRouteTime, EndpointDistanceCm, EndpointAngleDegrees, FPlatformTime::Seconds() * 1000.0);
     }
     if (WorldRouteTime < Samples.Last().Time) return;
     bWorldRouteActive = false;
-    if (ActiveRegion == TEXT("Main"))
+    if (bReturning && ActiveRegion == TEXT("ReturningFromLobby"))
+    {
+        if (!Session->ShouldReturnToRoomBrowser())
+            StartWorldRoute(TEXT("RoomPanel"), true, TEXT("Main"));
+        return;
+    }
+    if (ActiveRegion == TEXT("Main") && !bReturning)
     {
         bSuppressPreviewInput = false;
         // The sampled reverse path ends at a different pose from MenuCamera.
@@ -941,17 +859,54 @@ void AMWUCMTitleFlow::PresentEntryWidget(UWidget* Screen, bool bMenuRequested)
 
 void AMWUCMTitleFlow::UpdateLobbyPresentation()
 {
-    if (RootWidget || !bStarted) return;
-    auto* PC = GetWorld()->GetFirstPlayerController();
-    TArray<UUserWidget*> Widgets;
-    UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, Widgets, UMWRoomLobbyWidget::StaticClass(), false);
-    for (auto* Widget : Widgets)
+    if (!LobbyWidget || !bStarted) return;
+    if (VehicleWidget && ActiveRegion == TEXT("Lobby") && !bWorldRouteActive)
     {
-        if (Widget->GetOwningPlayer() != PC || (!Widget->IsInViewport() && Widget != LobbyWidget)) continue;
-        LobbyWidget = Widget;
-        if (ActiveRegion == TEXT("Lobby")) SetWorldWidget(Widget, TEXT("Lobby"));
-        break;
+        if (VehiclePreviewActor && VehiclePreviewActor->PreviewSurface &&
+            StartWorldRoute(TEXT("Vehicle"), false, TEXT("Vehicle")))
+        {
+            auto* Surface = VehiclePreviewActor->PreviewSurface.Get();
+            Surface->SetOwnerPlayer(VehicleWidget->GetOwningLocalPlayer());
+            Surface->SetWidget(VehicleWidget);
+            FitVehiclePreview(VehicleWidget);
+            Surface->SetVisibility(false);
+            Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+        else if (!VehicleWidget->IsInViewport())
+        {
+            MWWorldSurface->SetVisibility(false);
+            MWWorldSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            VehicleWidget->AddToViewport();
+            if (auto* PC = VehicleWidget->GetOwningPlayer()) PC->SetInputMode(FInputModeUIOnly());
+        }
     }
+    else if (!VehicleWidget && ActiveRegion == TEXT("Lobby")) SetWorldWidget(LobbyWidget, TEXT("Lobby"));
+}
+
+void AMWUCMTitleFlow::SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection)
+{
+    LobbyWidget = Lobby;
+    if (VehicleWidget != Selection && VehicleWidget)
+    {
+        VehicleWidget->RemoveFromParent();
+        if (VehiclePreviewActor && VehiclePreviewActor->PreviewSurface)
+        {
+            auto* Surface = VehiclePreviewActor->PreviewSurface.Get();
+            Surface->SetWidget(nullptr);
+            Surface->SetVisibility(false);
+            Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        }
+    }
+    VehicleWidget = Selection;
+    if (!Lobby)
+    {
+        MWWorldSurface->SetWidget(nullptr);
+        PresentedWidget = nullptr;
+        return;
+    }
+    if (!Selection && ActiveRegion == TEXT("Vehicle"))
+        StartWorldRoute(TEXT("Vehicle"), true, TEXT("Lobby"));
+    UpdateLobbyPresentation();
 }
 
 bool AMWUCMTitleFlow::ShowVehicleSelection()
@@ -999,40 +954,29 @@ void AMWUCMTitleFlow::Tick(float DeltaTime)
     UpdateWorldRoute(DeltaTime);
     UpdateLobbyPresentation();
     auto* Session = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();
-    if (!Session || !bMainPresentationRequested) return;
+    if (!Session || !Session->IsReturnWorldReady(GetWorld()) || bWorldRouteActive || PreviewStage != 2)
+        return;
 
-    if (Session->IsReturnWorldReady(GetWorld()))
+    const bool bRoomBrowser = Session->ShouldReturnToRoomBrowser();
+    if (bRoomBrowser && ActiveRegion == TEXT("Main") &&
+        StartWorldRoute(TEXT("RoomPanel"), false, TEXT("ReturningFromLobby")))
+        return;
+
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    AActor* ViewTarget = PC ? PC->GetViewTarget() : nullptr;
+    if (ViewTarget && (ViewTarget == WorldRouteCamera || ViewTarget == MenuCamera) &&
+        Session->FinishReturnPresentation(PC, ViewTarget, RootWidget))
     {
-        if (!IsValid(RootWidget) || !RootWidget->IsInViewport() || !IsValid(MenuCamera))
+        if (bRoomBrowser)
         {
-            Session->SetPreparationFailure(GetWorld(), IsValid(MenuCamera) ? TEXT("MenuRootMissing") : TEXT("MenuCameraMissing"));
-            return;
+            ActiveRegion = TEXT("RoomPanel");
+            RootWidget->RestoreRoomBrowser();
+            RecordRoomReturn(TEXT("ROOM_BROWSER_RESTORED"));
         }
-        TInlineComponentArray<UUCMWorldWidgetComponent*> Canvases(this);
-        const int32 VisibleMenuCount = Algo::CountIf(Canvases, [](const UUCMWorldWidgetComponent* Canvas)
+        else
         {
-            return Canvas->GetName().StartsWith(TEXT("SourceMenu_")) && Canvas->IsRegistered()
-                && Canvas->IsVisible() && Canvas->GetUserWidgetObject();
-        });
-        APlayerController* PC = GetWorld()->GetFirstPlayerController();
-        const APlayerCameraManager* Camera = PC ? PC->PlayerCameraManager.Get() : nullptr;
-        if ((PreviewStage == 3 || PreviewStage == 2) && VisibleMenuCount > 0 && VisibleMenuCount == SourceMenuEntries.Num()
-            && PC && PC->IsLocalController() && PC->GetWorld() == GetWorld() && PC->GetViewTarget() == MenuCamera
-            && Camera && Camera->GetCameraCacheTime() > ReturnCameraStartedAt)
-        {
-            const FMinimalViewInfo& View = Camera->GetCameraCacheView();
-            if (!View.Location.ContainsNaN() && !View.Rotation.ContainsNaN() && FMath::IsFinite(View.FOV) && View.FOV > 0.f)
-            {
-                Session->RevealReturnedWorld(PC, MenuCamera, RootWidget);
-                return;
-            }
+            RefreshRoot();
+            if (!bSuppressPreviewInput) RecordRoomReturn(TEXT("MENU_INPUT_ENABLED"));
         }
-        Session->SetPreparationFailure(GetWorld(), VisibleMenuCount != SourceMenuEntries.Num() || VisibleMenuCount == 0
-            ? TEXT("MenuCanvasesNotReady") : TEXT("MenuCameraNotReady"));
-    }
-    if (PreviewStage == 2 && Session->FinishReturnPresentation(GetWorld()))
-    {
-        RefreshRoot();
-        if (!bSuppressPreviewInput) RecordRoomReturn(TEXT("MENU_INPUT_ENABLED"));
     }
 }

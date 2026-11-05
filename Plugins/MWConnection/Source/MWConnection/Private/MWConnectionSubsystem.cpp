@@ -847,6 +847,7 @@ bool UMWConnectionSubsystem::RequestJoinRoom(const FString& H, FText& E) { retur
 bool UMWConnectionSubsystem::RequestJoinAddress(const FString& A, FText& E) { return Impl && Impl->JoinAddress(A, E); }
 bool UMWConnectionSubsystem::RequestSetRoomJoinable(bool J, FText& E) { return Impl && Impl->SetJoinable(J, E); }
 bool UMWConnectionSubsystem::RequestLeaveRoom(FText& E) { return Impl && Impl->Leave(E); }
+FName UMWConnectionSubsystem::GetLobbyMap() const { return Impl ? Impl->LobbyMap : NAME_None; }
 bool UMWConnectionSubsystem::CanExecute(EMWConnectionAction A) const { return Impl && Impl->Can(A); }
 FMWConnectionSnapshot UMWConnectionSubsystem::GetSnapshot() const { return Impl ? Impl->View : FMWConnectionSnapshot(); }
 void UMWConnectionSubsystem::EmitSnapshot() { SnapshotChanged.Broadcast(); }

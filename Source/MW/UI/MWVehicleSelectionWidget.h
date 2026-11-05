@@ -8,7 +8,7 @@
 #include "UI/MWVehicleUITypes.h"
 #include "MWVehicleSelectionWidget.generated.h"
 
-class AMWGameState;
+class AMWLobbyGameState;
 class AMWPlayerState;
 class UButton;
 class UCanvasPanel;
@@ -135,7 +135,7 @@ private:
 	UPROPERTY(Transient) TArray<FMWVehiclePlayerPresentation> ParticipantViews;
 	UPROPERTY(Transient) FMWVehiclePreviewScenario ActivePreview;
 	TWeakObjectPtr<UMWVehicleCardWidget> SelectedCard;
-	TWeakObjectPtr<AMWGameState> BoundGameState;
+	TWeakObjectPtr<AMWLobbyGameState> BoundGameState;
 	// UI layout only: retain client-side seats while the actual PlayerArray changes.
 	TMap<TWeakObjectPtr<AMWPlayerState>, int32> PlayerSlots;
 	int32 ActivePreviewScenarioIndex = INDEX_NONE;
@@ -144,11 +144,12 @@ private:
 	void AddCard(UMWVehicleCardWidget* Card);
 	void ApplyCardMarkerScale(UMWVehicleCardWidget* Card) const;
 	void RefreshControls();
+	bool IsSelectionLocked() const;
 	bool AreAllPreviewParticipantsConfirmed() const;
 	void RefreshPreviewControls();
 	void RefreshPreviewSelection();
 	void BuildPreviewParticipants();
-	void BuildLobbyParticipants(AMWGameState* State);
+	void BuildLobbyParticipants(AMWLobbyGameState* State);
 	void RenderParticipants();
 	void RefreshCardPointers();
 	void RefreshLocalCursor();

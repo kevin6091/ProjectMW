@@ -7,6 +7,7 @@
 
 class UButton;
 class UWidgetSwitcher;
+class UWidgetComponent;
 class UMWCreateRoomWidget;
 class UMWGameInstance;
 class UMWRoomBrowserWidget;
@@ -23,23 +24,34 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual bool CanPresentEntryMenu(bool bLoggedIn) { return bLoggedIn; }
+	virtual void OnEntryPresentationUpdated(bool bLoggedIn, bool bMenuRequested) {}
+	virtual UWidget* ResolveEntryPresentation(UWidget* Screen, bool bMenuRequested) { return Screen; }
+	void OpenRoomBrowser();
 
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidgetSwitcher> WidgetSwitcher_2;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UUserWidget> LoginScreen;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UUserWidget> TitleScreen;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> WorldMenuPlaceholder;
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Title UI")
+	TSubclassOf<AActor> WorldMenuActorClass;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Title UI")
 	TSubclassOf<UMWCreateRoomWidget> CreateRoomWidgetClass;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Title UI")
 	TSubclassOf<UMWRoomBrowserWidget> RoomBrowserWidgetClass;
 
 private:
+	UPROPERTY(Transient) TObjectPtr<UMWTitleRootWidget> PresentationRoot;
 	UPROPERTY(Transient) TObjectPtr<UMWCreateRoomWidget> CreateRoomScreen;
 	UPROPERTY(Transient) TObjectPtr<UMWRoomBrowserWidget> RoomBrowserScreen;
 	UPROPERTY(Transient) TObjectPtr<UButton> CreateButton;
 	UPROPERTY(Transient) TObjectPtr<UButton> JoinButton;
 	TWeakObjectPtr<UMWGameInstance> Subsystem;
+	TWeakObjectPtr<UWidgetComponent> WorldMenuSurface;
+	void InitializeWorldMenu();
 	enum class EEntryScreen : uint8 { Menu, CreateRoom, RoomList };
 	EEntryScreen SelectedScreen = EEntryScreen::Menu;
+	bool bRefreshRoomBrowserOnIdle = false;
 	FString EntryMessage;
 
 	UFUNCTION() void HandleCreateRequested();

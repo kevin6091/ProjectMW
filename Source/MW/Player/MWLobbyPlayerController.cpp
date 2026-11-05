@@ -46,14 +46,6 @@ void AMWLobbyPlayerController::ClientLobbyActionFailed_Implementation(const FStr
 	OnLobbyActionErrorChanged.Broadcast();
 }
 
-void AMWLobbyPlayerController::ClientBeginVehicleSelection_Implementation()
-{
-	// UI 없는 초기 버전에서는 각 클라이언트가 기본 후보를 제출합니다.
-	// 서버가 PlayerState에 기본 ID를 미리 채우는 방식이 아닙니다.
-	RequestConfirmVehicle(MWGameplayTags::Asset_Vehicle_SMIET);
-	//AMWPlayerState* PS = Cast<AMWPlayerState>(PlayerState);
-}
-
 void AMWLobbyPlayerController::RequestConfirmVehicle(FGameplayTag VehicleAssetID)
 {
 	if (!IsLocalController())

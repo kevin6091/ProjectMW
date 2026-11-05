@@ -4,6 +4,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Containers/Ticker.h"
 #include "UI/MWTitleRootWidget.h"
+#include "UI/MWLobbyPresentation.h"
 #include "UCMTitlePreview.h"
 #include "MWUCMTitleFlow.generated.h"
 
@@ -39,10 +40,11 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
     void SetRoomPresentationWorld(UWorld* World);
-    void RevealReturnedWorld(APlayerController* PC, AActor* ViewTarget, UUserWidget* Root);
-    bool FinishReturnPresentation(UWorld* World);
-    bool IsRoomReturnCovered() const { return ReturnCoverPhase != EReturnCoverPhase::Hidden; }
+    bool GetReturnView(const UWorld* World, FTransform& Pose, float& FOV) const;
+    bool FinishReturnPresentation(APlayerController* PC, AActor* ViewTarget, UUserWidget* Root);
+    bool IsRoomReturnPending() const { return ReturnCoverPhase != EReturnCoverPhase::Hidden; }
     bool IsReturnWorldReady(const UWorld* World) const;
+    bool ShouldReturnToRoomBrowser() const { return bReturnToRoomBrowser; }
     void SetPreparationFailure(const UWorld* World, const TCHAR* Reason);
     void InstallFrontendCursor();
 private:
@@ -54,10 +56,8 @@ private:
     bool bPreviousSoftwareCursors = false;
     UFUNCTION() void HandleRoomPresentationState(EMWSessionState PreviousState, EMWSessionState NewState);
     UFUNCTION() void HandleRoomReturnError(const FString& Error);
-    bool BeginRoomReturnCover(UWorld* World);
+    void BeginRoomReturn(UWorld* World, bool bWasParticipant);
     bool TickReturnCover(float DeltaTime);
-    bool DeferRoomReturnTravel(FName Map, FSimpleDelegate Travel);
-    void CoverPainted();
     void CoverMapBoundary(const FWorldContext& Context, const FString& MapName);
     void OnReturnMapLoaded(UWorld* World);
     void EnsureReturnCover();
@@ -66,30 +66,24 @@ private:
     void FailReturn(const TCHAR* Reason, const FText& Message, bool bRetry = false);
     FReply RetryReturn();
     FReply ExitAfterReturnFailure();
-    bool IsReadyViewCurrent() const;
-    void SetReturnCoverAlpha(float Alpha);
     void RemoveReturnCover();
     TSharedPtr<SBorder> ReturnCover;
     TWeakObjectPtr<UGameViewportClient> CoverViewport;
     TWeakObjectPtr<UWorld> RoomPresentationWorld;
     TWeakObjectPtr<UWorld> ReturnSourceWorld;
     TWeakObjectPtr<UWorld> ReturnTargetWorld;
-    TWeakObjectPtr<APlayerController> ReturnController;
-    TWeakObjectPtr<AActor> ReturnViewTarget;
-    TWeakObjectPtr<UUserWidget> ReturnMenuRoot;
+    FTransform ReturnViewPose;
+    float ReturnViewFOV = 0.f;
+    bool bReturnToRoomBrowser = false;
     FName ExpectedReturnMap;
     FString PreparationFailure;
     FText StatusMessage;
     bool bStatusRetry = false;
-    FSimpleDelegate PendingReturnTravel;
     FTSTicker::FDelegateHandle CoverTickHandle;
     FDelegateHandle PreLoadMapHandle;
     FDelegateHandle PostLoadMapHandle;
     double CoverChangedAt = 0;
-    uint64 OpaquePaintFrame = MAX_uint64;
-    float CoverAlpha = 0.f;
-    float RevealFromAlpha = 1.f;
-    enum class EReturnCoverPhase : uint8 { Hidden, FadingOut, WaitingForPaint, WaitingForSession, Traveling, WorldReady, FadingIn, AwaitingInput, Failed };
+    enum class EReturnCoverPhase : uint8 { Hidden, WaitingForSession, Traveling, WorldReady, Failed };
     void SetReturnPhase(EReturnCoverPhase Phase);
     EReturnCoverPhase ReturnCoverPhase = EReturnCoverPhase::Hidden;
 };
@@ -103,6 +97,7 @@ public:
     UPROPERTY(Transient) TObjectPtr<AMWUCMTitleFlow> Flow;
     UPROPERTY(EditDefaultsOnly, Category="MW Integration") TSubclassOf<UUserWidget> MainMenuWidgetClass;
     void ActivateSourceMenu(int32 Index);
+    void RestoreRoomBrowser() { OpenRoomBrowser(); }
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
@@ -115,7 +110,7 @@ private:
 
 /** Owns the connection to UCM's existing sequence and camera state machine, never room/session state. */
 UCLASS(Blueprintable)
-class MWUCMFRONTEND_API AMWUCMTitleFlow : public AUCMTitleFlowPreview
+class MWUCMFRONTEND_API AMWUCMTitleFlow : public AUCMTitleFlowPreview, public IMWLobbyPresentation
 {
     GENERATED_BODY()
 public:
@@ -130,6 +125,8 @@ public:
     UPROPERTY(BlueprintReadOnly, Category="MW Integration") FName ActiveRegion = TEXT("Main");
     UPROPERTY(BlueprintReadOnly, Category="MW Integration") bool bWorldRouteActive = false;
     void PresentEntryWidget(UWidget* Screen, bool bMenuRequested);
+    bool IsEntryPanelReady() const { return ActiveRegion != TEXT("RoomPanel") || bWorldRoutePresentationReady || !bWorldRouteActive; }
+    virtual void SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection) override;
     // Presentation entry point for the existing vehicle UI. No readiness, selection RPC or phase approval is invented.
     UFUNCTION(BlueprintCallable, Category="MW Integration") bool ShowVehicleSelection();
     UFUNCTION(BlueprintCallable, Category="MW Integration") void CloseVehicleSelection();
@@ -145,13 +142,12 @@ private:
     void InitializeRoot();
     bool bStarted = false;
     bool bRefreshing = false;
-    bool bMainPresentationRequested = false;
-    float ReturnCameraStartedAt = 0.f;
+    bool StartRoomReturn(const UMWUCMIntroSession& Session);
     void RefreshRoot();
     void HandleSourceMenu(FName Action);
     UPROPERTY(Transient) TObjectPtr<ACameraActor> WorldRouteCamera;
     UPROPERTY(Transient) TObjectPtr<UUserWidget> PresentedWidget;
-    UPROPERTY(Transient) TObjectPtr<UUserWidget> LobbyWidget;
+    UPROPERTY(Transient) TObjectPtr<UMWRoomLobbyWidget> LobbyWidget;
     UPROPERTY(Transient) TObjectPtr<UMWVehicleSelectionWidget> VehicleWidget;
     FName RunningRoute;
     bool bRouteReverse = false;

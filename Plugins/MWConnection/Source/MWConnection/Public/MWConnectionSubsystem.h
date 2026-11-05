@@ -44,6 +44,7 @@ public:
     bool RequestLeaveRoom(FText& OutError);
     bool CanExecute(EMWConnectionAction Action) const;
     FMWConnectionSnapshot GetSnapshot() const;
+    FName GetLobbyMap() const;
 
     FMWConnectionSnapshotChanged& OnSnapshotChanged() { return SnapshotChanged; }
     FMWConnectionOperationCompleted& OnOperationCompleted() { return OperationCompleted; }

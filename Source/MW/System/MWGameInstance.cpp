@@ -2,7 +2,6 @@
 #include "MWConnectionSubsystem.h"
 #include "AssetRegistry/AssetData.h"
 #include "Engine/World.h"
-#include "GameMapsSettings.h"
 #include "Misc/PackageName.h"
 #include "System/MWAssetManager.h"
 #include "System/GameMode/MWLobbyGameMode.h"
@@ -228,7 +227,8 @@ void UMWGameInstance::RetrySessionCleanup() { RequestLeaveRoom(); }
 
 bool UMWGameInstance::IsLobbyWorld(const UWorld* W) const
 {
-    return W && W->GetGameInstance() == this && MapPackage(W) == FName(*UGameMapsSettings::GetGameDefaultMap());
+    const auto* Service = Connection.Get();
+    return Service && W && W->GetGameInstance() == this && MapPackage(W) == Service->GetLobbyMap();
 }
 
 bool UMWGameInstance::IsGameplayWorld(const UWorld* W) const

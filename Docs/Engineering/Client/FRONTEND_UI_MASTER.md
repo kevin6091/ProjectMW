@@ -683,6 +683,8 @@ UCM 담당 채팅 `Extract car assets into UE5`의 기존 Handoff139행(차량5+
 
 ### 11.21 UCM 인트로·타이틀 및 장소별 카메라 연결 — 2026-11-03
 
+이 절은 개발 프로필로 시험하던 당시 기록이다. 현재 실행 경로는 11.22절을 따른다.
+
 사용자가 현재 `feature/title-world-ui` 브랜치에 직접 사용하도록 명시한 범위에서 로컬 반영했다. 기존 UI 디자인·방 생성/검색·EOS/로비 기능을 재작성하지 않았다. 보호 파일 4,288개(그중 UCM 마스터 4,052개)를 대조했으며 허용한 기존 TitleRoot 헤더/구현의 표시 연결 외 예상 밖 변경은 없다. 원본 Widget Blueprint, 공식 L_Title/L_Dev_Default, 기존 서버·차량 소스, 원본 UCM은 보존했다. 초기 535개와 후속 4개 신규 파일은 의존성 폐쇄와 통합 전용 파일이며 전체 UCM을 복사하지 않았다. 이번 후속은 자체 추가 파일 8개 갱신과 기존 Root에 해석 이벤트 2줄 추가다. 전체 목록은 아래 CHANGES.csv로 구분한다.
 
 개발 프로필 `-CustomConfig=UCMFrontend`의 `/Game/Levels/L_Title_UCM_Integration_Dev`에서 기존 MW 로그인 성공 뒤 원본 UCM 인트로/스플래시/메인 카메라를 사용한다. 원본 상단 표지판 3개는 글자만 방 생성/방 검색/종료로 연결하고 아래 4개는 제외했다. 원래 복구되어 있던 표지판 기둥을 실제 소스 행렬로 배치했다. UCM 버튼은 MW의 기존 버튼 이벤트에 연결하고 별도 MW 메뉴를 연속 표시하지 않는다. GameInstance 수명 플래그로 메뉴 복귀 시 인트로를 반복하지 않는다.
@@ -696,3 +698,20 @@ UCM 담당 채팅 `Extract car assets into UE5`의 기존 Handoff139행(차량5+
 HEAD 3db9c5d 유지. 원격 main/Server/Lobby-Design은 최종 읽기 전용 ls-remote에서도 b03cd6e이며 병합하지 않았다. UVCS는 cs16/head28, 기존 Pending 보존. Git/UVCS stage/commit/push/merge/checkin/update/switch/reset/stash/checkout/잠금 변경 없음. 기본 시작 맵은 바꾸지 않았으며 개발 프로필로만 활성화한다. 상용 리소스 공개 배포 권한은 미확인 상태로 유지하며 로컬 사용 외 공개 업로드·등록은 하지 않았다.
 
 증거: [화면 모음](C:/Users/user/Documents/Codex/2026-11-03/projectmw-ucm-ui-unreal-engine-5/outputs/RESULT.html), [검증과 미완료 항목](C:/Users/user/Documents/Codex/2026-11-03/projectmw-ucm-ui-unreal-engine-5/outputs/VALIDATION.json), [전체 변경 파일](C:/Users/user/Documents/Codex/2026-11-03/projectmw-ucm-ui-unreal-engine-5/outputs/CHANGES.csv), [현재 브랜치 개발 프로필 실행](C:/Users/user/Documents/Codex/2026-11-03/projectmw-ucm-ui-unreal-engine-5/outputs/Open_MW_UCM.ps1). 초기 잘못된 루프 앞 폼 및 Editor viewport 오캡처는 RESULT/VALIDATION의 최종 증거에서 제외했다.
+
+
+### 11.22 기본 L_Title에 UCM 타이틀·로비 적용 — 2026-11-05
+
+기본 실행은 `L_Title`에서 로그인·인트로·표지판 메뉴를 표시한다. 방 생성 시 같은 맵을 `?listen`으로 다시 열고, 참가자도 그 로비에 합류한다. 전원 Ready와 호스트 시작 이후에는 로비에서 차량 선택 카메라로 이동한다. 서버가 모든 차량 선택을 확정하면 공용 카탈로그의 `Asset.MapTheme.DriveDefault`가 가리키는 `L_Dev_Drive`로 이동하고 참가자별 Definition의 Pawn을 생성한다.
+
+`L_Title`의 Always Loaded 서브레벨에 기존 `L_Title_UCM_Integration_Dev` 씬을 연결한다. UCM 연출 액터가 타이틀 화면을 소유하므로 기존 Level Blueprint의 타이틀 위젯 생성·정리 그래프는 제거했다. `L_Lobby_UCM_Integration_Dev`는 비교용 테스트 맵이다. 카메라 배치와 위젯은 공유 씬에서 관리한다.
+
+커서와 씬의 Cook 경로를 기본 Game 설정으로 옮겼다. 에디터·게임 시작 맵과 연결 설정은 기본 프로필을 사용하며 별도 `-CustomConfig` 인자가 필요 없다.
+
+로비를 나갈 때 마지막 카메라의 위치·회전·시야각을 저장한다. `L_Title`을 다시 열고 같은 구도에서 로비 경로를 역방향으로 재생한다. 참가자는 방 목록 위치에서 멈추고 경기 참가 UI를 다시 표시한다. EOS 세션 정리가 끝나면 방 목록을 조회한다. 호스트가 방을 닫으면 방 설정 경로도 역방향으로 재생한 뒤 경기 생성·참가 메뉴로 돌아간다. 세션 정리 지연이나 복귀 오류는 별도 상태 패널로 표시한다.
+
+로비와 차량 선택 보드의 버튼은 `PreciseClick`으로 처리한다. 월드 위젯에서 마우스를 캡처하지 않고 같은 버튼 위에서 누르고 뗐을 때 기존 `OnClicked`를 호출한다.
+
+별도 Standalone `-game` 프로세스 2개의 LocalIP 검증에서 양쪽 Ready 반영, 참가자 퇴장과 방 목록 복귀, 호스트의 인원 감소, 같은 방 재합류를 확인했다. 호스트의 게임 시작과 양쪽 차량 카드도 직접 클릭했다. 서로 다른 차량이 확정됐고 두 플레이어가 `L_Dev_Drive`에 이동해 각 차량을 소유했다. EOS 방 검색 결과까지 새로 조회하는 동작은 이 검증 범위에서 제외했다.
+
+기본 프로필의 EOS 로그인 위젯 표시와 3인 LocalIP PIE를 확인했다. 방 종료 후 메뉴 복귀와 재생성, 세 참가자의 같은 로비 합류, 차량 보드 표시, 전원 확정 후 `L_Dev_Drive` 이동과 선택한 Pawn의 소유가 통과했다. 실제 EOS 인증·방 목록 조회와 패키징은 이번 실행 검증에 포함하지 않았다.

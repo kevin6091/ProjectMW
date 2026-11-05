@@ -15,7 +15,7 @@ struct FMWVehiclePlayerPresentation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText StatusText;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText MarkerText;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) TSoftObjectPtr<UTexture2D> Thumbnail;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor PlayerTint;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor PlayerTint = FLinearColor::Black;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bOccupied = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bLocal = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bConfirmed = false;
