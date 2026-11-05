@@ -22,7 +22,7 @@ namespace MWGameplayTags
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_FRED);
 	
 	// MapTheme
-	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_MapTheme_DevDefault);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_MapTheme_DriveDefault);
 
 	
 	
