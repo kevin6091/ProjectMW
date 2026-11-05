@@ -21,6 +21,10 @@ void UMWRoomLobbyWidget::NativeConstruct()
 		Sessions->OnSessionStateChanged.AddUniqueDynamic(this, &ThisClass::HandleSessionStateChanged);
 		Sessions->OnSessionError.AddUniqueDynamic(this, &ThisClass::HandleSessionError);
 	}
+	// A world-space Slate button can lose its capture before mouse-up in a game window.
+	// PreciseClick still requires a press and release on the button.
+	for (UButton* Button : {Button_Leave.Get(), Button_RetryCleanup.Get(), Button_Ready.Get(), Button_Start.Get()})
+		Button->SetClickMethod(EButtonClickMethod::PreciseClick);
 	Button_Leave->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleLeaveClicked);
 	Button_RetryCleanup->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleRetryClicked);
 	Button_Ready->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleReadyClicked);

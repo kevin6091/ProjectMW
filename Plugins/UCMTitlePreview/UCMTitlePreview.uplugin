@@ -1,0 +1,22 @@
+{
+  "FileVersion": 3,
+  "Version": 2,
+  "VersionName": "source-titleflow-fidelity-2",
+  "FriendlyName": "UCM source title flow preview",
+  "Description": "Bounded visual preview, no login, network, gameplay or ProjectMW integration. Requires source data stored in the preview assets.",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "Modules": [
+    {
+      "Name": "UCMTitlePreview",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "Niagara",
+      "Enabled": true
+    }
+  ]
+}

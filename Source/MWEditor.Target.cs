@@ -15,5 +15,6 @@ public class MWEditorTarget : TargetRules
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_8;
 		// 이 프로그램에 프로젝트의 MW 게임 모듈을 포함합니다.
 		ExtraModuleNames.Add("MW");
+		ExtraModuleNames.Add("MWEditor");
 	}
 }
