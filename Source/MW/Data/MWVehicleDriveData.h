@@ -109,10 +109,6 @@ struct MW_API FMWVehicleDriveConfig
 	// 차량끼리 부딪힌 뒤 접촉 법선 방향의 공통 운동량을 유지하는 비율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CollisionMomentumRetention = 0.35f;
-
-	// 접지 상태에서 벽이 막은 속도에 비례해 벽을 따라가는 속도를 줄이는 배율
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0"))
-	float WallSlideFriction = 1.5f;
 };
 
 UCLASS()

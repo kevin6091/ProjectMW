@@ -41,7 +41,6 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("CollisionRestitution"), Config.CollisionRestitution, 0.f, 1.f);
 	RequireRange(TEXT("MinBounceSpeed"), Config.MinBounceSpeed, 0.f, Largest);
 	RequireRange(TEXT("CollisionMomentumRetention"), Config.CollisionMomentumRetention, 0.f, 1.f);
-	RequireRange(TEXT("WallSlideFriction"), Config.WallSlideFriction, 0.f, Largest);
 	if (Config.GroundProbeDistance <= Config.GroundClearance)
 	{
 		OutErrors.Add(FText::FromString(TEXT("GroundProbeDistance must be > GroundClearance.")));

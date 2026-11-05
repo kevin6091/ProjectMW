@@ -518,22 +518,36 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 	QueryParams.AddIgnoredActor(PawnOwner);
 	const FCollisionResponseParams ResponseParams(Collision->GetCollisionResponseToChannels());
 
+	const float MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
+	const FCollisionShape Shape = Collision->GetCollisionShape();
 	FHitResult Hit;
-
-	const bool bHit = World->SweepSingleByChannel(Hit, Start, End,
-		Collision->GetComponentQuat(), Collision->GetCollisionObjectType(),
-		Collision->GetCollisionShape(), QueryParams, ResponseParams);
-
-	if (!bHit || !Hit.IsValidBlockingHit())
+	const auto SweepGround = [&](const FCollisionShape& ProbeShape)
+	{
+		return World->SweepSingleByChannel(Hit, Start, End, Collision->GetComponentQuat(),
+			Collision->GetCollisionObjectType(), ProbeShape, QueryParams, ResponseParams);
+	};
+	if (!SweepGround(Shape))
 	{
 		return;
 	}
 
-	const float MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
-	const float GroundDot = FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector);
+	if (Hit.bStartPenetrating && Shape.IsBox()
+		&& FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+	{
+		// 차체 옆벽과의 초기 겹침이 아래쪽 바닥을 가릴 수 있다.
+		// 검사에만 가로 여유를 주고 높이를 유지해 실제 바닥까지의 거리를 구한다.
+		constexpr double SideInset = 0.5;
+		FVector ProbeExtent = Shape.GetBox();
+		ProbeExtent.X -= FMath::Min(SideInset, ProbeExtent.X * 0.5);
+		ProbeExtent.Y -= FMath::Min(SideInset, ProbeExtent.Y * 0.5);
+		Hit.Reset();
+		if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)))
+		{
+			return;
+		}
+	}
 
-	// 너무 가파른 면은 주행 가능한 바닥으로 취급하지 않는다.
-	if (GroundDot < MinGroundDot)
+	if (!Hit.IsValidBlockingHit() || FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
 	{
 		return;
 	}
@@ -574,32 +588,15 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		return;
 	}
 
-	constexpr int32 MaxMoveAttempts = 3;
-	TArray<FVector, TInlineAllocator<MaxMoveAttempts>> BlockingNormals;
-	float RemainingTime = DeltaTime;
-	FQuat MoveRotation = TargetRotation;
-	for (int32 Attempt = 0; Attempt < MaxMoveAttempts; ++Attempt)
+	const FVector MoveDelta = Velocity * DeltaTime;
+
+	FHitResult Hit(1.f);
+
+	SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
+
+	if (Hit.IsValidBlockingHit())
 	{
-		const FVector MoveDelta = Velocity * RemainingTime;
-		FHitResult Hit(1.f);
-		SafeMoveUpdatedComponent(MoveDelta, MoveRotation, true, Hit);
-		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
-		{
-			return;
-		}
-
-		// SafeMove의 겹침 해소가 실패하면 막힌 이동 속도를 다음 스텝에 남기지 않는다.
-		if (Hit.bStartPenetrating)
-		{
-			Velocity = FVector::ZeroVector;
-			break;
-		}
-		if (!Hit.IsValidBlockingHit())
-		{
-			break;
-		}
-
-		HandleImpact(Hit, RemainingTime, MoveDelta);
+		HandleImpact(Hit, DeltaTime, MoveDelta);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
 		{
 			return;
@@ -607,49 +604,30 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 
 		if (TryResolveVehicleContact(Hit))
 		{
-			break;
+			return;
 		}
 
-		const double BlockedSpeed = FMath::Max(-FVector::DotProduct(Velocity, Hit.Normal), 0.0);
-		Velocity += Hit.Normal * BlockedSpeed;
+		// 충돌면 안쪽으로 향하는 속도만 제거한다.
+		const float IntoSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
 
-		if (bGrounded && BlockedSpeed > 0.0 && !Cast<AMWVehiclePawn>(Hit.GetActor())
-			&& FMath::Abs(FVector::DotProduct(Hit.ImpactNormal, GroundNormal)) < 0.5)
+		if (IntoSurfaceSpeed < 0.f)
 		{
-			// 바닥과 벽의 교선 방향만 감속한다. 가볍게 스치면 벽이 막은 속도도 작다.
-			const FVector WallTangent = FVector::CrossProduct(GroundNormal, Hit.Normal).GetSafeNormal();
-			const double SlideSpeed = FVector::DotProduct(Velocity, WallTangent);
-			const double SpeedLoss = FMath::Min(FMath::Abs(SlideSpeed), BlockedSpeed * DriveConfig.WallSlideFriction);
-			Velocity -= WallTangent * (FMath::Sign(SlideSpeed) * SpeedLoss);
+			Velocity -= Hit.Normal * IntoSurfaceSpeed;
 		}
 
-		// 다음 벽에 투영한 속도가 앞선 벽 안쪽을 향하면 두 면의 교선으로 제한한다.
-		for (const FVector& PreviousNormal : BlockingNormals)
+		// 처음 요청한 이동 중 남은 부분을 표면을 따라 시도한다.
+		SlideAlongSurface(MoveDelta, 1.f - Hit.Time, Hit.Normal, Hit, true);
+
+		// 미끄러지는 도중 다른 면에도 막혔다면 속도를 정리한다.
+		if (Hit.IsValidBlockingHit())
 		{
-			if (FVector::DotProduct(Velocity, PreviousNormal) < -KINDA_SMALL_NUMBER)
+			const float IntoSecondSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
+
+			if (IntoSecondSurfaceSpeed < 0.f)
 			{
-				const FVector Edge = FVector::CrossProduct(PreviousNormal, Hit.Normal).GetSafeNormal();
-				Velocity = Edge * FVector::DotProduct(Velocity, Edge);
-				break;
+				Velocity -= Hit.Normal * IntoSecondSurfaceSpeed;
 			}
 		}
-		BlockingNormals.Add(Hit.Normal);
-
-		if (BlockingNormals.ContainsByPredicate([this](const FVector& Normal)
-		{
-			return FVector::DotProduct(Velocity, Normal) < -KINDA_SMALL_NUMBER;
-		}))
-		{
-			Velocity = FVector::ZeroVector;
-			break;
-		}
-
-		RemainingTime *= 1.f - Hit.Time;
-		if (RemainingTime <= SMALL_NUMBER || Velocity.IsNearlyZero())
-		{
-			break;
-		}
-		MoveRotation = UpdatedComponent->GetComponentQuat();
 	}
 }
 

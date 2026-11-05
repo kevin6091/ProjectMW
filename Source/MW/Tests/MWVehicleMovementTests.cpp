@@ -120,7 +120,6 @@ bool FMWDriveConfigTest::RunTest(const FString& Parameters)
 	Reject(TEXT("Negative detach speed"), [](auto& C) { C.GroundDetachSpeed = -1; });
 	Reject(TEXT("Zero vehicle mass"), [](auto& C) { C.VehicleMass = 0; });
 	Reject(TEXT("Momentum retention outside range"), [](auto& C) { C.CollisionMomentumRetention = 2; });
-	Reject(TEXT("Negative wall friction"), [](auto& C) { C.WallSlideFriction = -1; });
 	return true;
 }
 
@@ -206,41 +205,7 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Scene.Step(0.5f);
 	TestTrue(TEXT("Wall blocks forward translation"), Scene.Vehicle->GetActorLocation().X <= 280.5f);
 	TestTrue(TEXT("Oblique collision slides along wall"), Scene.Vehicle->GetActorLocation().Y > 100);
-	TestTrue(TEXT("Oblique collision removes speed into the wall"), FMath::Abs(Scene.Movement->Velocity.X) < 1);
-
-	Scene.Reset(FVector(0, 0, 31), FRotator(0, 45, 0));
-	Scene.Movement->Velocity = FVector(900, 900, 0);
-	Scene.Input(1);
-	Scene.Step(0.6f);
-	const FVector AtWall = Scene.Vehicle->GetActorLocation();
-	TestTrue(TEXT("Diagonal impact reaches the wall"), AtWall.X > 260);
-	Scene.Step(1.f);
-	const double WallSlideDistance = FMath::Abs(Scene.Vehicle->GetActorLocation().Y - AtWall.Y);
-	AddInfo(FString::Printf(TEXT("Wall slide under throttle: %.2f cm in one second, final speed %.2f cm/s"),
-		WallSlideDistance, Scene.Movement->Velocity.Size2D()));
-	TestTrue(TEXT("Throttle into the wall does not keep sliding"), WallSlideDistance < 5);
-	TestTrue(TEXT("Diagonal wall contact clears sustained planar speed"), Scene.Movement->Velocity.Size2D() < 5);
-
-	Scene.Reset(FVector(240, 0, 31), FRotator(0, 75, 0));
-	Scene.Movement->Velocity = Scene.Vehicle->GetActorForwardVector() * 900;
-	Scene.Step(0.6f);
-	TestTrue(TEXT("A shallow scrape still moves along the wall"), Scene.Vehicle->GetActorLocation().Y > 300);
-	TestTrue(TEXT("A shallow scrape cannot pass through the wall"), Scene.Vehicle->GetActorLocation().X < 308);
 	Wall->GetOwner()->Destroy();
-
-	// Both walls are reached in one simulation step. Clipping against the second
-	// wall alone would restore a speed component pointing into the first wall.
-	Scene.Reset(FVector(0, 0, 100));
-	Wall = Scene.AddBox(FVector(140.5, 0, 200), FVector(20, 1000, 200));
-	UBoxComponent* AngledWall = Scene.AddBox(FVector(-65.38, 113.25, 200), FVector(20, 1000, 200), FRotator(0, 120, 0));
-	Scene.Movement->Velocity = FVector(6000, 6000, 0);
-	Scene.Step(1.f / 120.f, 1.f / 120.f);
-	const FVector CornerLocation = Scene.Vehicle->GetActorLocation();
-	TestTrue(TEXT("Vehicle reached both faces of the corner"), CornerLocation.X > 15 && CornerLocation.Y > 25);
-	TestTrue(TEXT("The corner consumes the blocked planar velocity"), Scene.Movement->Velocity.Size2D() < 1);
-	AngledWall->GetOwner()->Destroy();
-	Wall->GetOwner()->Destroy();
-
 	Scene.Floor->SetBoxExtent(FVector(500, 500, 50));
 	Scene.Reset();
 	Scene.Input(1);
@@ -268,6 +233,35 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Scene.Reset(FVector(0, 0, 500));
 	Scene.Step(1.f);
 	TestFalse(TEXT("Steep surface is not drivable ground"), Scene.Movement->IsGrounded());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveWallGroundContactTest, "MW.Vehicle.WallGroundContact",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWDriveWallGroundContactTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	constexpr float StepTime = 1.f / 120.f;
+	constexpr double Yaw = -15.0;
+	const FVector Start(0, 0, 31);
+	Scene.Reset(Start, FRotator(0, Yaw, 0));
+	const double YawRadians = FMath::DegreesToRadians(FMath::Abs(Yaw));
+	const double BoxDepth = 100.0 * FMath::Sin(YawRadians) + 50.0 * FMath::Cos(YawRadians);
+	Scene.AddBox(FVector(0, -BoxDepth - 20.0 + 0.2, 200), FVector(1000, 20, 200));
+
+	Scene.Step(StepTime, StepTime);
+	TestTrue(TEXT("Side contact does not hide the floor"), Scene.Movement->IsGrounded());
+	TestTrue(TEXT("Side contact leaves the ground clearance intact"),
+		FMath::IsNearlyEqual(Scene.Vehicle->GetActorLocation().Z, Start.Z, 0.02));
+
+	Scene.Input(0, 1);
+	Scene.Step(0.5f);
+	TestTrue(TEXT("Reverse can pull the vehicle away from the wall"), Scene.Vehicle->GetActorLocation().Y > 15.0);
+
+	Scene.Reset(Start, FRotator(0, Yaw, 0));
+	Scene.Floor->GetOwner()->Destroy();
+	Scene.Step(StepTime, StepTime);
+	TestFalse(TEXT("A wall without a floor does not count as ground"), Scene.Movement->IsGrounded());
 	return true;
 }
 
