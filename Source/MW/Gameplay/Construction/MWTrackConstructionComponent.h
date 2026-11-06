@@ -36,6 +36,8 @@ public:
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
 	void UpdateHover(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId);
+	void UpdateCursor(APlayerController* Requester, int32 SessionId, int32 Revision,
+		int32 Sequence, bool bVisible, const FVector& WorldPosition);
 	FMWTrackSelectionReply ConfirmSelection(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId, int32 RequestId);
 	
 private:

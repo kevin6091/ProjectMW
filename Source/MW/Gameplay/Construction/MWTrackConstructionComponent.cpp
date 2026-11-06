@@ -148,6 +148,10 @@ void UMWTrackConstructionComponent::EndSelection()
 {
 	if (!HasServerAuthority() || !SelectionSession.bIsOpen) return;
 	SelectionSession.bIsOpen = false;
+	for (const auto& Participant : Participants)
+	{
+		if (Participant.IsValid()) Participant->GetPlayerConstructionComponent()->ClearCursorForServer();
+	}
 	Participants.Reset();
 	GetOwner()->ForceNetUpdate();
 	OnSelectionSessionChanged.Broadcast();
@@ -221,6 +225,17 @@ void UMWTrackConstructionComponent::UpdateHover(APlayerController* Requester,
         || !Player->ConsumeHoverBudgetForServer()) return;
     Current.HoveredOfferId = OfferId;
     Player->ApplySelectionForServer(Current);
+}
+
+void UMWTrackConstructionComponent::UpdateCursor(APlayerController* Requester,
+	int32 SessionId, int32 Revision, int32 Sequence, bool bVisible, const FVector& WorldPosition)
+{
+	UMWPlayerConstructionComponent* Player = nullptr;
+	EMWTrackSelectionRejectReason Reason;
+	if (ValidateRequest(Requester, SessionId, Revision, INDEX_NONE, true, Player, Reason))
+	{
+		Player->UpdateCursorForServer(Sequence, bVisible, WorldPosition);
+	}
 }
 
 FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(

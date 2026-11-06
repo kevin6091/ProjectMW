@@ -1,6 +1,9 @@
 #include "UI/MWTrackSelectionWidget.h"
 
-#include "Components/Button.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/World.h"
@@ -15,15 +18,13 @@
 void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	Button_Offer_0->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleOffer0);
-	Button_Offer_1->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleOffer1);
-	Button_Offer_2->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleOffer2);
+    SetVisibility(ESlateVisibility::HitTestInvisible);
 	TryBindState();
 }
 
 void UMWTrackSelectionWidget::NativeDestruct()
 {
-	GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
+	if (GetWorld()) GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
 	if (BoundConstruction.IsValid())
 	{
 		BoundConstruction->OnSelectionSessionChanged.RemoveDynamic(this, &ThisClass::HandleStateChanged);
@@ -32,11 +33,11 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	{
 		if (Player.IsValid()) Player->OnSelectionChanged.RemoveDynamic(this, &ThisClass::HandleStateChanged);
 	}
-	Button_Offer_0->OnClicked.RemoveDynamic(this, &ThisClass::HandleOffer0);
-	Button_Offer_1->OnClicked.RemoveDynamic(this, &ThisClass::HandleOffer1);
-	Button_Offer_2->OnClicked.RemoveDynamic(this, &ThisClass::HandleOffer2);
 	BoundConstruction.Reset();
 	BoundPlayers.Reset();
+	RemoteCursorLabels.Reset();
+	SmoothedCursorPositions.Reset();
+	if (Canvas_Cursors) Canvas_Cursors->ClearChildren();
 	DisplayedSession = {};
 	RequestError = FText::GetEmpty();
 	bRequestPending = false;
@@ -105,81 +106,57 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 
 void UMWTrackSelectionWidget::Refresh()
 {
-	const FMWTrackSelectionSession Session = BoundConstruction.IsValid()
-		? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
+	const auto Session = BoundConstruction.IsValid() ? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
 	if (Session.SelectionSessionId != DisplayedSession.SelectionSessionId || Session.OffersRevision != DisplayedSession.OffersRevision)
 	{
 		bRequestPending = false;
+		AcknowledgedOffer = INDEX_NONE;
 		RequestError = FText::GetEmpty();
 	}
 	DisplayedSession = Session;
 	const auto* PC = GetOwningPlayer<AMWGameplayPlayerController>();
 	const auto* OwnPS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-	const FMWPlayerTrackSelection Own = OwnPS ? OwnPS->GetPlayerConstructionComponent()->GetSelection() : FMWPlayerTrackSelection{};
-	const bool bOwnReady = OwnPS && Session.SelectionSessionId > 0
-		&& Own.SelectionSessionId == Session.SelectionSessionId && Own.OffersRevision == Session.OffersRevision;
-	if (bOwnReady && Own.bConfirmed) bRequestPending = false;
-
-	UButton* Buttons[] = {Button_Offer_0, Button_Offer_1, Button_Offer_2};
-	UTextBlock* Names[] = {Text_OfferName_0, Text_OfferName_1, Text_OfferName_2};
-	UTextBlock* States[] = {Text_OfferState_0, Text_OfferState_1, Text_OfferState_2};
-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Buttons); ++Index)
-	{
-		const auto* Offer = Session.Offers.FindByPredicate(
-			[Index](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == Index; });
-		const bool bSelected = bOwnReady && Own.bConfirmed && Offer && Own.SelectedOfferId == Offer->OfferId;
-		Names[Index]->SetText(GetOfferName(Offer ? Offer->OfferId : INDEX_NONE));
-		States[Index]->SetText(FText::FromString(bSelected ? TEXT("내 선택 확정") : TEXT("트랙 후보")));
-		Buttons[Index]->SetIsEnabled(Offer && Session.bIsOpen && bOwnReady && !Own.bConfirmed && !bRequestPending);
-	}
-
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	TArray<AMWPlayerState*> Players;
 	if (GS)
-	{
 		for (APlayerState* State : GS->PlayerArray)
-		{
-			auto* PS = Cast<AMWPlayerState>(State);
-			if (IsValid(PS) && !PS->IsInactive()) Players.Add(PS);
-		}
-	}
+			if (auto* PS = Cast<AMWPlayerState>(State)) Players.Add(PS);
 	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B) { return A.GetLobbyMemberId() < B.GetLobbyMemberId(); });
-	UTextBlock* PlayerNames[] = {Text_PlayerName_0, Text_PlayerName_1};
-	UTextBlock* PlayerSelections[] = {Text_PlayerSelection_0, Text_PlayerSelection_1};
-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(PlayerNames); ++Index)
+	FString Lines;
+	bool bOwnConfirmed = false;
+	for (const auto* PS : Players)
 	{
-		const auto* PS = Players.IsValidIndex(Index) ? Players[Index] : nullptr;
-		const FMWPlayerTrackSelection Selection = PS ? PS->GetPlayerConstructionComponent()->GetSelection() : FMWPlayerTrackSelection{};
-		const bool bConfirmed = PS && Selection.SelectionSessionId == Session.SelectionSessionId
-			&& Selection.OffersRevision == Session.OffersRevision && Selection.bConfirmed;
-		PlayerNames[Index]->SetText(PS ? FText::Format(FText::FromString(TEXT("P{0} {1}{2}")),
-			PS->GetLobbyMemberId(), FText::FromString(PS->GetPlayerName()),
-			FText::FromString(PS == OwnPS ? TEXT(" (나)") : TEXT(""))) : FText::FromString(TEXT("참가자 대기")));
-		PlayerSelections[Index]->SetText(bConfirmed ? GetOfferName(Selection.SelectedOfferId) : FText::FromString(TEXT("선택 대기")));
+		const auto Selection = PS->GetPlayerConstructionComponent()->GetSelection();
+		const bool bSame = Selection.SelectionSessionId == Session.SelectionSessionId && Selection.OffersRevision == Session.OffersRevision;
+		const int32 OfferId = Selection.bConfirmed ? Selection.SelectedOfferId : Selection.HoveredOfferId;
+		FString State = TEXT("선택 중");
+		if (bSame && OfferId != INDEX_NONE)
+			State = GetOfferName(OfferId).ToString() + (Selection.bConfirmed ? TEXT(" · 선택 완료") : TEXT(" · 확인 중"));
+		if (!bSame) State = TEXT("참여 준비 중");
+		Lines += FString::Printf(TEXT("P%d %s%s · %s\n"), PS->GetLobbyMemberId(), *PS->GetPlayerName(), PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State);
+		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
 	}
-	FText Status = FText::FromString(TEXT("플레이어 접속 대기"));
-	if (Session.SelectionSessionId > 0)
-	{
-		Status = FText::FromString(Session.bIsOpen ? TEXT("트랙 선택 중") : TEXT("트랙 선택 종료"));
-	}
-	if (bRequestPending) Status = FText::FromString(TEXT("서버 승인 대기"));
-	if (Session.bIsOpen && !RequestError.IsEmpty()) Status = RequestError;
-	Text_SessionStatus->SetText(Status);
+	Text_Players->SetText(FText::FromString(Lines));
+	if (bOwnConfirmed) bRequestPending = false;
+	FString Status = Session.bIsOpen ? TEXT("트랙 위에 마우스를 올리고 좌클릭으로 선택하세요.") : TEXT("다른 플레이어를 기다리고 있습니다.");
+	if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
+	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택했습니다. 다른 플레이어의 선택을 기다립니다.");
+	else if (bRequestPending) Status = TEXT("서버에서 선택을 확인하고 있습니다...");
+	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : FText::FromString(Status));
 }
 
-void UMWTrackSelectionWidget::ConfirmSlot(int32 SlotIndex)
+void UMWTrackSelectionWidget::ConfirmOffer(int32 OfferId)
 {
 	auto* PC = GetOwningPlayer<AMWGameplayPlayerController>();
-	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
-		[SlotIndex](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == SlotIndex; });
-	if (!PC || !Offer || !DisplayedSession.bIsOpen || bRequestPending) return;
-	const int32 OfferId = Offer->OfferId;
+	const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+	if (!PS || !DisplayedSession.bIsOpen || bRequestPending || AcknowledgedOffer != INDEX_NONE
+		|| PS->GetPlayerConstructionComponent()->GetSelection().bConfirmed) return;
+	if (!DisplayedSession.Offers.ContainsByPredicate([OfferId](const FMWTrackOffer& Offer) { return Offer.OfferId == OfferId; })) return;
 	const int32 SessionId = DisplayedSession.SelectionSessionId;
 	const int32 Revision = DisplayedSession.OffersRevision;
 	bRequestPending = true;
 	RequestError = FText::GetEmpty();
 	Refresh();
-	// 화면에 표시한 세션 키를 그대로 보내 오래된 클릭도 서버가 판별하게 한다.
 	PC->RequestConfirmTrack(SessionId, Revision, OfferId);
 }
 
@@ -187,12 +164,65 @@ void UMWTrackSelectionWidget::HandleSelectionReply(const FMWTrackSelectionReply&
 {
 	if (Reply.SelectionSessionId != DisplayedSession.SelectionSessionId || Reply.OffersRevision != DisplayedSession.OffersRevision) return;
 	bRequestPending = false;
+	if (Reply.bAccepted) AcknowledgedOffer = Reply.OfferId;
 	RequestError = Reply.bAccepted ? FText::GetEmpty() : FText::Format(
-		FText::FromString(TEXT("선택 거절: {0}")), UEnum::GetDisplayValueAsText(Reply.Reason));
+		FText::FromString(TEXT("선택을 처리하지 못했습니다: {0}")), UEnum::GetDisplayValueAsText(Reply.Reason));
 	Refresh();
 }
 
 void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
-void UMWTrackSelectionWidget::HandleOffer0() { ConfirmSlot(0); }
-void UMWTrackSelectionWidget::HandleOffer1() { ConfirmSlot(1); }
-void UMWTrackSelectionWidget::HandleOffer2() { ConfirmSlot(2); }
+
+void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
+{
+	Super::NativeTick(Geometry, DeltaSeconds);
+	auto* PC = GetOwningPlayer();
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	if (!PC || !GS || !Canvas_Cursors) return;
+	TSet<int32> Present;
+	const FLinearColor Colors[] = {FLinearColor(.2f, .85f, 1), FLinearColor(1, .55f, .2f), FLinearColor(.5f, 1, .35f), FLinearColor(1, .4f, .8f)};
+	for (APlayerState* State : GS->PlayerArray)
+	{
+		const auto* PS = Cast<AMWPlayerState>(State);
+		if (!PS || PS == PC->GetPlayerState<AMWPlayerState>() || PS->GetLobbyMemberId() <= 0) continue;
+		const int32 Id = PS->GetLobbyMemberId();
+		Present.Add(Id);
+		const auto RemoteCursor = PS->GetPlayerConstructionComponent()->GetCursor();
+		UTextBlock* Label = RemoteCursorLabels.FindRef(Id);
+		if (!RemoteCursor.bIsVisible || RemoteCursor.SelectionSessionId != DisplayedSession.SelectionSessionId || RemoteCursor.OffersRevision != DisplayedSession.OffersRevision)
+		{
+			if (Label) Label->SetVisibility(ESlateVisibility::Collapsed);
+			SmoothedCursorPositions.Remove(Id);
+			continue;
+		}
+		if (!Label)
+		{
+			Label = WidgetTree->ConstructWidget<UTextBlock>();
+			Label->SetFont(Text_Players->GetFont());
+			Label->SetColorAndOpacity(FSlateColor(Colors[(Id - 1) % UE_ARRAY_COUNT(Colors)]));
+			Label->SetShadowColorAndOpacity(FLinearColor::Black);
+			Label->SetShadowOffset(FVector2D(1, 1));
+			auto* CursorSlot = Canvas_Cursors->AddChildToCanvas(Label);
+			CursorSlot->SetAutoSize(true);
+			CursorSlot->SetZOrder(100);
+			RemoteCursorLabels.Add(Id, Label);
+		}
+		const FVector* Previous = SmoothedCursorPositions.Find(Id);
+		const FVector Position = Previous ? FMath::VInterpTo(*Previous, FVector(RemoteCursor.WorldPosition), DeltaSeconds, 18) : FVector(RemoteCursor.WorldPosition);
+		SmoothedCursorPositions.Add(Id, Position);
+		FVector2D Screen;
+		if (UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, Position, Screen, false))
+		{
+			CastChecked<UCanvasPanelSlot>(Label->Slot)->SetPosition(Screen);
+			Label->SetText(FText::FromString(FString::Printf(TEXT("+ P%d %s"), Id, *PS->GetPlayerName())));
+			Label->SetVisibility(ESlateVisibility::HitTestInvisible);
+		}
+		else Label->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	for (auto It = RemoteCursorLabels.CreateIterator(); It; ++It)
+	{
+		if (Present.Contains(It.Key())) continue;
+		It.Value()->RemoveFromParent();
+		SmoothedCursorPositions.Remove(It.Key());
+		It.RemoveCurrent();
+	}
+}

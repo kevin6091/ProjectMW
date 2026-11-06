@@ -4,8 +4,10 @@
 #include "Player/MWGameplayPlayerController.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Data/MWInputData.h"
 #include "System/GameState/MWGameplayGameState.h"
+#include "System/MWAssetManager.h"
 #include "LogChannel.h"
 #include "MWGameplayTags.h"
 #include "EnhancedInputComponent.h"
@@ -77,6 +79,7 @@ void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Rev
 
 void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	SetTrackSelectionBoard(nullptr);
 	ClearDrivingInput();
 	if (IsValid(TrackSelectionWidget))
 	{
@@ -102,7 +105,10 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 			if (IsValid(TrackSelectionWidget))
 			{
 				TrackSelectionWidget->AddToViewport();
-				SetInputMode(FInputModeGameAndUI());
+				FInputModeGameAndUI Mode;
+				Mode.SetHideCursorDuringCapture(false);
+				Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				SetInputMode(Mode);
 				bShowMouseCursor = true;
 			}
 		}
@@ -258,6 +264,61 @@ void AMWGameplayPlayerController::ClientTrackSelectionReply_Implementation(const
 		Widget->HandleSelectionReply(Reply);
 	}
 	OnTrackSelectionReply(Reply);
+}
+
+void AMWGameplayPlayerController::SetTrackSelectionBoard(AMWTrackSelectionBoard* Board)
+{
+	if (!IsLocalController()) return;
+	if (SelectionInputComponent.IsValid())
+	{
+		SelectionInputComponent->RemoveBindingByHandle(SelectionBindingHandle);
+		if (auto* Inputs = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+			if (SelectionInputData) Inputs->RemoveMappingContext(SelectionInputData->GetMappingContext());
+	}
+	SelectionInputComponent.Reset();
+	SelectionBoard = Board;
+	if (!Board) return;
+	auto* Input = Cast<UEnhancedInputComponent>(InputComponent);
+	auto* Inputs = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+	SelectionInputData = UMWAssetManager::Get().LoadAssetSynchronous<UMWInputData>(MWGameplayTags::Asset_Input_SelectConstruction);
+	const auto* Action = SelectionInputData ? SelectionInputData->FindInputActionByTag(MWGameplayTags::Input_Select) : nullptr;
+	if (!Input || !Inputs || !Action || !SelectionInputData->GetMappingContext()) return;
+	// 기존 선택 IMC의 좌클릭 액션을 사용한다. 화면 버튼의 위치와 무관한 월드 선택이다.
+	SelectionBindingHandle = Input->BindAction(Action, ETriggerEvent::Started, this, &ThisClass::HandleTrackSelectPressed).GetHandle();
+	SelectionInputComponent = Input;
+	FModifyContextOptions Options;
+	Options.bIgnoreAllPressedKeysUntilRelease = true;
+	Inputs->AddMappingContext(SelectionInputData->GetMappingContext(), 1, Options);
+}
+
+void AMWGameplayPlayerController::HandleTrackSelectPressed()
+{
+	if (SelectionBoard.IsValid())
+		if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget)) Widget->ConfirmOffer(SelectionBoard->FindHoveredOffer());
+}
+
+void AMWGameplayPlayerController::RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId)
+{
+	if (IsLocalController()) ServerUpdateTrackHover(SessionId, Revision, OfferId);
+}
+
+void AMWGameplayPlayerController::RequestTrackCursor(int32 SessionId, int32 Revision, bool bVisible, const FVector& Position)
+{
+	if (IsLocalController() && NextCursorSequence < MAX_int32)
+		ServerUpdateTrackCursor(SessionId, Revision, ++NextCursorSequence, bVisible, Position);
+}
+
+void AMWGameplayPlayerController::ServerUpdateTrackHover_Implementation(int32 SessionId, int32 Revision, int32 OfferId)
+{
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+		GS->GetConstructionComponent()->UpdateHover(this, SessionId, Revision, OfferId);
+}
+
+void AMWGameplayPlayerController::ServerUpdateTrackCursor_Implementation(int32 SessionId, int32 Revision,
+	int32 Sequence, bool bVisible, FVector_NetQuantize Position)
+{
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+		GS->GetConstructionComponent()->UpdateCursor(this, SessionId, Revision, Sequence, bVisible, Position);
 }
 
 void AMWGameplayPlayerController::HandleAccel(const FInputActionValue& Value)

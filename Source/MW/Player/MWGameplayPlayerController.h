@@ -14,6 +14,7 @@ class UEnhancedInputLocalPlayerSubsystem;
 class UInputMappingContext;
 class UMWInputData;
 class UUserWidget;
+class AMWTrackSelectionBoard;
 
 // 로컬 입력 바인딩과 현재 조종 중인 차량으로의 입력 전달을 담당한다.
 UCLASS()
@@ -32,6 +33,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "MW|Construction")
 	void RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId);
+	void SetTrackSelectionBoard(AMWTrackSelectionBoard* Board);
+	void RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId);
+	void RequestTrackCursor(int32 SessionId, int32 Revision, bool bVisible, const FVector& Position);
 	
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
 	TSubclassOf<UUserWidget> TrackSelectionWidgetClass;
@@ -58,6 +62,16 @@ private:
 
 	UFUNCTION(Client, Reliable)
 	void ClientTrackSelectionReply(const FMWTrackSelectionReply& Reply);
+	UFUNCTION(Server, Unreliable)
+	void ServerUpdateTrackHover(int32 SessionId, int32 Revision, int32 OfferId);
+	UFUNCTION(Server, Unreliable)
+	void ServerUpdateTrackCursor(int32 SessionId, int32 Revision, int32 Sequence, bool bVisible, FVector_NetQuantize Position);
+	void HandleTrackSelectPressed();
+	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;
+	TWeakObjectPtr<UEnhancedInputComponent> SelectionInputComponent;
+	UPROPERTY(Transient) TObjectPtr<UMWInputData> SelectionInputData;
+	uint32 SelectionBindingHandle = 0;
+	int32 NextCursorSequence = 0;
 
 	int32 LastTrackSelectionRequestId = 0;
 	

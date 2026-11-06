@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/NetSerialization.h"
 #include "GameplayTagContainer.h"
 #include "MWTrackSelectionTypes.generated.h"
 
@@ -59,6 +60,17 @@ struct MW_API FMWPlayerTrackSelection
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bConfirmed = false;
+};
+
+// 월드 커서 표시는 Hover/확정 상태와 별도로 복제한다.
+USTRUCT(BlueprintType)
+struct MW_API FMWPlayerConstructionCursor
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadOnly) int32 SelectionSessionId = 0;
+	UPROPERTY(BlueprintReadOnly) int32 OffersRevision = 0;
+	UPROPERTY(BlueprintReadOnly) FVector_NetQuantize WorldPosition = FVector::ZeroVector;
+	UPROPERTY(BlueprintReadOnly) bool bIsVisible = false;
 };
 
 UENUM(BlueprintType)
