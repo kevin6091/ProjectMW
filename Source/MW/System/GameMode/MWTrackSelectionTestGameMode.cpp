@@ -36,7 +36,7 @@ void AMWTrackSelectionTestGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AMWTrackSelectionTestGameMode::HandleStartingNewPlayer_Implementation(APlayerController*)
 {
-	// 이 테스트의 조작 대상은 선택 위젯이다.
+	// 선택판과 카메라를 사용하므로 플레이어 Pawn을 생성하지 않는다.
 }
 
 void AMWTrackSelectionTestGameMode::TryStartSelection()
@@ -58,7 +58,10 @@ void AMWTrackSelectionTestGameMode::TryStartSelection()
 		}
 	}
 
-	if (Players.Num() != 2)
+	// Standalone PIE 창들은 서로 연결되지 않은 별도 월드다.
+	// 혼자 Play한 경우도 후보를 확인할 수 있도록 단독 월드는 1명으로 시작한다.
+	const int32 RequiredPlayers = GetNetMode() == NM_Standalone ? 1 : FMath::Max(1, RequiredNetworkPlayers);
+	if (Players.Num() < RequiredPlayers)
 	{
 		return;
 	}
@@ -72,6 +75,7 @@ void AMWTrackSelectionTestGameMode::TryStartSelection()
 	}
 
 	bSelectionStarted = true;
+	SelectionParticipantCount = Players.Num();
 
 	for (AMWPlayerState* PS : Players)
 	{
@@ -113,7 +117,7 @@ void AMWTrackSelectionTestGameMode::TryFinishSelection()
 		}
 	}
 
-	if (ConfirmedCount == 2)
+	if (SelectionParticipantCount > 0 && ConfirmedCount == SelectionParticipantCount)
 	{
 		Construction->EndSelection();
 	}

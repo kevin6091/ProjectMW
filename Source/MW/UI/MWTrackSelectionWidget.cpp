@@ -62,7 +62,8 @@ void UMWTrackSelectionWidget::TryBindState()
 	}
 
 	const FMWTrackSelectionSession Session = Construction ? Construction->GetSelectionSession() : FMWTrackSelectionSession{};
-	bool bReady = Session.SelectionSessionId > 0 && GS && GS->PlayerArray.Num() >= 2;
+	// 참가 인원은 GameMode가 결정한다. UI 준비 조건에 2인 테스트 규칙을 넣지 않는다.
+	bool bReady = Session.SelectionSessionId > 0 && GS && !GS->PlayerArray.IsEmpty();
 	if (GS)
 	{
 		for (APlayerState* State : GS->PlayerArray)
