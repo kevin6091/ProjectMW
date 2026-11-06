@@ -3,13 +3,19 @@
 
 #include "Player/MWGameplayPlayerController.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Data/MWInputData.h"
+#include "System/GameState/MWGameplayGameState.h"
+#include "LogChannel.h"
 #include "MWGameplayTags.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/MWTrackSelectionWidget.h"
 
 AMWGameplayPlayerController::AMWGameplayPlayerController()
 {
@@ -59,20 +65,56 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	RefreshDrivingInput();
 }
 
+void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId)
+{
+	if (!IsLocalController() || LastTrackSelectionRequestId == MAX_int32)
+	{
+		return;
+	}
+
+	ServerConfirmTrack(SessionId, Revision, OfferId, ++LastTrackSelectionRequestId);
+}
+
 void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ClearDrivingInput();
+	if (IsValid(TrackSelectionWidget))
+	{
+		TrackSelectionWidget->RemoveFromParent();
+		TrackSelectionWidget = nullptr;
+	}
 	Super::EndPlay(EndPlayReason);
 }
 
 void AMWGameplayPlayerController::ApplyGameplayInputMode()
 {
-	if (!IsLocalController() || !HasActorBegunPlay()) return;
-	// 기존 Controller의 테마 진입 처리를 옮겼습니다. 원격 참가자의 입력 모드는 변경하지 않습니다.
+	if (!IsLocalController() || !HasActorBegunPlay())
+	{
+		return;
+	}
+
+	if (TrackSelectionWidgetClass)
+	{
+		if (!IsValid(TrackSelectionWidget))
+		{
+			TrackSelectionWidget = CreateWidget<UUserWidget>(this, TrackSelectionWidgetClass);
+
+			if (IsValid(TrackSelectionWidget))
+			{
+				TrackSelectionWidget->AddToViewport();
+				SetInputMode(FInputModeGameAndUI());
+				bShowMouseCursor = true;
+			}
+		}
+
+		if (IsValid(TrackSelectionWidget))
+		{
+			return;
+		}
+	}
+
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
-	bEnableClickEvents = false;
-	bEnableMouseOverEvents = false;
 }
 
 void AMWGameplayPlayerController::RefreshDrivingInput()
@@ -183,6 +225,39 @@ AMWVehiclePawn* AMWGameplayPlayerController::GetInputVehicle() const
 	return IsLocalController() && Vehicle == GetPawn() && IsValid(Vehicle)
 		&& Vehicle->GetController() == this && Vehicle->InputEnabled()
 		? Vehicle : nullptr;
+}
+
+void AMWGameplayPlayerController::ServerConfirmTrack_Implementation(int32 SessionId, int32 Revision, int32 OfferId,
+	int32 RequestId)
+{
+	FMWTrackSelectionReply Reply;
+	Reply.SelectionSessionId = SessionId;
+	Reply.OffersRevision = Revision;
+	Reply.OfferId = OfferId;
+	Reply.RequestId = RequestId;
+	Reply.Reason = EMWTrackSelectionRejectReason::Unavailable;
+
+	if (AMWGameplayGameState* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+	{
+		if (UMWTrackConstructionComponent* Construction = GS->GetConstructionComponent())
+		{
+			Reply = Construction->ConfirmSelection(this, SessionId, Revision, OfferId, RequestId);
+		}
+	}
+
+	UE_LOG(LogMWServer, Log, TEXT("[MWTrackSelection] Session=%d Revision=%d Request=%d Offer=%d Accepted=%d Reason=%s"),
+		Reply.SelectionSessionId, Reply.OffersRevision, Reply.RequestId, Reply.OfferId,
+		Reply.bAccepted ? 1 : 0, *UEnum::GetValueAsString(Reply.Reason));
+	ClientTrackSelectionReply(Reply);
+}
+
+void AMWGameplayPlayerController::ClientTrackSelectionReply_Implementation(const FMWTrackSelectionReply& Reply)
+{
+	if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget))
+	{
+		Widget->HandleSelectionReply(Reply);
+	}
+	OnTrackSelectionReply(Reply);
 }
 
 void AMWGameplayPlayerController::HandleAccel(const FInputActionValue& Value)
