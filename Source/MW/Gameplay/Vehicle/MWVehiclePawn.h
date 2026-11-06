@@ -68,6 +68,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="MW|Visual|Wheels")
     TArray<FMWVehicleWheelVisual> WheelVisuals;
 
+    // Visual response in 1/s; 12 reaches 95% in about 0.25 s. Zero disables blending.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="MW|Visual|Wheels", meta=(ClampMin="0", UIMax="30"))
+    float WheelSteeringInterpSpeed = 12.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Collision")
 	TObjectPtr<UBoxComponent> CollisionRoot;
 
@@ -101,6 +105,7 @@ private:
     TArray<FCachedVisualWheel> CachedVisualWheels;
     FVector PreviousVisualLocation = FVector::ZeroVector;
     bool bVisualLocationValid = false;
+    double VisualSteering = 0;
     uint32 VisualStreamId = 0;
     FDelegateHandle VisualRootTransformHandle;
     void InitializeWheelVisuals();
