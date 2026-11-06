@@ -6,6 +6,8 @@
 #include "MWGameplayTags.h"
 #include "MWPlayerState.generated.h"
 
+class UMWPlayerCursorComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWPlayerStateChanged);
 
 UCLASS()
@@ -14,6 +16,7 @@ class MW_API AMWPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
+	AMWPlayerState();
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_PlayerName() override;
@@ -44,7 +47,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
 	FMWPlayerStateChanged OnPlayerStateChanged;
 
+	UFUNCTION(BlueprintPure, Category="MW|Cursor")
+	UMWPlayerCursorComponent* GetCursorComponent() const { return CursorComponent; }
+
 private:
+	// 화면 수명이 끝나면 폐기하는 표시 상태다. CopyProperties로 맵 간 인계하지 않는다.
+	UPROPERTY(VisibleAnywhere, Category="MW|Cursor")
+	TObjectPtr<UMWPlayerCursorComponent> CursorComponent;
+
 	UPROPERTY(ReplicatedUsing = OnRep_LobbyFlags)
 	bool bRoomHost = false;
 

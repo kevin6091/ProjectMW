@@ -12,6 +12,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "MWGameplayTags.h"
 #include "System/MWAssetManager.h"
+#include "Player/Cursor/MWPlayerCursorComponent.h"
 
 AMWLobbyGameMode::AMWLobbyGameMode()
 {
@@ -183,6 +184,7 @@ void AMWLobbyGameMode::BeginVehicleSelection()
     }
 
     // 클라이언트가 요청을 보내기 전에 서버가 먼저 선택 단계에 진입합니다.
+    SetVehicleCursorStreams(true);
     GS->SetRoomPhaseFromServer(EMWRoomPhase::VehicleSelection);
 
     UE_LOG(LogMWServer, Log, TEXT("[MWVehicleSelection] 차량 선택을 시작합니다."));
@@ -276,6 +278,7 @@ void AMWLobbyGameMode::TryCompleteVehicleSelection()
 
     // 목적지가 유효하면 이동 단계로 바꿉니다.
     // 이후 도착하는 차량 선택 요청은 Phase 검사에서 거절됩니다.
+    SetVehicleCursorStreams(false);
     GS->SetRoomPhaseFromServer(EMWRoomPhase::Traveling);
 
     UE_LOG(LogMWServer, Log, TEXT("[MWTravel] 전원 차량 선택 확정. 이동 요청 Destination=%s"), *Destination.ToString());
@@ -373,8 +376,25 @@ bool AMWLobbyGameMode::ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FStri
 // 시작 실패 시 반쯤 열린 방을 유지하지 않고 기존 종료 경로로 정리합니다.
 void AMWLobbyGameMode::FailStart(const FString& Error)
 {
+    SetVehicleCursorStreams(false);
     bAcceptingPlayers = false;
     if (auto* GS = GetGameState<AMWLobbyGameState>()) GS->SetRoomPhaseFromServer(EMWRoomPhase::Failed);
     UE_LOG(LogMWServer, Warning, TEXT("Start failed: %s"), *Error);
     if (auto* App = GetGameInstance<UMWGameInstance>()) App->RequestLeaveRoom();
+}
+
+void AMWLobbyGameMode::SetVehicleCursorStreams(bool bOpen)
+{
+    const auto* GS = GetGameState<AMWLobbyGameState>();
+    const auto* App = GetGameInstance<UMWGameInstance>();
+    if (!GS) return;
+    for (APlayerState* Base : GS->PlayerArray)
+    {
+        auto* PS = Cast<AMWPlayerState>(Base);
+        if (!PS || !PS->GetCursorComponent()) continue;
+        if (bOpen && App && !PS->IsInactive() && App->GetStartingPlayers().Contains(PS->GetLobbyMemberId()))
+            PS->GetCursorComponent()->OpenStreamForServer(MWCursorContexts::VehicleSelection, EMWCursorSpace::NormalizedWidget);
+        else
+            PS->GetCursorComponent()->CloseStreamForServer();
+    }
 }

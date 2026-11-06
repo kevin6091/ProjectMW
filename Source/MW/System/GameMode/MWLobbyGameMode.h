@@ -49,4 +49,5 @@ private:
 	bool ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FString& Error) const;
 	void BeginVehicleSelection();
 	void TryCompleteVehicleSelection();
+	void SetVehicleCursorStreams(bool bOpen);
 };

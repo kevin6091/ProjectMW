@@ -23,6 +23,8 @@ class UWrapBox;
 class UMWVehicleCardWidget;
 class UMWVehiclePlayerEntryWidget;
 class UMWVehiclePlayerMarkerWidget;
+class UWidgetComponent;
+struct FMWCursorVisualLayout;
 
 // Art-only development samples. No VehicleId, Pawn or gameplay registration.
 USTRUCT(BlueprintType)
@@ -59,6 +61,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle UI") int32 GetDisplayedSlotCount() const { return ParticipantViews.Num(); }
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle UI") TArray<FMWVehiclePlayerPresentation> GetParticipantPresentation() const { return ParticipantViews; }
 	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle UI") void RefreshPlayers();
+
+	// HUD가 사용하는 화면 좌표/표시 조회. Widget은 RPC나 서버 상태를 변경하지 않는다.
+	bool SampleSharedCursor(const UWidgetComponent* Surface, FVector2D& OutNormalizedPosition) const;
+	bool ProjectSharedCursor(const UWidgetComponent* Surface, FVector2D Position, FVector2D& OutViewportPosition) const;
+	UUserWidget* CreateSharedCursorVisual() const;
+	bool ConfigureSharedCursorVisual(UUserWidget& Visual, const AMWPlayerState* Player, FMWCursorVisualLayout& OutLayout) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionRequested OnSelectionRequested;
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionBackRequested OnBackRequested;
