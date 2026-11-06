@@ -1,6 +1,12 @@
 #include "System/MWPlayerState.h"
+#include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+
+AMWPlayerState::AMWPlayerState()
+{
+	CursorComponent = CreateDefaultSubobject<UMWPlayerCursorComponent>(TEXT("CursorComponent"));
+}
 
 void AMWPlayerState::CopyProperties(APlayerState* PlayerState)
 {

@@ -128,6 +128,7 @@ public:
     void PresentEntryWidget(UWidget* Screen, bool bMenuRequested);
     bool IsEntryPanelReady() const { return ActiveRegion != TEXT("RoomPanel") || bWorldRoutePresentationReady || !bWorldRouteActive; }
     virtual void SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection) override;
+    virtual UWidgetComponent* GetVehicleSelectionSurface() const override;
     // Presentation entry point for the existing vehicle UI. No readiness, selection RPC or phase approval is invented.
     UFUNCTION(BlueprintCallable, Category="MW Integration") bool ShowVehicleSelection();
     UFUNCTION(BlueprintCallable, Category="MW Integration") void CloseVehicleSelection();
