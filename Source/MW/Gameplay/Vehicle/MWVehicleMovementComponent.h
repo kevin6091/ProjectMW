@@ -24,6 +24,9 @@ public:
 
 	void SetDriveInput(const FMWVehicleDriveInput& NewInput);
 
+	UFUNCTION(BlueprintPure, Category="MW|Drive")
+	float GetSteeringInput() const { return DriveInput.Steering; }
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
