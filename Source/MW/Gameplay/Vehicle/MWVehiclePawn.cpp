@@ -45,6 +45,7 @@ AMWVehiclePawn::AMWVehiclePawn()
 void AMWVehiclePawn::InitializeWheelVisuals()
 {
     CachedVisualWheels.Reset();
+    VisualSteering = 0;
     PreviousVisualLocation = GetActorLocation();
     bVisualLocationValid = false;
     VisualStreamId = ServerDriveSnapshot.StreamId;
@@ -118,9 +119,15 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
     // Use displayed displacement, so proxy interpolation and reverse motion roll correctly.
     // This preserves the existing steering source; the network snapshot has no steering field.
     const float Input = VehicleMovement ? VehicleMovement->GetSteeringInput() : 0.f;
-    const double Steering = FMath::IsFinite(Input) ? FMath::Clamp(Input, -1.f, 1.f) : 0;
+    const double TargetSteering = FMath::IsFinite(Input) ? FMath::Clamp(Input, -1.f, 1.f) : 0;
     const double ActorScale = GetActorScale3D().GetAbsMax();
     if (!FMath::IsFinite(ActorScale) || ActorScale <= KINDA_SMALL_NUMBER) return;
+    // Smooth once per Pawn, independent of wheel count and render frame rate.
+    // The actual movement input and replicated driving state remain untouched.
+    const double Alpha = FMath::IsFinite(WheelSteeringInterpSpeed) && WheelSteeringInterpSpeed > 0
+        ? 1.0 - FMath::Exp(-double(WheelSteeringInterpSpeed) * DeltaSeconds) : 1.0;
+    VisualSteering = FMath::Lerp(VisualSteering, TargetSteering, Alpha);
+    if (FMath::IsNearlyEqual(VisualSteering, TargetSteering, 1.e-4)) VisualSteering = TargetSteering;
     for (FCachedVisualWheel& Wheel : CachedVisualWheels)
     {
         UStaticMeshComponent* Mesh = Wheel.Mesh.Get();
@@ -128,7 +135,7 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
         Wheel.RollRadians = FMath::Fmod(Wheel.RollRadians + Distance / (Wheel.RadiusCm * ActorScale), 2.0 * UE_DOUBLE_PI);
         FQuat Rotation = FQuat(Wheel.RollAxis, Wheel.RollRadians) * Wheel.RestRotation;
         // Do not gate this by speed: stationary left/right steering must remain visible.
-        if (Wheel.bSteers) Rotation = FQuat(Wheel.SteeringAxis, Steering * Wheel.MaxSteeringRadians) * Rotation;
+        if (Wheel.bSteers) Rotation = FQuat(Wheel.SteeringAxis, VisualSteering * Wheel.MaxSteeringRadians) * Rotation;
         Rotation.Normalize();
         if (!Mesh->GetRelativeRotation().Quaternion().Equals(Rotation, 1.e-6))
             Mesh->SetRelativeRotation(Rotation, false, nullptr, ETeleportType::None);
