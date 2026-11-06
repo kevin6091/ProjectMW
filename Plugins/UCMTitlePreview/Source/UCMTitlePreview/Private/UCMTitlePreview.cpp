@@ -123,10 +123,20 @@ void AUCMTitleFlowPreview::ReplayPreview(){
  if(IntroSequence){ALevelSequenceActor* NewSequenceActor=nullptr;SequencePlayer=ULevelSequencePlayer::CreateLevelSequencePlayer(this,IntroSequence,Settings,NewSequenceActor);SequenceActor=NewSequenceActor;if(SequencePlayer){SequencePlayer->OnFinished.AddDynamic(this,&AUCMTitleFlowPreview::IntroFinished);for(const auto& Binding:SourceBindingOverrides){TArray<AActor*> Actors;for(TActorIterator<AActor> It(GetWorld());It;++It)if(It->GetName()==Binding.ActorName)Actors.Add(*It);if(Actors.Num()==1)NewSequenceActor->SetBinding(FMovieSceneObjectBindingID(UE::MovieScene::FRelativeObjectBindingID(Binding.BindingId,MovieSceneSequenceID::Root,0)),Actors,false);else Record(TEXT("ERROR_FIDELITY_BINDING_NOT_UNIQUE"));}if(!bRestoringTitlePose){SequencePlayer->Play();Record(TEXT("INTRO_PLAY_SOURCE_COMPANY_LOGO_UNSKIPPABLE"));}}}
  else Record(TEXT("ERROR_MISSING_INTRO_SEQUENCE"));
 }
-void AUCMTitleFlowPreview::IntroFinished(){
+void AUCMTitleFlowPreview::IntroFinished(){CompletePreviewIntro(false);}
+bool AUCMTitleFlowPreview::SkipPreviewIntro(){
+ if(PreviewStage!=0||!IsValid(SequencePlayer)||!SequencePlayer->IsPlaying())return false;
+ // Evaluate the same final pose used by RestoreTitlePose; keep this sequence's bindings.
+ SequencePlayer->Pause();
+ SequencePlayer->SetPlaybackPosition(FMovieSceneSequencePlaybackParams(SequencePlayer->GetEndTime().Time-FFrameTime(1),EUpdatePositionMethod::Jump));
+ Record(TEXT("INTRO_SKIPPED_BY_USER"));
+ CompletePreviewIntro(true);
+ return PreviewStage==1;
+}
+void AUCMTitleFlowPreview::CompletePreviewIntro(bool bSkipped){
  if(PreviewStage!=0)return;
  SequenceFinishedAt=GetWorld()->GetTimeSeconds()-StartedAt;
- if(SequenceFinishedAt+0.15f<SourceOpenSplashWait){Record(TEXT("ERROR_PREMATURE_SEQUENCE_FINISH"));return;}
+ if(!bSkipped&&SequenceFinishedAt+0.15f<SourceOpenSplashWait){Record(TEXT("ERROR_PREMATURE_SEQUENCE_FINISH"));return;}
  PreviewStage=1;TitleCanvas->SetVisibility(true);MenuCanvas->SetVisibility(false);for(auto C:SourceMenuCanvases)if(C)C->SetVisibility(false);Record(TEXT("SEQUENCE_FINISHED_TITLE_SHOWN_INPUT_ALLOWED"));
 }
 void AUCMTitleFlowPreview::RefreshSourceMenu(){if(!bEnableSourceFrontendMenus||!SourceMenuEntries.IsValidIndex(SelectedSourceMenu))return;if(auto W=Cast<UUCMSourcedWidget>(MenuCanvas->GetWidget()))W->SelectSourceAction(SourceMenuEntries[SelectedSourceMenu].ActionId);for(auto C:SourceMenuCanvases)if(C)if(auto Widget=Cast<UUCMSourcedWidget>(C->GetWidget()))Widget->SelectSourceAction(SourceMenuEntries[SelectedSourceMenu].ActionId);}

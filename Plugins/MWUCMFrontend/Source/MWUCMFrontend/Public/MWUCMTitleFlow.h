@@ -118,6 +118,7 @@ public:
     AMWUCMTitleFlow();
     UPROPERTY(EditAnywhere, Category="MW Integration") TSubclassOf<UMWUCMTitleRootWidget> RootWidgetClass;
     bool IsMenuReady(bool bLoggedIn);
+    UFUNCTION(BlueprintCallable, Category="MW Integration") bool SkipIntro();
     void ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested);
     UPROPERTY(EditAnywhere, Category="MW Integration") TArray<FMWUCMWorldRoute> WorldRoutes;
     UPROPERTY(EditAnywhere, Category="MW Integration") TSubclassOf<UMWVehicleSelectionWidget> VehicleWidgetClass;
@@ -142,6 +143,10 @@ private:
     FDelegateHandle MenuActionHandle;
     FTimerHandle InitializeHandle;
     void InitializeRoot();
+    TSharedPtr<SWidget> IntroSkipOverlay;
+    uint64 IntroSkippedFrame = MAX_uint64;
+    void ShowIntroSkip();
+    void HideIntroSkip();
     bool bStarted = false;
     bool bRefreshing = false;
     bool StartRoomReturn(const UMWUCMIntroSession& Session);
