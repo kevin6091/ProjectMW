@@ -1,0 +1,9 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "local-test-only",
+  "FriendlyName": "Environment Integration Acceptance",
+  "CanContainContent": false,
+  "Plugins": [{"Name":"MWEnvironmentRestore","Enabled":true},{"Name":"MWEnvironmentGameplay","Enabled":true}],
+  "Modules": [{"Name":"MWEnvironmentAcceptance","Type":"Runtime","LoadingPhase":"PostEngineInit"}]
+}
