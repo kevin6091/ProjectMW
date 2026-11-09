@@ -2,7 +2,6 @@
 
 #include "Data/MWTrackDefinitionData.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
-#include "Data/MWTrackDefinitionData.h"
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "Engine/World.h"
@@ -34,6 +33,7 @@ void UMWTrackConstructionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeP
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UMWTrackConstructionComponent, SelectionSession);
+	DOREPLIFETIME(UMWTrackConstructionComponent, PlacementSession);
 }
 
 bool UMWTrackConstructionComponent::BeginSelection(
@@ -44,7 +44,7 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	OutError = FText::GetEmpty();
 	AGameStateBase* GS = Cast<AGameStateBase>(GetOwner());
 	
-	if (!HasServerAuthority() || !GS || bPreparingSelection || SelectionSession.bIsOpen)
+	if (!HasServerAuthority() || !GS || bPreparingSelection || SelectionSession.bIsOpen || PlacementSession.bIsOpen)
 	{
 		OutError = FText::FromString(TEXT("트랙 선택을 시작할 수 없습니다."));
 		return false;
@@ -161,6 +161,31 @@ void UMWTrackConstructionComponent::EndSelection()
 void UMWTrackConstructionComponent::OnRep_SelectionSession()
 {
 	OnSelectionSessionChanged.Broadcast();
+}
+
+bool UMWTrackConstructionComponent::AreAllSelectionsConfirmed() const
+{
+	if (!SelectionSession.bIsOpen || Participants.IsEmpty())
+	{
+		return false;
+	}
+
+	for (const auto& Participant : Participants)
+	{
+		const AMWPlayerState* PS = Participant.Get();
+		if (!IsValid(PS) || PS->IsInactive())
+		{
+			return false;
+		}
+
+		const FMWPlayerTrackSelection Selection = PS->GetPlayerConstructionComponent()->GetSelection();
+		if (!Selection.bConfirmed || Selection.SelectionSessionId != SelectionSession.SelectionSessionId
+			|| Selection.OffersRevision != SelectionSession.OffersRevision)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 bool UMWTrackConstructionComponent::ValidateRequest(APlayerController* Requester,
@@ -304,6 +329,12 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 		return Reply;
 	}
 	if (Reply.bAccepted && bApplySelection)
+	{
 		Player->ApplySelectionForServer(Next);
+		if (AreAllSelectionsConfirmed())
+		{
+			OnAllSelectionsConfirmed.Broadcast();
+		}
+	}
 	return Reply;
 }

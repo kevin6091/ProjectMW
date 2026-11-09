@@ -15,12 +15,12 @@ public:
 	
 	virtual void StartPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
 	
 private:
 	void TryStartSelection();
 
-	UFUNCTION()
 	void TryFinishSelection();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test")
@@ -31,6 +31,5 @@ private:
 	int32 RequiredNetworkPlayers = 2;
 
 	int32 NextTestMemberId = 1;
-	int32 SelectionParticipantCount = 0;
 	bool bSelectionStarted = false;
 };

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "Gameplay/Construction/MWTrackSelectionTypes.h"
 #include "MWPlayerConstructionComponent.generated.h"
 
@@ -23,6 +24,11 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="MW|Construction")
 	FMWPlayerConstructionCursor GetCursor() const { return Cursor; }
+
+	UFUNCTION(BlueprintPure, Category="MW|Construction")
+	FMWPlayerTrackPlacement GetPlacement() const { return Placement; }
+
+	void SetPlacementForServer(const FMWPlayerTrackPlacement& NewPlacement);
 
 	UPROPERTY(BlueprintAssignable, Category="MW|Construction")
 	FMWPlayerConstructionChanged OnSelectionChanged;
@@ -47,6 +53,9 @@ public:
 	static constexpr int32 MaxCachedReplies = 32;
 
 private:
+	UPROPERTY(Replicated)
+	FMWPlayerTrackPlacement Placement;
+
 	// Hover와 확정 상태는 소유자뿐 아니라 다른 참가자에게도 공유한다.
 	UPROPERTY(ReplicatedUsing=OnRep_Selection)
 	FMWPlayerTrackSelection Selection;

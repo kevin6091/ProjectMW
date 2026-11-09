@@ -44,6 +44,56 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 	Camera->FieldOfView = 65;
 }
 
+void AMWTrackSelectionBoard::BeginPlay()
+{
+	Super::BeginPlay();
+	for (USceneComponent* Anchor : Anchors)
+	{
+		Anchor->SetRelativeLocation(Anchor->GetRelativeLocation() * LayoutScale);
+	}
+	Camera->SetRelativeLocation(Camera->GetRelativeLocation() * LayoutScale);
+}
+
+void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
+{
+	Super::CalcCamera(DeltaTime, OutResult);
+
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	if (!bUseTopDownPlacementCamera || !GS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	{
+		return;
+	}
+
+	const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+	if (Session.SessionId <= 0)
+	{
+		return;
+	}
+
+	// 작업 평면을 수직으로 내려다보면 높은 끝점도 화면의 동일한 XY 위치에서 잡힌다.
+	FBox Bounds(Session.BuildOrigin, Session.BuildOrigin);
+	for (const FMWOpenTrackEnd& End : Session.OpenEnds)
+	{
+		Bounds += End.WorldFrame.GetLocation();
+	}
+	const FVector Center = Bounds.GetCenter();
+	const FVector Extent = Bounds.GetExtent();
+	int32 Width = 0;
+	int32 Height = 0;
+	if (const auto* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->GetViewportSize(Width, Height);
+	}
+	const double Aspect = Height > 0 && Width > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
+	const double Margin = 700.0 * Session.LayoutScale;
+
+	OutResult.Location = FVector(Center.X, Center.Y, Bounds.Max.Z + 18000.0);
+	OutResult.Rotation = FRotator(-90.0, -90.0, 0.0);
+	OutResult.ProjectionMode = ECameraProjectionMode::Orthographic;
+	// +X가 화면의 오른쪽이다. 열려 있는 양 끝에 다음 트랙을 조작할 공간을 확보한다.
+	OutResult.OrthoWidth = 2.0 * FMath::Max(Extent.X + Margin, (Extent.Y + Margin) * Aspect);
+}
+
 bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session)
 {
 	ClearOffers();
@@ -65,23 +115,33 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		Track->SetActorTickEnabled(false);
 		// 원본 BP를 전시 인스턴스로 사용하고, 판정은 전시 영역의 Box에만 맡긴다.
 		TInlineComponentArray<UStaticMeshComponent*> Meshes(Track);
+		FBox VisualBounds(ForceInit);
 		for (auto* Mesh : Meshes)
 		{
 			Mesh->SetSimulatePhysics(false);
 			Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			if (DisplayMaterial) Mesh->SetMaterial(0, DisplayMaterial);
 			Mesh->CreateDynamicMaterialInstance(0);
+			if (Mesh->IsVisible() && Mesh->GetStaticMesh())
+			{
+				VisualBounds += Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+			}
 		}
-		FVector Center, Extent;
-		Track->GetActorBounds(false, Center, Extent);
-		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - Center);
-		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20));
+		// 임포트 BP의 피벗과 에디터 아이콘을 빼고 실제 메시를 전시 칸에 맞춘다.
+		if (!VisualBounds.IsValid)
+		{
+			ClearOffers();
+			return false;
+		}
+		const FVector Extent = VisualBounds.GetExtent();
+		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - VisualBounds.GetCenter());
+		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20 * LayoutScale));
 		HitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		auto* Label = NewObject<UTextRenderComponent>(this);
 		Label->SetupAttachment(Anchors[Offer.BoardSlotIndex]);
-		Label->SetRelativeLocation(FVector(0, 0, Extent.Z + 130));
+		Label->SetRelativeLocation(FVector(0, 0, Extent.Z + 130 * LayoutScale));
 		Label->SetHorizontalAlignment(EHTA_Center);
-		Label->SetWorldSize(45);
+		Label->SetWorldSize(45 * LayoutScale);
 		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Label->RegisterComponent();
 		Labels.Add(Offer.OfferId, Label);
@@ -139,6 +199,25 @@ int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	if (!GS)
+	{
+		return;
+	}
+	if (GS->GetRoomPhase() != EMWRoomPhase::PreparingConstruction)
+	{
+		if (Viewer.IsValid())
+		{
+			Viewer->SetTrackSelectionBoard(nullptr);
+			Viewer.Reset();
+		}
+		if (!Offers.IsEmpty())
+		{
+			ClearOffers();
+		}
+		// 선택판의 카메라는 배치에서도 쓴다. 카메라와 전시 Actor의 수명을 분리한다.
+		return;
+	}
 	if (!Viewer.IsValid())
 	{
 		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -154,8 +233,6 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 		}
 	}
 	if (!Viewer.IsValid()) return;
-	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!GS) return;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
 	if (Session.SelectionSessionId <= 0) return;
 	if ((SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision) && !BuildOffers(Session)) return;
@@ -180,6 +257,11 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 		}
 	}
 	RefreshMarkers(Session);
+}
+
+FVector AMWTrackSelectionBoard::GetBuildOrigin() const
+{
+	return Anchors[1]->GetComponentLocation();
 }
 
 void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Session)

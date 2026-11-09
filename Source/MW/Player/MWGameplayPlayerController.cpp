@@ -2,11 +2,14 @@
 
 
 #include "Player/MWGameplayPlayerController.h"
+#include "Algo/AllOf.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Data/MWInputData.h"
 #include "System/GameState/MWGameplayGameState.h"
+#include "System/GameMode/MWGameplayGameMode.h"
 #include "System/MWAssetManager.h"
 #include "LogChannel.h"
 #include "MWGameplayTags.h"
@@ -25,6 +28,7 @@ AMWGameplayPlayerController::AMWGameplayPlayerController()
 	bShowMouseCursor = false;
 	bEnableClickEvents = false;
 	bEnableMouseOverEvents = false;
+	PlacementView = CreateDefaultSubobject<UMWTrackPlacementViewComponent>(TEXT("TrackPlacementView"));
 }
 
 void AMWGameplayPlayerController::BeginPlay()
@@ -79,6 +83,7 @@ void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Rev
 
 void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	PlacementView->ResetView();
 	SetTrackSelectionBoard(nullptr);
 	ClearDrivingInput();
 	if (IsValid(TrackSelectionWidget))
@@ -96,7 +101,20 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 		return;
 	}
 
-	if (TrackSelectionWidgetClass)
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	const bool bShowConstruction = TrackSelectionWidgetClass &&
+		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement || Phase == EMWRoomPhase::Failed);
+	const bool bResetConstructionWidget = PresentedPhase == EMWRoomPhase::TrackPlacement
+		&& (Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::Failed);
+	PresentedPhase = Phase;
+	if ((!bShowConstruction || bResetConstructionWidget) && IsValid(TrackSelectionWidget))
+	{
+		TrackSelectionWidget->RemoveFromParent();
+		TrackSelectionWidget = nullptr;
+	}
+
+	if (bShowConstruction)
 	{
 		if (!IsValid(TrackSelectionWidget))
 		{
@@ -121,6 +139,48 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
+	if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()))
+	{
+		SetViewTarget(Vehicle);
+	}
+}
+
+void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
+{
+	Super::PlayerTick(DeltaSeconds);
+	if (!IsLocalController())
+	{
+		return;
+	}
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	if (GS && GS->GetRoomPhase() != PresentedPhase)
+	{
+		ApplyGameplayInputMode();
+	}
+	PlacementView->Update(DeltaSeconds, Cast<UEnhancedInputComponent>(InputComponent));
+
+	if (GS && GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement)
+	{
+		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+		// 세션 상태와 설치 Actor 참조는 서로 다른 채널로 도착할 수 있다.
+		if (!Session.bIsOpen && Session.SessionId > LastReadyPlacementSessionId && !Session.PlacedTracks.IsEmpty()
+			&& Algo::AllOf(Session.PlacedTracks, [](const FMWPlacedTrack& Track)
+			{
+				return IsValid(Track.Actor) && Track.Actor->GetActorTransform().Equals(Track.WorldTransform);
+			}))
+		{
+			LastReadyPlacementSessionId = Session.SessionId;
+			ServerConfirmTrackCourseReady(Session.SessionId, Session.CourseRevision);
+		}
+	}
+}
+
+void AMWGameplayPlayerController::ServerConfirmTrackCourseReady_Implementation(int32 SessionId, int32 CourseRevision)
+{
+	if (auto* Mode = GetWorld()->GetAuthGameMode<AMWGameplayGameMode>())
+	{
+		Mode->ConfirmTrackCourseReady(this, SessionId, CourseRevision);
+	}
 }
 
 void AMWGameplayPlayerController::RefreshDrivingInput()
@@ -278,6 +338,7 @@ void AMWGameplayPlayerController::SetTrackSelectionBoard(AMWTrackSelectionBoard*
 	SelectionInputComponent.Reset();
 	SelectionBoard = Board;
 	if (!Board) return;
+	PlacementView->SetDisplayMaterial(Board->GetDisplayMaterial());
 	auto* Input = Cast<UEnhancedInputComponent>(InputComponent);
 	auto* Inputs = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
 	SelectionInputData = UMWAssetManager::Get().LoadAssetSynchronous<UMWInputData>(MWGameplayTags::Asset_Input_SelectConstruction);
@@ -319,6 +380,31 @@ void AMWGameplayPlayerController::ServerUpdateTrackCursor_Implementation(int32 S
 {
 	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
 		GS->GetConstructionComponent()->UpdateCursor(this, SessionId, Revision, Sequence, bVisible, Position);
+}
+
+void AMWGameplayPlayerController::ServerUpdateTrackPlacementPreview_Implementation(int32 SessionId, int32 Sequence,
+	const FMWTrackPlacementIntent& Intent)
+{
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+	{
+		GS->GetConstructionComponent()->UpdatePlacementPreview(this, SessionId, Sequence, Intent);
+	}
+}
+
+void AMWGameplayPlayerController::ServerPlaceTrack_Implementation(int32 SessionId, int32 CourseRevision,
+	const FMWTrackPlacementIntent& Intent)
+{
+	EMWTrackPlacementResult Result = EMWTrackPlacementResult::Unavailable;
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+	{
+		Result = GS->GetConstructionComponent()->PlaceTrack(this, SessionId, CourseRevision, Intent);
+	}
+	ClientTrackPlacementReply(SessionId, Result);
+}
+
+void AMWGameplayPlayerController::ClientTrackPlacementReply_Implementation(int32 SessionId, EMWTrackPlacementResult Result)
+{
+	PlacementView->HandlePlacementReply(SessionId, Result);
 }
 
 void AMWGameplayPlayerController::HandleAccel(const FInputActionValue& Value)

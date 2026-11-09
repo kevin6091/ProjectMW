@@ -30,6 +30,16 @@ void UMWPlayerConstructionComponent::GetLifetimeReplicatedProps(TArray<FLifetime
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(UMWPlayerConstructionComponent, Selection);
     DOREPLIFETIME(UMWPlayerConstructionComponent, Cursor);
+    DOREPLIFETIME(UMWPlayerConstructionComponent, Placement);
+}
+
+void UMWPlayerConstructionComponent::SetPlacementForServer(const FMWPlayerTrackPlacement& NewPlacement)
+{
+    if (GetOwner() && GetOwner()->HasAuthority())
+    {
+        Placement = NewPlacement;
+        GetOwner()->ForceNetUpdate();
+    }
 }
 
 void UMWPlayerConstructionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

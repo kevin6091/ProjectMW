@@ -19,11 +19,22 @@ class MW_API AMWTrackSelectionBoard : public AActor
 public:
 	AMWTrackSelectionBoard();
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 	int32 FindHoveredOffer() const;
 	bool GetCursorPosition(FVector& OutPosition) const;
+	FVector GetBuildOrigin() const;
+	double GetLayoutScale() const { return LayoutScale; }
+	UMaterialInterface* GetDisplayMaterial() const { return DisplayMaterial; }
 
 protected:
+	virtual void BeginPlay() override;
+	UPROPERTY(EditAnywhere, Category="Selection", meta=(ClampMin="1.0"))
+	double LayoutScale = 1.0;
+
+	UPROPERTY(EditAnywhere, Category="Selection")
+	bool bUseTopDownPlacementCamera = false;
+
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
 	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<USceneComponent>> Anchors;
 	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<UBoxComponent>> HitAreas;

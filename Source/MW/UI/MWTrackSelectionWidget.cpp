@@ -41,11 +41,35 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	DisplayedSession = {};
 	RequestError = FText::GetEmpty();
 	bRequestPending = false;
+	bShowingPlacement = false;
 	Super::NativeDestruct();
+}
+
+void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FText& Status)
+{
+	if (!bShowingPlacement)
+	{
+		bShowingPlacement = true;
+		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
+		Canvas_Cursors->SetVisibility(ESlateVisibility::Collapsed);
+		if (Text_Title)
+		{
+			Text_Title->SetText(FText::FromString(TEXT("트랙을 배치하세요")));
+		}
+	}
+	if (!Text_Players->GetText().EqualTo(Players))
+	{
+		Text_Players->SetText(Players);
+	}
+	if (!Text_SessionStatus->GetText().EqualTo(Status))
+	{
+		Text_SessionStatus->SetText(Status);
+	}
 }
 
 void UMWTrackSelectionWidget::TryBindState()
 {
+	if (bShowingPlacement) return;
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	auto* Construction = GS ? GS->GetConstructionComponent() : nullptr;
 	if (Construction != BoundConstruction.Get())
@@ -107,6 +131,7 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 
 void UMWTrackSelectionWidget::Refresh()
 {
+	if (bShowingPlacement) return;
 	const auto Session = BoundConstruction.IsValid() ? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
 	if (Session.SelectionSessionId != DisplayedSession.SelectionSessionId || Session.OffersRevision != DisplayedSession.OffersRevision)
 	{
@@ -140,7 +165,11 @@ void UMWTrackSelectionWidget::Refresh()
 	Text_Players->SetText(FText::FromString(Lines));
 	if (bOwnConfirmed) bRequestPending = false;
 	FString Status = Session.bIsOpen ? TEXT("트랙 위에 마우스를 올리고 좌클릭으로 선택하세요.") : TEXT("다른 플레이어를 기다리고 있습니다.");
-	if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
+	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Failed)
+	{
+		Status = TEXT("게임을 계속 진행할 수 없습니다.");
+	}
+	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
 	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택했습니다. 다른 플레이어의 선택을 기다립니다.");
 	else if (bRequestPending) Status = TEXT("서버에서 선택을 확인하고 있습니다...");
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : FText::FromString(Status));
@@ -176,6 +205,7 @@ void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
 void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
+	if (bShowingPlacement) return;
 	auto* PC = GetOwningPlayer();
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	if (!PC || !GS || !Canvas_Cursors) return;

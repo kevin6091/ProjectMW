@@ -19,6 +19,7 @@ class MW_API UMWTrackSelectionWidget : public UUserWidget
 public:
 	void HandleSelectionReply(const FMWTrackSelectionReply& Reply);
 	void ConfirmOffer(int32 OfferId);
+	void ShowPlacementStatus(const FText& Players, const FText& Status);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -27,6 +28,7 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_Players;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Title;
 
 private:
 	// Actor마다 복제 도착 순서가 달라 초기 준비 중에만 상태를 재조회한다.
@@ -41,6 +43,7 @@ private:
 	FMWTrackSelectionSession DisplayedSession;
 	FText RequestError;
 	bool bRequestPending = false;
+	bool bShowingPlacement = false;
 	int32 AcknowledgedOffer = INDEX_NONE;
 	UPROPERTY(Transient) TMap<int32, TObjectPtr<UTextBlock>> RemoteCursorLabels;
 	TMap<int32, FVector> SmoothedCursorPositions;
