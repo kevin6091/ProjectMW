@@ -682,6 +682,7 @@ void AMWUCMTitleFlow::HandleSourceMenu(FName Action)
 
 void AMWUCMTitleFlow::EndPlay(const EEndPlayReason::Type Reason)
 {
+    ClearVehicleDeparture();
     HideIntroSkip();
     MWWorldSurface->SetWidget(nullptr);
     if (WorldRouteCamera) WorldRouteCamera->Destroy();
@@ -788,6 +789,13 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
     WorldRouteCamera->SetActorTransform(Blended);
     const float FOV = FMath::RadiansToDegrees(2.f * FMath::Atan(FMath::Tan(FMath::DegreesToRadians(Route->VerticalFOV) * .5f) * 16.f / 9.f));
     WorldRouteCamera->GetCameraComponent()->SetFieldOfView(FMath::Lerp(WorldRouteOutgoingFOV, FOV, Blend));
+    if (VehicleDepartureCover)
+    {
+        // Keep the vehicle board and camera in place until travel replaces this world.
+        bWorldRouteActive = WorldRouteTime < Samples.Last().Time;
+        return;
+    }
+
     // The main signs are world anchored, so reveal them when the original
     // camera blend completes and let them move with its remaining damping.
     // Other world panels still wait for the camera to settle to avoid exposing
@@ -921,8 +929,85 @@ UWidgetComponent* AMWUCMTitleFlow::GetVehicleSelectionSurface() const
     return VehiclePreviewActor ? VehiclePreviewActor->PreviewSurface.Get() : nullptr;
 }
 
+bool AMWUCMTitleFlow::BeginVehicleDeparture(FSimpleDelegate OnCovered)
+{
+    auto* Viewport = GetGameInstance()->GetGameViewportClient();
+    if (!Viewport || !StartWorldRoute(TEXT("VehicleDeparture"), false, TEXT("VehicleDeparture")))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("MW_UCM VEHICLE_DEPARTURE_UNAVAILABLE"));
+        return false;
+    }
+
+    OnVehicleDepartureCovered = MoveTemp(OnCovered);
+    VehicleDepartureCover = SNew(SBorder)
+        .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+        .BorderBackgroundColor(FLinearColor::Transparent);
+    VehicleDepartureViewport = Viewport;
+    Viewport->AddViewportWidgetContent(VehicleDepartureCover.ToSharedRef(), 9999);
+
+    if (auto* Surface = GetVehicleSelectionSurface())
+        Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    if (VehicleWidget)
+    {
+        VehicleWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+        if (VehicleWidget->IsInViewport()) VehicleWidget->RemoveFromParent();
+    }
+    auto* PC = GetWorld()->GetFirstPlayerController();
+    PC->SetInputMode(FInputModeGameOnly());
+    PC->bShowMouseCursor = false;
+    return true;
+}
+
+void AMWUCMTitleFlow::UpdateVehicleDeparture()
+{
+    if (!VehicleDepartureCover || !OnVehicleDepartureCovered.IsBound())
+    {
+        return;
+    }
+    if (bVehicleDepartureCovered)
+    {
+        // Give the viewport a frame with the opaque cover before asking to travel.
+        FSimpleDelegate OnCovered = MoveTemp(OnVehicleDepartureCovered);
+        OnVehicleDepartureCovered.Unbind();
+        UE_LOG(LogTemp, Display, TEXT("MW_UCM VEHICLE_DEPARTURE_COVERED SECONDS=%.3f"), WorldRouteTime);
+        OnCovered.ExecuteIfBound();
+        return;
+    }
+
+    // Unity's LoadingController increases fade alpha by 0.4 per second.
+    constexpr float SourceFadeSeconds = 2.5f;
+    const float Alpha = FMath::Clamp(WorldRouteTime / SourceFadeSeconds, 0.f, 1.f);
+    VehicleDepartureCover->SetBorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, Alpha));
+    bVehicleDepartureCovered = Alpha >= 1.f;
+}
+
+void AMWUCMTitleFlow::ClearVehicleDeparture()
+{
+    if (!VehicleDepartureCover)
+    {
+        return;
+    }
+    if (auto* Viewport = VehicleDepartureViewport.Get())
+    {
+        Viewport->RemoveViewportWidgetContent(VehicleDepartureCover.ToSharedRef());
+    }
+    VehicleDepartureViewport.Reset();
+    VehicleDepartureCover.Reset();
+    OnVehicleDepartureCovered.Unbind();
+    bVehicleDepartureCovered = false;
+    bWorldRouteActive = false;
+}
+
 void AMWUCMTitleFlow::SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection)
 {
+    if (!Selection && VehicleDepartureCover)
+    {
+        ClearVehicleDeparture();
+        if (Lobby)
+        {
+            StartWorldRoute(TEXT("Vehicle"), true, TEXT("Lobby"));
+        }
+    }
     LobbyWidget = Lobby;
     if (VehicleWidget != Selection && VehicleWidget)
     {
@@ -998,6 +1083,7 @@ void AMWUCMTitleFlow::Tick(float DeltaTime)
     if (PreviewStage != 0) HideIntroSkip();
     if (IntroSkippedFrame != GFrameCounter) Super::Tick(DeltaTime);
     UpdateWorldRoute(DeltaTime);
+    UpdateVehicleDeparture();
     UpdateLobbyPresentation();
     auto* Session = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();
     if (!Session || !Session->IsReturnWorldReady(GetWorld()) || bWorldRouteActive || PreviewStage != 2)

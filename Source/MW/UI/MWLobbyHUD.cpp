@@ -70,24 +70,59 @@ void AMWLobbyHUD::BeginPlay()
 
 void AMWLobbyHUD::RefreshLobbyScreen()
 {
-	if (!RoomLobbyWidget) return;
 	RefreshBindings();
-	if (const auto* GS = BoundGameState.Get())
+	const auto* GS = BoundGameState.Get();
+	if (GS && BoundController.IsValid() && BoundController->GetPlayerState<AMWPlayerState>())
 	{
-		if (GS->GetRoomPhase() == EMWRoomPhase::VehicleSelection && !VehicleSelectionWidget)
-			OpenVehicleSelection();
-		if (GS->GetRoomPhase() != EMWRoomPhase::VehicleSelection)
-			CloseVehicleSelection();
+		// 초기 연결 후에는 변경 이벤트로 갱신하고 주기적인 화면 조회는 중단합니다.
+		GetWorldTimerManager().ClearTimer(BindingRetryTimer);
+	}
+	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Traveling)
+	{
+		if (VehicleSelectionWidget) VehicleSelectionWidget->RefreshPlayers();
+		BeginVehicleDeparture();
+		return;
+	}
+	if (!RoomLobbyWidget) return;
+	if (GS && GS->GetRoomPhase() == EMWRoomPhase::VehicleSelection)
+	{
+		if (!VehicleSelectionWidget) OpenVehicleSelection();
+	}
+	else if (GS)
+	{
+		CloseVehicleSelection();
 	}
 	if (VehicleSelectionWidget)
 		VehicleSelectionWidget->RefreshPlayers();
 	else
 		RoomLobbyWidget->Refresh();
-	if (BoundGameState.IsValid() && GetOwningPlayerController() && GetOwningPlayerController()->GetPlayerState<AMWPlayerState>())
+}
+
+void AMWLobbyHUD::BeginVehicleDeparture()
+{
+	auto* PC = BoundController.Get();
+	if (bVehicleDepartureStarted || !PC || !PC->GetPlayerState<AMWPlayerState>())
 	{
-		// 초기 연결 후에는 변경 이벤트로 갱신하고 주기적인 화면 조회는 중단합니다.
-		GetWorldTimerManager().ClearTimer(BindingRetryTimer);
+		return;
 	}
+
+	bVehicleDepartureStarted = true;
+	SetActorTickEnabled(false);
+	if (CursorOverlay) CursorOverlay->RemoveFromParent();
+	CursorOverlay = nullptr;
+
+	if (auto* Presentation = LobbyPresentation.Get())
+	{
+		if (Presentation->BeginVehicleDeparture(
+			FSimpleDelegate::CreateUObject(PC, &AMWLobbyPlayerController::ReportVehicleDepartureReady)))
+		{
+			return;
+		}
+	}
+
+	// 출발 카메라를 제공하지 않는 로비는 기존처럼 바로 이동할 수 있습니다.
+	CloseVehicleSelection();
+	PC->ReportVehicleDepartureReady();
 }
 
 void AMWLobbyHUD::OpenVehicleSelection()

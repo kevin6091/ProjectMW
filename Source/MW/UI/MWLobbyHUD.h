@@ -47,6 +47,8 @@ private:
 	void OpenVehicleSelection();
 	void PresentVehicleSelection();
 	void CloseVehicleSelection();
+	void BeginVehicleDeparture();
+	bool bVehicleDepartureStarted = false;
 	UFUNCTION()
 	void HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID);
 

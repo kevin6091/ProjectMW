@@ -29,6 +29,7 @@ public:
 	// 로컬 차량 선택 UI의 요청 진입점입니다.
 	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle")
 	void RequestConfirmVehicle(FGameplayTag VehicleAssetID);
+	void ReportVehicleDepartureReady();
 	
 private:
 	FString LobbyActionError;
@@ -41,4 +42,6 @@ private:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerConfirmVehicle(FGameplayTag VehicleAssetID);
+	UFUNCTION(Server, Reliable)
+	void ServerReportVehicleDepartureReady();
 };

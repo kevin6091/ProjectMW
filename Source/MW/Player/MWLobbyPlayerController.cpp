@@ -61,6 +61,22 @@ void AMWLobbyPlayerController::RequestConfirmVehicle(FGameplayTag VehicleAssetID
 	ServerConfirmVehicle(VehicleAssetID);
 }
 
+void AMWLobbyPlayerController::ReportVehicleDepartureReady()
+{
+	if (IsLocalController())
+	{
+		ServerReportVehicleDepartureReady();
+	}
+}
+
+void AMWLobbyPlayerController::ServerReportVehicleDepartureReady_Implementation()
+{
+	if (auto* GM = GetWorld()->GetAuthGameMode<AMWLobbyGameMode>())
+	{
+		GM->HandleVehicleDepartureReady(this);
+	}
+}
+
 void AMWLobbyPlayerController::ServerConfirmVehicle_Implementation(FGameplayTag VehicleAssetID)
 {
 	auto* GM = GetWorld()->GetAuthGameMode<AMWLobbyGameMode>();
