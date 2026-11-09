@@ -1,20 +1,17 @@
-# Validation scope
+# Official three-theme validation
 
-Base main: `035910bbc331986804ed8643350aa48da40430c0`. UE5.8.4 / CL58902052. The original ProjectMW working branch and uncommitted vehicle edits are not used as source changes in this integration.
+The three-theme integration was validated on Unreal Engine 5.8.4, Windows Win64 Development. `Validation_Summary.json` describes the earlier eight-theme integration at `1049df5`.
 
-| Check | Result |
-|---|---|
-| MWEditor Win64 Development | Passed, exit0 |
-| MW Win64 Development | Passed, exit0 |
-| 8 existing environment maps and Theme assets | Loaded; referenced static meshes/material slots non-null |
-| Host/client environment-map PIE | 16 world/theme cases passed initial121 registration, feature generation, expansion, deactivation, re-entry, retained placement CRC, repeated seed, different seed, ISMC/timer cleanup |
-| Current 5 vehicle BP assets | 5/5 in-memory compilation UpToDate; original packages not saved |
-| Existing lobby/vehicle-selection/server-travel flow | Two-player PIE reached PreparingRace; each camera targets its own actual Pawn; local environment adapter active |
-| Existing input routing | Forced EnhancedInput W/D moved each vehicle and changed yaw; camera stayed on Pawn |
-| Full racing, drift/fall visual quality and long driving expansion | Not accepted by the short forced-input check |
-| Source-game visual match / special VFX | Not verified; restored static data and UE approximations remain distinct |
-| Windows Development Cook/Stage | Passed, normal project GameInstance/AssetManager, all8 maps, no SkipSoftReferences |
-| Packaged executable | City and Forest generation/expansion/re-entry/seed/cleanup passed, exit0. Remaining6 maps were cooked and PIE-tested, not separately executed in packaged form |
-| UVCS | No operation |
+| Theme | Two-world diagnostic PIE | Two-player lobby-to-match PIE | Staged game Host / Client |
+|---|---|---|---|
+| Snow | Pass | PreparingRace | Pass / Pass |
+| Toybox | Pass | PreparingRace | Pass / Pass |
+| Tropic | Pass | PreparingRace | Pass / Pass |
 
-All tests use separately provisioned local content. They are not reproducible from the public source branch alone. The five Blueprint compile results do not imply the teammate's unmerged native wheel-visual code is present in main; that feature remains separately owned. Peer CRC differences remain cosmetic/order dependent; no new replication contract is added. Main input and shared-cursor code is preserved.
+- MWEditor and MW Development builds passed. The Windows Cook and Stage passed using the standard project map list.
+- The normal selector data returned exactly Snow, Toybox and Tropic in both PIE worlds. The Toybox and Tropic match PIE runs used a process-local default selection override for the existing PIE flow. Staged game runs submitted each theme through the normal room request.
+- All three diagnostic maps loaded sky, floor and mesh/material references. They passed registration, expansion, deactivation, re-entry, placement CRC preservation, Seed and component/timer cleanup checks. Toybox's first 121 floor indices matched the existing Epic-derived two-material oracle at Seed 42. Tropic rendered the restored sea floor and island assets.
+- The optional catalogue was regenerated with 9 base entries and 3 official entries. A second run had no changes. The missing-catalogue test travelled through the existing two-player flow to DriveDefault and possessed the existing vehicle on both peers.
+- The IoStore inspection found all 146 required `/Game` theme packages and the private catalogue. It found zero retired exclusive packages and zero Environment diagnostic maps. Shared dependencies used by retained content are present.
+- Stage size changed from 895,458,493 to 820,037,429 bytes, a reduction of 75,421,064 bytes (8.42%). Both measurements use a full Cook, Windows Development, the standard map list, and IoStore/Pak with debug symbols omitted.
+- Cook logged the same two existing warnings in both runs, covering the legacy UCM frontend development tag and the EOS e-commerce flag. The test uses LocalIP and reaches PreparingRace. Full race, physical driving and original-game visual parity remain outside this validation.

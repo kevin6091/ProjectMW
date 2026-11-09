@@ -1,25 +1,19 @@
-# Restored environment integration
+# ProjectMW Environment
 
-This branch integrates the existing `MWEnvironmentRestore` generator and `MWEnvironmentGameplay` adapter with ProjectMW. It preserves the approved floor-index state transition, initial Y-outer/X-inner registration order, seeded layout behavior, 2000 Unity-unit view/far defaults, and the separated UE fog integration/cutoff meanings. It does not introduce new gameplay, UI, networking, vehicle logic, or a new environment generator.
+Snow, Toybox and Tropic are the official Environment themes. The room theme IDs resolve to the existing `/Game/Levels/L_Dev_Drive` map. The Environment bridge reads the selected ID and loads its Theme DataAsset. `DriveDefault` remains available by ID for development and uses the existing level backdrop. It is hidden from the room selector while the optional Environment catalogue is active.
 
-## What is published
+The base catalogue remains `/Game/Data/DA_AssetData`. It supports the existing development flow when the optional Environment catalogue is missing or invalid. City, Forest, Lunar, Canyon and Volcano remain available in the local restoration projects, along with their existing gameplay tags and diagnostic maps.
 
-The three project plugins contain authored C++ and module descriptors. `MWEnvironmentAcceptance` is a local validation harness whose behavior requires explicit command-line flags. Runtime environment control remains in the existing Restore/Gameplay plugins. Config changes add only environment bindings/tags, plugin enablement, a private catalogue path, and the environment cook directory.
+## Local content setup
 
-Files added by this integration contain no recovered meshes, textures, materials, prefab/map packages, Unity binaries, reverse-engineering dumps, credentials, logs containing account data, build products, or ZIP archives. Existing unrelated baseline settings are preserved and require their own distribution review. No third-party asset rights are granted. `Asset_Dependencies.csv` is a path/hash manifest, not a redistribution of the referenced assets. Git LFS patterns do not authorize adding restricted binaries. The repository's existing `/Content/` ignore policy remains unchanged.
+1. Use Unreal Engine 5.8.4 and the matching ProjectMW content. Provision the restored Environment packages locally with appropriate rights. The public branch includes authored code, config and metadata. The visual assets require separate local provision.
+2. Build `MWEditor Win64 Development` and run `SetupLocalCatalog.py` inside Unreal Editor with source control disabled. For example, supply `-ExecutePythonScript=<absolute script path> -NoSourceControl` at Editor launch. The script reads the base catalogue, checks for unrelated private entries, and saves only `/Game/EnvironmentRestore/Integration/DA_EnvironmentGameplayCatalog`. Repeating it on the same inputs preserves the catalogue contents and skips the save.
+3. Restart the Editor so Asset Manager loads the optional catalogue. The room selector should show Snow, Toybox and Tropic. The legacy diagnostic maps are still available for local restoration work.
 
-**A Git checkout cannot reproduce the complete visual environment by itself.** The existing ProjectMW Content and the separately held, locally authorized restored packages must be provisioned locally. There is no downloader or invented substitute asset set. Missing theme packages prevent runtime environment display even though the native source builds.
+`Asset_Dependencies.csv` is the historical eight-theme restoration inventory. It preserves the original path and SHA references. Use the current Cook inventory for the three-theme shipping scope. The generated catalogue SHA depends on the base catalogue version.
 
-## Local setup
+## Windows Development packaging
 
-1. Use Unreal Engine 5.8.4 and the project prerequisites, including its existing editor plugins. Keep Git work separate from any UVCS workspace. This branch runs no UVCS operation.
-2. Obtain the matching local ProjectMW Content and the environment packages listed in the manifest through an authorized local workflow. Keep their binary files out of this public Git branch. Do not overwrite the five protected shared materials; retain the existing 22 private IntegrationMaterials remaps.
-3. Build `MWEditor Win64 Development` using Unreal's Build.bat.
-4. Generate the private catalogue from the **current** `/Game/Data/DA_AssetData` using `SetupLocalCatalog.py`. For the first editor script launch, override the startup catalogue to the base path: `-ini:Game:[/Script/MW.MWAssetManager]:StartupAssetData=/Game/Data/DA_AssetData.DA_AssetData`. Execute the script with `-ExecutePythonScript=<absolute path to SetupLocalCatalog.py> -NoSourceControl`. The script preserves all current base entries and adds only the eight environment theme IDs, using the current DriveDefault map and labels. It saves only the environment-owned private catalogue.
-5. Restart the Editor normally to load the generated private catalogue. Inspect the eight existing `L_EnvironmentRestore_<Theme>` maps, then use the existing lobby/vehicle-selection/travel flow. The adapter reads replicated settings/phase and follows the owning local player's camera; it does not add a replicated seed or change server rules.
+Use the normal project map list. The Asset Manager explicitly cooks the private catalogue and the three official Theme DataAssets and follows their package references. The four existing project maps stay in the normal cook. The Environment diagnostic maps are Editor validation maps. Run a full Cook when switching between the old and new configs so the resulting container represents the selected scope.
 
-The base catalogue, original maps, shared materials, and vehicle packages must not be replaced with stale copies from an older lab. Check dependency paths/hashes against the matching local delivery. The generated catalogue hash depends on the latest base catalogue and is intentionally not a Git asset.
-
-## Validation and remaining differences
-
-See `VALIDATION.md` and `Validation_Summary.json`. Environment-map PIE, actual match-entry PIE, forced input, full race acceptance, cook/stage, and packaged execution are reported separately. The generator remains cosmetic and camera/order dependent; equal seeds do not guarantee identical peer layouts. Fog/visibility are UE approximations, and missing source VFX/shader/animation behavior is not marked restored. Main-branch review/merge is a separate team step; this branch is not merged into main.
+The restored materials, meshes, textures and shared dependencies resolve through the Theme DataAssets. Preserve the five shared materials and use the existing private remaps. See [validation](VALIDATION.md) for the current results and the scope of the historical validation summary.
