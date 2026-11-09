@@ -69,6 +69,7 @@ public:
 	bool ConfigureSharedCursorVisual(UUserWidget& Visual, const AMWPlayerState* Player, FMWCursorVisualLayout& OutLayout) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionRequested OnSelectionRequested;
+	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionRequested OnSelectionCancelRequested;
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionBackRequested OnBackRequested;
 
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data") FGameplayTag VehicleAssetRoot;
@@ -149,7 +150,9 @@ private:
 	// UI layout only: retain client-side seats while the actual PlayerArray changes.
 	TMap<TWeakObjectPtr<AMWPlayerState>, int32> PlayerSlots;
 	int32 ActivePreviewScenarioIndex = INDEX_NONE;
-	bool bRequestPending = false;
+	enum class ESelectionRequest : uint8 { None, Confirm, Cancel };
+	ESelectionRequest PendingRequest = ESelectionRequest::None;
+	bool IsRequestPending() const { return PendingRequest != ESelectionRequest::None; }
 	void ClearCards();
 	void AddCard(UMWVehicleCardWidget* Card);
 	void ApplyCardMarkerScale(UMWVehicleCardWidget* Card) const;
@@ -174,6 +177,8 @@ private:
 	TSharedPtr<SWidget> PreviousSoftwareCursor;
 	bool bPreviouslyUsedSoftwareCursors = false;
 	bool CancelLocalSelection();
+	FGameplayTag GetCancelableVehicleId() const;
+	void ClearLocalSelectionDisplay();
 	TWeakPtr<SWindow> CursorWindow;
 	FDelegateHandle WindowDeactivatedHandle;
 	bool bCursorInUI = false;

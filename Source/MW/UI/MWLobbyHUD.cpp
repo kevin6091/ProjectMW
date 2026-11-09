@@ -139,6 +139,7 @@ void AMWLobbyHUD::OpenVehicleSelection()
 	if (CursorOverlay) CursorOverlay->AddToViewport(100);
 	SetActorTickEnabled(true);
 	VehicleSelectionWidget->OnSelectionRequested.AddUniqueDynamic(this, &ThisClass::HandleVehicleSelectionRequested);
+	VehicleSelectionWidget->OnSelectionCancelRequested.AddUniqueDynamic(this, &ThisClass::HandleVehicleSelectionCancelRequested);
 	const auto AddThumbnail = [this](FGameplayTag Id, const TCHAR* Name)
 	{
 		const FString Path = FString::Printf(
@@ -209,6 +210,7 @@ void AMWLobbyHUD::CloseVehicleSelection()
 	if (!VehicleSelectionWidget) return;
 	GetWorldTimerManager().ClearTimer(VehicleCameraTimer);
 	VehicleSelectionWidget->OnSelectionRequested.RemoveDynamic(this, &ThisClass::HandleVehicleSelectionRequested);
+	VehicleSelectionWidget->OnSelectionCancelRequested.RemoveDynamic(this, &ThisClass::HandleVehicleSelectionCancelRequested);
 	const bool bRestoreLobby = !GetWorld()->bIsTearingDown && BoundGameState.IsValid()
 		&& (BoundGameState->GetRoomPhase() == EMWRoomPhase::Lobby || BoundGameState->GetRoomPhase() == EMWRoomPhase::Failed);
 	if (auto* Presentation = LobbyPresentation.Get())
@@ -286,6 +288,11 @@ void AMWLobbyHUD::UpdateCursorSharing(float DeltaSeconds)
 void AMWLobbyHUD::HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID)
 {
 	if (auto* PC = BoundController.Get()) PC->RequestConfirmVehicle(VehicleAssetID);
+}
+
+void AMWLobbyHUD::HandleVehicleSelectionCancelRequested(FGameplayTag ExpectedVehicleID)
+{
+	if (auto* PC = BoundController.Get()) PC->RequestCancelVehicle(ExpectedVehicleID);
 }
 
 void AMWLobbyHUD::RefreshBindings()

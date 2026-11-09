@@ -213,7 +213,7 @@ void AMWLobbyGameMode::BeginVehicleSelection()
     // 각 로컬 HUD가 복제된 Phase를 보고 실제 선택 화면을 표시합니다.
 }
 
-bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID, FString& Error)
+AMWPlayerState* AMWLobbyGameMode::ValidateVehicleSelectionRequester(AMWLobbyPlayerController* Controller, FString& Error) const
 {
     Error.Reset();
 
@@ -226,7 +226,7 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
         GS->GetRoomPhase() != EMWRoomPhase::VehicleSelection)
     {
         Error = TEXT("현재는 차량 선택 요청을 처리할 수 없습니다.");
-        return false;
+        return nullptr;
     }
 
     auto* PS = IsValid(Controller) ? Controller->GetPlayerState<AMWPlayerState>() : nullptr;
@@ -239,9 +239,17 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
         !GS->PlayerArray.Contains(PS) ||
         !App->GetStartingPlayers().Contains(PS->GetLobbyMemberId()))
     {
-        Error = TEXT("시작 대상으로 확정된 참가자만 차량을 선택할 수 있습니다.");
-        return false;
+        Error = TEXT("시작 대상으로 확정된 참가자만 차량 선택을 변경할 수 있습니다.");
+        return nullptr;
     }
+
+    return PS;
+}
+
+bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID, FString& Error)
+{
+    auto* PS = ValidateVehicleSelectionRequester(Controller, Error);
+    if (!PS) return false;
 
     const FGameplayTag PreviousID = PS->GetVehicleAssetID();
 
@@ -253,7 +261,7 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
             return true;
         }
 
-        Error = TEXT("이미 확정한 차량은 변경할 수 없습니다.");
+        Error = TEXT("다른 차량을 선택하려면 현재 선택을 먼저 취소하세요.");
         return false;
     }
 
@@ -272,6 +280,20 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
         PS->GetLobbyMemberId(), *VehicleAssetID.ToString());
 
     TryCompleteVehicleSelection();
+    return true;
+}
+
+bool AMWLobbyGameMode::RequestCancelVehicle(AMWLobbyPlayerController* Controller, FGameplayTag ExpectedVehicleID, FString& Error)
+{
+    auto* PS = ValidateVehicleSelectionRequester(Controller, Error);
+    if (!PS) return false;
+
+    if (!ExpectedVehicleID.IsValid() || !PS->ClearVehicleAssetIDFromServer(ExpectedVehicleID))
+    {
+        Error = TEXT("취소하려던 차량 선택이 바뀌었습니다.");
+        return false;
+    }
+
     return true;
 }
 

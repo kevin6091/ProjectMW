@@ -6,6 +6,7 @@
 #include "MWLobbyGameMode.generated.h"
 
 class AMWLobbyPlayerController;
+class AMWPlayerState;
 
 // L_Title에서 방 입장, Ready, 시작 승인을 처리하는 서버 규칙입니다.
 UCLASS()
@@ -30,6 +31,7 @@ public:
 	bool ValidateStartRequest(const AMWLobbyPlayerController* Controller, bool Starting, FString& Error) const;
 	
 	bool RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID, FString& Error);
+	bool RequestCancelVehicle(AMWLobbyPlayerController* Controller, FGameplayTag ExpectedVehicleID, FString& Error);
 
 	// 별도 완료 플래그 없이 PlayerState의 ID들로 판단합니다.
 	// GameMode는 서버에만 있으므로 서버 코드에서 조회합니다.
@@ -47,6 +49,7 @@ private:
 	
 	void HandleStartPrepared(bool Success, const FString& Error);
 	void FailStart(const FString& Error);
+	AMWPlayerState* ValidateVehicleSelectionRequester(AMWLobbyPlayerController* Controller, FString& Error) const;
 	
 	// 준비된 모든 차량을 검사.
 	bool ValidateVehicleAssetLabel(FGameplayTag AssetLabelVehicles, FString& Error) const;

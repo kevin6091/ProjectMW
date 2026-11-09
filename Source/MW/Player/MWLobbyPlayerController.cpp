@@ -61,6 +61,24 @@ void AMWLobbyPlayerController::RequestConfirmVehicle(FGameplayTag VehicleAssetID
 	ServerConfirmVehicle(VehicleAssetID);
 }
 
+void AMWLobbyPlayerController::RequestCancelVehicle(FGameplayTag ExpectedVehicleID)
+{
+	if (!IsLocalController()) return;
+	LobbyActionError.Reset();
+	OnLobbyActionErrorChanged.Broadcast();
+	ServerCancelVehicle(ExpectedVehicleID);
+}
+
+void AMWLobbyPlayerController::ServerCancelVehicle_Implementation(FGameplayTag ExpectedVehicleID)
+{
+	auto* GM = GetWorld()->GetAuthGameMode<AMWLobbyGameMode>();
+	FString Error;
+	if (!GM || !GM->RequestCancelVehicle(this, ExpectedVehicleID, Error))
+	{
+		ClientLobbyActionFailed(Error.IsEmpty() ? TEXT("차량 선택을 취소할 수 없습니다.") : Error);
+	}
+}
+
 void AMWLobbyPlayerController::ReportVehicleDepartureReady()
 {
 	if (IsLocalController())
