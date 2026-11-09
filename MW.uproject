@@ -54,6 +54,18 @@
 		{
 			"Name": "MWConnection",
 			"Enabled": true
+		},
+		{
+			"Name": "MWEnvironmentRestore",
+			"Enabled": true
+		},
+		{
+			"Name": "MWEnvironmentGameplay",
+			"Enabled": true
+		},
+		{
+			"Name": "MWEnvironmentAcceptance",
+			"Enabled": true
 		}
 	]
 }
