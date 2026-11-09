@@ -66,7 +66,7 @@ bool UMWVehicleSelectionWidget::ConfigureSharedCursorVisual(UUserWidget& Visual,
 	Marker->SetPresentation(View);
 	// 소프트웨어 커서는 DPI 배율을 곱한 픽셀 크기, 오버레이는 DPI 적용 전 논리 크기를 사용한다.
 	OutLayout.DesignSize = FVector2D(MWPointerDesignSize);
-	OutLayout.DisplaySize = LocalSlot->GetSize();
+	OutLayout.DisplaySize = LocalSlot->GetSize() * FMath::Clamp(RemoteCursorScale, 0.f, 1.f);
 	OutLayout.Hotspot = MWGetPointerHotspot(Marker);
 	return true;
 }

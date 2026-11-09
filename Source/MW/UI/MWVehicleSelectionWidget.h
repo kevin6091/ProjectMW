@@ -40,7 +40,7 @@ struct FMWVehiclePreviewCard
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMWVehicleSelectionRequested, FGameplayTag, VehicleAssetID);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWVehicleSelectionBackRequested);
 
-UCLASS(Abstract)
+UCLASS(Abstract, Config=Game)
 class MW_API UMWVehicleSelectionWidget : public UUserWidget
 {
 	GENERATED_BODY()
@@ -83,6 +83,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") TArray<FLinearColor> ParticipantTints;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") FLinearColor FallbackParticipantTint;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") FLinearColor WaitingSlotTint;
+	UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|Cursor", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RemoteCursorScale = 1.f;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") bool bPreviewOnly = false;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") bool bShowPreviewControls = true;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") TArray<FMWVehiclePreviewCard> PreviewCards;
