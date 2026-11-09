@@ -765,7 +765,7 @@ void UMWVehicleSelectionWidget::RefreshControls()
 	Button_Back->SetIsEnabled(bPreviewOnly && !bRequestPending);
 	Button_Back->SetVisibility(bPreviewOnly ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Button_Refresh->SetIsEnabled(!bRequestPending);
-	PreviewNotice->SetVisibility(bPreviewOnly ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	PreviewNotice->SetVisibility(ESlateVisibility::Collapsed);
 	for (UMWVehicleCardWidget* Card : Cards) if (IsValid(Card)) Card->SetInteractionLocked(bLocked || !bLocalPreview);
 	const bool bAllPreviewComplete = AreAllPreviewParticipantsConfirmed();
 	// Preview completion is presentation only. No server approval is inferred here.
