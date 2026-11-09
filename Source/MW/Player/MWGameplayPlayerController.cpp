@@ -338,7 +338,6 @@ void AMWGameplayPlayerController::SetTrackSelectionBoard(AMWTrackSelectionBoard*
 	SelectionInputComponent.Reset();
 	SelectionBoard = Board;
 	if (!Board) return;
-	PlacementView->SetDisplayMaterial(Board->GetDisplayMaterial());
 	auto* Input = Cast<UEnhancedInputComponent>(InputComponent);
 	auto* Inputs = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
 	SelectionInputData = UMWAssetManager::Get().LoadAssetSynchronous<UMWInputData>(MWGameplayTags::Asset_Input_SelectConstruction);

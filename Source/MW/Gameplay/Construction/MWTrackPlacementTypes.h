@@ -81,6 +81,8 @@ struct FMWTrackPlacementIntent
 
 	UPROPERTY() FVector_NetQuantize CursorLocation = FVector::ZeroVector;
 	UPROPERTY() bool bReversed = false;
+	// 근처 끝점의 각도만 따라가는 상태와 실제 스냅 요청을 구분한다.
+	UPROPERTY() bool bSnapRequested = false;
 	UPROPERTY() FMWTrackEndId Target;
 	UPROPERTY() int32 SourcePort = INDEX_NONE;
 };

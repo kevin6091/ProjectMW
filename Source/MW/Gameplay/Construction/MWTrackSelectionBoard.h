@@ -8,7 +8,6 @@
 class UCameraComponent;
 class UBoxComponent;
 class UTextRenderComponent;
-class UMaterialInterface;
 class AMWGameplayPlayerController;
 
 // 실제 트랙 BP를 로컬 월드에 전시한다. 설치된 코스 Actor와는 별도 수명이다.
@@ -25,20 +24,19 @@ public:
 	bool GetCursorPosition(FVector& OutPosition) const;
 	FVector GetBuildOrigin() const;
 	double GetLayoutScale() const { return LayoutScale; }
-	UMaterialInterface* GetDisplayMaterial() const { return DisplayMaterial; }
 
 protected:
 	virtual void BeginPlay() override;
 	UPROPERTY(EditAnywhere, Category="Selection", meta=(ClampMin="1.0"))
 	double LayoutScale = 1.0;
 
-	UPROPERTY(EditAnywhere, Category="Selection")
-	bool bUseTopDownPlacementCamera = false;
+	// 레벨에 저장된 값을 유지하기 위해 기존 프로퍼티 이름을 쓴다.
+	UPROPERTY(EditAnywhere, Category="Selection", meta=(DisplayName="Frame Course During Placement"))
+	bool bUseTopDownPlacementCamera = true;
 
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
 	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<USceneComponent>> Anchors;
 	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<UBoxComponent>> HitAreas;
-	UPROPERTY(EditAnywhere, Category="Selection") TObjectPtr<UMaterialInterface> DisplayMaterial;
 
 private:
 	bool BuildOffers(const FMWTrackSelectionSession& Session);

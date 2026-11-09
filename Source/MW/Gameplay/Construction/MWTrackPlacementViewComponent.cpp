@@ -1,6 +1,5 @@
 #include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
 
-#include "Components/StaticMeshComponent.h"
 #include "Data/MWInputData.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -10,8 +9,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackPreview.h"
 #include "InputMappingContext.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "MWGameplayTags.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
@@ -29,11 +28,6 @@ namespace
 		FLinearColor(0.82f, 0.18f, 0.75f),
 		FLinearColor(0.55f, 0.26f, 1.0f)
 	};
-}
-
-void UMWTrackPlacementViewComponent::SetDisplayMaterial(UMaterialInterface* Material)
-{
-	DisplayMaterial = Material;
 }
 
 void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputComponent* Input)
@@ -174,24 +168,13 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 		return nullptr;
 	}
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
-	TInlineComponentArray<UStaticMeshComponent*> Meshes(Actor);
-	for (auto* Mesh : Meshes)
-	{
-		Mesh->SetSimulatePhysics(false);
-		if (DisplayMaterial.IsValid())
-		{
-			Mesh->SetMaterial(0, DisplayMaterial.Get());
-		}
-		if (auto* Material = Mesh->CreateDynamicMaterialInstance(0))
-		{
-			Material->SetVectorParameterValue(TEXT("Color"), Color);
-		}
-	}
+	MWTrackPreview::ShowWireframes(*Actor);
+	MWTrackPreview::SetWireframeColor(*Actor, Color);
 	return &Ghosts.Add(PlayerId, MoveTemp(Ghost));
 }
 
 bool UMWTrackPlacementViewComponent::UpdatePointer(const AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session)
+	const FMWTrackPlacementSession& Session, const FMWTrackPortFrames& Ports)
 {
 	const auto* LocalPlayer = PC.GetLocalPlayer();
 	const FViewport* Viewport = LocalPlayer && LocalPlayer->ViewportClient ? LocalPlayer->ViewportClient->Viewport : nullptr;
@@ -202,36 +185,18 @@ bool UMWTrackPlacementViewComponent::UpdatePointer(const AMWGameplayPlayerContro
 		return false;
 	}
 	FVector Origin, Ray;
-	if (!PC.DeprojectMousePositionToWorld(Origin, Ray) || FMath::IsNearlyZero(Ray.Z))
-	{
-		return false;
-	}
-	const double Distance = (Session.BuildOrigin.Z - Origin.Z) / Ray.Z;
-	if (Distance < 0.0)
-	{
-		return false;
-	}
-
-	// 멀리 떨어진 임포트 피벗 대신 플레이어가 보는 작업 평면 좌표를 보낸다.
-	FMWTrackPlacementIntent Next = Intent;
-	Next.CursorLocation = Origin + Ray * Distance;
-	if (!MWTrackSnap::IsInBuildArea(Next, Session))
-	{
-		return false;
-	}
-	Intent = Next;
-	return true;
+	return PC.DeprojectMousePositionToWorld(Origin, Ray)
+		&& MWTrackSnap::UpdateIntentFromRay(Ports, Session, Origin, Ray, Intent);
 }
 
 void UMWTrackPlacementViewComponent::UpdateLocalGhost(AMWGameplayPlayerController& PC,
 	const FMWTrackPlacementSession& Session, FGhost& Ghost)
 {
-	if (bWaitingForReply || !UpdatePointer(PC, Session))
+	if (bWaitingForReply || !UpdatePointer(PC, Session, Ghost.Ports))
 	{
 		return;
 	}
-	MWTrackSnap::FindCandidate(Ghost.Ports, Session, Intent);
-	FTransform Display = MWTrackSnap::MakeRawTransform(Ghost.Ports, Session, Intent);
+	FTransform Display;
 	bCanPlace = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, Display);
 	DisplayedRevision = Session.CourseRevision;
 	Ghost.Actor->SetActorTransform(Display);
@@ -252,13 +217,9 @@ void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnap
 		return;
 	}
 	Ghost.bSnapped = bSnapped;
-	TInlineComponentArray<UStaticMeshComponent*> Meshes(Ghost.Actor.Get());
-	for (auto* Mesh : Meshes)
+	if (AActor* Actor = Ghost.Actor.Get())
 	{
-		if (auto* Material = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0)))
-		{
-			Material->SetVectorParameterValue(TEXT("Color"), bSnapped ? SnapColor : LocalColor);
-		}
+		MWTrackPreview::SetWireframeColor(*Actor, bSnapped ? SnapColor : LocalColor);
 	}
 }
 
@@ -321,8 +282,6 @@ void UMWTrackPlacementViewComponent::HandleTurn()
 	if (!bWaitingForReply && !bAccepted)
 	{
 		Intent.bReversed = !Intent.bReversed;
-		Intent.Target = {};
-		Intent.SourcePort = INDEX_NONE;
 		bCanPlace = false;
 		LastResult = EMWTrackPlacementResult::Accepted;
 	}

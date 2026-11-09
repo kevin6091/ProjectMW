@@ -2,7 +2,6 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -10,7 +9,8 @@
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
+#include "Gameplay/Construction/MWTrackPreview.h"
+#include "LogChannel.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWAssetManager.h"
@@ -38,7 +38,8 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 	}
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("SelectionCamera"));
 	Camera->SetupAttachment(RootComponent);
-	const FVector Position(1800, -1900, 2900);
+	// 후보가 놓이는 열을 옆에서 바라봐 커브의 윤곽과 경사의 높이 차를 함께 보여 준다.
+	const FVector Position(2700, -1200, 2300);
 	Camera->SetRelativeLocation(Position);
 	Camera->SetRelativeRotation((FVector(0, 0, 100) - Position).Rotation());
 	Camera->FieldOfView = 65;
@@ -70,14 +71,14 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 		return;
 	}
 
-	// 작업 평면을 수직으로 내려다보면 높은 끝점도 화면의 동일한 XY 위치에서 잡힌다.
 	FBox Bounds(Session.BuildOrigin, Session.BuildOrigin);
 	for (const FMWOpenTrackEnd& End : Session.OpenEnds)
 	{
 		Bounds += End.WorldFrame.GetLocation();
 	}
 	const FVector Center = Bounds.GetCenter();
-	const FVector Extent = Bounds.GetExtent();
+	// 끝점 너머에도 다음 조각의 중심을 옮겨 놓을 공간을 남긴다.
+	const FVector Extent = Bounds.GetExtent() + FVector(400.0, 400.0, 120.0) * Session.LayoutScale;
 	int32 Width = 0;
 	int32 Height = 0;
 	if (const auto* PC = GetWorld()->GetFirstPlayerController())
@@ -85,13 +86,31 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 		PC->GetViewportSize(Width, Height);
 	}
 	const double Aspect = Height > 0 && Width > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
-	const double Margin = 700.0 * Session.LayoutScale;
 
-	OutResult.Location = FVector(Center.X, Center.Y, Bounds.Max.Z + 18000.0);
-	OutResult.Rotation = FRotator(-90.0, -90.0, 0.0);
-	OutResult.ProjectionMode = ECameraProjectionMode::Orthographic;
-	// +X가 화면의 오른쪽이다. 열려 있는 양 끝에 다음 트랙을 조작할 공간을 확보한다.
-	OutResult.OrthoWidth = 2.0 * FMath::Max(Extent.X + Margin, (Extent.Y + Margin) * Aspect);
+	// 선택 카메라와 같은 각도에서 보고, 시작 트랙의 방향에 맞춰 수평으로만 돌린다.
+	OutResult.Rotation = Camera->GetRelativeRotation();
+	OutResult.Rotation.Yaw = FRotator::NormalizeAxis(OutResult.Rotation.Yaw + Session.PreviewYaw);
+	OutResult.ProjectionMode = ECameraProjectionMode::Perspective;
+	OutResult.AspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
+
+	const FRotationMatrix ViewAxes(OutResult.Rotation);
+	const double HalfFovTangent = FMath::Tan(FMath::DegreesToRadians(OutResult.FOV * 0.5));
+	const double HorizontalLimit = HalfFovTangent * 0.9;
+	const double VerticalLimit = HalfFovTangent * 0.9 / Aspect;
+	double CameraDistance = 0.0;
+	// 원근 화면에서는 가까운 모서리가 더 크게 보이므로 각 모서리의 깊이를 함께 계산한다.
+	for (int32 CornerIndex = 0; CornerIndex < 8; ++CornerIndex)
+	{
+		const FVector Corner(
+			(CornerIndex & 1) ? Extent.X : -Extent.X,
+			(CornerIndex & 2) ? Extent.Y : -Extent.Y,
+			(CornerIndex & 4) ? Extent.Z : -Extent.Z);
+		const FVector ViewCorner = ViewAxes.InverseTransformVector(Corner);
+		const double RequiredDepth = FMath::Max(
+			FMath::Abs(ViewCorner.Y) / HorizontalLimit, FMath::Abs(ViewCorner.Z) / VerticalLimit);
+		CameraDistance = FMath::Max(CameraDistance, FMath::Max(RequiredDepth, 100.0) - ViewCorner.X);
+	}
+	OutResult.Location = Center - ViewAxes.GetUnitAxis(EAxis::X) * CameraDistance;
 }
 
 bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session)
@@ -110,29 +129,17 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		AActor* Track = GetWorld()->SpawnActor<AActor>(Definition->GetTrackActorClass(), Anchors[Offer.BoardSlotIndex]->GetComponentTransform(), Params);
 		if (!Track) { ClearOffers(); return false; }
-		Offers.Add(Offer.OfferId, Track);
 		Track->SetReplicates(false);
 		Track->SetActorTickEnabled(false);
-		// 원본 BP를 전시 인스턴스로 사용하고, 판정은 전시 영역의 Box에만 맡긴다.
-		TInlineComponentArray<UStaticMeshComponent*> Meshes(Track);
-		FBox VisualBounds(ForceInit);
-		for (auto* Mesh : Meshes)
-		{
-			Mesh->SetSimulatePhysics(false);
-			Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			if (DisplayMaterial) Mesh->SetMaterial(0, DisplayMaterial);
-			Mesh->CreateDynamicMaterialInstance(0);
-			if (Mesh->IsVisible() && Mesh->GetStaticMesh())
-			{
-				VisualBounds += Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
-			}
-		}
-		// 임포트 BP의 피벗과 에디터 아이콘을 빼고 실제 메시를 전시 칸에 맞춘다.
+		// 판정은 전시 영역의 Box에 맡기고 보이는 와이어프레임의 중심을 전시 칸에 맞춘다.
+		const FBox VisualBounds = MWTrackPreview::ShowWireframes(*Track);
 		if (!VisualBounds.IsValid)
 		{
-			ClearOffers();
-			return false;
+			UE_LOG(LogDefault, Warning, TEXT("%s에 전시할 Wireframes 메시가 없습니다."), *GetNameSafe(Track));
+			Track->Destroy();
+			continue;
 		}
+		Offers.Add(Offer.OfferId, Track);
 		const FVector Extent = VisualBounds.GetExtent();
 		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - VisualBounds.GetCenter());
 		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20 * LayoutScale));
@@ -283,15 +290,10 @@ void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Sess
 			bSelected |= Selection.bConfirmed;
 			Text += FString::Printf(TEXT("\nP%d %s"), PS->GetLobbyMemberId(), Selection.bConfirmed ? TEXT("SELECTED") : TEXT("HOVER"));
 		}
-		const FLinearColor Tint = bSelected ? FLinearColor(1, .65f, .08f)
-			: LocalHover == Pair.Key ? FLinearColor(.05f, .75f, 1) : FLinearColor(.38f, .48f, .65f);
-		TInlineComponentArray<UStaticMeshComponent*> Meshes(Pair.Value);
-		for (auto* Mesh : Meshes)
-			if (auto* Material = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0))) Material->SetVectorParameterValue(TEXT("Color"), Tint);
 		if (UTextRenderComponent* Label = Labels.FindRef(Pair.Key))
 		{
 			Label->SetText(FText::FromString(Text));
-			Label->SetTextRenderColor(bSelected ? FColor::Yellow : FColor::White);
+			Label->SetTextRenderColor(bSelected ? FColor::Yellow : LocalHover == Pair.Key ? FColor::Cyan : FColor::White);
 			Label->SetWorldRotation((Camera->GetComponentLocation() - Label->GetComponentLocation()).Rotation());
 		}
 	}

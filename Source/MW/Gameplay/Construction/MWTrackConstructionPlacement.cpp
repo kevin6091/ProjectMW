@@ -4,6 +4,7 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackPreview.h"
 #include "LogChannel.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWAssetManager.h"
@@ -54,6 +55,8 @@ bool UMWTrackConstructionComponent::PublishTrack(const FPreparedTrack& Prepared,
 	{
 		return false;
 	}
+	// 설치된 도로와 같은 위치에 있던 미리보기 선을 도로가 보이기 전에 숨긴다.
+	MWTrackPreview::HideWireframes(*Track);
 	Track->SetActorHiddenInGame(false);
 	Track->SetActorEnableCollision(Prepared.bEnableCollision);
 	Track->SetActorTickEnabled(Prepared.bEnableTick);
@@ -69,9 +72,14 @@ void UMWTrackConstructionComponent::OnRep_PlacementSession()
 {
 	for (const auto& Placed : PlacementSession.PlacedTracks)
 	{
-		if (IsValid(Placed.Actor) && !Placed.Actor->GetActorTransform().Equals(Placed.WorldTransform))
+		if (IsValid(Placed.Actor))
 		{
-			Placed.Actor->SetActorTransform(Placed.WorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
+			// 컴포넌트 표시 상태는 Actor의 생성 정보와 별개라 수신 쪽에서도 적용한다.
+			MWTrackPreview::HideWireframes(*Placed.Actor);
+			if (!Placed.Actor->GetActorTransform().Equals(Placed.WorldTransform))
+			{
+				Placed.Actor->SetActorTransform(Placed.WorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
+			}
 		}
 	}
 }
@@ -227,10 +235,6 @@ void UMWTrackConstructionComponent::UpdatePlacementPreview(APlayerController* Re
 	auto Player = Component->GetPlacement();
 	FTransform Display;
 	const bool bSnapped = MWTrackSnap::Resolve(Prepared->Ports, PlacementSession, Intent, Display);
-	if (!bSnapped)
-	{
-		Display = MWTrackSnap::MakeRawTransform(Prepared->Ports, PlacementSession, Intent);
-	}
 	if (Player.bSnapped != bSnapped || !Player.PreviewTransform.Equals(Display))
 	{
 		Player.bSnapped = bSnapped;

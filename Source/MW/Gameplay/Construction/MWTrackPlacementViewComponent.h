@@ -7,7 +7,6 @@
 
 class AMWGameplayPlayerController;
 class UEnhancedInputComponent;
-class UMaterialInterface;
 class UMWInputData;
 
 // 소유 Controller에서만 입력을 받고, 현재 화면의 미리보기 Actor를 관리한다.
@@ -19,7 +18,6 @@ class UMWTrackPlacementViewComponent : public UActorComponent
 public:
 	void Update(float DeltaSeconds, UEnhancedInputComponent* Input);
 	void ResetView();
-	void SetDisplayMaterial(UMaterialInterface* Material);
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
@@ -35,12 +33,11 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdatePointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session);
+	bool UpdatePointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, const FMWTrackPortFrames& Ports);
 	void UpdateLocalGhost(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
-	TWeakObjectPtr<UMaterialInterface> DisplayMaterial;
 	TWeakObjectPtr<UEnhancedInputComponent> BoundInput;
 	UPROPERTY(Transient) TObjectPtr<UMWInputData> InputData;
 	TArray<uint32> InputBindings;
