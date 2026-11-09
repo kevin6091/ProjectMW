@@ -88,6 +88,7 @@ void UMWVehicleSelectionWidget::NativeConstruct()
 	Button_Reset->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleReset);
 	Button_Back->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleBack);
 	Button_Refresh->OnClicked.AddUniqueDynamic(this, &ThisClass::RefreshVehicles);
+	
 	if (IsValid(Button_NextPreviewScenario)) Button_NextPreviewScenario->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleNextPreviewScenario);
 	if (IsValid(Button_NextPreviewLocalPlayer)) Button_NextPreviewLocalPlayer->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleNextPreviewLocalPlayer);
 	if (bPreviewOnly && PreviewScenarios.IsValidIndex(DefaultPreviewScenarioIndex))
@@ -307,7 +308,6 @@ void UMWVehicleSelectionWidget::AddCard(UMWVehicleCardWidget* Card)
 
 void UMWVehicleSelectionWidget::SetWorldPreviewMarkerScales(float PinnedScale, float CardScale)
 {
-	if (!bPreviewOnly) return;
 	if (IsValid(LocalPlayerCursor))
 	{
 		const FVector2D Hotspot = MWGetPointerHotspot(LocalPlayerCursor);
@@ -638,19 +638,31 @@ void UMWVehicleSelectionWidget::BuildLobbyParticipants(AMWLobbyGameState* State)
 			}
 		}
 		const int32* Seat = PlayerSlots.Find(Key);
+		
 		if (!Seat) continue;
+		
 		FMWVehiclePlayerPresentation& View = ParticipantViews[*Seat];
+		
 		View.PlayerName = FText::FromString(Player->GetPlayerName());
+		
 		const int32 MemberId = Player->GetLobbyMemberId();
+		
 		View.PlayerTint = MemberId > 0 && !ParticipantTints.IsEmpty()
 			? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
 			: FallbackParticipantTint;
+		
 		View.bOccupied = true;
+		
 		View.bLocal = GetOwningPlayer()->PlayerState == Player;
+		
 		View.MarkerText = FText::Format(ParticipantMarkerFormat, FText::AsNumber(*Seat + 1));
+		
 		const FGameplayTag ConfirmedId = Player->GetVehicleAssetID();
+		
 		View.bConfirmed = ConfirmedId.IsValid();
+		
 		View.StatusText = View.bConfirmed ? SelectionCompleteText : UnselectedVehicleText;
+		
 		if (View.bConfirmed)
 		{
 			for (const UMWVehicleCardWidget* Card : Cards)
