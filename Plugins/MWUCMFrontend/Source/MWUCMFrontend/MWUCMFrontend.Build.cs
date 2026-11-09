@@ -5,6 +5,6 @@ public class MWUCMFrontend : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "MW", "UMG", "UCMTitlePreview" });
-        PrivateDependencyModuleNames.AddRange(new[] { "Slate", "SlateCore", "LevelSequence", "MovieScene" });
+        PrivateDependencyModuleNames.AddRange(new[] { "Slate", "SlateCore", "LevelSequence", "MovieScene", "InputCore" });
     }
 }

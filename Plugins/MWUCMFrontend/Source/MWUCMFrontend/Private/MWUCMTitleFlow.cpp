@@ -1,4 +1,5 @@
 #include "MWUCMTitleFlow.h"
+#include "MWUCMWorldMusic.h"
 
 #include "ProfilingDebugging/CsvProfiler.h"
 #include "Components/WidgetComponent.h"
@@ -414,10 +415,20 @@ void UMWUCMTitleRootWidget::NativeDestruct()
 
 void UMWUCMTitleRootWidget::ActivateSourceMenu(int32 Index)
 {
-    if (Index == 2) { HandleQuit(); return; }
+    auto* Music = GetWorld()->GetSubsystem<UMWUCMWorldMusic>();
+    if (Index == 2)
+    {
+        if (Music) Music->PlayMenuConfirm();
+        HandleQuit();
+        return;
+    }
+
     const FName ButtonName = Index == 0 ? TEXT("Button_CreateRoom") : TEXT("Button_JoinRoom");
-    if (auto* Button = TitleScreen ? Cast<UButton>(TitleScreen->GetWidgetFromName(ButtonName)) : nullptr)
-        if (Button->GetIsEnabled()) Button->OnClicked.Broadcast();
+    auto* Button = TitleScreen ? Cast<UButton>(TitleScreen->GetWidgetFromName(ButtonName)) : nullptr;
+    if (!Button || !Button->GetIsEnabled()) return;
+
+    if (Music) Music->PlayMenuConfirm();
+    Button->OnClicked.Broadcast();
 }
 
 void UMWUCMTitleRootWidget::HandleQuit()
@@ -472,7 +483,7 @@ void AMWUCMTitleFlow::BeginPlay()
     SetActorTickEnabled(false);
     PresentationHandle = PresentationChanged.AddUObject(this, &ThisClass::RefreshRoot);
     MenuActionHandle = ExternalMenuAction.AddUObject(this, &ThisClass::HandleSourceMenu);
-    SetSourceMenuPresentation(false, false);
+    SetMainMenuPresentation(false, false);
     MWWorldSurface->SetVisibility(false);
     MWWorldSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     if (IsValid(VehiclePreviewActor) && VehiclePreviewActor->GetWorld() == GetWorld())
@@ -512,7 +523,7 @@ void AMWUCMTitleFlow::InitializeRoot()
         RestoreTitlePose();
         PreviewStage = 2;
         TitleCanvas->SetVisibility(false);
-        SetSourceMenuPresentation(false, false);
+        SetMainMenuPresentation(false, false);
         StartFidelity();
         SetActorTickEnabled(true);
         StartWorldRoute(TEXT("Lobby"), false, TEXT("Lobby"));
@@ -575,10 +586,46 @@ bool AMWUCMTitleFlow::IsMenuReady(bool bLoggedIn)
         else
         {
             ReplayPreview();
+            ShowIntroSkip();
             UE_LOG(LogTemp, Display, TEXT("MW_UCM LOGIN_SUCCESS_INTRO_ONCE"));
         }
     }
     return PreviewStage == 2;
+}
+
+void AMWUCMTitleFlow::ShowIntroSkip()
+{
+    auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr;
+    if (!Viewport || IntroSkipOverlay.IsValid()) return;
+    IntroSkipOverlay = SNew(SVerticalBox).Visibility(EVisibility::SelfHitTestInvisible)
+        + SVerticalBox::Slot().VAlign(VAlign_Bottom).HAlign(HAlign_Right).Padding(24.f)
+        [SNew(SButton).IsFocusable(false).ContentPadding(FMargin(18.f, 10.f))
+            .OnClicked_Lambda([WeakThis = TWeakObjectPtr<AMWUCMTitleFlow>(this)]()
+            {
+                if (WeakThis.IsValid()) WeakThis->SkipIntro();
+                return FReply::Handled();
+            })
+            [SNew(STextBlock).Text(NSLOCTEXT("MWIntro", "Skip", "건너뛰기 · Space / 클릭"))]];
+    Viewport->AddViewportWidgetContent(IntroSkipOverlay.ToSharedRef(), 50);
+}
+
+void AMWUCMTitleFlow::HideIntroSkip()
+{
+    if (!IntroSkipOverlay.IsValid()) return;
+    if (auto* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+        Viewport->RemoveViewportWidgetContent(IntroSkipOverlay.ToSharedRef());
+    IntroSkipOverlay.Reset();
+}
+
+bool AMWUCMTitleFlow::SkipIntro()
+{
+    if (!bStarted || GetNetMode() != NM_Standalone || !SkipPreviewIntro()) return false;
+    IntroSkippedFrame = GFrameCounter;
+    if (auto* PC = GetWorld()->GetFirstPlayerController())
+        PC->FlushPressedKeys(); // The skip click/Space must not also activate the title menu.
+    HideIntroSkip();
+    RefreshRoot();
+    return true;
 }
 
 bool AMWUCMTitleFlow::StartRoomReturn(const UMWUCMIntroSession& Session)
@@ -598,12 +645,27 @@ bool AMWUCMTitleFlow::StartRoomReturn(const UMWUCMIntroSession& Session)
     return StartWorldRoute(TEXT("Lobby"), true, TEXT("ReturningFromLobby"));
 }
 
+void AMWUCMTitleFlow::SetMainMenuPresentation(bool bVisible, bool bInputEnabled)
+{
+    SetSourceMenuPresentation(bVisible, bInputEnabled);
+    if (auto* Music = GetWorld()->GetSubsystem<UMWUCMWorldMusic>())
+        Music->SetMainMenuVisible(bVisible);
+}
+
+void AMWUCMTitleFlow::OnSourceMenuSelectionChanged()
+{
+    if (!bSuppressPreviewInput)
+        if (auto* Music = GetWorld()->GetSubsystem<UMWUCMWorldMusic>())
+            Music->PlayMenuHighlight();
+}
+
 void AMWUCMTitleFlow::ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested)
 {
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC) return;
     if (!bLoggedIn)
     {
+        SetMainMenuPresentation(false, false);
         PC->bShowMouseCursor = true;
         PC->SetInputMode(FInputModeUIOnly());
         return;
@@ -614,15 +676,17 @@ void AMWUCMTitleFlow::ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested
     const auto* IntroSession = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();
     const bool bReturning = IntroSession && IntroSession->IsRoomReturnPending();
     bSuppressPreviewInput = !bMain || bReturning;
-    SetSourceMenuPresentation(!bReturning && bMain && (PreviewStage == 2 || PreviewStage == 3),
+    SetMainMenuPresentation(!bReturning && bMain && (PreviewStage == 2 || PreviewStage == 3),
         !bReturning && bMain && PreviewStage == 2);
     if (!bMain) TitleCanvas->SetVisibility(false);
     TitleCanvas->SetCollisionEnabled(bMain && PreviewStage == 1
         ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
     if (bMain && PreviewStage == 0)
     {
-        PC->bShowMouseCursor = false;
-        PC->SetInputMode(FInputModeGameOnly());
+        PC->bShowMouseCursor = true;
+        FInputModeGameAndUI Mode;
+        Mode.SetHideCursorDuringCapture(false);
+        PC->SetInputMode(Mode);
     }
     else if (ActiveRegion != TEXT("RoomPanel")) UseWorldMouse();
 }
@@ -639,11 +703,15 @@ void AMWUCMTitleFlow::HandleSourceMenu(FName Action)
     if (!IsValid(RootWidget) || bSuppressPreviewInput || PreviewStage != 2) return;
     UE_LOG(LogTemp, Display, TEXT("MW_UCM MENU_HANDLER ACTION=%s MONOTONIC_MS=%.3f"), *Action.ToString(), FPlatformTime::Seconds() * 1000.0);
     const int32 Index = SourceMenuEntries.IndexOfByPredicate([&](const auto& Entry){ return Entry.ActionId == Action; });
-    if (Index >= 0 && Index < 3) RootWidget->ActivateSourceMenu(Index);
+    if (Index < 0 || Index >= 3) return;
+
+    RootWidget->ActivateSourceMenu(Index);
 }
 
 void AMWUCMTitleFlow::EndPlay(const EEndPlayReason::Type Reason)
 {
+    HideIntroSkip();
+    SetMainMenuPresentation(false, false);
     MWWorldSurface->SetWidget(nullptr);
     if (WorldRouteCamera) WorldRouteCamera->Destroy();
     GetWorld()->GetTimerManager().ClearTimer(InitializeHandle);
@@ -715,7 +783,7 @@ bool AMWUCMTitleFlow::StartWorldRoute(FName Name, bool bReverse, FName Destinati
     bSuppressPreviewInput = true;
     TitleCanvas->SetVisibility(false);
     TitleCanvas->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    SetSourceMenuPresentation(false, false);
+    SetMainMenuPresentation(false, false);
     MWWorldSurface->SetVisibility(false);
     MWWorldSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     UseWorldMouse();
@@ -766,7 +834,7 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
         if (ActiveRegion == TEXT("Main"))
         {
             bSuppressPreviewInput = false;
-            SetSourceMenuPresentation(true, true);
+            SetMainMenuPresentation(true, true);
         }
         else if (ActiveRegion == TEXT("Vehicle") && VehiclePreviewActor)
         {
@@ -790,7 +858,7 @@ void AMWUCMTitleFlow::UpdateWorldRoute(float DeltaTime)
         bSuppressPreviewInput = false;
         // The sampled reverse path ends at a different pose from MenuCamera.
         // Retain the evaluated endpoint to avoid a delayed view-target snap.
-        SetSourceMenuPresentation(true, true);
+        SetMainMenuPresentation(true, true);
     }
     else if (ActiveRegion == TEXT("Vehicle") && VehiclePreviewActor)
     {
@@ -949,7 +1017,15 @@ void AMWUCMTitleFlow::CloseVehicleSelection()
 
 void AMWUCMTitleFlow::Tick(float DeltaTime)
 {
-    Super::Tick(DeltaTime);
+    // Handle intro input before the source title/menu input path can consume it.
+    if (bStarted && PreviewStage == 0 && GetNetMode() == NM_Standalone)
+    {
+        auto* PC = GetWorld()->GetFirstPlayerController();
+        if (PC && (PC->WasInputKeyJustPressed(EKeys::SpaceBar) || PC->WasInputKeyJustPressed(EKeys::LeftMouseButton)))
+            if (SkipIntro()) return;
+    }
+    if (PreviewStage != 0) HideIntroSkip();
+    if (IntroSkippedFrame != GFrameCounter) Super::Tick(DeltaTime);
     UpdateWorldRoute(DeltaTime);
     UpdateLobbyPresentation();
     auto* Session = GetGameInstance()->GetSubsystem<UMWUCMIntroSession>();

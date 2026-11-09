@@ -147,14 +147,19 @@ public:
  UFUNCTION() void OnSourceMenuHover(FName Action);
  UFUNCTION(BlueprintCallable,Category="UCM Preview") void AcceptPreviewInput();
  UFUNCTION(BlueprintCallable,Category="UCM Preview") void IntroFinished();
+ // Explicit user skip shares the normal completion path without relaxing its timing guard.
+ bool SkipPreviewIntro();
  UFUNCTION(BlueprintCallable,Category="UCM Preview") FString GetPreviewEvidence() const;
  UFUNCTION(BlueprintCallable,Category="UCM Preview") void ReplayPreview();
 protected:
  virtual void BeginPlay() override;
  virtual void Tick(float DeltaTime) override;
  virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+ virtual void OnSourceMenuSelectionChanged() {}
 private:
+ bool SetSourceMenuSelection(int32 Index);
 
+ void CompletePreviewIntro(bool bSkipped);
  bool bRestoringTitlePose=false;
  UPROPERTY() TObjectPtr<ALevelSequenceActor> SequenceActor;
  UPROPERTY() TArray<TObjectPtr<UUCMWorldWidgetComponent>> SourceMenuCanvases;
