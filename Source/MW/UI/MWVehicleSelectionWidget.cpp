@@ -74,8 +74,6 @@ bool UMWVehicleSelectionWidget::ConfigureSharedCursorVisual(UUserWidget& Visual,
 void UMWVehicleSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	bLocalMarkerPinned = false;
-	bHasPointerPosition = false;
 	HideLocalCursor();
 	if (!IsValid(Button_Confirm) || !IsValid(Button_Reset) || !IsValid(Button_Back) ||
 		!IsValid(Button_Refresh) || !IsValid(Grid_Vehicles) || !IsValid(Box_Players) ||
@@ -104,8 +102,6 @@ void UMWVehicleSelectionWidget::NativeDestruct()
 {
 	ReleaseSoftwareCursor();
 	bRequestPending = false;
-	bLocalMarkerPinned = false;
-	bHasPointerPosition = false;
 	HideLocalCursor();
 	if (TSharedPtr<SWindow> Window = CursorWindow.Pin())
 	{
@@ -183,7 +179,7 @@ void UMWVehicleSelectionWidget::HideLocalCursor()
 {
 	bCursorInUI = false;
 	ReleaseSoftwareCursor();
-	if (IsValid(LocalPlayerCursor) && !bLocalMarkerPinned) LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
+	if (IsValid(LocalPlayerCursor)) LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UMWVehicleSelectionWidget::RefreshLocalCursor()
@@ -193,27 +189,21 @@ void UMWVehicleSelectionWidget::RefreshLocalCursor()
 		[](const FMWVehiclePlayerPresentation& View) { return View.bOccupied && View.bLocal; });
 	if (LocalView)
 	{
-		// One local circular marker: follow before selection, stay at the chosen location after it.
-		if (!bCursorInUI || (!bPreviewOnly && SelectedCard.IsValid())) ReleaseSoftwareCursor();
+		// Use the authored cursor while the pointer is inside the selection UI.
+		if (!bCursorInUI) ReleaseSoftwareCursor();
 		else
 		{
 			RegisterSoftwareCursor();
 			if (IsValid(SoftwareCursor))
 			{
 				SoftwareCursor->SetPresentation(*LocalView);
-				// Keep Slate's local cursor ownership while the world marker is pinned.
-				// An invisible software cursor suppresses the arrow without changing PC input.
-				SoftwareCursor->SetRenderOpacity(SelectedCard.IsValid() ? 0.f : 1.f);
 			}
 		}
-		LocalPlayerCursor->SetPresentation(*LocalView);
-		LocalPlayerCursor->SetVisibility(bLocalMarkerPinned
-			? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		ReleaseSoftwareCursor();
-		bLocalMarkerPinned = false;
 		HideLocalCursor();
 	}
 }
@@ -289,8 +279,6 @@ void UMWVehicleSelectionWidget::UpdateLocalCursor(const FPointerEvent& MouseEven
 		HideLocalCursor();
 		return;
 	}
-	LastPointerPosition = Position;
-	bHasPointerPosition = true;
 	if (!bCursorInUI)
 	{
 		bCursorInUI = true;
@@ -300,7 +288,6 @@ void UMWVehicleSelectionWidget::UpdateLocalCursor(const FPointerEvent& MouseEven
 
 void UMWVehicleSelectionWidget::ClearCards()
 {
-	bLocalMarkerPinned = false;
 	for (UMWVehicleCardWidget* Card : Cards)
 	{
 		if (!IsValid(Card)) continue;
@@ -362,7 +349,6 @@ void UMWVehicleSelectionWidget::RefreshVehicles()
 	if (bRequestPending) return;
 	if (!IsValid(Grid_Vehicles) || !IsValid(Text_Error) || !IsValid(Text_RegisteredCount) || !GetOwningPlayer()) return;
 	const FGameplayTag PreviousSelection = GetSelectedVehicleAssetId();
-	const bool bWasPinned = bLocalMarkerPinned;
 	ClearCards();
 	Text_Error->SetText(FText());
 	UMWAssetManager& Assets = UMWAssetManager::Get();
@@ -425,7 +411,6 @@ void UMWVehicleSelectionWidget::RefreshVehicles()
 			if (!Card->IsAvailable() || Card->GetVehicleAssetId() != PreviousSelection) continue;
 			SelectedCard = Card;
 			Card->SetSelected(true);
-			bLocalMarkerPinned = bWasPinned;
 			break;
 		}
 	}
@@ -514,7 +499,6 @@ FMWVehiclePlayerPresentation UMWVehicleSelectionWidget::MakePreviewPresentation(
 void UMWVehicleSelectionWidget::SelectPreviewScenario(int32 Index)
 {
 	if (!bPreviewOnly || !PreviewScenarios.IsValidIndex(Index) || bRequestPending) return;
-	bLocalMarkerPinned = false;
 	ActivePreviewScenarioIndex = Index;
 	ActivePreview = PreviewScenarios[Index];
 	if (IsValid(Text_Error)) Text_Error->SetText(FText());
@@ -528,7 +512,6 @@ void UMWVehicleSelectionWidget::SelectPreviewLocalSlot(int32 SlotIndex)
 {
 	if (!bPreviewOnly || bRequestPending || !ActivePreview.Participants.ContainsByPredicate(
 		[SlotIndex](const FMWVehiclePreviewParticipant& Player) { return Player.SlotIndex == SlotIndex; })) return;
-	bLocalMarkerPinned = false;
 	ActivePreview.LocalSlotIndex = SlotIndex;
 	RefreshPreviewControls();
 	RefreshPreviewSelection();
@@ -699,46 +682,7 @@ void UMWVehicleSelectionWidget::RenderParticipants()
 		}
 	}
 	for (int32 Index = 0; Index < PlayerEntries.Num(); ++Index) PlayerEntries[Index]->SetPresentation(ParticipantViews[Index]);
-	RefreshCardPointers();
 	RefreshLocalCursor();
-}
-
-void UMWVehicleSelectionWidget::RefreshCardPointers()
-{
-	for (int32 CardIndex = 0; CardIndex < Cards.Num(); ++CardIndex)
-	{
-		TArray<FMWVehiclePlayerPresentation> Pointers;
-		if (bPreviewOnly)
-		{
-			for (const FMWVehiclePreviewParticipant& Player : ActivePreview.Participants)
-			{
-				if (!ParticipantViews.IsValidIndex(Player.SlotIndex)) continue;
-				// The local fixed marker requires a selection; fixture hover pointers are remote-only.
-				if (Player.SlotIndex == ActivePreview.LocalSlotIndex && IsValid(LocalPlayerCursor) && IsValid(CursorLayer) &&
-					(bLocalMarkerPinned || !Cards.IsValidIndex(Player.PreviewCardIndex))) continue;
-				const int32 SelectedIndex = Cards.IsValidIndex(Player.PreviewCardIndex) ? Player.PreviewCardIndex : Player.PreviewPointerCardIndex;
-				const int32 DisplayIndex = SelectedIndex;
-				if (DisplayIndex != CardIndex) continue;
-				FMWVehiclePlayerPresentation View = ParticipantViews[Player.SlotIndex];
-				View.bHoverPreview = !Cards.IsValidIndex(Player.PreviewCardIndex);
-				Pointers.Add(View);
-			}
-		}
-		if (!bPreviewOnly)
-		{
-			const FGameplayTag CardId = Cards[CardIndex]->GetVehicleAssetId();
-			for (const auto& Pair : PlayerSlots)
-			{
-				const AMWPlayerState* Player = Pair.Key.Get();
-				if (Player && Player->GetVehicleAssetID() == CardId && ParticipantViews.IsValidIndex(Pair.Value))
-				{
-					const auto& View = ParticipantViews[Pair.Value];
-					if (!View.bLocal || !bLocalMarkerPinned) Pointers.Add(View);
-				}
-			}
-		}
-		Cards[CardIndex]->SetParticipants(Pointers);
-	}
 }
 
 bool UMWVehicleSelectionWidget::IsSelectionLocked() const
@@ -802,14 +746,6 @@ void UMWVehicleSelectionWidget::HandleCardChosen(UMWVehicleCardWidget* Card)
 	if (UMWVehicleCardWidget* Previous = SelectedCard.Get()) Previous->SetSelected(false);
 	SelectedCard = Card;
 	Card->SetSelected(true);
-	if (bCursorInUI && bHasPointerPosition && IsValid(LocalPlayerCursor))
-	{
-		if (UCanvasPanelSlot* CursorSlot = Cast<UCanvasPanelSlot>(LocalPlayerCursor->Slot))
-		{
-			CursorSlot->SetPosition(LastPointerPosition);
-			bLocalMarkerPinned = true;
-		}
-	}
 	RefreshPlayers();
 	RefreshControls();
 	if (!bPreviewOnly) HandleConfirm();
@@ -817,9 +753,9 @@ void UMWVehicleSelectionWidget::HandleCardChosen(UMWVehicleCardWidget* Card)
 
 void UMWVehicleSelectionWidget::HandleCardHover(UMWVehicleCardWidget* Card, bool bHovered)
 {
-	if (!bPreviewOnly || bLocalMarkerPinned || IsPreviewLocked() || bRequestPending || !IsValid(Card)) return;
+	if (!bPreviewOnly || IsPreviewLocked() || bRequestPending || !IsValid(Card)) return;
 	const FMWVehiclePreviewParticipant* Player = FindLocalPreviewParticipant();
-	if (!Player || !PlayerEntries.IsValidIndex(Player->SlotIndex)) return;
+	if (!Player || Player->bConfirmed || !PlayerEntries.IsValidIndex(Player->SlotIndex)) return;
 	if (bHovered && Card->IsAvailable())
 	{
 		FMWVehiclePlayerPresentation View = MakePreviewPresentation(*Player);
@@ -829,7 +765,6 @@ void UMWVehicleSelectionWidget::HandleCardHover(UMWVehicleCardWidget* Card, bool
 		PlayerEntries[Player->SlotIndex]->SetPresentation(View);
 	}
 	else if (ParticipantViews.IsValidIndex(Player->SlotIndex)) PlayerEntries[Player->SlotIndex]->SetPresentation(ParticipantViews[Player->SlotIndex]);
-	RefreshCardPointers();
 }
 
 void UMWVehicleSelectionWidget::HandleConfirm()
@@ -859,7 +794,6 @@ void UMWVehicleSelectionWidget::FinishSelectionRequest(const FText& Message)
 	{
 		if (auto* Card = SelectedCard.Get()) Card->SetSelected(false);
 		SelectedCard.Reset();
-		bLocalMarkerPinned = false;
 	}
 	if (IsValid(Text_Error)) Text_Error->SetText(Message);
 	RefreshPlayers();
@@ -879,7 +813,6 @@ bool UMWVehicleSelectionWidget::CancelLocalSelection()
 	}
 	if (UMWVehicleCardWidget* Card = SelectedCard.Get()) Card->SetSelected(false);
 	SelectedCard.Reset();
-	bLocalMarkerPinned = false;
 	if (IsValid(Text_Error)) Text_Error->SetText(FText());
 	RefreshPlayers();
 	RefreshControls();

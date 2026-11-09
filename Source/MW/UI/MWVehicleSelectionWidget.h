@@ -159,7 +159,6 @@ private:
 	void BuildPreviewParticipants();
 	void BuildLobbyParticipants(AMWLobbyGameState* State);
 	void RenderParticipants();
-	void RefreshCardPointers();
 	void RefreshLocalCursor();
 	void UpdateLocalCursor(const FPointerEvent& MouseEvent);
 	void HideLocalCursor();
@@ -176,11 +175,7 @@ private:
 	TWeakPtr<SWindow> CursorWindow;
 	FDelegateHandle WindowDeactivatedHandle;
 	bool bCursorInUI = false;
-	// Local presentation only; the existing SelectedCard/Preview data owns the choice.
-	bool bLocalMarkerPinned = false;
 	float CardMarkerScale = 1.f;
-	bool bHasPointerPosition = false;
-	FVector2D LastPointerPosition = FVector2D::ZeroVector;
 	FMWVehiclePreviewParticipant* FindLocalPreviewParticipant();
 	const FMWVehiclePreviewParticipant* FindLocalPreviewParticipant() const;
 	FMWVehiclePlayerPresentation MakePreviewPresentation(const FMWVehiclePreviewParticipant& Participant) const;
