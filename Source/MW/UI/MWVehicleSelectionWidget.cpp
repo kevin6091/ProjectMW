@@ -74,7 +74,8 @@ bool UMWVehicleSelectionWidget::ConfigureSharedCursorVisual(UUserWidget& Visual,
 void UMWVehicleSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	HideLocalCursor();
+	ResetPointerHit();
+	if (IsValid(LocalPlayerCursor)) LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
 	if (!IsValid(Button_Confirm) || !IsValid(Button_Reset) || !IsValid(Button_Back) ||
 		!IsValid(Button_Refresh) || !IsValid(Grid_Vehicles) || !IsValid(Box_Players) ||
 		!IsValid(Text_Status) || !IsValid(Text_Error) || !IsValid(Text_RegisteredCount) || !IsValid(PreviewNotice)) return;
@@ -102,7 +103,7 @@ void UMWVehicleSelectionWidget::NativeDestruct()
 {
 	ReleaseSoftwareCursor();
 	bRequestPending = false;
-	HideLocalCursor();
+	ResetPointerHit();
 	if (TSharedPtr<SWindow> Window = CursorWindow.Pin())
 	{
 		Window->GetOnWindowDeactivatedEvent().Remove(WindowDeactivatedHandle);
@@ -131,7 +132,7 @@ FReply UMWVehicleSelectionWidget::NativeOnPreviewMouseButtonDown(const FGeometry
 {
 	const FReply Reply = Super::NativeOnPreviewMouseButtonDown(InGeometry, InMouseEvent);
 	if (Reply.IsEventHandled() || InMouseEvent.IsTouchEvent()) return Reply;
-	// Tunnel before Button consumes the click, so the marker uses the actual click point.
+	// Check the board hit before a child button consumes the click.
 	UpdateLocalCursor(InMouseEvent);
 	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton && bCursorInUI && CancelLocalSelection())
 	{
@@ -154,7 +155,7 @@ void UMWVehicleSelectionWidget::NativeOnMouseEnter(const FGeometry& InGeometry, 
 
 void UMWVehicleSelectionWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
-	HideLocalCursor();
+	ResetPointerHit();
 	Super::NativeOnMouseLeave(InMouseEvent);
 }
 
@@ -171,41 +172,28 @@ void UMWVehicleSelectionWidget::BindCursorWindow()
 	CursorWindow = Window;
 	if (Window)
 	{
-		WindowDeactivatedHandle = Window->GetOnWindowDeactivatedEvent().AddUObject(this, &ThisClass::HideLocalCursor);
+		WindowDeactivatedHandle = Window->GetOnWindowDeactivatedEvent().AddUObject(this, &ThisClass::ResetPointerHit);
 	}
 }
 
-void UMWVehicleSelectionWidget::HideLocalCursor()
+void UMWVehicleSelectionWidget::ResetPointerHit()
 {
 	bCursorInUI = false;
-	ReleaseSoftwareCursor();
-	if (IsValid(LocalPlayerCursor)) LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UMWVehicleSelectionWidget::RefreshLocalCursor()
 {
-	if (!IsValid(LocalPlayerCursor)) return;
 	const FMWVehiclePlayerPresentation* LocalView = ParticipantViews.FindByPredicate(
 		[](const FMWVehiclePlayerPresentation& View) { return View.bOccupied && View.bLocal; });
-	if (LocalView)
-	{
-		// Use the authored cursor while the pointer is inside the selection UI.
-		if (!bCursorInUI) ReleaseSoftwareCursor();
-		else
-		{
-			RegisterSoftwareCursor();
-			if (IsValid(SoftwareCursor))
-			{
-				SoftwareCursor->SetPresentation(*LocalView);
-			}
-		}
-		LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	else
+	if (!LocalView)
 	{
 		ReleaseSoftwareCursor();
-		HideLocalCursor();
+		return;
 	}
+
+	// The selection screen owns the viewport cursor even outside the board's hit area.
+	RegisterSoftwareCursor();
+	if (IsValid(SoftwareCursor)) SoftwareCursor->SetPresentation(*LocalView);
 }
 
 FVector2D UMWVehicleSelectionWidget::GetSoftwareCursorSize() const
@@ -235,8 +223,7 @@ void UMWVehicleSelectionWidget::RegisterSoftwareCursor()
 	bPreviouslyUsedSoftwareCursors = Viewport->GetIsUsingSoftwareCursorWidgets();
 	Viewport->SetSoftwareCursorWidget(EMouseCursor::Default, SoftwareCursorSlate);
 	Viewport->SetUseSoftwareCursorWidgets(true);
-	// Slate draws this above the world, follows the actual mouse and suppresses the OS cursor.
-	// Preview selection hides its contents; leaving the UI restores the previous mapping.
+	// Slate draws the cursor above the world. NativeDestruct restores the previous mapping.
 }
 
 void UMWVehicleSelectionWidget::ReleaseSoftwareCursor()
@@ -263,7 +250,7 @@ void UMWVehicleSelectionWidget::UpdateLocalCursor(const FPointerEvent& MouseEven
 	const TSharedPtr<SWindow> Window = CursorWindow.Pin();
 	if (!Window || !Window->IsActive())
 	{
-		HideLocalCursor();
+		ResetPointerHit();
 		return;
 	}
 	UCanvasPanelSlot* CursorSlot = Cast<UCanvasPanelSlot>(LocalPlayerCursor->Slot);
@@ -276,14 +263,10 @@ void UMWVehicleSelectionWidget::UpdateLocalCursor(const FPointerEvent& MouseEven
 	if (Size.X <= 0.f || Size.Y <= 0.f || Position.X < 0.f || Position.Y < 0.f ||
 		Position.X > Size.X || Position.Y > Size.Y)
 	{
-		HideLocalCursor();
+		ResetPointerHit();
 		return;
 	}
-	if (!bCursorInUI)
-	{
-		bCursorInUI = true;
-		RefreshLocalCursor();
-	}
+	bCursorInUI = true;
 }
 
 void UMWVehicleSelectionWidget::ClearCards()
@@ -647,7 +630,10 @@ void UMWVehicleSelectionWidget::BuildLobbyParticipants(AMWLobbyGameState* State)
 		if (!Seat) continue;
 		FMWVehiclePlayerPresentation& View = ParticipantViews[*Seat];
 		View.PlayerName = FText::FromString(Player->GetPlayerName());
-		View.PlayerTint = GetParticipantTint(*Seat);
+		const int32 MemberId = Player->GetLobbyMemberId();
+		View.PlayerTint = MemberId > 0 && !ParticipantTints.IsEmpty()
+			? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
+			: FallbackParticipantTint;
 		View.bOccupied = true;
 		View.bLocal = GetOwningPlayer()->PlayerState == Player;
 		View.MarkerText = FText::Format(ParticipantMarkerFormat, FText::AsNumber(*Seat + 1));

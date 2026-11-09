@@ -163,7 +163,7 @@ private:
 	void RenderParticipants();
 	void RefreshLocalCursor();
 	void UpdateLocalCursor(const FPointerEvent& MouseEvent);
-	void HideLocalCursor();
+	void ResetPointerHit();
 	void BindCursorWindow();
 	void RegisterSoftwareCursor();
 	void ReleaseSoftwareCursor();
