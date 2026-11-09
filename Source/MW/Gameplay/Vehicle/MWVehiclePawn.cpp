@@ -5,6 +5,8 @@
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "ProfilingDebugging/CpuProfilerTrace.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -188,6 +190,43 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 			ResetDriveStream();
 		}
 	}
+}
+
+void AMWVehiclePawn::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (!DrivingCollisionMesh)
+	{
+		return;
+	}
+
+	const UBodySetup* BodySetup = DrivingCollisionMesh->GetBodySetup();
+	if (!BodySetup || BodySetup->CollisionTraceFlag == CTF_UseComplexAsSimple ||
+		BodySetup->AggGeom.ConvexElems.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Driving collision requires simple convex geometry."), *GetName());
+		return;
+	}
+
+	auto* Hull = NewObject<UStaticMeshComponent>(this, TEXT("DrivingCollisionHull"), RF_Transient);
+	Hull->SetStaticMesh(DrivingCollisionMesh);
+	Hull->SetMobility(EComponentMobility::Movable);
+	Hull->SetHiddenInGame(true);
+	Hull->SetCastShadow(false);
+	Hull->SetCollisionProfileName(CollisionRoot->GetCollisionProfileName());
+	Hull->SetCollisionObjectType(CollisionRoot->GetCollisionObjectType());
+	Hull->SetCollisionResponseToChannels(CollisionRoot->GetCollisionResponseToChannels());
+	Hull->SetCollisionEnabled(CollisionRoot->GetCollisionEnabled());
+	Hull->SetGenerateOverlapEvents(CollisionRoot->GetGenerateOverlapEvents());
+	Hull->SetWorldTransform(CollisionRoot->GetComponentTransform());
+	Hull->RegisterComponent();
+
+	SetRootComponent(Hull);
+	// Preserve the authored camera, mesh hierarchy, and relative wheel transforms.
+	CollisionRoot->AttachToComponent(Hull, FAttachmentTransformRules::KeepWorldTransform);
+	CollisionRoot->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	VehicleMovement->SetUpdatedComponent(Hull);
 }
 
 // Called when the game starts or when spawned

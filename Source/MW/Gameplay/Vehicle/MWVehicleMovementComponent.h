@@ -42,6 +42,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual bool OverlapTest(const FVector& Location, const FQuat& Rotation, ECollisionChannel Channel,
+		const FCollisionShape& Shape, const AActor* IgnoreActor) const override;
 
 	UPROPERTY(EditDefaultsOnly, Category="MW|Drive")
 	TObjectPtr<UMWVehicleDriveData> DriveData;

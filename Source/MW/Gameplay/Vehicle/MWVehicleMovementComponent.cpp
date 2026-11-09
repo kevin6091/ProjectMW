@@ -5,6 +5,9 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/OverlapResult.h"
+#include "Engine/StaticMesh.h"
 #include "CollisionQueryParams.h"
 #include "Engine/HitResult.h"
 #include "Engine/World.h"
@@ -401,6 +404,20 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 	Velocity = GroundVelocity;
 }
 
+bool UMWVehicleMovementComponent::OverlapTest(const FVector& Location, const FQuat& Rotation,
+	ECollisionChannel Channel, const FCollisionShape& Shape, const AActor* IgnoreActor) const
+{
+	if (UpdatedPrimitive && UpdatedPrimitive->IsA<UStaticMeshComponent>() && GetWorld())
+	{
+		// Check the same convex hull as the movement sweep when finding a clear pose.
+		TArray<FOverlapResult> Overlaps;
+		return UpdatedPrimitive->ComponentOverlapMulti(Overlaps, GetWorld(), Location, Rotation,
+			Channel, FComponentQueryParams(NAME_None, IgnoreActor));
+	}
+
+	return Super::OverlapTest(Location, Rotation, Channel, Shape, IgnoreActor);
+}
+
 void UMWVehicleMovementComponent::UpdateSteering(float DeltaTime)
 {
 	if (!UpdatedComponent)
@@ -472,17 +489,16 @@ void UMWVehicleMovementComponent::UpdateSteering(float DeltaTime)
 	const FQuat CandidateRotation = NewRotation.Quaternion();
 	if (UpdatedPrimitive && GetWorld())
 	{
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(PawnOwner);
-		const FCollisionResponseParams Responses(UpdatedPrimitive->GetCollisionResponseToChannels());
-		const FCollisionShape Shape = UpdatedPrimitive->GetCollisionShape();
 		const FVector Location = UpdatedComponent->GetComponentLocation();
+		const ECollisionChannel Channel = UpdatedPrimitive->GetCollisionObjectType();
+		const FCollisionShape Shape = UpdatedPrimitive->GetCollisionShape();
+		const auto IsRotationBlocked = [&](const FQuat& Rotation)
+		{
+			return OverlapTest(Location, Rotation, Channel, Shape, PawnOwner);
+		};
 		// 이동 Sweep은 회전 궤적을 보장하지 않으므로 중간/최종 자세도 검사한다.
 		const FQuat MidRotation = FQuat::Slerp(TargetRotation, CandidateRotation, 0.5f);
-		if (GetWorld()->OverlapBlockingTestByChannel(Location, MidRotation,
-			UpdatedPrimitive->GetCollisionObjectType(), Shape, QueryParams, Responses) ||
-			GetWorld()->OverlapBlockingTestByChannel(Location, CandidateRotation,
-			UpdatedPrimitive->GetCollisionObjectType(), Shape, QueryParams, Responses))
+		if (IsRotationBlocked(MidRotation) || IsRotationBlocked(CandidateRotation))
 		{
 			return;
 		}
@@ -514,36 +530,80 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 	const FVector Start = Collision->GetComponentLocation();
 	const FVector End = Start - FVector::UpVector * DriveConfig.GroundProbeDistance;
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(PawnOwner);
-	const FCollisionResponseParams ResponseParams(Collision->GetCollisionResponseToChannels());
-
 	const float MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
-	const FCollisionShape Shape = Collision->GetCollisionShape();
 	FHitResult Hit;
-	const auto SweepGround = [&](const FCollisionShape& ProbeShape)
+	if (Collision->IsA<UStaticMeshComponent>())
 	{
-		return World->SweepSingleByChannel(Hit, Start, End, Collision->GetComponentQuat(),
-			Collision->GetCollisionObjectType(), ProbeShape, QueryParams, ResponseParams);
-	};
-	if (!SweepGround(Shape))
-	{
-		return;
-	}
+		TArray<FHitResult> Hits;
+		World->ComponentSweepMulti(Hits, UpdatedPrimitive, Start, End, Collision->GetComponentQuat(),
+			FComponentQueryParams(NAME_None, PawnOwner));
+		const FHitResult* GroundHit = Hits.FindByPredicate([MinGroundDot](const FHitResult& Candidate)
+		{
+			return Candidate.IsValidBlockingHit() &&
+				FVector::DotProduct(Candidate.ImpactNormal, FVector::UpVector) >= MinGroundDot;
+		});
+		if (GroundHit)
+		{
+			Hit = *GroundHit;
+		}
+		else
+		{
+			// A side contact can stop the convex sweep before it reaches the floor.
+			constexpr float ContactToleranceCm = 0.5f;
+			const bool bSideContact = Hits.ContainsByPredicate([MinGroundDot](const FHitResult& Candidate)
+			{
+				return Candidate.bBlockingHit && (Candidate.bStartPenetrating || Candidate.Distance <= ContactToleranceCm) &&
+					FVector::DotProduct(Candidate.ImpactNormal, FVector::UpVector) < MinGroundDot;
+			});
+			const UStaticMesh* Mesh = CastChecked<UStaticMeshComponent>(Collision)->GetStaticMesh();
+			if (!bSideContact || !Mesh)
+			{
+				return;
+			}
 
-	if (Hit.bStartPenetrating && Shape.IsBox()
-		&& FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+			const FBox Bounds = Mesh->GetBoundingBox();
+			const FVector Bottom = Collision->GetComponentTransform().TransformPosition(
+				FVector(Bounds.GetCenter().X, Bounds.GetCenter().Y, Bounds.Min.Z));
+			const FCollisionResponseParams Responses(Collision->GetCollisionResponseToChannels());
+			if (!World->LineTraceSingleByChannel(Hit, Bottom + FVector::UpVector * ContactToleranceCm,
+				Bottom - FVector::UpVector * DriveConfig.GroundProbeDistance,
+				Collision->GetCollisionObjectType(), FCollisionQueryParams(NAME_None, false, PawnOwner), Responses))
+			{
+				return;
+			}
+			Hit.Distance = FMath::Max(0.f, Hit.Distance - ContactToleranceCm);
+		}
+	}
+	else
 	{
-		// 차체 옆벽과의 초기 겹침이 아래쪽 바닥을 가릴 수 있다.
-		// 검사에만 가로 여유를 주고 높이를 유지해 실제 바닥까지의 거리를 구한다.
-		constexpr double SideInset = 0.5;
-		FVector ProbeExtent = Shape.GetBox();
-		ProbeExtent.X -= FMath::Min(SideInset, ProbeExtent.X * 0.5);
-		ProbeExtent.Y -= FMath::Min(SideInset, ProbeExtent.Y * 0.5);
-		Hit.Reset();
-		if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)))
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(PawnOwner);
+		const FCollisionResponseParams ResponseParams(Collision->GetCollisionResponseToChannels());
+		const FCollisionShape Shape = Collision->GetCollisionShape();
+		const auto SweepGround = [&](const FCollisionShape& ProbeShape)
+		{
+			return World->SweepSingleByChannel(Hit, Start, End, Collision->GetComponentQuat(),
+				Collision->GetCollisionObjectType(), ProbeShape, QueryParams, ResponseParams);
+		};
+		if (!SweepGround(Shape))
 		{
 			return;
+		}
+
+		if (Hit.bStartPenetrating && Shape.IsBox()
+			&& FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+		{
+			// 차체 옆벽과의 초기 겹침이 아래쪽 바닥을 가릴 수 있다.
+			// 검사에만 가로 여유를 주고 높이를 유지해 실제 바닥까지의 거리를 구한다.
+			constexpr double SideInset = 0.5;
+			FVector ProbeExtent = Shape.GetBox();
+			ProbeExtent.X -= FMath::Min(SideInset, ProbeExtent.X * 0.5);
+			ProbeExtent.Y -= FMath::Min(SideInset, ProbeExtent.Y * 0.5);
+			Hit.Reset();
+			if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)))
+			{
+				return;
+			}
 		}
 	}
 

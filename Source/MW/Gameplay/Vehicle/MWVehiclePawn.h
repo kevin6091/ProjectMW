@@ -13,6 +13,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UBoxComponent;
 class UMWVehicleMovementComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 
 /** Per-wheel authoring data; axes are in the mesh parent's coordinates. */
@@ -59,6 +60,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	virtual void PostInitializeComponents() override;
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -74,6 +76,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Collision")
 	TObjectPtr<UBoxComponent> CollisionRoot;
+
+	// Optional simple convex collision authored in Pawn-local space.
+	UPROPERTY(EditDefaultsOnly, Category="MW|Collision")
+	TObjectPtr<UStaticMesh> DrivingCollisionMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Drive")
 	TObjectPtr<UMWVehicleMovementComponent> VehicleMovement;
