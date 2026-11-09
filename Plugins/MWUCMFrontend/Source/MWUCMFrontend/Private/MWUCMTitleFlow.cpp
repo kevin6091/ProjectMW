@@ -65,7 +65,7 @@ void FitVehiclePreview(UMWVehicleSelectionWidget* Widget)
     }
 
     const FName LegendWidgets[] = { TEXT("Legend_Select"), TEXT("Legend_Cancel"), TEXT("SelectionStatePanel"),
-        TEXT("SelectionLegendRow"), TEXT("ArcadeLegendStrip"), TEXT("ArcadeLegendBolt0"), TEXT("ArcadeLegendBolt1"),
+        TEXT("SelectionLegendRow"), TEXT("Button_SecretVehicle"), TEXT("ArcadeLegendStrip"), TEXT("ArcadeLegendBolt0"), TEXT("ArcadeLegendBolt1"),
         TEXT("ArcadeLegendBolt2"), TEXT("ArcadeLegendBolt3") };
     for (FName Name : LegendWidgets)
     {

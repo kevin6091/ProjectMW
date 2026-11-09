@@ -81,11 +81,13 @@ void UMWVehicleSelectionWidget::NativeConstruct()
 		!IsValid(Button_Refresh) || !IsValid(Grid_Vehicles) || !IsValid(Box_Players) ||
 		!IsValid(Text_Status) || !IsValid(Text_Error) || !IsValid(Text_RegisteredCount) || !IsValid(PreviewNotice)) return;
 	for (UButton* Button : {Button_Confirm.Get(), Button_Reset.Get(), Button_Back.Get(), Button_Refresh.Get(),
-		Button_NextPreviewScenario.Get(), Button_NextPreviewLocalPlayer.Get()})
+		Button_NextPreviewScenario.Get(), Button_NextPreviewLocalPlayer.Get(), Button_SecretVehicle.Get()})
 	{
 		if (Button) Button->SetClickMethod(EButtonClickMethod::PreciseClick);
 	}
 	Button_Confirm->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleConfirm);
+	if (IsValid(Button_SecretVehicle))
+		Button_SecretVehicle->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleSecretVehicleChosen);
 	Button_Reset->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleReset);
 	Button_Back->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleBack);
 	Button_Refresh->OnClicked.AddUniqueDynamic(this, &ThisClass::RefreshVehicles);
@@ -114,6 +116,8 @@ void UMWVehicleSelectionWidget::NativeDestruct()
 	WindowDeactivatedHandle.Reset();
 	CursorWindow.Reset();
 	if (IsValid(Button_Confirm)) Button_Confirm->OnClicked.RemoveDynamic(this, &ThisClass::HandleConfirm);
+	if (IsValid(Button_SecretVehicle))
+		Button_SecretVehicle->OnClicked.RemoveDynamic(this, &ThisClass::HandleSecretVehicleChosen);
 	if (IsValid(Button_Reset)) Button_Reset->OnClicked.RemoveDynamic(this, &ThisClass::HandleReset);
 	if (IsValid(Button_Back)) Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBack);
 	if (IsValid(Button_Refresh)) Button_Refresh->OnClicked.RemoveDynamic(this, &ThisClass::RefreshVehicles);
@@ -308,6 +312,7 @@ void UMWVehicleSelectionWidget::ClearCards()
 		Card->OnHoverChanged.RemoveDynamic(this, &ThisClass::HandleCardHover);
 	}
 	SelectedCard.Reset();
+	SecretVehicleCard = nullptr;
 	Cards.Reset();
 	if (IsValid(Grid_Vehicles)) Grid_Vehicles->ClearChildren();
 	if (IsValid(Wrap_Vehicles)) Wrap_Vehicles->ClearChildren();
@@ -407,31 +412,44 @@ void UMWVehicleSelectionWidget::RefreshVehicles()
 		{
 			UMWVehicleDefinitionData* const* Found = Definitions.Find(Id);
 			if (!Found) continue;
-			UMWVehicleDefinitionData* Definition = *Found;
-			UClass* PawnClass = Definition->GetPawnClass().LoadSynchronous();
-			TArray<FText> Errors;
-			const bool bValid = PawnClass && !PawnClass->HasAnyClassFlags(CLASS_Abstract) &&
-				Definition->ValidateDefinition(Errors);
-			UMWVehicleCardWidget* Card = CreateWidget<UMWVehicleCardWidget>(GetOwningPlayer(), CardWidgetClass);
-			if (!Card) continue;
-			Card->SetVehicle(Id, Definition, VehicleThumbnails.FindRef(Id), bValid, bValid ? FText() : InvalidVehicleText);
-			AddCard(Card);
+			AddCard(CreateVehicleCard(Id, **Found));
+		}
+		if (Button_SecretVehicle && SecretVehicleAssetId.IsValid())
+		{
+			if (auto* Definition = Assets.LoadAssetSynchronous<UMWVehicleDefinitionData>(SecretVehicleAssetId))
+				SecretVehicleCard = CreateVehicleCard(SecretVehicleAssetId, *Definition);
 		}
 	}
-	if (PreviousSelection.IsValid())
+	if (auto* Card = FindVehicleCard(PreviousSelection); Card && Card->IsAvailable())
 	{
-		for (UMWVehicleCardWidget* Card : Cards)
-		{
-			if (!Card->IsAvailable() || Card->GetVehicleAssetId() != PreviousSelection) continue;
-			SelectedCard = Card;
-			Card->SetSelected(true);
-			bLocalMarkerPinned = bWasPinned;
-			break;
-		}
+		SelectedCard = Card;
+		Card->SetSelected(true);
+		bLocalMarkerPinned = bWasPinned;
 	}
 	RefreshPreviewSelection();
 	RefreshPlayers();
 	RefreshControls();
+}
+
+UMWVehicleCardWidget* UMWVehicleSelectionWidget::CreateVehicleCard(FGameplayTag Id, UMWVehicleDefinitionData& Definition)
+{
+	UClass* PawnClass = Definition.GetPawnClass().LoadSynchronous();
+	TArray<FText> Errors;
+	const bool bValid = PawnClass && !PawnClass->HasAnyClassFlags(CLASS_Abstract) && Definition.ValidateDefinition(Errors);
+	auto* Card = CreateWidget<UMWVehicleCardWidget>(GetOwningPlayer(), CardWidgetClass);
+	if (Card) Card->SetVehicle(Id, &Definition, VehicleThumbnails.FindRef(Id), bValid, bValid ? FText() : InvalidVehicleText);
+	return Card;
+}
+
+UMWVehicleCardWidget* UMWVehicleSelectionWidget::FindVehicleCard(FGameplayTag Id) const
+{
+	if (!Id.IsValid()) return nullptr;
+	if (SecretVehicleCard && SecretVehicleCard->GetVehicleAssetId() == Id) return SecretVehicleCard;
+	for (UMWVehicleCardWidget* Card : Cards)
+	{
+		if (Card->GetVehicleAssetId() == Id) return Card;
+	}
+	return nullptr;
 }
 
 FGameplayTag UMWVehicleSelectionWidget::GetSelectedVehicleAssetId() const
@@ -673,12 +691,10 @@ void UMWVehicleSelectionWidget::BuildLobbyParticipants(AMWLobbyGameState* State)
 		View.StatusText = View.bConfirmed ? SelectionCompleteText : UnselectedVehicleText;
 		if (View.bConfirmed)
 		{
-			for (const UMWVehicleCardWidget* Card : Cards)
+			if (const auto* Card = FindVehicleCard(ConfirmedId))
 			{
-				if (Card->GetVehicleAssetId() != ConfirmedId) continue;
 				View.VehicleName = Card->GetDisplayName();
 				View.Thumbnail = Card->GetThumbnail();
-				break;
 			}
 		}
 	}
@@ -758,6 +774,11 @@ void UMWVehicleSelectionWidget::RefreshControls()
 	const bool bLocked = IsSelectionLocked() || bRequestPending;
 	const bool bLocalPreview = !bPreviewOnly || FindLocalPreviewParticipant() != nullptr;
 	const bool bSelected = SelectedCard.IsValid() && SelectedCard->IsAvailable();
+	if (IsValid(Button_SecretVehicle))
+	{
+		const bool bCanChooseSecret = !bPreviewOnly && !bLocked && SecretVehicleCard && SecretVehicleCard->IsAvailable();
+		Button_SecretVehicle->SetVisibility(bCanChooseSecret ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 	Button_Confirm->SetVisibility(ESlateVisibility::Collapsed);
 	Button_Confirm->SetIsEnabled(bSelected && !bLocked && bLocalPreview && (bPreviewOnly || OnSelectionRequested.IsBound()));
 	Button_Reset->SetVisibility(ESlateVisibility::Collapsed);
@@ -790,7 +811,8 @@ void UMWVehicleSelectionWidget::RefreshControls()
 
 void UMWVehicleSelectionWidget::HandleCardChosen(UMWVehicleCardWidget* Card)
 {
-	if (!IsValid(Card) || !Cards.Contains(Card) || !Card->IsAvailable() || IsSelectionLocked() || bRequestPending) return;
+	if (!IsValid(Card) || (Card != SecretVehicleCard && !Cards.Contains(Card)) ||
+		!Card->IsAvailable() || IsSelectionLocked() || bRequestPending) return;
 	if (bPreviewOnly)
 	{
 		FMWVehiclePreviewParticipant* Player = FindLocalPreviewParticipant();
@@ -813,6 +835,11 @@ void UMWVehicleSelectionWidget::HandleCardChosen(UMWVehicleCardWidget* Card)
 	RefreshPlayers();
 	RefreshControls();
 	if (!bPreviewOnly) HandleConfirm();
+}
+
+void UMWVehicleSelectionWidget::HandleSecretVehicleChosen()
+{
+	HandleCardChosen(SecretVehicleCard);
 }
 
 void UMWVehicleSelectionWidget::HandleCardHover(UMWVehicleCardWidget* Card, bool bHovered)

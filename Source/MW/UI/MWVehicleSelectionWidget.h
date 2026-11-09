@@ -21,6 +21,7 @@ class UTexture2D;
 class UUniformGridPanel;
 class UWrapBox;
 class UMWVehicleCardWidget;
+class UMWVehicleDefinitionData;
 class UMWVehiclePlayerEntryWidget;
 class UMWVehiclePlayerMarkerWidget;
 class UWidgetComponent;
@@ -74,6 +75,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data") FGameplayTag VehicleAssetRoot;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
 	TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> VehicleThumbnails;
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data") FGameplayTag SecretVehicleAssetId;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") int32 ColumnCount = 0;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") TSubclassOf<UMWVehicleCardWidget> CardWidgetClass;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") TSubclassOf<UMWVehiclePlayerEntryWidget> PlayerEntryWidgetClass;
@@ -121,6 +123,7 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWrapBox> Wrap_Vehicles;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UHorizontalBox> Box_Players;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_Confirm;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_SecretVehicle;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_Reset;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_Back;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> Button_Refresh;
@@ -139,6 +142,8 @@ protected:
 
 private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UMWVehicleCardWidget>> Cards;
+	// Reuse the normal selection model without adding a card to the visible row.
+	UPROPERTY(Transient) TObjectPtr<UMWVehicleCardWidget> SecretVehicleCard;
 	UPROPERTY(Transient) TArray<TObjectPtr<UMWVehiclePlayerEntryWidget>> PlayerEntries;
 	UPROPERTY(Transient) TArray<FMWVehiclePlayerPresentation> ParticipantViews;
 	UPROPERTY(Transient) FMWVehiclePreviewScenario ActivePreview;
@@ -150,6 +155,8 @@ private:
 	bool bRequestPending = false;
 	void ClearCards();
 	void AddCard(UMWVehicleCardWidget* Card);
+	UMWVehicleCardWidget* CreateVehicleCard(FGameplayTag Id, UMWVehicleDefinitionData& Definition);
+	UMWVehicleCardWidget* FindVehicleCard(FGameplayTag Id) const;
 	void ApplyCardMarkerScale(UMWVehicleCardWidget* Card) const;
 	void RefreshControls();
 	bool IsSelectionLocked() const;
@@ -189,6 +196,7 @@ private:
 	UFUNCTION() void HandleNextPreviewScenario();
 	UFUNCTION() void HandleNextPreviewLocalPlayer();
 	UFUNCTION() void HandleCardChosen(UMWVehicleCardWidget* Card);
+	UFUNCTION() void HandleSecretVehicleChosen();
 	UFUNCTION() void HandleCardHover(UMWVehicleCardWidget* Card, bool bHovered);
 	UFUNCTION() void HandleConfirm();
 	UFUNCTION() void HandleReset();
