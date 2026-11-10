@@ -27,8 +27,14 @@ namespace
 constexpr double CmPerUnityUnit = 100;
 constexpr double TileUnity = 500;
 constexpr double TileCm = TileUnity * CmPerUnityUnit;
+constexpr double TileBoundsRadiusCm = TileCm * 0.72;
+constexpr float MaxSunShadowDistanceCm = 120000.0f;
 constexpr int32 MaxTiles = 1024;
 constexpr int32 BuildBudget = 3;
+constexpr int32 InitialBuildBudget = 40;
+constexpr int32 MaxPrewarmTiles = 16;
+constexpr double PrewarmMarginCm = TileCm * 0.4;
+constexpr double TurnPrewarmDistanceCm = 110000.0;
 constexpr int32 MaxPlacementAttempts = 100;
 constexpr int32 RandomMax = MAX_int32;
 const FIntPoint Neighbors[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
@@ -164,6 +170,8 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
     Fog->SetVisibility(true);
     Sun->SetLightColor(Theme->SunColor);
     Sun->SetRelativeRotation(FRotator(-(Theme->SunAngle.X + Theme->SunAngle.Y) * 0.5, -35, 0));
+    // VSM uses the movable sun range to cull distant non-Nanite casters.
+    Sun->SetDynamicShadowDistanceMovableLight(FMath::Min(ViewDistanceUnity * float(CmPerUnityUnit), MaxSunShadowDistanceCm));
     Sun->SetShadowAmount(Theme->ShadowStrength);
     Ambient->SetLightColor(Theme->AmbientColor);
     Ambient->SetLowerHemisphereColor(Theme->AmbientColor * 0.22f);
@@ -194,7 +202,14 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
     Settings.ColorGainHighlights = Theme->HighlightGain;
     if (AutoUpdate)
     {
-        GetWorldTimerManager().SetTimer(VisibilityTimer, this, &AMWEnvironmentGenerator::UpdateVisibility, 0.12f, true);
+        const bool PrewarmEnabled = UsesPrewarm();
+        if (PrewarmEnabled)
+        {
+            PrepareFloorRenderers();
+            UpdateVisibility();
+        }
+        const float FirstDelay = PrewarmEnabled && InitialViewPending ? 0.0f : 0.12f;
+        GetWorldTimerManager().SetTimer(VisibilityTimer, this, &AMWEnvironmentGenerator::UpdateVisibility, 0.12f, true, FirstDelay);
     }
 }
 
@@ -208,6 +223,15 @@ void AMWEnvironmentGenerator::ClearEnvironment()
     {
         ReleaseTileRenderers(Pair.Value);
     }
+    for (const auto& Pair : FloorRenderers)
+    {
+        if (UInstancedStaticMeshComponent* Floor = Pair.Value.Get())
+        {
+            Floor->DestroyComponent();
+        }
+    }
+    FloorRenderers.Reset();
+    PreparedFloorCount = 0;
     Tiles.Reset();
     Footprints.Reset();
     ActiveTiles.Reset();
@@ -215,6 +239,7 @@ void AMWEnvironmentGenerator::ClearEnvironment()
     Timings = {};
     RegistrationOrder.Reset();
     Reactivations = 0;
+    InitialViewPending = true;
     PostProcess->bEnabled = false;
     Sky->SetVisibility(false);
     Sun->SetVisibility(false);
@@ -246,7 +271,7 @@ FVector AMWEnvironmentGenerator::TileCenter(FIntPoint Key) const
     return GetActorLocation() + FVector(-Key.X * TileCm, Key.Y * TileCm, 0);
 }
 
-UInstancedStaticMeshComponent* AMWEnvironmentGenerator::AddRenderer(FTile& Tile, UStaticMesh* Mesh)
+UInstancedStaticMeshComponent* AMWEnvironmentGenerator::CreateRenderer(UStaticMesh* Mesh)
 {
     const double Started = FPlatformTime::Seconds();
     auto* Renderer = NewObject<UInstancedStaticMeshComponent>(this);
@@ -262,8 +287,44 @@ UInstancedStaticMeshComponent* AMWEnvironmentGenerator::AddRenderer(FTile& Tile,
         Renderer->RegisterComponent();
         Timings.Register += FPlatformTime::Seconds() - RegisterStart;
     }
-    Tile.Renderers.Add(Renderer);
     return Renderer;
+}
+
+void AMWEnvironmentGenerator::PrepareFloorRenderers()
+{
+    if (!Plane || PreparedFloorCount == RegistrationOrder.Num())
+    {
+        return;
+    }
+
+    // The registered floor is inexpensive and ready from every camera angle.
+    // Append each tile once to its material batch and let UE cull the instances.
+    TMap<int32, TArray<FTransform>> Batches;
+    for (; PreparedFloorCount < RegistrationOrder.Num(); ++PreparedFloorCount)
+    {
+        const FIntPoint Key = RegistrationOrder[PreparedFloorCount];
+        const int32 FloorIndex = Tiles.FindChecked(Key).FloorIndex;
+        if (Theme->Floors.IsValidIndex(FloorIndex))
+        {
+            Batches.FindOrAdd(FloorIndex).Emplace(FQuat::Identity, TileCenter(Key), FVector(TileCm / 100, TileCm / 100, 1));
+        }
+    }
+
+    for (const auto& Pair : Batches)
+    {
+        auto& Slot = FloorRenderers.FindOrAdd(Pair.Key);
+        UInstancedStaticMeshComponent* Floor = Slot.Get();
+        if (!Floor)
+        {
+            Floor = CreateRenderer(Plane);
+            Floor->SetMaterial(0, Theme->Floors[Pair.Key]);
+            Floor->SetCastShadow(false);
+            Floor->SetCullDistances(0, FMath::CeilToInt(ViewDistanceUnity * CmPerUnityUnit + TileBoundsRadiusCm + PrewarmMarginCm));
+            Floor->RegisterComponent();
+            Slot = Floor;
+        }
+        Floor->AddInstances(Pair.Value, false, true, false);
+    }
 }
 
 void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
@@ -374,9 +435,10 @@ void AMWEnvironmentGenerator::BuildTileRenderers(FIntPoint Key, FTile& Tile)
         Timings.Add += FPlatformTime::Seconds() - AddStart;
     };
     const FVector Center = TileCenter(Key);
-    if (Plane && Theme->Floors.IsValidIndex(Tile.FloorIndex))
+    if (!UsesPrewarm() && Plane && Theme->Floors.IsValidIndex(Tile.FloorIndex))
     {
-        auto* Floor = AddRenderer(Tile, Plane);
+        auto* Floor = CreateRenderer(Plane);
+        Tile.Renderers.Add(Floor);
         Floor->SetMaterial(0, Theme->Floors[Tile.FloorIndex]);
         Populate(Floor, {FTransform(FQuat::Identity, Center, FVector(TileCm / 100, TileCm / 100, 1))});
     }
@@ -403,7 +465,8 @@ void AMWEnvironmentGenerator::BuildTileRenderers(FIntPoint Key, FTile& Tile)
             if (!Existing)
             {
                 BatchIndices.Add(&Part, Index);
-                Batch.Renderer = AddRenderer(Tile, Part.Mesh);
+                Batch.Renderer = CreateRenderer(Part.Mesh);
+                Tile.Renderers.Add(Batch.Renderer);
                 for (int32 Slot = 0; Slot < Part.Materials.Num(); ++Slot)
                 {
                     if (Part.Materials[Slot])
@@ -457,6 +520,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     {
         return;
     }
+    const bool PrewarmEnabled = UsesPrewarm();
     FVector Eye;
     FRotator Angle;
     float HorizontalFov = 90;
@@ -473,7 +537,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     else if (APlayerController* PC = ViewPlayerController.IsValid()
         ? ViewPlayerController.Get() : GetWorld()->GetFirstPlayerController())
     {
-        if (!PC->IsLocalController()) return;
+        if (!PC->IsLocalController() || (PrewarmEnabled && InitialViewPending && PC->GetViewTarget() == PC)) return;
         PC->GetPlayerViewPoint(Eye, Angle);
         if (PC->PlayerCameraManager)
         {
@@ -503,9 +567,12 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     Sky->SetWorldLocation(Eye);
     const FVector RelativeEye = Eye - GetActorLocation();
     const FIntPoint CameraTile(FMath::RoundToInt(-RelativeEye.X / TileCm), FMath::RoundToInt(RelativeEye.Y / TileCm));
-    const double TileRadius = TileCm * 0.72;
+    const double TileRadius = TileBoundsRadiusCm;
+    const double ViewDistanceCm = ViewDistanceUnity * CmPerUnityUnit;
     const double Far = FMath::Max(FarDistanceUnity, ViewDistanceUnity) * CmPerUnityUnit;
-    const int32 Radius = FMath::CeilToInt((Far + TileRadius) / TileCm);
+    const double PrewarmRange = ViewDistanceCm + PrewarmMarginCm;
+    const double ScanDistance = PrewarmEnabled ? FMath::Max(Far, PrewarmRange) : Far;
+    const int32 Radius = FMath::CeilToInt((ScanDistance + TileRadius) / TileCm);
     const FVector Forward = Angle.Vector();
     const FRotationMatrix View(Angle);
     const FVector Right = View.GetScaledAxis(EAxis::Y);
@@ -513,6 +580,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     const double TanX = FMath::Tan(FMath::DegreesToRadians(HorizontalFov * 0.5));
     const double TanY = TanX / LastCameraAspect;
     TArray<FIntPoint> Wanted;
+    TArray<FIntPoint> Prewarm;
     TArray<FIntPoint> Expand;
     for (int32 X = CameraTile.X - Radius; X <= CameraTile.X + Radius; ++X)
     {
@@ -523,22 +591,34 @@ void AMWEnvironmentGenerator::UpdateVisibility()
             {
                 continue;
             }
-            const FVector Delta = TileCenter(Key) - Eye;
+            const FVector Center = TileCenter(Key);
+            const FVector Delta = Center - Eye;
             const double Distance = FMath::Max(0.0, Delta.Length() - TileRadius);
-            const double Depth = FVector::DotProduct(Delta, Forward);
-            const bool InView = UsingPlayerProjection
-                ? PlayerFrustum.IntersectSphere(TileCenter(Key), TileRadius)
-                : Depth >= -TileRadius
-                && FMath::Abs(FVector::DotProduct(Delta, Right)) <= FMath::Max(Depth, 0) * TanX + TileRadius
-                && FMath::Abs(FVector::DotProduct(Delta, Up)) <= FMath::Max(Depth, 0) * TanY + TileRadius;
+            const auto IntersectsView = [&](double BoundsRadius)
+            {
+                if (UsingPlayerProjection)
+                {
+                    return PlayerFrustum.IntersectSphere(Center, BoundsRadius);
+                }
+                const double Depth = FVector::DotProduct(Delta, Forward);
+                return Depth >= -BoundsRadius
+                    && FMath::Abs(FVector::DotProduct(Delta, Right)) <= FMath::Max(Depth, 0) * TanX + BoundsRadius
+                    && FMath::Abs(FVector::DotProduct(Delta, Up)) <= FMath::Max(Depth, 0) * TanY + BoundsRadius;
+            };
+            const bool InView = IntersectsView(TileRadius);
             const bool Visible = Distance <= Far && InView;
             if (Visible || Distance <= 100 * CmPerUnityUnit)
             {
                 Expand.Add(Key);
             }
-            if (Visible && Distance < ViewDistanceUnity * CmPerUnityUnit)
+            if (Visible && Distance < ViewDistanceCm)
             {
                 Wanted.Add(Key);
+            }
+            else if (PrewarmEnabled && !InitialViewPending && Distance < PrewarmRange
+                && (Distance < TurnPrewarmDistanceCm || ActiveTiles.Contains(Key) || IntersectsView(TileRadius + PrewarmMarginCm)))
+            {
+                Prewarm.Add(Key);
             }
         }
     }
@@ -550,6 +630,26 @@ void AMWEnvironmentGenerator::UpdateVisibility()
             RegisterTile(Key + Offset);
         }
     }
+    if (PrewarmEnabled)
+    {
+        PrepareFloorRenderers();
+    }
+
+    const auto Nearer = [&](FIntPoint A, FIntPoint B)
+    {
+        return FVector::DistSquared(TileCenter(A), Eye) < FVector::DistSquared(TileCenter(B), Eye);
+    };
+    Wanted.StableSort(Nearer);
+    Prewarm.StableSort(Nearer);
+    Prewarm.SetNum(FMath::Min(Prewarm.Num(), MaxPrewarmTiles), EAllowShrinking::No);
+    const bool PrimeFirstView = PrewarmEnabled && InitialViewPending && !Wanted.IsEmpty();
+    if (PrimeFirstView)
+    {
+        InitialViewPending = false;
+    }
+    // Build the current view first. Prewarmed renderers stay enabled so a turn
+    // can reveal them immediately through the engine's own frustum culling.
+    Wanted.Append(Prewarm);
     const TSet<FIntPoint> Desired(Wanted);
     for (auto It = ActiveTiles.CreateIterator(); It; ++It)
     {
@@ -560,7 +660,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
             {
                 ReleaseTileRenderers(Tile);
             }
-            else
+            else if (!Tile.Renderers.IsEmpty())
             {
                 const double Started = FPlatformTime::Seconds();
                 for (const auto& Entry : Tile.Renderers)
@@ -571,21 +671,16 @@ void AMWEnvironmentGenerator::UpdateVisibility()
                     }
                 }
                 Timings.Hide += FPlatformTime::Seconds() - Started;
-                Tile.Active = false;
                 InactiveRenderers.Add(*It);
             }
+            Tile.Active = false;
             It.RemoveCurrent();
         }
     }
 
-    Wanted.StableSort([&](FIntPoint A, FIntPoint B)
-    {
-        return FVector::DistSquared(TileCenter(A), Eye) < FVector::DistSquared(TileCenter(B), Eye);
-    });
-    // Preserve the original layout budget and RNG consumption order even when
-    // cold re-entry needs to rebuild components in the same update.
-    int32 LayoutBudget = BuildBudget;
-    int32 RenderBudget = BuildBudget;
+    // Keep layout and renderer budgets independent during cold re-entry.
+    int32 LayoutBudget = PrimeFirstView ? InitialBuildBudget : BuildBudget;
+    int32 RenderBudget = LayoutBudget;
     for (FIntPoint Key : Wanted)
     {
         FTile& Tile = Tiles.FindChecked(Key);
@@ -674,6 +769,7 @@ FString AMWEnvironmentGenerator::GetEnvironmentDebug() const
     Root->SetNumberField(TEXT("camera_fov"), LastCameraFov);
     Root->SetNumberField(TEXT("camera_aspect"), LastCameraAspect);
     Root->SetNumberField(TEXT("registered"), Tiles.Num());
+    Root->SetNumberField(TEXT("floor_batches"), FloorRenderers.Num());
     Root->SetNumberField(TEXT("active"), ActiveTiles.Num());
     Root->SetNumberField(TEXT("reactivations"), Reactivations);
     Root->SetNumberField(TEXT("tile_cm"), TileCm);

@@ -139,6 +139,8 @@ private:
     TMap<FIntPoint, FTile> Tiles;
     TMap<FIntPoint, TArray<FBox>> Footprints;
     TArray<FIntPoint> RegistrationOrder;
+    TMap<int32, TWeakObjectPtr<UInstancedStaticMeshComponent>> FloorRenderers;
+    int32 PreparedFloorCount = 0;
     TSet<FIntPoint> ActiveTiles;
     TArray<FIntPoint> InactiveRenderers;
     struct FRendererTimings
@@ -153,6 +155,7 @@ private:
     int32 RandomDraws = 0;
     int32 Reactivations = 0;
     bool UsingPlayerProjection = false;
+    bool InitialViewPending = true;
     float LastCameraFov = 90;
     float LastCameraAspect = 16.0f / 9.0f;
 
@@ -164,5 +167,7 @@ private:
     void GenerateTile(FIntPoint Key, FTile& Tile);
     void BuildTileRenderers(FIntPoint Key, FTile& Tile);
     void ReleaseTileRenderers(FTile& Tile);
-    UInstancedStaticMeshComponent* AddRenderer(FTile& Tile, UStaticMesh* Mesh);
+    bool UsesPrewarm() const { return AutoUpdate && RendererReuseMode == 2; }
+    void PrepareFloorRenderers();
+    UInstancedStaticMeshComponent* CreateRenderer(UStaticMesh* Mesh);
 };
