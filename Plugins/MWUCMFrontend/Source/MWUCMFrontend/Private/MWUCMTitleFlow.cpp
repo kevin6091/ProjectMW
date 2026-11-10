@@ -13,8 +13,11 @@
 #include "Engine/GameViewportClient.h"
 #include "Containers/Ticker.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "InputCoreTypes.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Styling/CoreStyle.h"
@@ -32,14 +35,112 @@
 #include "UI/Lobby/MWCreateRoomWidget.h"
 #include "UI/Lobby/MWRoomBrowserWidget.h"
 #include "UI/Lobby/MWRoomLobbyWidget.h"
+#include "UI/Gameplay/MWGameplaySign.h"
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "UI/Cursor/MWPointerCursor.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "UI/VehicleSelection/MWVehicleSelectionPreviewActor.h"
 #include "System/MWGameInstance.h"
+#include "System/MWPlayerState.h"
 
 IMPLEMENT_MODULE(FDefaultModuleImpl, MWUCMFrontend)
+
+namespace
+{
+class SMWHostLeaveConfirmation : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMWHostLeaveConfirmation) {}
+		SLATE_EVENT(FSimpleDelegate, OnConfirm)
+		SLATE_EVENT(FSimpleDelegate, OnCancel)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& Args)
+	{
+		OnConfirm = Args._OnConfirm;
+		OnCancel = Args._OnCancel;
+		const auto* Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
+		const auto Action = [this](const FText& Key, const FText& Text, bool bConfirmed)
+		{
+			return SNew(SButton).IsFocusable(false)
+				.ButtonStyle(FCoreStyle::Get(), TEXT("NoBorder"))
+				.ContentPadding(FMargin(16.f, 2.f))
+				.OnClicked(this, &SMWHostLeaveConfirmation::Choose, bConfirmed)
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+					[
+						SNew(SBox).WidthOverride(66.f).HeightOverride(54.f)
+						[
+							SNew(SBorder).BorderImage(&Keycap).HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(0.f)
+							[SNew(STextBlock).Text(Key).Font(Art.Font(14.f)).ColorAndOpacity(FLinearColor::White)]
+						]
+					]
+					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(13.f, 0.f, 0.f, 0.f)
+					[SNew(STextBlock).Text(Text).Font(Art.Font(36.f)).ColorAndOpacity(FLinearColor::White)]
+				];
+		};
+
+		ChildSlot
+		[
+			SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, .77f))
+			.Padding(0.f)
+			[
+				MWGameplayUI::FitDesignCanvas(
+					SNew(SOverlay)
+					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+					[
+						SNew(SMWGameplayPanel).Size(FVector2D(960.f, 432.f))
+						.Fill(FLinearColor::FromSRGBColor(FColor(16, 162, 220)))
+						.Border(FLinearColor::FromSRGBColor(FColor(9, 46, 68))).BorderWidth(6.f)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot().AutoHeight().Padding(70.f, 86.f, 70.f, 20.f)
+							[
+								SNew(STextBlock)
+								.Text(NSLOCTEXT("MWLobby", "HostLeaveWarning", "방을 종료하면 다른 모든 플레이어가\n로비에서 나갑니다. 정말 계속할까요?"))
+								.Justification(ETextJustify::Center)
+								.Font(Art.Font(32.f)).ColorAndOpacity(FLinearColor::White)
+							]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 7.f)
+							[Action(NSLOCTEXT("MWLobby", "ConfirmKey", "SPACE"), NSLOCTEXT("MWLobby", "ConfirmHostLeave", "확인"), true)]
+							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+							[Action(NSLOCTEXT("MWLobby", "CancelKey", "Esc"), NSLOCTEXT("MWLobby", "CancelHostLeave", "취소"), false)]
+						]
+					]
+				)
+			]
+		];
+	}
+
+	virtual bool SupportsKeyboardFocus() const override { return true; }
+
+	virtual FReply OnKeyDown(const FGeometry&, const FKeyEvent& Event) override
+	{
+		if (Event.IsRepeat()) return FReply::Handled();
+		if (Event.GetKey() == EKeys::SpaceBar) return Choose(true);
+		if (Event.GetKey() == EKeys::Escape) return Choose(false);
+		return FReply::Handled();
+	}
+
+	virtual FReply OnMouseButtonDown(const FGeometry&, const FPointerEvent&) override { return FReply::Handled(); }
+	virtual FReply OnMouseButtonUp(const FGeometry&, const FPointerEvent&) override { return FReply::Handled(); }
+
+private:
+	FReply Choose(bool bConfirmed)
+	{
+		const FSimpleDelegate Action = bConfirmed ? OnConfirm : OnCancel;
+		Action.ExecuteIfBound();
+		return FReply::Handled();
+	}
+
+	FSimpleDelegate OnConfirm;
+	FSimpleDelegate OnCancel;
+	FMWGameplayUIArt Art;
+	FSlateRoundedBoxBrush Keycap{FLinearColor(.015f, .020f, .025f), 6.f};
+};
+}
 
 namespace
 {
@@ -710,6 +811,7 @@ void AMWUCMTitleFlow::HandleSourceMenu(FName Action)
 
 void AMWUCMTitleFlow::EndPlay(const EEndPlayReason::Type Reason)
 {
+    UnbindHostLeaveConfirmation();
     ClearVehicleDeparture();
     HideIntroSkip();
     SetMainMenuPresentation(false, false);
@@ -927,6 +1029,79 @@ void AMWUCMTitleFlow::PresentEntryWidget(UWidget* Screen, bool bMenuRequested)
     }
 }
 
+void AMWUCMTitleFlow::BindHostLeaveConfirmation()
+{
+    const auto* PC = LobbyWidget ? LobbyWidget->GetOwningPlayer() : nullptr;
+    const auto* Player = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+    if (!Player || !Player->IsRoomHost()) return;
+
+    auto* Button = Cast<UButton>(LobbyWidget->GetWidgetFromName(TEXT("Button_Leave")));
+    if (!Button) return;
+
+    // The stock widget owns this callback. Swap only its existing binding while
+    // the UCM world-space host lobby is presented, and restore it on exit.
+    static const FName LeaveHandler(TEXT("HandleLeaveClicked"));
+    if (!Button->OnClicked.Contains(LobbyWidget.Get(), LeaveHandler)) return;
+    if (HostLeaveButton.IsValid() && HostLeaveButton.Get() != Button)
+        UnbindHostLeaveConfirmation();
+    OriginalHostLeave.BindUFunction(LobbyWidget, LeaveHandler);
+    Button->OnClicked.Remove(OriginalHostLeave);
+    Button->OnClicked.AddUniqueDynamic(this, &ThisClass::ShowHostLeaveConfirmation);
+    HostLeaveButton = Button;
+}
+
+void AMWUCMTitleFlow::UnbindHostLeaveConfirmation()
+{
+    CloseHostLeaveConfirmation();
+    if (auto* Button = HostLeaveButton.Get())
+    {
+        Button->OnClicked.RemoveDynamic(this, &ThisClass::ShowHostLeaveConfirmation);
+        if (OriginalHostLeave.IsBound()) Button->OnClicked.AddUnique(OriginalHostLeave);
+    }
+    HostLeaveButton.Reset();
+    OriginalHostLeave.Unbind();
+}
+
+void AMWUCMTitleFlow::ShowHostLeaveConfirmation()
+{
+    if (!HostLeaveButton.IsValid() || !HostLeaveButton->GetIsEnabled() || HostLeaveConfirmation) return;
+    auto* Viewport = GetGameInstance()->GetGameViewportClient();
+    if (!Viewport || !FSlateApplication::IsInitialized()) return;
+
+    PreviousHostLeaveFocus = FSlateApplication::Get().GetKeyboardFocusedWidget();
+    HostLeaveViewport = Viewport;
+    HostLeaveConfirmation = SNew(SMWHostLeaveConfirmation)
+        .OnConfirm(FSimpleDelegate::CreateUObject(this, &ThisClass::ConfirmHostLeave))
+        .OnCancel(FSimpleDelegate::CreateUObject(this, &ThisClass::CloseHostLeaveConfirmation));
+    Viewport->AddViewportWidgetContent(HostLeaveConfirmation.ToSharedRef(), 9000);
+    FSlateApplication::Get().SetKeyboardFocus(HostLeaveConfirmation);
+}
+
+void AMWUCMTitleFlow::ConfirmHostLeave()
+{
+    CloseHostLeaveConfirmation();
+    if (HostLeaveButton.IsValid() && HostLeaveButton->GetIsEnabled() && OriginalHostLeave.IsBound())
+    {
+        const FScriptDelegate Leave = OriginalHostLeave;
+        Leave.ProcessDelegate<UObject>(nullptr);
+    }
+}
+
+void AMWUCMTitleFlow::CloseHostLeaveConfirmation()
+{
+    if (!HostLeaveConfirmation) return;
+    if (auto* Viewport = HostLeaveViewport.Get())
+        Viewport->RemoveViewportWidgetContent(HostLeaveConfirmation.ToSharedRef());
+    HostLeaveConfirmation.Reset();
+    HostLeaveViewport.Reset();
+    if (FSlateApplication::IsInitialized())
+    {
+        if (auto Previous = PreviousHostLeaveFocus.Pin())
+            FSlateApplication::Get().SetKeyboardFocus(Previous);
+    }
+    PreviousHostLeaveFocus.Reset();
+}
+
 void AMWUCMTitleFlow::UpdateLobbyPresentation()
 {
     if (!LobbyWidget || !bStarted) return;
@@ -950,7 +1125,13 @@ void AMWUCMTitleFlow::UpdateLobbyPresentation()
             if (auto* PC = VehicleWidget->GetOwningPlayer()) PC->SetInputMode(FInputModeUIOnly());
         }
     }
-    else if (!VehicleWidget && ActiveRegion == TEXT("Lobby")) SetWorldWidget(LobbyWidget, TEXT("Lobby"));
+    else if (!VehicleWidget && ActiveRegion == TEXT("Lobby"))
+    {
+        SetWorldWidget(LobbyWidget, TEXT("Lobby"));
+        BindHostLeaveConfirmation();
+        if (HostLeaveConfirmation && (!HostLeaveButton.IsValid() || !HostLeaveButton->GetIsEnabled()))
+            CloseHostLeaveConfirmation();
+    }
 }
 
 UWidgetComponent* AMWUCMTitleFlow::GetVehicleSelectionSurface() const
@@ -970,7 +1151,20 @@ bool AMWUCMTitleFlow::BeginVehicleDeparture(FSimpleDelegate OnCovered)
     OnVehicleDepartureCovered = MoveTemp(OnCovered);
     VehicleDepartureCover = SNew(SBorder)
         .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-        .BorderBackgroundColor(FLinearColor::Transparent);
+        .BorderBackgroundColor(FLinearColor::Transparent)
+        .Padding(0.f)
+        [
+            MWGameplayUI::FitDesignCanvas(
+                SNew(SOverlay)
+                + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+                [
+                    SNew(SMWGameplaySign)
+                    .Label(NSLOCTEXT("MWGameplayUI", "Loading", "불러오는 중"))
+                    .AnimateLoading(true)
+                ]
+            )
+        ];
+    VehicleDepartureCover->GetContent()->SetVisibility(EVisibility::Collapsed);
     VehicleDepartureViewport = Viewport;
     Viewport->AddViewportWidgetContent(VehicleDepartureCover.ToSharedRef(), 9999);
 
@@ -1006,8 +1200,11 @@ void AMWUCMTitleFlow::UpdateVehicleDeparture()
     // Unity's LoadingController increases fade alpha by 0.4 per second.
     constexpr float SourceFadeSeconds = 2.5f;
     const float Alpha = FMath::Clamp(WorldRouteTime / SourceFadeSeconds, 0.f, 1.f);
-    VehicleDepartureCover->SetBorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, Alpha));
     bVehicleDepartureCovered = Alpha >= 1.f;
+    VehicleDepartureCover->SetBorderBackgroundColor(bVehicleDepartureCovered
+        ? FLinearColor::FromSRGBColor(FColor(92, 218, 243)) : FLinearColor(0.f, 0.f, 0.f, Alpha));
+    if (bVehicleDepartureCovered)
+        VehicleDepartureCover->GetContent()->SetVisibility(EVisibility::HitTestInvisible);
 }
 
 void AMWUCMTitleFlow::ClearVehicleDeparture()
@@ -1037,6 +1234,7 @@ void AMWUCMTitleFlow::SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelec
             StartWorldRoute(TEXT("Vehicle"), true, TEXT("Lobby"));
         }
     }
+    if (LobbyWidget != Lobby || Selection) UnbindHostLeaveConfirmation();
     LobbyWidget = Lobby;
     if (VehicleWidget != Selection && VehicleWidget)
     {
