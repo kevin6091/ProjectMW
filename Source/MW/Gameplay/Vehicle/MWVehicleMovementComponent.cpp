@@ -1,6 +1,7 @@
 
 
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
@@ -182,6 +183,12 @@ bool UMWVehicleMovementComponent::IsDriftControlActive() const
 	return ForwardSpeed > DriveConfig.MinDriftSpeed;
 }
 
+bool UMWVehicleMovementComponent::HasItemBooster() const
+{
+	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	return Vehicle && Vehicle->GetItemComponent()->IsBoosterActive();
+}
+
 float UMWVehicleMovementComponent::GetMaxSpeed() const
 {
 	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent)
@@ -190,9 +197,10 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 	}
 
 	const float ForwardSpeed = FVector::DotProduct(Velocity, UpdatedComponent->GetForwardVector());
-	const float ForwardSpeedLimit = FMath::Max(DriveConfig.MaxForwardSpeed, 0.f);
+	const float ForwardSpeedLimit = GetUnboostedForwardSpeed();
 	const float Threshold = FMath::Max(DriveConfig.DirectionChangeSpeedThreshold, 0.f);
 	const float ReverseSpeedLimit = FMath::Min(ForwardSpeedLimit, FMath::Max(DriveConfig.MaxReverseSpeed, 0.f));
+	const float BoostedForwardSpeedLimit = HasItemBooster() ? ForwardSpeedLimit * 1.25f : ForwardSpeedLimit;
 
 	if (ForwardSpeed < -Threshold)
 	{
@@ -201,7 +209,7 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 
 	if (ForwardSpeed > Threshold)
 	{
-		return ForwardSpeedLimit;
+		return BoostedForwardSpeedLimit;
 	}
 
 	float EffectiveThrottle = 0.f;
@@ -219,7 +227,7 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 		return ReverseSpeedLimit;
 	}
 
-	return ForwardSpeedLimit;
+	return BoostedForwardSpeedLimit;
 }
 
 void UMWVehicleMovementComponent::BeginPlay()
@@ -290,8 +298,9 @@ void UMWVehicleMovementComponent::ResolveDriveControl(float& OutThrottle, float&
 		return;
 	}
 
-	const float ForwardRequest = IsTrackBoostActive() && DriveInput.Reverse <= KINDA_SMALL_NUMBER
-		? FMath::Max(DriveInput.Throttle, TrackMinimumThrottle) : DriveInput.Throttle;
+	const float MinimumThrottle = HasItemBooster() ? 1.f : IsTrackBoostActive() ? TrackMinimumThrottle : 0.f;
+	const float ForwardRequest = DriveInput.Reverse <= KINDA_SMALL_NUMBER
+		? FMath::Max(DriveInput.Throttle, MinimumThrottle) : DriveInput.Throttle;
 	const float ReverseRequest = DriveInput.Reverse;
 
 	const bool bForwardRequested = ForwardRequest > KINDA_SMALL_NUMBER;
@@ -403,6 +412,7 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 		const float RemainingSpeed = FMath::Max(SpeedLimit - SpeedInRequestedDirection, 0.f);
 		const float RequestedSpeedIncrease =
 			DriveConfig.DriveAcceleration *
+			(EffectiveThrottle > 0.f && HasItemBooster() ? 1.5f : 1.f) *
 			FMath::Abs(EffectiveThrottle) *
 			DeltaTime;
 		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);

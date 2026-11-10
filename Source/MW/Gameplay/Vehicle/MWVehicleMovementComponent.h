@@ -33,6 +33,10 @@ public:
 	bool IsDriftControlActive() const;
 
 	virtual float GetMaxSpeed() const override;
+	float GetUnboostedForwardSpeed() const
+	{
+		return bDriveConfigReady ? FMath::Max(0.f, DriveConfig.MaxForwardSpeed) : 0.f;
+	}
 	virtual void OnTeleported() override;
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
@@ -71,6 +75,7 @@ private:
 	FVector TrackSurfaceVelocity = FVector::ZeroVector;
 	double TrackSurfaceEndTime = -1.0;
 
+	bool HasItemBooster() const;
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 
 	// 최근 바닥 검사에서 접지 조건을 만족했는지

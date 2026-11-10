@@ -2,6 +2,7 @@
 
 
 #include "Player/MWGameplayPlayerController.h"
+#include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Data/MWInputData.h"
 #include "MWGameplayTags.h"
@@ -57,6 +58,14 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	Super::PostSeamlessTravel();
 	ApplyGameplayInputMode();
 	RefreshDrivingInput();
+}
+
+void AMWGameplayPlayerController::HandleUseItem()
+{
+	if (AMWVehiclePawn* Vehicle = GetInputVehicle())
+	{
+		Vehicle->GetItemComponent()->RequestUseItem();
+	}
 }
 
 void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -116,6 +125,7 @@ void AMWGameplayPlayerController::RefreshDrivingInput()
 	const UInputAction* Reverse = Data->FindInputActionByTag(MWGameplayTags::Input_Reverse);
 	const UInputAction* Steer = Data->FindInputActionByTag(MWGameplayTags::Input_Steer);
 	const UInputAction* Drift = Data->FindInputActionByTag(MWGameplayTags::Input_Drift);
+	const UInputAction* UseItem = Data->FindInputActionByTag(MWGameplayTags::Input_UseItem);
 	if (!Accel || !Reverse || !Steer || !Drift
 		|| Accel->ValueType != EInputActionValueType::Axis1D
 		|| Reverse->ValueType != EInputActionValueType::Axis1D
@@ -145,6 +155,10 @@ void AMWGameplayPlayerController::RefreshDrivingInput()
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Triggered, this, &ThisClass::StartDrift).GetHandle());
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Completed, this, &ThisClass::StopDrift).GetHandle());
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Canceled, this, &ThisClass::StopDrift).GetHandle());
+	if (UseItem && UseItem->ValueType == EInputActionValueType::Boolean)
+	{
+		DrivingBindingHandles.Add(EnhancedInput->BindAction(UseItem, ETriggerEvent::Started, this, &ThisClass::HandleUseItem).GetHandle());
+	}
 	Subsystem->AddMappingContext(DrivingMappingContext.Get(), 0);
 	UE_LOG(LogTemp, Log, TEXT("%s: Driving input bound to %s (12 bindings)."), *GetName(), *Vehicle->GetName());
 }

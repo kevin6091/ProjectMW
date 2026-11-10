@@ -9,6 +9,7 @@
 #include "MWVehiclePawn.generated.h"
 
 class UMWInputData;
+class UMWItemComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UBoxComponent;
@@ -55,6 +56,7 @@ public:
 	const FMWVehicleDriveInput& GetDriveInput() const { return DriveInput; }
 	UMWInputData* GetDrivingInputData() const { return DrivingInputData; }
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
+	UMWItemComponent* GetItemComponent() const { return ItemComponent; }
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
@@ -84,6 +86,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Drive")
 	TObjectPtr<UMWVehicleMovementComponent> VehicleMovement;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Items")
+	TObjectPtr<UMWItemComponent> ItemComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category="MW|Input")
 	TObjectPtr<UMWInputData> DrivingInputData;

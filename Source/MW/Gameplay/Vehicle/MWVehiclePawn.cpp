@@ -1,6 +1,7 @@
 
 
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 
 #include "Components/BoxComponent.h"
@@ -31,6 +32,7 @@ AMWVehiclePawn::AMWVehiclePawn()
 
 	VehicleMovement = CreateDefaultSubobject<UMWVehicleMovementComponent>(TEXT("VehicleMovement"));
 	VehicleMovement->SetUpdatedComponent(CollisionRoot);
+	ItemComponent = CreateDefaultSubobject<UMWItemComponent>(TEXT("Items"));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -171,6 +173,7 @@ void AMWVehiclePawn::UnPossessed()
 {
 	DriveInput = FMWVehicleDriveInput{};
 	VehicleMovement->ResetDriveInput();
+	ItemComponent->ResetItemState();
 	Super::UnPossessed();
 	if (HasActorBegunPlay())
 	{
@@ -183,6 +186,7 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 	Super::TeleportSucceeded(bIsATest);
 	if (!bIsATest)
 	{
+		ItemComponent->ResetItemState();
 		bVisualLocationValid = false;
 		DriveInput = FMWVehicleDriveInput{};
 		if (HasActorBegunPlay())

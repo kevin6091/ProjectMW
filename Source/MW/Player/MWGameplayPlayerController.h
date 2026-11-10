@@ -55,4 +55,5 @@ private:
 	void StopSteer();
 	void StartDrift();
 	void StopDrift();
+	void HandleUseItem();
 };
