@@ -347,8 +347,14 @@ void AMWLobbyHUD::HandleLobbyChanged() { RefreshLobbyScreen(); }
 void AMWLobbyHUD::HandlePlayerStateChanged() { RefreshLobbyScreen(); }
 void AMWLobbyHUD::HandleActionErrorChanged()
 {
-	if (auto* PC = BoundController.Get(); VehicleSelectionWidget && PC && !PC->GetLobbyActionError().IsEmpty())
-		VehicleSelectionWidget->FinishSelectionRequest(FText::FromString(PC->GetLobbyActionError()));
+	if (VehicleSelectionWidget)
+	{
+		if (const auto* PC = BoundController.Get(); PC && !PC->GetLobbyActionError().IsEmpty())
+		{
+			VehicleSelectionWidget->FinishSelectionRequest(FText::FromString(PC->GetLobbyActionError()));
+		}
+		return;
+	}
 	RefreshLobbyScreen();
 }
 

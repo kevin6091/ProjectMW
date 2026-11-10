@@ -36,6 +36,12 @@ private:
 		TArray<FMovedPart> Parts;
 	};
 
+	struct FRiderTrigger
+	{
+		const FMWTrackShapeData* Shape = nullptr;
+		TSet<TWeakObjectPtr<AMWVehiclePawn>> Riders;
+	};
+
 	struct FTrafficSlot
 	{
 		TWeakObjectPtr<UChildActorComponent> Visual;
@@ -57,18 +63,25 @@ private:
 	void OnTrigger(UPrimitiveComponent* Overlapped, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
 		int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep);
 
+	UFUNCTION()
+	void OnRiderEndOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+		UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex);
+
 	UPrimitiveComponent* CreateShape(const FMWTrackShapeData& Shape);
 	void UpdateTrain(double Time);
+	void SetTrainActive(bool bActive);
 	void ConfigureTraffic();
 	void UpdateTraffic(double Time);
 	void SetTrafficActive(FTrafficSlot& Slot, bool bActive);
 	void SetTrainBell(bool bActive);
 	void UpdateLift(double Time, float DeltaTime);
 	void ApplyMotions(double Time, float GateAlpha);
+	void ApplyRollers();
 	double GetRaceTime() const;
 
 	const FMWTrackPieceRuntimeData* Piece = nullptr;
 	TMap<UPrimitiveComponent*, const FMWTrackShapeData*> Triggers;
+	TMap<UPrimitiveComponent*, FRiderTrigger> RiderTriggers;
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> RoadCollision;
 	TArray<FMotion> Motions;
 	TArray<TWeakObjectPtr<UStaticMeshComponent>> Train;
@@ -77,6 +90,7 @@ private:
 	TWeakObjectPtr<UAudioComponent> Bell;
 	TArray<FTrafficSlot> Traffic;
 	TArray<FTrafficLaneState> TrafficLaneStates;
+	bool bTrainActive = false;
 	bool bBellActive = false;
 	FVector TrainCenter = FVector::ZeroVector;
 	double LiftActiveAt = -1;

@@ -119,7 +119,6 @@ void UMWVehicleSelectionWidget::NativeDestruct()
 	if (IsValid(Button_Reset)) Button_Reset->OnClicked.RemoveDynamic(this, &ThisClass::HandleReset);
 	if (IsValid(Button_Back)) Button_Back->OnClicked.RemoveDynamic(this, &ThisClass::HandleBack);
 	if (IsValid(Button_Refresh)) Button_Refresh->OnClicked.RemoveDynamic(this, &ThisClass::RefreshVehicles);
-	if (AMWLobbyGameState* State = BoundGameState.Get()) State->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshPlayers);
 	BoundGameState.Reset();
 	if (IsValid(Button_NextPreviewScenario)) Button_NextPreviewScenario->OnClicked.RemoveDynamic(this, &ThisClass::HandleNextPreviewScenario);
 	if (IsValid(Button_NextPreviewLocalPlayer)) Button_NextPreviewLocalPlayer->OnClicked.RemoveDynamic(this, &ThisClass::HandleNextPreviewLocalPlayer);
@@ -581,10 +580,8 @@ void UMWVehicleSelectionWidget::RefreshPlayers()
 	AMWLobbyGameState* State = !bPreviewOnly && GetWorld() ? GetWorld()->GetGameState<AMWLobbyGameState>() : nullptr;
 	if (BoundGameState.Get() != State)
 	{
-		if (AMWLobbyGameState* Old = BoundGameState.Get()) Old->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshPlayers);
 		PlayerSlots.Reset();
 		BoundGameState = State;
-		if (State) State->OnLobbyChanged.AddUniqueDynamic(this, &ThisClass::RefreshPlayers);
 	}
 	ParticipantViews.Reset();
 	if (bPreviewOnly) BuildPreviewParticipants();
@@ -778,9 +775,15 @@ void UMWVehicleSelectionWidget::HandleCardChosen(UMWVehicleCardWidget* Card)
 	if (UMWVehicleCardWidget* Previous = SelectedCard.Get()) Previous->SetSelected(false);
 	SelectedCard = Card;
 	Card->SetSelected(true);
-	RefreshPlayers();
-	RefreshControls();
-	if (!bPreviewOnly) HandleConfirm();
+	if (bPreviewOnly)
+	{
+		RefreshPlayers();
+		RefreshControls();
+	}
+	else
+	{
+		HandleConfirm();
+	}
 }
 
 void UMWVehicleSelectionWidget::HandleSecretVehicleChosen()
@@ -835,7 +838,7 @@ void UMWVehicleSelectionWidget::FinishSelectionRequest(const FText& Message)
 	}
 	if (IsValid(Text_Error)) Text_Error->SetText(Message);
 	RefreshPlayers();
-	RefreshControls();
+	if (bPreviewOnly) RefreshControls();
 }
 
 FGameplayTag UMWVehicleSelectionWidget::GetCancelableVehicleId() const

@@ -188,6 +188,11 @@ UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeDa
 		SetTriggerCollision(*Component);
 		Component->ComponentTags.Add(TriggerTag);
 		Triggers.Add(Component, &Shape);
+		if (Shape.Trigger == EMWTrackTrigger::Roller || Shape.Trigger == EMWTrackTrigger::LiftRide)
+		{
+			RiderTriggers.Add(Component).Shape = &Shape;
+			Component->OnComponentEndOverlap.AddDynamic(this, &UMWTrackRuntimeComponent::OnRiderEndOverlap);
+		}
 		Component->OnComponentBeginOverlap.AddDynamic(this, &UMWTrackRuntimeComponent::OnTrigger);
 	}
 	Actor.AddInstanceComponent(Component);
@@ -216,11 +221,11 @@ void UMWTrackRuntimeComponent::SetPreview(bool bInPreview)
 	}
 	if (bPreview)
 	{
-		for (const TWeakObjectPtr<UStaticMeshComponent>& Visual : Train)
+		for (auto& Trigger : RiderTriggers)
 		{
-			if (Visual.IsValid()) Visual->SetHiddenInGame(true);
+			Trigger.Value.Riders.Reset();
 		}
-		if (TrainHitbox.IsValid()) TrainHitbox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		SetTrainActive(false);
 		SetTrainBell(false);
 		for (FTrafficSlot& Slot : Traffic)
 		{
@@ -245,7 +250,16 @@ void UMWTrackRuntimeComponent::OnTrigger(UPrimitiveComponent* Overlapped, AActor
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)
 {
 	AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(OtherActor);
-	if (bPreview || !Vehicle || (!Vehicle->HasAuthority() && !Vehicle->IsLocallyControlled()))
+	if (bPreview || !Vehicle)
+	{
+		return;
+	}
+	if (FRiderTrigger* RiderTrigger = RiderTriggers.Find(Overlapped))
+	{
+		RiderTrigger->Riders.Add(Vehicle);
+		return;
+	}
+	if (!Vehicle->HasAuthority() && !Vehicle->IsLocallyControlled())
 	{
 		return;
 	}
@@ -284,6 +298,18 @@ void UMWTrackRuntimeComponent::OnTrigger(UPrimitiveComponent* Overlapped, AActor
 	}
 }
 
+void UMWTrackRuntimeComponent::OnRiderEndOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
+{
+	AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(OtherActor);
+	FRiderTrigger* RiderTrigger = RiderTriggers.Find(Overlapped);
+	// Another body of the same pawn can still be on this trigger.
+	if (Vehicle && RiderTrigger && !Overlapped->IsOverlappingActor(Vehicle))
+	{
+		RiderTrigger->Riders.Remove(Vehicle);
+	}
+}
+
 void UMWTrackRuntimeComponent::UpdateLift(double Time, float DeltaTime)
 {
 	const FMotion* Lift = Motions.FindByPredicate([](const FMotion& Motion) { return Motion.Data.Type == EMWTrackMotion::Lift; });
@@ -295,18 +321,25 @@ void UMWTrackRuntimeComponent::UpdateLift(double Time, float DeltaTime)
 		? Lift->Data.Amount : 0.f;
 	const float PreviousHeight = LiftHeight;
 	LiftHeight = FMath::FInterpConstantTo(LiftHeight, Target, DeltaTime, Lift->Data.Rate);
-	if (LiftRide.IsValid() && !FMath::IsNearlyEqual(LiftHeight, PreviousHeight))
+	FRiderTrigger* RiderTrigger = RiderTriggers.Find(LiftRide.Get());
+	if (!RiderTrigger || FMath::IsNearlyEqual(LiftHeight, PreviousHeight))
 	{
-		TArray<AActor*> Riders;
-		LiftRide->GetOverlappingActors(Riders, AMWVehiclePawn::StaticClass());
-		const FVector Delta = GetOwner()->GetActorTransform().TransformVector(FVector(0, 0, LiftHeight - PreviousHeight));
-		for (AActor* Rider : Riders)
+		return;
+	}
+
+	// Moving a pawn can dispatch overlaps and change the set during this update.
+	TArray<TWeakObjectPtr<AMWVehiclePawn>, TInlineAllocator<4>> Riders;
+	for (auto It = RiderTrigger->Riders.CreateIterator(); It; ++It)
+	{
+		if (It->IsValid()) Riders.Add(*It);
+		else It.RemoveCurrent();
+	}
+	const FVector Delta = GetOwner()->GetActorTransform().TransformVector(FVector(0, 0, LiftHeight - PreviousHeight));
+	for (const TWeakObjectPtr<AMWVehiclePawn>& Rider : Riders)
+	{
+		if (AMWVehiclePawn* Vehicle = Rider.Get(); Vehicle && (Vehicle->HasAuthority() || Vehicle->IsLocallyControlled()))
 		{
-			AMWVehiclePawn* Vehicle = CastChecked<AMWVehiclePawn>(Rider);
-			if (Vehicle->HasAuthority() || Vehicle->IsLocallyControlled())
-			{
-				Vehicle->AddActorWorldOffset(Delta, false, nullptr, ETeleportType::None);
-			}
+			Vehicle->AddActorWorldOffset(Delta, false, nullptr, ETeleportType::None);
 		}
 	}
 }
@@ -360,7 +393,11 @@ void UMWTrackRuntimeComponent::UpdateTrain(double Time)
 	const int32 Cycle = FMath::FloorToInt(Time / Interval);
 	const double Phase = FMath::Fmod(Time, Interval);
 	constexpr double TransitSeconds = 2.5;
-	const bool bOnRails = Phase < TransitSeconds;
+	if (Phase >= TransitSeconds)
+	{
+		SetTrainActive(false);
+		return;
+	}
 	const FTransform& Rail = Piece->Rails[Cycle % Piece->Rails.Num()];
 	const double Distance = FMath::Lerp(-4400.0, 4400.0, Phase / TransitSeconds);
 	FTransform Route = Rail;
@@ -369,17 +406,30 @@ void UMWTrackRuntimeComponent::UpdateTrain(double Time)
 	{
 		if (UStaticMeshComponent* Visual = Train[Index].Get())
 		{
-			Visual->SetHiddenInGame(!bOnRails);
-			if (bOnRails) Visual->SetRelativeTransform(Piece->TrainParts[Index].Local * Route);
+			Visual->SetRelativeTransform(Piece->TrainParts[Index].Local * Route);
 		}
 	}
-	if (UBoxComponent* Hit = Cast<UBoxComponent>(TrainHitbox.Get()))
+	if (UPrimitiveComponent* Hit = TrainHitbox.Get())
 	{
-		if (bOnRails)
-		{
-			Hit->SetRelativeTransform(FTransform(TrainCenter) * Route);
-		}
-		Hit->SetCollisionEnabled(bOnRails ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+		Hit->SetRelativeTransform(FTransform(TrainCenter) * Route);
+	}
+	SetTrainActive(true);
+}
+
+void UMWTrackRuntimeComponent::SetTrainActive(bool bActive)
+{
+	if (bTrainActive == bActive)
+	{
+		return;
+	}
+	bTrainActive = bActive;
+	for (const TWeakObjectPtr<UStaticMeshComponent>& Part : Train)
+	{
+		if (UStaticMeshComponent* Visual = Part.Get()) Visual->SetHiddenInGame(!bActive);
+	}
+	if (UPrimitiveComponent* Hit = TrainHitbox.Get())
+	{
+		Hit->SetCollisionEnabled(bActive ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 	}
 }
 
@@ -563,18 +613,29 @@ void UMWTrackRuntimeComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	}
 	UpdateLift(Time, DeltaTime);
 	ApplyMotions(Time, GateAlpha);
-	for (const TPair<UPrimitiveComponent*, const FMWTrackShapeData*>& Trigger : Triggers)
+	ApplyRollers();
+}
+
+void UMWTrackRuntimeComponent::ApplyRollers()
+{
+	for (auto& Trigger : RiderTriggers)
 	{
-		if (Trigger.Value->Trigger != EMWTrackTrigger::Roller) continue;
-		TArray<AActor*> Overlapping;
-		Trigger.Key->GetOverlappingActors(Overlapping, AMWVehiclePawn::StaticClass());
-		for (AActor* Actor : Overlapping)
+		FRiderTrigger& Entry = Trigger.Value;
+		if (Entry.Shape->Trigger != EMWTrackTrigger::Roller || Entry.Riders.IsEmpty()) continue;
+		const FVector Velocity = Trigger.Key->GetForwardVector() * Entry.Shape->Amount;
+		for (auto It = Entry.Riders.CreateIterator(); It; ++It)
 		{
-			AMWVehiclePawn* Vehicle = CastChecked<AMWVehiclePawn>(Actor);
-			if (Vehicle->HasAuthority() || Vehicle->IsLocallyControlled())
+			if (AMWVehiclePawn* Vehicle = It->Get())
 			{
-				CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->ApplyTrackSurfaceVelocity(
-					Trigger.Key->GetForwardVector() * Trigger.Value->Amount, 0.10f);
+				if (Vehicle->HasAuthority() || Vehicle->IsLocallyControlled())
+				{
+					CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->ApplyTrackSurfaceVelocity(
+						Velocity, 0.10f);
+				}
+			}
+			else
+			{
+				It.RemoveCurrent();
 			}
 		}
 	}
