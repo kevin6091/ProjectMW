@@ -1,5 +1,6 @@
 #include "Gameplay/Construction/MWTrackSnap.h"
 
+#include "Algo/AnyOf.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 
@@ -16,29 +17,16 @@ namespace
 		return (Ports[0].GetLocation() + Ports[1].GetLocation()) * 0.5;
 	}
 
-	FTransform AlignPorts(const FTransform& Source, const FTransform& Target)
+	bool ReadLocalFrame(const AActor& Track, FName Name, FTransform& OutFrame)
 	{
-		// 두 바깥 방향을 마주 보게 하고 도로 위쪽은 유지한다. UE 합성은 왼쪽부터 적용한다.
-		return Source.Inverse() * ReverseFrame(Target);
-	}
-}
-
-bool MWTrackSnap::ReadPorts(const AActor& Track, FMWTrackPortFrames& OutPorts)
-{
-	static const FName PointNames[] = { TEXT("ConnectionPoint1"), TEXT("ConnectionPoint2") };
-	// 기존 WoodenStraight의 SceneComponent 규약. +Y는 각 끝점에서 도로 안쪽을 향한다.
-	// 계산에서는 로컬 -Y를 +X로 옮겨 양쪽 모두 바깥 방향을 가진 프레임으로 통일한다.
-	const FQuat PortBasis(FVector::UpVector, -UE_HALF_PI);
-	if (!Track.GetActorScale3D().Equals(FVector::OneVector, KINDA_SMALL_NUMBER))
-	{
-		return false;
-	}
-	TInlineComponentArray<USceneComponent*> Components(&Track);
-	for (int32 Index = 0; Index < 2; ++Index)
-	{
-		const USceneComponent* const* Point = Components.FindByPredicate([Index](const USceneComponent* Component)
+		if (!Track.GetActorScale3D().Equals(FVector::OneVector, KINDA_SMALL_NUMBER))
 		{
-			return Component->GetFName() == PointNames[Index];
+			return false;
+		}
+		TInlineComponentArray<USceneComponent*> Components(&Track);
+		const USceneComponent* const* Point = Components.FindByPredicate([Name](const USceneComponent* Component)
+		{
+			return Component->GetFName() == Name;
 		});
 		if (!Point)
 		{
@@ -50,11 +38,44 @@ bool MWTrackSnap::ReadPorts(const AActor& Track, FMWTrackPortFrames& OutPorts)
 		{
 			return false;
 		}
-
-		// 중첩된 BP의 스케일은 이미 끝점 위치에 반영되어 있다. 방향 프레임에는 넘기지 않는다.
-		OutPorts[Index] = FTransform((Local.GetRotation() * PortBasis).GetNormalized(), Local.GetLocation());
+		// 중첩 BP의 스케일은 위치에만 반영하고 연결 프레임으로 넘기지 않는다.
+		OutFrame = FTransform(Local.GetRotation(), Local.GetLocation());
+		return true;
 	}
-	return !OutPorts[0].GetLocation().Equals(OutPorts[1].GetLocation(), KINDA_SMALL_NUMBER);
+
+	bool ReadPort(const AActor& Track, FName Name, FTransform& OutPort)
+	{
+		if (!ReadLocalFrame(Track, Name, OutPort))
+		{
+			return false;
+		}
+		// BP의 +Y는 도로 안쪽이다. 계산에서는 +X가 바깥을 향하도록 바꾼다.
+		const FQuat PortBasis(FVector::UpVector, -UE_HALF_PI);
+		OutPort.SetRotation((OutPort.GetRotation() * PortBasis).GetNormalized());
+		return true;
+	}
+}
+
+bool MWTrackSnap::ReadFirstPort(const AActor& Track, FTransform& OutPort)
+{
+	return ReadPort(Track, TEXT("ConnectionPoint1"), OutPort);
+}
+
+bool MWTrackSnap::ReadPorts(const AActor& Track, FMWTrackPortFrames& OutPorts)
+{
+	return ReadFirstPort(Track, OutPorts[0]) && ReadPort(Track, TEXT("ConnectionPoint2"), OutPorts[1])
+		&& !OutPorts[0].GetLocation().Equals(OutPorts[1].GetLocation(), KINDA_SMALL_NUMBER);
+}
+
+bool MWTrackSnap::ReadStartGrid(const AActor& Track, FTransform& OutFrame)
+{
+	return ReadLocalFrame(Track, TEXT("StartGrid"), OutFrame);
+}
+
+FTransform MWTrackSnap::AlignPorts(const FTransform& Source, const FTransform& Target)
+{
+	// 두 바깥 방향을 마주 보게 하고 도로 위쪽은 유지한다. UE 합성은 왼쪽부터 적용한다.
+	return Source.Inverse() * ReverseFrame(Target);
 }
 
 FTransform MWTrackSnap::MakeRawTransform(const FMWTrackPortFrames& Ports, const FMWTrackPlacementSession& Session,
@@ -67,8 +88,21 @@ FTransform MWTrackSnap::MakeRawTransform(const FMWTrackPortFrames& Ports, const 
 
 bool MWTrackSnap::IsInBuildArea(const FMWTrackPlacementIntent& Intent, const FMWTrackPlacementSession& Session)
 {
-	return !Intent.CursorLocation.ContainsNaN()
-		&& FVector::DistSquared(Intent.CursorLocation, Session.BuildOrigin) <= FMath::Square(BuildRadius * Session.LayoutScale);
+	if (Intent.CursorLocation.ContainsNaN())
+	{
+		return false;
+	}
+	const double RadiusSquared = FMath::Square(BuildRadius * Session.LayoutScale);
+	if (FVector::DistSquared(Intent.CursorLocation, Session.BuildOrigin) <= RadiusSquared)
+	{
+		return true;
+	}
+
+	// 코스가 길어지면 시작점에서 멀어져도 마지막 연결점 주변에서 설치할 수 있다.
+	return Algo::AnyOf(Session.OpenEnds, [&](const FMWOpenTrackEnd& End)
+	{
+		return FVector::DistSquared(Intent.CursorLocation, End.WorldFrame.GetLocation()) <= RadiusSquared;
+	});
 }
 
 bool MWTrackSnap::Resolve(const FMWTrackPortFrames& Ports, const FMWTrackPlacementSession& Session,
