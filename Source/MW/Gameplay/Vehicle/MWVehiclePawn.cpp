@@ -3,6 +3,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Vehicle/Visual/MWVehicleSkidMarkComponent.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -97,6 +98,8 @@ void AMWVehiclePawn::InitializeWheelVisuals()
         Wheel.bSteers = Definition.bSteers;
         Wheel.MaxSteeringRadians = FMath::DegreesToRadians(Definition.MaxSteeringAngleDegrees);
     }
+    bHasRearSkidWheels = CachedVisualWheels.ContainsByPredicate(
+        [](const FCachedVisualWheel& Wheel) { return !Wheel.bSteers; });
     if (!CachedVisualWheels.IsEmpty()) AddTickPrerequisiteComponent(VehicleMovement);
 }
 
@@ -115,6 +118,7 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
     if (Location.ContainsNaN()) { bVisualLocationValid = false; return; }
     const bool bNewVisualStream = VisualStreamId != ServerDriveSnapshot.StreamId;
     VisualStreamId = ServerDriveSnapshot.StreamId;
+    const bool bResetSkidTrail = !bVisualLocationValid || bNewVisualStream;
     const double Distance = bVisualLocationValid && !bNewVisualStream ? FVector::DotProduct(Location - PreviousVisualLocation, GetActorForwardVector()) : 0;
     PreviousVisualLocation = Location;
     bVisualLocationValid = true;
@@ -143,6 +147,43 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
         Rotation.Normalize();
         if (!Mesh->GetRelativeRotation().Quaternion().Equals(Rotation, 1.e-6))
             Mesh->SetRelativeRotation(Rotation, false, nullptr, ETeleportType::None);
+    }
+
+    UpdateSkidMarks(bResetSkidTrail, ActorScale);
+}
+
+void AMWVehiclePawn::UpdateSkidMarks(bool bResetTrail, double ActorScale)
+{
+    // Only the local Pawn has a trustworthy drift input and movement state.
+    if (!IsLocallyControlled() || !VehicleMovement || !VehicleMovement->IsDriftControlActive())
+    {
+        if (SkidMarks) SkidMarks->ResetTrail();
+        return;
+    }
+
+    const UPrimitiveComponent* DriveCollision = Cast<UPrimitiveComponent>(RootComponent);
+    if (!DriveCollision)
+    {
+        return;
+    }
+
+    if (!SkidMarks)
+    {
+        SkidMarks = NewObject<UMWVehicleSkidMarkComponent>(this, TEXT("SkidMarks"), RF_Transient);
+        SkidMarks->RegisterComponent();
+    }
+    if (bResetTrail)
+    {
+        SkidMarks->ResetTrail();
+    }
+
+    for (int32 Index = 0; Index < CachedVisualWheels.Num(); ++Index)
+    {
+        const FCachedVisualWheel& Wheel = CachedVisualWheels[Index];
+        if (const UStaticMeshComponent* Mesh = Wheel.Mesh.Get(); Mesh && (!bHasRearSkidWheels || !Wheel.bSteers))
+        {
+            SkidMarks->SampleWheel(Index, Mesh->GetComponentLocation(), Wheel.RadiusCm * ActorScale, *DriveCollision);
+        }
     }
 }
 

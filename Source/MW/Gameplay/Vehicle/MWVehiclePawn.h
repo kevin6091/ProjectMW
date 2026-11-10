@@ -14,6 +14,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UBoxComponent;
 class UMWVehicleMovementComponent;
+class UMWVehicleSkidMarkComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 
@@ -122,6 +123,11 @@ private:
     FDelegateHandle VisualRootTransformHandle;
     void InitializeWheelVisuals();
     void UpdateWheelVisuals(float DeltaSeconds);
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMWVehicleSkidMarkComponent> SkidMarks;
+    bool bHasRearSkidWheels = false;
+    void UpdateSkidMarks(bool bResetTrail, double ActorScale);
 
 
 
