@@ -63,7 +63,7 @@ bool UMWVehicleSelectionWidget::ConfigureSharedCursorVisual(UUserWidget& Visual,
 	if (!SlotIndex || !ParticipantViews.IsValidIndex(*SlotIndex)) return false;
 	FMWVehiclePlayerPresentation View = ParticipantViews[*SlotIndex];
 	View.bLocal = false;
-	Marker->SetPresentation(View);
+	Marker->SetPresentation(View, /*bShowCursorName=*/true);
 	// 소프트웨어 커서는 DPI 배율을 곱한 픽셀 크기, 오버레이는 DPI 적용 전 논리 크기를 사용한다.
 	OutLayout.DesignSize = FVector2D(MWPointerDesignSize);
 	OutLayout.DisplaySize = LocalSlot->GetSize() * FMath::Clamp(RemoteCursorScale, 0.f, 1.f);
@@ -197,7 +197,7 @@ void UMWVehicleSelectionWidget::RefreshLocalCursor()
 
 	// The selection screen owns the viewport cursor even outside the board's hit area.
 	RegisterSoftwareCursor();
-	if (IsValid(SoftwareCursor)) SoftwareCursor->SetPresentation(*LocalView);
+	if (IsValid(SoftwareCursor)) SoftwareCursor->SetPresentation(*LocalView, /*bShowCursorName=*/true);
 }
 
 FVector2D UMWVehicleSelectionWidget::GetSoftwareCursorSize() const
@@ -469,6 +469,13 @@ FLinearColor UMWVehicleSelectionWidget::GetParticipantTint(int32 SlotIndex) cons
 	return ParticipantTints.IsValidIndex(SlotIndex) ? ParticipantTints[SlotIndex] : FallbackParticipantTint;
 }
 
+FLinearColor UMWVehicleSelectionWidget::GetParticipantTintForMember(int32 MemberId) const
+{
+	return MemberId > 0 && !ParticipantTints.IsEmpty()
+		? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
+		: FallbackParticipantTint;
+}
+
 FMWVehiclePlayerPresentation UMWVehicleSelectionWidget::MakeWaitingPresentation() const
 {
 	FMWVehiclePlayerPresentation View;
@@ -662,9 +669,7 @@ void UMWVehicleSelectionWidget::BuildLobbyParticipants(AMWLobbyGameState* State)
 
 		const int32 MemberId = Player->GetLobbyMemberId();
 
-		View.PlayerTint = MemberId > 0 && !ParticipantTints.IsEmpty()
-			? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
-			: FallbackParticipantTint;
+		View.PlayerTint = GetParticipantTintForMember(MemberId);
 
 		View.bOccupied = true;
 

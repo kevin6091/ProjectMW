@@ -3,7 +3,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 
-void UMWVehiclePlayerMarkerWidget::SetPresentation(const FMWVehiclePlayerPresentation& Player)
+void UMWVehiclePlayerMarkerWidget::SetPresentation(const FMWVehiclePlayerPresentation& Player, bool bShowCursorName)
 {
 	if (!IsValid(Image_Badge) || !IsValid(Text_Player) || !IsValid(Text_State)) return;
 	SetRenderOpacity(Player.bConfirmed ? ConfirmedOpacity : Player.bHoverPreview ? HoverOpacity : SelectingOpacity);
@@ -12,6 +12,15 @@ void UMWVehiclePlayerMarkerWidget::SetPresentation(const FMWVehiclePlayerPresent
 	Text_Player->SetText(Player.MarkerText);
 	Text_State->SetText(Player.bConfirmed ? ConfirmedText : Player.bHoverPreview ? HoverText : SelectingText);
 	SetToolTipText(Player.PlayerName);
+	if (IsValid(CursorPlayerName))
+	{
+		const bool bShowName = bShowCursorName && !Player.PlayerName.IsEmpty();
+		if (bShowName && !CursorPlayerName->GetText().IdenticalTo(Player.PlayerName))
+		{
+			CursorPlayerName->SetText(Player.PlayerName);
+		}
+		CursorPlayerName->SetVisibility(bShowName ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 	if (IsValid(LocalIndicator)) LocalIndicator->SetVisibility(Player.bLocal
 		? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }

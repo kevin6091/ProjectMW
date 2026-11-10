@@ -58,6 +58,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle UI|Preview") void SelectPreviewLocalSlot(int32 SlotIndex);
 	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle UI|Preview") void SetPreviewControlsVisible(bool bVisible);
 	void SetWorldPreviewMarkerScales(float PinnedScale, float CardScale);
+	FLinearColor GetParticipantTintForMember(int32 MemberId) const;
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle UI|Preview") int32 GetActivePreviewScenarioIndex() const { return ActivePreviewScenarioIndex; }
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle UI") int32 GetDisplayedSlotCount() const { return ParticipantViews.Num(); }
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle UI") TArray<FMWVehiclePlayerPresentation> GetParticipantPresentation() const { return ParticipantViews; }

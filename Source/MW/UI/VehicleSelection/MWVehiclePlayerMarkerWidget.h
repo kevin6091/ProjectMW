@@ -14,7 +14,7 @@ class MW_API UMWVehiclePlayerMarkerWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetPresentation(const FMWVehiclePlayerPresentation& Player);
+	void SetPresentation(const FMWVehiclePlayerPresentation& Player, bool bShowCursorName = false);
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Marker") FText SelectingText;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Marker") FText ConfirmedText;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Marker") FText HoverText;
@@ -28,4 +28,6 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_Player;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_State;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> LocalIndicator;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> CursorPlayerName;
 };
