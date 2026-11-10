@@ -195,6 +195,7 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 void AMWVehiclePawn::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	CollisionRoot->SetGenerateOverlapEvents(true);
 
 	if (!DrivingCollisionMesh)
 	{

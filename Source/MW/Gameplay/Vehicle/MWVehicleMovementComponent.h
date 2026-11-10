@@ -39,6 +39,11 @@ public:
 	bool IsGrounded() const { return bGrounded; }
 
 	void ResetDriveInput();
+	void ApplyTrackBoost(float MinimumThrottle, float Duration);
+	void ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration);
+
+	UFUNCTION(BlueprintPure, Category="MW|Drive")
+	bool IsTrackBoostActive() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -61,6 +66,10 @@ private:
 	FMWVehicleDriveInput DriveInput;
 
 	bool bDriveConfigReady = false;
+	float TrackMinimumThrottle = 0.f;
+	double TrackBoostEndTime = -1.0;
+	FVector TrackSurfaceVelocity = FVector::ZeroVector;
+	double TrackSurfaceEndTime = -1.0;
 
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 

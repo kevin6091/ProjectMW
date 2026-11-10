@@ -112,9 +112,28 @@ void UMWVehicleMovementComponent::ResetDriveInput()
 	ConsumeInputVector();
 }
 
+void UMWVehicleMovementComponent::ApplyTrackBoost(float MinimumThrottle, float Duration)
+{
+	TrackMinimumThrottle = FMath::Clamp(MinimumThrottle, 0.f, 1.f);
+	TrackBoostEndTime = GetWorld()->GetTimeSeconds() + Duration;
+}
+
+void UMWVehicleMovementComponent::ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration)
+{
+	TrackSurfaceVelocity = VelocityCmPerSecond;
+	TrackSurfaceEndTime = GetWorld()->GetTimeSeconds() + Duration;
+}
+
+bool UMWVehicleMovementComponent::IsTrackBoostActive() const
+{
+	return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
+}
+
 void UMWVehicleMovementComponent::OnTeleported()
 {
 	Super::OnTeleported();
+	TrackBoostEndTime = -1.0;
+	TrackSurfaceEndTime = -1.0;
 	ResetDriveInput();
 	bGrounded = false;
 	GroundNormal = FVector::UpVector;
@@ -271,7 +290,8 @@ void UMWVehicleMovementComponent::ResolveDriveControl(float& OutThrottle, float&
 		return;
 	}
 
-	const float ForwardRequest = DriveInput.Throttle;
+	const float ForwardRequest = IsTrackBoostActive() && DriveInput.Reverse <= KINDA_SMALL_NUMBER
+		? FMath::Max(DriveInput.Throttle, TrackMinimumThrottle) : DriveInput.Throttle;
 	const float ReverseRequest = DriveInput.Reverse;
 
 	const bool bForwardRequested = ForwardRequest > KINDA_SMALL_NUMBER;
@@ -532,6 +552,26 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 
 	const float MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
 	FHitResult Hit;
+	const auto FindTrackFloor = [&]()
+	{
+		static const FName DriveCollisionTag(TEXT("MWTrackDriveCollision"));
+		const FBox Bounds = Collision->Bounds.GetBox();
+		const FVector Bottom(Bounds.GetCenter().X, Bounds.GetCenter().Y, Bounds.Min.Z);
+		constexpr double ProbeAboveCm = 4.0;
+		const FCollisionResponseParams Responses(Collision->GetCollisionResponseToChannels());
+		FHitResult Floor;
+		if (!World->LineTraceSingleByChannel(Floor, Bottom + FVector::UpVector * ProbeAboveCm,
+			Bottom - FVector::UpVector * DriveConfig.GroundProbeDistance, Collision->GetCollisionObjectType(),
+			FCollisionQueryParams(NAME_None, true, PawnOwner), Responses)
+			|| !Floor.IsValidBlockingHit() || !Floor.GetComponent()->ComponentHasTag(DriveCollisionTag)
+			|| FVector::DotProduct(Floor.ImpactNormal, FVector::UpVector) < MinGroundDot)
+		{
+			return false;
+		}
+		Hit = Floor;
+		Hit.Distance = FMath::Max(0.0, Floor.Distance - ProbeAboveCm);
+		return true;
+	};
 	if (Collision->IsA<UStaticMeshComponent>())
 	{
 		TArray<FHitResult> Hits;
@@ -558,8 +598,10 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 			const UStaticMesh* Mesh = CastChecked<UStaticMeshComponent>(Collision)->GetStaticMesh();
 			if (!bSideContact || !Mesh)
 			{
-				return;
+				if (!FindTrackFloor()) return;
 			}
+			else
+			{
 
 			const FBox Bounds = Mesh->GetBoundingBox();
 			const FVector Bottom = Collision->GetComponentTransform().TransformPosition(
@@ -571,7 +613,8 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 			{
 				return;
 			}
-			Hit.Distance = FMath::Max(0.f, Hit.Distance - ContactToleranceCm);
+				Hit.Distance = FMath::Max(0.f, Hit.Distance - ContactToleranceCm);
+			}
 		}
 	}
 	else
@@ -585,7 +628,7 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 			return World->SweepSingleByChannel(Hit, Start, End, Collision->GetComponentQuat(),
 				Collision->GetCollisionObjectType(), ProbeShape, QueryParams, ResponseParams);
 		};
-		if (!SweepGround(Shape))
+		if (!SweepGround(Shape) && !FindTrackFloor())
 		{
 			return;
 		}
@@ -600,14 +643,15 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 			ProbeExtent.X -= FMath::Min(SideInset, ProbeExtent.X * 0.5);
 			ProbeExtent.Y -= FMath::Min(SideInset, ProbeExtent.Y * 0.5);
 			Hit.Reset();
-			if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)))
+			if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)) && !FindTrackFloor())
 			{
 				return;
 			}
 		}
 	}
 
-	if (!Hit.IsValidBlockingHit() || FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+	if ((!Hit.IsValidBlockingHit() || FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+		&& !FindTrackFloor())
 	{
 		return;
 	}
@@ -648,7 +692,9 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		return;
 	}
 
-	const FVector MoveDelta = Velocity * DeltaTime;
+	const FVector SurfaceVelocity = GetWorld()->GetTimeSeconds() < TrackSurfaceEndTime
+		? TrackSurfaceVelocity : FVector::ZeroVector;
+	const FVector MoveDelta = (Velocity + SurfaceVelocity) * DeltaTime;
 
 	FHitResult Hit(1.f);
 

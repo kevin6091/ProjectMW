@@ -50,6 +50,7 @@ class MW_API AMWVehiclePawn : public APawn
 public:
 	AMWVehiclePawn();
 
+	UFUNCTION(BlueprintCallable, Category="MW|Drive")
 	void SubmitDriveInput(const FMWVehicleDriveInput& NewInput);
 	const FMWVehicleDriveInput& GetDriveInput() const { return DriveInput; }
 	UMWInputData* GetDrivingInputData() const { return DrivingInputData; }
