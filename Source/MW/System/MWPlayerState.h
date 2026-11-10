@@ -7,6 +7,7 @@
 #include "MWPlayerState.generated.h"
 
 class UMWPlayerCursorComponent;
+class UMWPlayerConstructionComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWPlayerStateChanged);
 
@@ -35,10 +36,7 @@ public:
 	void SetLobbyMemberIdFromServer(int32 Id);
 
 	UFUNCTION(BlueprintPure, Category = "MW|Vehicle")
-	FGameplayTag GetVehicleAssetID() const
-	{
-		return VehicleAssetID;
-	}
+	FGameplayTag GetVehicleAssetID() const { return VehicleAssetID; }
 
 	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
 	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
@@ -47,6 +45,10 @@ public:
 	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
 	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
 	FMWPlayerStateChanged OnPlayerStateChanged;
+	
+	// Construction
+	UFUNCTION(BlueprintPure, Category = "MW|Construction")
+	UMWPlayerConstructionComponent* GetPlayerConstructionComponent() const { return PlayerConstructionComponent; }
 
 	UFUNCTION(BlueprintPure, Category="MW|Cursor")
 	UMWPlayerCursorComponent* GetCursorComponent() const { return CursorComponent; }
@@ -72,6 +74,8 @@ private:
 	
 	UFUNCTION()
 	void OnRep_VehicleAssetID();
-
 	void NotifyPlayerStateChanged();
+	
+	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
+	UMWPlayerConstructionComponent* PlayerConstructionComponent;
 };

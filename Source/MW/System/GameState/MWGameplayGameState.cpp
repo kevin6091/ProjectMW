@@ -2,9 +2,15 @@
 
 
 #include "System/GameState/MWGameplayGameState.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 #include "LogChannel.h"
+
+AMWGameplayGameState::AMWGameplayGameState()
+{
+	TrackConstructionComponent = CreateDefaultSubobject<UMWTrackConstructionComponent>(TEXT("TrackConstructionComponent"));
+}
 
 void AMWGameplayGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
