@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "UI/MWVehicleUITypes.h"
+#include "UI/VehicleSelection/MWVehicleUITypes.h"
 #include "MWVehiclePlayerMarkerWidget.generated.h"
 
 class UImage;

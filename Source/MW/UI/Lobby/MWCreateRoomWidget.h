@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ComboBoxString.h"
-#include "UI/MWMenuTypes.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "System/MWRoomTypes.h"
 #include "MWCreateRoomWidget.generated.h"
 

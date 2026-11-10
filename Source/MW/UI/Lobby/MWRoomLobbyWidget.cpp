@@ -1,4 +1,4 @@
-#include "UI/MWRoomLobbyWidget.h"
+#include "UI/Lobby/MWRoomLobbyWidget.h"
 
 #include "Components/Button.h"
 #include "Components/TextBlock.h"

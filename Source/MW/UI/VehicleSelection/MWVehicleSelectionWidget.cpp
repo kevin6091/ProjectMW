@@ -1,4 +1,4 @@
-#include "UI/MWVehicleSelectionWidget.h"
+#include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
@@ -23,10 +23,10 @@
 #include "System/MWAssetManager.h"
 #include "System/GameState/MWLobbyGameState.h"
 #include "System/MWPlayerState.h"
-#include "UI/MWVehicleCardWidget.h"
-#include "UI/MWVehiclePlayerEntryWidget.h"
-#include "UI/MWVehiclePlayerMarkerWidget.h"
-#include "UI/MWPointerCursor.h"
+#include "UI/VehicleSelection/MWVehicleCardWidget.h"
+#include "UI/VehicleSelection/MWVehiclePlayerEntryWidget.h"
+#include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
+#include "UI/Cursor/MWPointerCursor.h"
 #include "UI/Cursor/MWCursorProjection.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
 

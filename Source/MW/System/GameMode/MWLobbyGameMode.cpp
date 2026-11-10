@@ -6,7 +6,7 @@
 #include "Engine/World.h"
 #include "GameFramework/GameSession.h"
 #include "LogChannel.h"
-#include "UI/MWLobbyHUD.h"
+#include "UI/Lobby/MWLobbyHUD.h"
 #include "GameFramework/Character.h"
 #include "Data/MWVehicleDefinitionData.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"

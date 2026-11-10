@@ -1,10 +1,10 @@
-#include "UI/MWRoomBrowserWidget.h"
+#include "UI/Lobby/MWRoomBrowserWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Engine/GameInstance.h"
 #include "System/MWGameInstance.h"
-#include "UI/MWRoomListEntryWidget.h"
+#include "UI/Lobby/MWRoomListEntryWidget.h"
 
 void UMWRoomBrowserWidget::NativeConstruct()
 {

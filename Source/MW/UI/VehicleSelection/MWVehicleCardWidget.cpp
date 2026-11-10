@@ -1,4 +1,4 @@
-#include "UI/MWVehicleCardWidget.h"
+#include "UI/VehicleSelection/MWVehicleCardWidget.h"
 
 #include "Components/Button.h"
 #include "Components/Image.h"
@@ -6,7 +6,7 @@
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "Data/MWVehicleDefinitionData.h"
-#include "UI/MWVehiclePlayerMarkerWidget.h"
+#include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 
 void UMWVehicleCardWidget::NativeConstruct()
 {

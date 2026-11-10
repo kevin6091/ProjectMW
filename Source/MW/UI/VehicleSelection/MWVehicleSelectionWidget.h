@@ -5,7 +5,7 @@
 #include "GameplayTagContainer.h"
 #include "Types/SlateEnums.h"
 #include "Layout/Margin.h"
-#include "UI/MWVehicleUITypes.h"
+#include "UI/VehicleSelection/MWVehicleUITypes.h"
 #include "MWVehicleSelectionWidget.generated.h"
 
 class AMWLobbyGameState;

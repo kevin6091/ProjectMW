@@ -1,4 +1,4 @@
-#include "UI/MWRoomListEntryWidget.h"
+#include "UI/Lobby/MWRoomListEntryWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 

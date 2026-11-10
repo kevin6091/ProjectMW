@@ -3,8 +3,8 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Containers/Ticker.h"
-#include "UI/MWTitleRootWidget.h"
-#include "UI/MWLobbyPresentation.h"
+#include "UI/Title/MWTitleRootWidget.h"
+#include "UI/Lobby/MWLobbyPresentation.h"
 #include "UCMTitlePreview.h"
 #include "MWUCMTitleFlow.generated.h"
 

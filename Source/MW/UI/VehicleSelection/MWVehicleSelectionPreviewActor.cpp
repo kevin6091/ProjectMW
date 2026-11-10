@@ -1,10 +1,10 @@
-#include "UI/MWVehicleSelectionPreviewActor.h"
+#include "UI/VehicleSelection/MWVehicleSelectionPreviewActor.h"
 
 #include "Components/WidgetComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
-#include "UI/MWVehicleSelectionWidget.h"
+#include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 
 AMWVehicleSelectionPreviewActor::AMWVehicleSelectionPreviewActor()
 {

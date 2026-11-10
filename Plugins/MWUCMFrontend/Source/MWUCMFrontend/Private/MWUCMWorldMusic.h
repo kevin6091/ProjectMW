@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "UI/MWMenuTypes.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "MWUCMWorldMusic.generated.h"
 
 class AGameStateBase;

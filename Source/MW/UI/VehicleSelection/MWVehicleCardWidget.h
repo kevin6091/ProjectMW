@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "GameplayTagContainer.h"
-#include "UI/MWVehicleUITypes.h"
+#include "UI/VehicleSelection/MWVehicleUITypes.h"
 #include "MWVehicleCardWidget.generated.h"
 
 class UButton;

@@ -1,4 +1,4 @@
-#include "UI/MWVehiclePlayerEntryWidget.h"
+#include "UI/VehicleSelection/MWVehiclePlayerEntryWidget.h"
 
 #include "Components/Image.h"
 #include "Components/TextBlock.h"

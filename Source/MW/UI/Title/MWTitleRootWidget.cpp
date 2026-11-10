@@ -1,4 +1,4 @@
-#include "UI/MWTitleRootWidget.h"
+#include "UI/Title/MWTitleRootWidget.h"
 
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -9,8 +9,8 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "System/MWGameInstance.h"
-#include "UI/MWCreateRoomWidget.h"
-#include "UI/MWRoomBrowserWidget.h"
+#include "UI/Lobby/MWCreateRoomWidget.h"
+#include "UI/Lobby/MWRoomBrowserWidget.h"
 
 void UMWTitleRootWidget::NativeConstruct()
 {

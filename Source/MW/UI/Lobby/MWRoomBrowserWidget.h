@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "UI/MWMenuTypes.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "MWRoomBrowserWidget.generated.h"
 
 class UButton;
