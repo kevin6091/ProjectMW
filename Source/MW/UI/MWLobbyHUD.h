@@ -47,8 +47,12 @@ private:
 	void OpenVehicleSelection();
 	void PresentVehicleSelection();
 	void CloseVehicleSelection();
+	void BeginVehicleDeparture();
+	bool bVehicleDepartureStarted = false;
 	UFUNCTION()
 	void HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID);
+	UFUNCTION()
+	void HandleVehicleSelectionCancelRequested(FGameplayTag ExpectedVehicleID);
 
 	// 비소유 참조를 사용해 맵 이동으로 파괴될 상태 객체를 붙잡지 않습니다.
 	TWeakObjectPtr<AMWLobbyGameState> BoundGameState;

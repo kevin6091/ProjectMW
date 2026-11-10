@@ -130,6 +130,7 @@ public:
     bool IsEntryPanelReady() const { return ActiveRegion != TEXT("RoomPanel") || bWorldRoutePresentationReady || !bWorldRouteActive; }
     virtual void SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection) override;
     virtual UWidgetComponent* GetVehicleSelectionSurface() const override;
+    virtual bool BeginVehicleDeparture(FSimpleDelegate OnCovered) override;
     // Presentation entry point for the existing vehicle UI. No readiness, selection RPC or phase approval is invented.
     UFUNCTION(BlueprintCallable, Category="MW Integration") bool ShowVehicleSelection();
     UFUNCTION(BlueprintCallable, Category="MW Integration") void CloseVehicleSelection();
@@ -168,6 +169,12 @@ private:
     const FMWUCMWorldRoute* FindRoute(FName Name) const;
     bool StartWorldRoute(FName Name, bool bReverse, FName Destination);
     void UpdateWorldRoute(float DeltaTime);
+    void UpdateVehicleDeparture();
+    void ClearVehicleDeparture();
+    FSimpleDelegate OnVehicleDepartureCovered;
+    TSharedPtr<SBorder> VehicleDepartureCover;
+    TWeakObjectPtr<UGameViewportClient> VehicleDepartureViewport;
+    bool bVehicleDepartureCovered = false;
     void SetWorldWidget(UUserWidget* Widget, FName Anchor);
     void UseWorldMouse();
     void StartFidelity();

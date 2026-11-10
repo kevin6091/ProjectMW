@@ -42,6 +42,7 @@ public:
 
 	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
 	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
+	bool ClearVehicleAssetIDFromServer(FGameplayTag ExpectedVehicleID);
 	
 	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
 	UPROPERTY(BlueprintAssignable, Category = "MW|Player")

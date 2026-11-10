@@ -22,8 +22,21 @@ void UMWVehiclePlayerEntryWidget::SetPresentation(const FMWVehiclePlayerPresenta
 	}
 	Image_Vehicle->SetBrushFromSoftTexture(Player.Thumbnail, true);
 	Image_Vehicle->SetVisibility(Player.Thumbnail.IsNull() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
-	if (IsValid(LocalIndicator)) LocalIndicator->SetVisibility(Player.bLocal
-		? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	const bool bHasSelectionFrame = IsValid(LocalFrame);
+	if (bHasSelectionFrame)
+	{
+		LocalFrame->SetBrushTintColor(FSlateColor(Player.PlayerTint));
+	}
+	if (IsValid(LocalIndicator))
+	{
+		if (bHasSelectionFrame)
+		{
+			// The authored legacy indicator is transparent. Visibility now controls the frame.
+			LocalIndicator->SetRenderOpacity(1.f);
+		}
+		const bool bShowFrame = bHasSelectionFrame ? Player.bOccupied && Player.bConfirmed : Player.bLocal;
+		LocalIndicator->SetVisibility(bShowFrame ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 	if (IsValid(SelectionDetails)) SelectionDetails->SetVisibility(Player.bOccupied
 		? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 }

@@ -41,7 +41,7 @@ struct FMWVehiclePreviewCard
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMWVehicleSelectionRequested, FGameplayTag, VehicleAssetID);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWVehicleSelectionBackRequested);
 
-UCLASS(Abstract)
+UCLASS(Abstract, Config=Game)
 class MW_API UMWVehicleSelectionWidget : public UUserWidget
 {
 	GENERATED_BODY()
@@ -70,6 +70,7 @@ public:
 	bool ConfigureSharedCursorVisual(UUserWidget& Visual, const AMWPlayerState* Player, FMWCursorVisualLayout& OutLayout) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionRequested OnSelectionRequested;
+	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionRequested OnSelectionCancelRequested;
 	UPROPERTY(BlueprintAssignable, Category = "MW|Vehicle UI") FMWVehicleSelectionBackRequested OnBackRequested;
 
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data") FGameplayTag VehicleAssetRoot;
@@ -85,6 +86,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") TArray<FLinearColor> ParticipantTints;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") FLinearColor FallbackParticipantTint;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer") FLinearColor WaitingSlotTint;
+	UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|Cursor", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RemoteCursorScale = 1.f;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") bool bPreviewOnly = false;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") bool bShowPreviewControls = true;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview") TArray<FMWVehiclePreviewCard> PreviewCards;
@@ -152,7 +155,9 @@ private:
 	// UI layout only: retain client-side seats while the actual PlayerArray changes.
 	TMap<TWeakObjectPtr<AMWPlayerState>, int32> PlayerSlots;
 	int32 ActivePreviewScenarioIndex = INDEX_NONE;
-	bool bRequestPending = false;
+	enum class ESelectionRequest : uint8 { None, Confirm, Cancel };
+	ESelectionRequest PendingRequest = ESelectionRequest::None;
+	bool IsRequestPending() const { return PendingRequest != ESelectionRequest::None; }
 	void ClearCards();
 	void AddCard(UMWVehicleCardWidget* Card);
 	UMWVehicleCardWidget* CreateVehicleCard(FGameplayTag Id, UMWVehicleDefinitionData& Definition);
@@ -166,10 +171,9 @@ private:
 	void BuildPreviewParticipants();
 	void BuildLobbyParticipants(AMWLobbyGameState* State);
 	void RenderParticipants();
-	void RefreshCardPointers();
 	void RefreshLocalCursor();
 	void UpdateLocalCursor(const FPointerEvent& MouseEvent);
-	void HideLocalCursor();
+	void ResetPointerHit();
 	void BindCursorWindow();
 	void RegisterSoftwareCursor();
 	void ReleaseSoftwareCursor();
@@ -180,14 +184,12 @@ private:
 	TSharedPtr<SWidget> PreviousSoftwareCursor;
 	bool bPreviouslyUsedSoftwareCursors = false;
 	bool CancelLocalSelection();
+	FGameplayTag GetCancelableVehicleId() const;
+	void ClearLocalSelectionDisplay();
 	TWeakPtr<SWindow> CursorWindow;
 	FDelegateHandle WindowDeactivatedHandle;
 	bool bCursorInUI = false;
-	// Local presentation only; the existing SelectedCard/Preview data owns the choice.
-	bool bLocalMarkerPinned = false;
 	float CardMarkerScale = 1.f;
-	bool bHasPointerPosition = false;
-	FVector2D LastPointerPosition = FVector2D::ZeroVector;
 	FMWVehiclePreviewParticipant* FindLocalPreviewParticipant();
 	const FMWVehiclePreviewParticipant* FindLocalPreviewParticipant() const;
 	FMWVehiclePlayerPresentation MakePreviewPresentation(const FMWVehiclePreviewParticipant& Participant) const;

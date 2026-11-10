@@ -29,5 +29,6 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Image_DisplayBackground;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> Image_IdentityBadge;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> LocalIndicator;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> LocalFrame;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> SelectionDetails;
 };

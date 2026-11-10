@@ -60,6 +60,18 @@ bool AMWPlayerState::ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAsset
 	return true;
 }
 
+bool AMWPlayerState::ClearVehicleAssetIDFromServer(FGameplayTag ExpectedVehicleID)
+{
+	if (!HasAuthority() || !ExpectedVehicleID.IsValid()) return false;
+	if (!VehicleAssetID.IsValid()) return true;
+	if (VehicleAssetID != ExpectedVehicleID) return false;
+
+	VehicleAssetID = FGameplayTag::EmptyTag;
+	ForceNetUpdate();
+	NotifyPlayerStateChanged();
+	return true;
+}
+
 void AMWPlayerState::OnRep_VehicleAssetID()
 {
 	// 원격 클라이언트가 복제된 결과를 받았을 때 알립니다.

@@ -124,7 +124,7 @@ void UMWVehicleCardWidget::Refresh()
 	Image_Vehicle->SetRenderOpacity(bAvailable ? 1.f : UnavailableImageOpacity);
 	Image_Vehicle->SetVisibility(Thumbnail.IsNull() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	MissingImageNotice->SetVisibility(Thumbnail.IsNull() ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	SelectionMarker->SetVisibility(bShowStandaloneSelectionMarker && bSelected && PlayerMarkers.IsEmpty() ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	SelectionMarker->SetVisibility(ESlateVisibility::Collapsed);
 	const FLinearColor Tint = !bAvailable ? UnavailableTint : bSelected
 		? (bHasLocalParticipant ? LocalParticipantTint : SelectedTint) : bHovered ? HoverTint : NormalTint;
 	Image_Outline->SetColorAndOpacity(Tint);
