@@ -877,6 +877,11 @@ void AMWUCMTitleFlow::UpdateLobbyPresentation()
     else if (!VehicleWidget && ActiveRegion == TEXT("Lobby")) SetWorldWidget(LobbyWidget, TEXT("Lobby"));
 }
 
+UWidgetComponent* AMWUCMTitleFlow::GetVehicleSelectionSurface() const
+{
+    return VehiclePreviewActor ? VehiclePreviewActor->PreviewSurface.Get() : nullptr;
+}
+
 void AMWUCMTitleFlow::SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelectionWidget* Selection)
 {
     LobbyWidget = Lobby;

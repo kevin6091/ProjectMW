@@ -27,6 +27,49 @@
 #include "UI/MWVehiclePlayerEntryWidget.h"
 #include "UI/MWVehiclePlayerMarkerWidget.h"
 #include "UI/MWPointerCursor.h"
+#include "UI/Cursor/MWCursorProjection.h"
+#include "UI/Cursor/MWRemoteCursorOverlay.h"
+
+bool UMWVehicleSelectionWidget::SampleSharedCursor(const UWidgetComponent* Surface, FVector2D& OutNormalizedPosition) const
+{
+	APlayerController* PC = GetOwningPlayer();
+	return !bPreviewOnly && PC && CursorLayer
+		&& MWCursorProjection::SampleNormalized(*this, *CursorLayer, Surface, *PC, OutNormalizedPosition);
+}
+
+bool UMWVehicleSelectionWidget::ProjectSharedCursor(const UWidgetComponent* Surface, FVector2D Position, FVector2D& OutViewportPosition) const
+{
+	APlayerController* PC = GetOwningPlayer();
+	return PC && CursorLayer && MWCursorProjection::ToViewport(*this, *CursorLayer, Surface, Position, *PC, OutViewportPosition);
+}
+
+UUserWidget* UMWVehicleSelectionWidget::CreateSharedCursorVisual() const
+{
+	if (!IsValid(LocalPlayerCursor) || !GetOwningPlayer()) return nullptr;
+	// main의 자기 커서와 같은 BP 클래스를 재사용한다. 원형·화살표·상태 문구를 복제 제작하지 않는다.
+	UMWVehiclePlayerMarkerWidget* Visual = CreateWidget<UMWVehiclePlayerMarkerWidget>(GetOwningPlayer(), LocalPlayerCursor->GetClass());
+	if (Visual) Visual->TakeWidget();
+	return Visual;
+}
+
+bool UMWVehicleSelectionWidget::ConfigureSharedCursorVisual(UUserWidget& Visual, const AMWPlayerState* Player,
+	FMWCursorVisualLayout& OutLayout) const
+{
+	if (!Player || !IsValid(LocalPlayerCursor) || !Visual.IsA(LocalPlayerCursor->GetClass())) return false;
+	UMWVehiclePlayerMarkerWidget* Marker = Cast<UMWVehiclePlayerMarkerWidget>(&Visual);
+	const UCanvasPanelSlot* LocalSlot = Cast<UCanvasPanelSlot>(LocalPlayerCursor->Slot);
+	if (!Marker || !LocalSlot) return false;
+	const int32* SlotIndex = PlayerSlots.Find(TWeakObjectPtr<AMWPlayerState>(const_cast<AMWPlayerState*>(Player)));
+	if (!SlotIndex || !ParticipantViews.IsValidIndex(*SlotIndex)) return false;
+	FMWVehiclePlayerPresentation View = ParticipantViews[*SlotIndex];
+	View.bLocal = false;
+	Marker->SetPresentation(View);
+	// 소프트웨어 커서는 DPI 배율을 곱한 픽셀 크기, 오버레이는 DPI 적용 전 논리 크기를 사용한다.
+	OutLayout.DesignSize = FVector2D(MWPointerDesignSize);
+	OutLayout.DisplaySize = LocalSlot->GetSize();
+	OutLayout.Hotspot = MWGetPointerHotspot(Marker);
+	return true;
+}
 
 void UMWVehicleSelectionWidget::NativeConstruct()
 {
