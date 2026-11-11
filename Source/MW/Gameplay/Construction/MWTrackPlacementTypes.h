@@ -8,6 +8,18 @@
 class AActor;
 
 USTRUCT(BlueprintType)
+struct FMWTrackCourseEnds
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
+	FGameplayTag StartDefinitionId;
+
+	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
+	FGameplayTag EndDefinitionId;
+};
+
+USTRUCT(BlueprintType)
 struct FMWTrackEndId
 {
 	GENERATED_BODY()
@@ -57,6 +69,7 @@ struct FMWTrackPlacementSession
 	// 기준 트랙을 출발 슬롯 방향으로 돌린 각도를 공용 미리보기의 기본 방향으로 쓴다.
 	UPROPERTY(BlueprintReadOnly) double PreviewYaw = 0.0;
 	UPROPERTY(BlueprintReadOnly) double LayoutScale = 1.0;
+	UPROPERTY(BlueprintReadOnly) FBox CourseBounds = FBox(ForceInit);
 	UPROPERTY(BlueprintReadOnly) TArray<FMWOpenTrackEnd> OpenEnds;
 	UPROPERTY(BlueprintReadOnly) TArray<FMWPlacedTrack> PlacedTracks;
 };

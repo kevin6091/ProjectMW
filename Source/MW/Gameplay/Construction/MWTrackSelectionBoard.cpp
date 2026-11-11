@@ -72,6 +72,7 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	}
 
 	FBox Bounds(Session.BuildOrigin, Session.BuildOrigin);
+	Bounds += Session.CourseBounds;
 	for (const FMWOpenTrackEnd& End : Session.OpenEnds)
 	{
 		Bounds += End.WorldFrame.GetLocation();

@@ -31,7 +31,7 @@ public:
 	
 	// 서버의 외부 진행 코드가 호출하는 일반 C++ API.
 	bool BeginSelection(
-		const TArray<FGameplayTag>& DefinitionIds, 
+		const TArray<FGameplayTag>& DefinitionIds,
 		const TArray<AMWPlayerState*>& SelectionPlayers, 
 		FText& OutError);
 	void EndSelection();
@@ -48,8 +48,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "MW|Construction")
 	const FMWTrackPlacementSession& GetPlacementSession() const { return PlacementSession; }
 
-	// BuildFrame은 시작 도로의 중앙, +X는 주행 방향이다. 도로 폭과 길이는 원본 BP를 따른다.
-	bool BeginPlacement(const FTransform& BuildFrame, double LayoutScale, FText& OutError);
+	// BuildFrame은 레벨의 출발 그리드이며 +X가 주행 방향이다.
+	bool BeginPlacement(const FMWTrackCourseEnds& CourseEnds, const FTransform& BuildFrame, double LayoutScale, FText& OutError);
 	void CancelPlacement();
 	void UpdatePlacementPreview(APlayerController* Requester, int32 SessionId, int32 Sequence,
 		const FMWTrackPlacementIntent& Intent);
@@ -61,25 +61,31 @@ private:
 	struct FPreparedTrack
 	{
 		TWeakObjectPtr<AActor> Actor;
+		FGameplayTag DefinitionId;
 		FMWTrackPortFrames Ports;
 		bool bEnableCollision = false;
 		bool bEnableTick = false;
 		int32 LastPreviewSequence = 0;
 		double NextPreviewTime = 0.0;
+
+		bool SetTransform(const FTransform& Transform) const;
+		void Destroy() const;
 	};
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlacementSession)
 	FMWTrackPlacementSession PlacementSession;
 	TMap<TWeakObjectPtr<AMWPlayerState>, FPreparedTrack> PendingTracks;
+	FPreparedTrack PendingEndCap;
 	bool bCommittingPlacement = false;
 
 	UFUNCTION()
 	void OnRep_PlacementSession();
 
-	bool PrepareTrack(FGameplayTag DefinitionId, const FVector& Origin, FPreparedTrack& OutTrack, FText& OutError);
-	bool PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform);
+	bool PrepareTrack(FGameplayTag DefinitionId, const FVector& Origin, bool bSinglePort, FPreparedTrack& OutTrack, FText& OutError);
+	void PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform, FMWTrackEndId ConnectedTo = {}, int32 PortIndex = INDEX_NONE);
 	FPreparedTrack* FindPendingTrack(APlayerController* Requester, int32 SessionId);
-	void FinishPlacementIfReady();
+	bool PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const;
+	void FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform);
 
 	UPROPERTY(ReplicatedUsing=OnRep_SelectionSession)
 	FMWTrackSelectionSession SelectionSession;

@@ -102,7 +102,7 @@ void AMWTrackSelectionTestGameMode::TryFinishSelection()
 	FText Error = FText::FromString(TEXT("레벨에 트랙 선택판이 없습니다."));
 	// 테스트 맵에서 기존 도로가 향하던 +Y 방향을 유지한다.
 	const FTransform BuildFrame(FRotator(0.0, 90.0, 0.0), Board ? Board->GetBuildOrigin() : FVector::ZeroVector);
-	if (!Board || !Construction->BeginPlacement(BuildFrame, Board->GetLayoutScale(), Error))
+	if (!Board || !Construction->BeginPlacement(CourseEnds, BuildFrame, Board->GetLayoutScale(), Error))
 	{
 		Construction->EndSelection();
 		GS->SetRoomPhaseFromServer(EMWRoomPhase::Failed);

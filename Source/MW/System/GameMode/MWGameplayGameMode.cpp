@@ -208,7 +208,8 @@ void AMWGameplayGameMode::StartTrackPlacement()
 
 	// 선택판의 위치와 독립적으로 출발 그리드의 원점과 전방에 기준 도로를 맞춘다.
 	FText Error;
-	if (!GS->GetConstructionComponent()->BeginPlacement(StartManager->GetActorTransform(), SelectionBoard->GetLayoutScale(), Error))
+	if (!GS->GetConstructionComponent()->BeginPlacement(CourseEnds, StartManager->GetActorTransform(),
+		SelectionBoard->GetLayoutScale(), Error))
 	{
 		FailGameplay(Error.ToString());
 	}

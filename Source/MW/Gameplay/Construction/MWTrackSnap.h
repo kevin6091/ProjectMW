@@ -14,6 +14,9 @@ namespace MWTrackSnap
 
 	// BP의 ConnectionPoint1/2를 읽고 Actor 기준의 바깥 방향 프레임으로 변환한다.
 	bool ReadPorts(const AActor& Track, FMWTrackPortFrames& OutPorts);
+	bool ReadFirstPort(const AActor& Track, FTransform& OutPort);
+	bool ReadStartGrid(const AActor& Track, FTransform& OutFrame);
+	FTransform AlignPorts(const FTransform& Source, const FTransform& Target);
 	FTransform MakeRawTransform(const FMWTrackPortFrames& Ports, const FMWTrackPlacementSession& Session,
 		const FMWTrackPlacementIntent& Intent);
 	bool IsInBuildArea(const FMWTrackPlacementIntent& Intent, const FMWTrackPlacementSession& Session);
