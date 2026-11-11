@@ -1,5 +1,6 @@
 #include "MWTitleUIEditorLibrary.h"
 
+#include "Animation/WidgetAnimation.h"
 #include "Blueprint/WidgetTree.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -54,6 +55,32 @@ UWidget* UMWTitleUIEditorLibrary::AddDesignerWidget(UWidgetBlueprint* Blueprint,
 	Blueprint->WidgetVariableNameToGuidMap.FindOrAdd(WidgetName, FGuid::NewGuid());
 	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 	return Widget;
+}
+
+void UMWTitleUIEditorLibrary::SynchronizeDesignerWidgetGuids(UWidgetBlueprint* Blueprint)
+{
+	UWidgetTree* Tree = GetWidgetTree(Blueprint);
+	if (!Tree) return;
+	Blueprint->Modify();
+	TArray<UWidget*> Widgets;
+	Tree->GetAllWidgets(Widgets);
+	TSet<FName> Names;
+	for (UWidget* Widget : Widgets)
+	{
+		Names.Add(Widget->GetFName());
+		Blueprint->WidgetVariableNameToGuidMap.FindOrAdd(Widget->GetFName(), FGuid::NewGuid());
+	}
+	// RemoveFromParent만으로는 Blueprint의 이름/GUID 참조가 제거되지 않는다.
+	// 애니메이션의 GUID는 위젯 삭제와 무관하므로 유지한다.
+	for (const UWidgetAnimation* Animation : Blueprint->Animations)
+	{
+		if (Animation) Names.Add(Animation->GetFName());
+	}
+	for (auto It = Blueprint->WidgetVariableNameToGuidMap.CreateIterator(); It; ++It)
+	{
+		if (!Names.Contains(It.Key())) It.RemoveCurrent();
+	}
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
 UBlueprint* UMWTitleUIEditorLibrary::GetLevelBlueprint(UWorld* World)

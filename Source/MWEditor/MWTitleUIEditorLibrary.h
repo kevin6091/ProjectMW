@@ -28,6 +28,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MW|Editor|Title")
 	static UWidget* AddDesignerWidget(UWidgetBlueprint* Blueprint, TSubclassOf<UWidget> WidgetClass, FName WidgetName);
 
+	/** 계층 재구성 후 제거된 위젯의 GUID를 정리하고 현재 위젯의 GUID를 보장한다. */
+	UFUNCTION(BlueprintCallable, Category = "MW|Editor|UI")
+	static void SynchronizeDesignerWidgetGuids(UWidgetBlueprint* Blueprint);
+
 	UFUNCTION(BlueprintCallable, Category = "MW|Editor|Title")
 	static UBlueprint* GetLevelBlueprint(UWorld* World);
 
