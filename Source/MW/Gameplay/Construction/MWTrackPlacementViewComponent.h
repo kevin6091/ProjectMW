@@ -26,6 +26,7 @@ private:
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
 		bool bSnapped = false;
+		bool bLastRemoteReversed = false;
 	};
 
 	FGhost* GetOrCreateGhost(int32 PlayerId, const FMWPlayerTrackPlacement& Player, bool bLocal);

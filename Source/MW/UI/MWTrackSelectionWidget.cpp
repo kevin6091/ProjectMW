@@ -3,7 +3,6 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
-#include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/World.h"
@@ -14,11 +13,34 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
+#include "UI/Cursor/MWRemoteCursorOverlay.h"
+#include "UI/MWPointerCursor.h"
+#include "UI/MWVehiclePlayerMarkerWidget.h"
+#include "UObject/ConstructorHelpers.h"
+
+UMWTrackSelectionWidget::UMWTrackSelectionWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	static ConstructorHelpers::FClassFinder<UMWVehiclePlayerMarkerWidget> CursorWidget(
+		TEXT("/Game/UI/Lobby/VehicleSelection/WBP_VehiclePlayerMarker_Dev"));
+	CursorWidgetClass = CursorWidget.Class;
+}
 
 void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-    SetVisibility(ESlateVisibility::HitTestInvisible);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+	if (Canvas_Cursors && CursorWidgetClass)
+	{
+		CursorOverlay = CreateWidget<UMWRemoteCursorOverlay>(GetOwningPlayer());
+		if (CursorOverlay)
+		{
+			UCanvasPanelSlot* OverlaySlot = Canvas_Cursors->AddChildToCanvas(CursorOverlay);
+			OverlaySlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+			OverlaySlot->SetOffsets(FMargin(0.0f));
+			OverlaySlot->SetZOrder(100);
+		}
+	}
 	TryBindState();
 }
 
@@ -35,9 +57,11 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	}
 	BoundConstruction.Reset();
 	BoundPlayers.Reset();
-	RemoteCursorLabels.Reset();
-	SmoothedCursorPositions.Reset();
-	if (Canvas_Cursors) Canvas_Cursors->ClearChildren();
+	if (CursorOverlay)
+	{
+		CursorOverlay->RemoveFromParent();
+		CursorOverlay = nullptr;
+	}
 	DisplayedSession = {};
 	RequestError = FText::GetEmpty();
 	bRequestPending = false;
@@ -52,6 +76,11 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 		bShowingPlacement = true;
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
 		Canvas_Cursors->SetVisibility(ESlateVisibility::Collapsed);
+		if (CursorOverlay)
+		{
+			CursorOverlay->RemoveFromParent();
+			CursorOverlay = nullptr;
+		}
 		if (Text_Title)
 		{
 			Text_Title->SetText(FText::FromString(TEXT("트랙을 배치하세요")));
@@ -138,6 +167,12 @@ void UMWTrackSelectionWidget::Refresh()
 		bRequestPending = false;
 		AcknowledgedOffer = INDEX_NONE;
 		RequestError = FText::GetEmpty();
+		if (CursorOverlay)
+		{
+			// 후보가 바뀌면 이전 선택판 좌표를 새 커서의 보간 시작점으로 사용하지 않는다.
+			CursorOverlay->BeginCursorFrame();
+			CursorOverlay->EndCursorFrame();
+		}
 	}
 	DisplayedSession = Session;
 	const auto* PC = GetOwningPlayer<AMWGameplayPlayerController>();
@@ -205,55 +240,61 @@ void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
 void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
-	if (bShowingPlacement) return;
+	if (!CursorOverlay) return;
 	auto* PC = GetOwningPlayer();
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!PC || !GS || !Canvas_Cursors) return;
-	TSet<int32> Present;
+	CursorOverlay->BeginCursorFrame();
+	if (!PC || !GS || GS->GetRoomPhase() != EMWRoomPhase::PreparingConstruction || !DisplayedSession.bIsOpen)
+	{
+		CursorOverlay->EndCursorFrame();
+		return;
+	}
+
+	const auto* OwnPlayer = PC->GetPlayerState<AMWPlayerState>();
+	const FGeometry ViewportGeometry = UWidgetLayoutLibrary::GetViewportWidgetGeometry(this);
+	const FGeometry& OverlayGeometry = CursorOverlay->GetCachedGeometry();
 	const FLinearColor Colors[] = {FLinearColor(.2f, .85f, 1), FLinearColor(1, .55f, .2f), FLinearColor(.5f, 1, .35f), FLinearColor(1, .4f, .8f)};
 	for (APlayerState* State : GS->PlayerArray)
 	{
 		const auto* PS = Cast<AMWPlayerState>(State);
-		if (!PS || PS == PC->GetPlayerState<AMWPlayerState>() || PS->GetLobbyMemberId() <= 0) continue;
+		if (!PS || PS == OwnPlayer || PS->IsInactive() || PS->GetLobbyMemberId() <= 0) continue;
 		const int32 Id = PS->GetLobbyMemberId();
-		Present.Add(Id);
-		const auto RemoteCursor = PS->GetPlayerConstructionComponent()->GetCursor();
-		UTextBlock* Label = RemoteCursorLabels.FindRef(Id);
-		if (!RemoteCursor.bIsVisible || RemoteCursor.SelectionSessionId != DisplayedSession.SelectionSessionId || RemoteCursor.OffersRevision != DisplayedSession.OffersRevision)
+		const auto* Player = PS->GetPlayerConstructionComponent();
+		if (!Player) continue;
+		const auto RemoteCursor = Player->GetCursor();
+		FVector2D ScreenPosition;
+		if (!RemoteCursor.bIsVisible || RemoteCursor.SelectionSessionId != DisplayedSession.SelectionSessionId
+			|| RemoteCursor.OffersRevision != DisplayedSession.OffersRevision
+			|| !UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, RemoteCursor.WorldPosition, ScreenPosition, false))
 		{
-			if (Label) Label->SetVisibility(ESlateVisibility::Collapsed);
-			SmoothedCursorPositions.Remove(Id);
 			continue;
 		}
-		if (!Label)
+
+		auto* Marker = Cast<UMWVehiclePlayerMarkerWidget>(CursorOverlay->FindCursorVisual(Id));
+		if (!Marker)
 		{
-			Label = WidgetTree->ConstructWidget<UTextBlock>();
-			Label->SetFont(Text_Players->GetFont());
-			Label->SetColorAndOpacity(FSlateColor(Colors[(Id - 1) % UE_ARRAY_COUNT(Colors)]));
-			Label->SetShadowColorAndOpacity(FLinearColor::Black);
-			Label->SetShadowOffset(FVector2D(1, 1));
-			auto* CursorSlot = Canvas_Cursors->AddChildToCanvas(Label);
-			CursorSlot->SetAutoSize(true);
-			CursorSlot->SetZOrder(100);
-			RemoteCursorLabels.Add(Id, Label);
+			Marker = CreateWidget<UMWVehiclePlayerMarkerWidget>(PC, CursorWidgetClass);
+			if (!Marker) continue;
+			Marker->TakeWidget();
 		}
-		const FVector* Previous = SmoothedCursorPositions.Find(Id);
-		const FVector Position = Previous ? FMath::VInterpTo(*Previous, FVector(RemoteCursor.WorldPosition), DeltaSeconds, 18) : FVector(RemoteCursor.WorldPosition);
-		SmoothedCursorPositions.Add(Id, Position);
-		FVector2D Screen;
-		if (UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, Position, Screen, false))
+
+		const auto Selection = Player->GetSelection();
+		FMWVehiclePlayerPresentation Presentation;
+		Presentation.PlayerName = FText::FromString(PS->GetPlayerName());
+		Presentation.MarkerText = FText::Format(NSLOCTEXT("MWTrackSelection", "PlayerMarker", "P{0}"), FText::AsNumber(Id));
+		Presentation.PlayerTint = Colors[(Id - 1) % UE_ARRAY_COUNT(Colors)];
+		Presentation.bOccupied = true;
+		if (Selection.SelectionSessionId == DisplayedSession.SelectionSessionId
+			&& Selection.OffersRevision == DisplayedSession.OffersRevision)
 		{
-			CastChecked<UCanvasPanelSlot>(Label->Slot)->SetPosition(Screen);
-			Label->SetText(FText::FromString(FString::Printf(TEXT("+ P%d %s"), Id, *PS->GetPlayerName())));
-			Label->SetVisibility(ESlateVisibility::HitTestInvisible);
+			Presentation.bConfirmed = Selection.bConfirmed;
+			Presentation.bHoverPreview = Selection.HoveredOfferId != INDEX_NONE;
 		}
-		else Label->SetVisibility(ESlateVisibility::Collapsed);
+		Marker->SetPresentation(Presentation);
+
+		const FMWCursorVisualLayout Layout{FVector2D(MWPointerDesignSize), FVector2D(155.0), MWGetPointerHotspot(Marker)};
+		const FVector2D OverlayPosition = OverlayGeometry.AbsoluteToLocal(ViewportGeometry.LocalToAbsolute(ScreenPosition));
+		CursorOverlay->PresentCursor(Id, DisplayedSession.SelectionSessionId, OverlayPosition, Marker, Layout, DeltaSeconds);
 	}
-	for (auto It = RemoteCursorLabels.CreateIterator(); It; ++It)
-	{
-		if (Present.Contains(It.Key())) continue;
-		It.Value()->RemoveFromParent();
-		SmoothedCursorPositions.Remove(It.Key());
-		It.RemoveCurrent();
-	}
+	CursorOverlay->EndCursorFrame();
 }

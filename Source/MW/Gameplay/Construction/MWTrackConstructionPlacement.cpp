@@ -263,9 +263,11 @@ void UMWTrackConstructionComponent::UpdatePlacementPreview(APlayerController* Re
 	auto Player = Component->GetPlacement();
 	FTransform Display;
 	const bool bSnapped = MWTrackSnap::Resolve(Prepared->Ports, PlacementSession, Intent, Display);
-	if (Player.bSnapped != bSnapped || !Player.PreviewTransform.Equals(Display))
+	
+	if (Player.bSnapped != bSnapped || Player.bReversed != Intent.bReversed || !Player.PreviewTransform.Equals(Display))
 	{
 		Player.bSnapped = bSnapped;
+		Player.bReversed = Intent.bReversed;
 		Player.PreviewTransform = Display;
 		Component->SetPlacementForServer(Player);
 	}

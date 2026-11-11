@@ -84,6 +84,7 @@ struct FMWPlayerTrackPlacement
 	UPROPERTY(BlueprintReadOnly) FTransform PreviewTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) bool bSnapped = false;
 	UPROPERTY(BlueprintReadOnly) bool bPlaced = false;
+	UPROPERTY(BlueprintReadOnly) bool bReversed = false;
 };
 
 // 미리보기와 확정 요청에 동일한 입력을 사용한다. 최종 설치 Transform은 서버가 계산한다.

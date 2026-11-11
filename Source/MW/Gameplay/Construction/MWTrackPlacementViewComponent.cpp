@@ -92,10 +92,22 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 			else if (AActor* Actor = Ghost->Actor.Get())
 			{
 				const FTransform& Target = Player.PreviewTransform;
-				const double Alpha = Player.bSnapped ? 1.0 : FMath::Clamp(DeltaSeconds * 16.0, 0.0, 1.0);
-				const FVector Location = FMath::Lerp(Actor->GetActorLocation(), Target.GetLocation(), Alpha);
-				const FQuat Rotation = FQuat::Slerp(Actor->GetActorQuat(), Target.GetRotation(), Alpha);
-				Actor->SetActorLocationAndRotation(Location, Rotation);
+				const bool bTurned = Ghost->bLastRemoteReversed != Player.bReversed;
+
+				if (bTurned || Player.bSnapped)
+				{
+					Actor->SetActorLocationAndRotation(Target.GetLocation(), Target.GetRotation());
+				}
+				else
+				{
+					const double Alpha = FMath::Clamp(DeltaSeconds * 16.0, 0.0, 1.0);
+					const FVector Location = FMath::Lerp(Actor->GetActorLocation(), Target.GetLocation(), Alpha);
+					const FQuat Rotation = FQuat::Slerp(Actor->GetActorQuat(), Target.GetRotation(), Alpha);
+
+					Actor->SetActorLocationAndRotation(Location, Rotation);
+				}
+				
+				Ghost->bLastRemoteReversed = Player.bReversed;
 			}
 		}
 	}
@@ -144,29 +156,38 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	{
 		return Existing;
 	}
+	
 	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Player.DefinitionAssetId);
+	
 	if (!Definition || !Definition->GetTrackActorClass())
 	{
 		return nullptr;
 	}
+	
 	FActorSpawnParameters Params;
 	Params.ObjectFlags |= RF_Transient;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AActor* Actor = GetWorld()->SpawnActor<AActor>(Definition->GetTrackActorClass(), Player.PreviewTransform, Params);
+	
 	if (!Actor)
 	{
 		return nullptr;
 	}
+	
 	Actor->SetReplicates(false);
 	Actor->SetActorEnableCollision(false);
 	Actor->SetActorTickEnabled(false);
+	
 	FGhost Ghost;
 	Ghost.Actor = Actor;
+	Ghost.bLastRemoteReversed = Player.bReversed;
+	
 	if (!MWTrackSnap::ReadPorts(*Actor, Ghost.Ports))
 	{
 		Actor->Destroy();
 		return nullptr;
 	}
+	
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
 	MWTrackPreview::ShowWireframes(*Actor);
 	MWTrackPreview::SetWireframeColor(*Actor, Color);
