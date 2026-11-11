@@ -59,6 +59,7 @@ public:
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 	UMWItemComponent* GetItemComponent() const { return ItemComponent; }
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -102,6 +103,10 @@ protected:
 
 private:
 	friend class UMWVehicleMovementComponent;
+
+	UPROPERTY(Transient)
+	float BoosterCameraBlend = 0.f;
+
 
     struct FCachedVisualWheel
     {

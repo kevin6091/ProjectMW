@@ -20,7 +20,6 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/Gameplay/MWGameplaySign.h"
-#include "UI/Gameplay/SMWVehicleWind.h"
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Images/SImage.h"
@@ -226,7 +225,6 @@ public:
 		ChildSlot
 		[
 			SNew(SOverlay)
-			+ SOverlay::Slot()[SAssignNew(VehicleWind, SMWVehicleWind)]
 			+ SOverlay::Slot()[CenteredHUD]
 			+ SOverlay::Slot()
 			[
@@ -269,7 +267,7 @@ public:
 		];
 	}
 
-	virtual void Tick(const FGeometry&, double CurrentTime, float DeltaTime) override
+	virtual void Tick(const FGeometry&, double CurrentTime, float) override
 	{
 		const auto* PC = Controller.Get();
 		const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
@@ -278,7 +276,6 @@ public:
 		const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
 		ItemSlot->SetVisibility(bShowItemSlot ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
 		UpdateItemSlot(bShowItemSlot ? Vehicle : nullptr, CurrentTime);
-		VehicleWind->Update(bShowItemSlot ? Vehicle : nullptr, DeltaTime);
 		if (bItemPickupTest || !GS) return;
 
 		const bool bHasRoom = GS->GetRoomSettings().MapThemeId.IsValid();
@@ -525,7 +522,6 @@ private:
 	TSharedPtr<SMWGameplaySign> SelectSign;
 	TSharedPtr<SMWGameplaySign> BuildSign;
 	TSharedPtr<SBox> ItemSlot;
-	TSharedPtr<SMWVehicleWind> VehicleWind;
 	TAttribute<EMWItemId> HeldItem;
 	TWeakObjectPtr<const AMWVehiclePawn> ItemSlotVehicle;
 	EMWItemId DisplayedItem = EMWItemId::None;

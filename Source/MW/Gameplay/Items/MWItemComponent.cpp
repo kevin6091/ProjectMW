@@ -14,6 +14,7 @@ namespace
 UMWItemComponent::UMWItemComponent()
 {
 	SetIsReplicatedByDefault(true);
+	LoadBoosterVisualAssets();
 }
 
 void UMWItemComponent::BeginPlay()
@@ -23,6 +24,13 @@ void UMWItemComponent::BeginPlay()
 	{
 		State->OnGameplayStateChanged.AddUniqueDynamic(this, &ThisClass::HandleGameStateChanged);
 	}
+	OnRep_BoosterPresentation();
+}
+
+void UMWItemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	RemoveBoosterVisual();
+	Super::EndPlay(EndPlayReason);
 }
 
 void UMWItemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -31,6 +39,7 @@ void UMWItemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME_CONDITION(UMWItemComponent, CurrentItemId, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(UMWItemComponent, GrantId, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(UMWItemComponent, BoosterEndsAt, COND_OwnerOnly);
+	DOREPLIFETIME(UMWItemComponent, BoosterPresentation);
 }
 
 bool UMWItemComponent::IsItemPlayAllowed() const
@@ -124,6 +133,13 @@ void UMWItemComponent::SetCurrentItem(EMWItemId ItemId)
 {
 	const bool bChanged = CurrentItemId != ItemId;
 	CurrentItemId = ItemId;
+	const bool bHeld = ItemId == EMWItemId::Booster;
+	if (BoosterPresentation.bHeld != bHeld || BoosterPresentation.FiringEndsAt != BoosterEndsAt)
+	{
+		BoosterPresentation.bHeld = bHeld;
+		BoosterPresentation.FiringEndsAt = BoosterEndsAt;
+		OnRep_BoosterPresentation();
+	}
 	GetOwner()->ForceNetUpdate();
 	if (bChanged)
 	{

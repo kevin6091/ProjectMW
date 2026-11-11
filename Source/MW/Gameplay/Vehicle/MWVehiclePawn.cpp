@@ -5,12 +5,15 @@
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/Visual/MWVehicleSkidMarkComponent.h"
 
+#include "CollisionQueryParams.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "ProfilingDebugging/CpuProfilerTrace.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/CameraTypes.h"
 #include "GameFramework/SpringArmComponent.h"
 
 
@@ -45,6 +48,7 @@ AMWVehiclePawn::AMWVehiclePawn()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
 }
 
 void AMWVehiclePawn::InitializeWheelVisuals()
@@ -196,6 +200,36 @@ void AMWVehiclePawn::SubmitDriveInput(const FMWVehicleDriveInput& NewInput)
 	}
 }
 
+void AMWVehiclePawn::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
+{
+	Super::CalcCamera(DeltaTime, OutResult);
+	if (!IsLocallyControlled())
+	{
+		BoosterCameraBlend = 0.f;
+		return;
+	}
+
+	const float TimeRemaining = ItemComponent->GetBoosterTimeRemaining();
+	constexpr float PullbackSeconds = 1.40f;
+	constexpr float ReturnSeconds = 0.36f;
+	const float TargetBlend = FMath::Clamp(TimeRemaining / ReturnSeconds, 0.f, 1.f);
+	const float BlendSeconds = TargetBlend > BoosterCameraBlend ? PullbackSeconds : ReturnSeconds;
+	BoosterCameraBlend = FMath::FInterpConstantTo(BoosterCameraBlend, TargetBlend, DeltaTime, 1.f / BlendSeconds);
+	const float CameraBlend = FMath::SmoothStep(0.f, 1.f, BoosterCameraBlend);
+	if (CameraBlend <= 0.005f)
+	{
+		return;
+	}
+
+	constexpr float BoostDollyDistance = 190.f;
+	const FVector TargetLocation = OutResult.Location - OutResult.Rotation.Vector() * (BoostDollyDistance * CameraBlend);
+	const FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BoosterCameraDolly), false, this);
+	FHitResult Hit;
+	const bool bBlocked = GetWorld()->SweepSingleByChannel(Hit, OutResult.Location, TargetLocation,
+		FQuat::Identity, CameraBoom->ProbeChannel, FCollisionShape::MakeSphere(CameraBoom->ProbeSize), QueryParams);
+	OutResult.Location = bBlocked ? Hit.Location : TargetLocation;
+}
+
 UPawnMovementComponent* AMWVehiclePawn::GetMovementComponent() const
 {
 	return VehicleMovement;
@@ -215,6 +249,7 @@ void AMWVehiclePawn::UnPossessed()
 	DriveInput = FMWVehicleDriveInput{};
 	VehicleMovement->ResetDriveInput();
 	ItemComponent->ResetItemState();
+	BoosterCameraBlend = 0.f;
 	Super::UnPossessed();
 	if (HasActorBegunPlay())
 	{
@@ -228,6 +263,7 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 	if (!bIsATest)
 	{
 		ItemComponent->ResetItemState();
+		BoosterCameraBlend = 0.f;
 		bVisualLocationValid = false;
 		DriveInput = FMWVehicleDriveInput{};
 		if (HasActorBegunPlay())
