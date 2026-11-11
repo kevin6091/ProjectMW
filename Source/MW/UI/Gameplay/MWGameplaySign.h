@@ -11,6 +11,9 @@ class UTexture2D;
 
 namespace MWGameplayUI
 {
+	inline constexpr float DesignWidth = 1920.f;
+	inline constexpr float DesignHeight = 1080.f;
+
 	// The source frames were captured at 1920 x 1080. Keep that composition
 	// within the safe 16:9 area even when the PIE viewport has another aspect.
 	MW_API TSharedRef<SWidget> FitDesignCanvas(TSharedRef<SWidget> Content,

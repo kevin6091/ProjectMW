@@ -14,12 +14,6 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
 
-namespace
-{
-	constexpr float DesignWidth = 1920.f;
-	constexpr float DesignHeight = 1080.f;
-}
-
 TSharedRef<SWidget> MWGameplayUI::FitDesignCanvas(TSharedRef<SWidget> Content,
 	EHorizontalAlignment Horizontal, EVerticalAlignment Vertical)
 {

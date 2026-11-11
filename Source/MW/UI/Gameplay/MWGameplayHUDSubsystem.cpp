@@ -1,7 +1,6 @@
 #include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 
 #include "Brushes/SlateImageBrush.h"
-#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/SceneComponent.h"
 #include "Data/MWVehicleDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -11,6 +10,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Misc/Paths.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "Rendering/DrawElements.h"
 #include "Rendering/SlateRenderer.h"
@@ -42,6 +42,8 @@ bool IsItemPickupTestPIE(const UWorld& World)
 }
 
 constexpr float ItemSlotSize = 168.f;
+constexpr float MinItemSlotPixels = 96.f;
+constexpr float MaxItemSlotSize = MWGameplayUI::DesignHeight * .40f;
 constexpr float ItemIconSize = 158.f;
 // Each card stays visible a little longer than the previous card.
 constexpr double ItemRouletteSwitchTimes[] = { .045, .095, .15, .215, .29, .38, .49, .63, .80, .99 };
@@ -62,49 +64,18 @@ public:
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
 		FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style, bool bParentEnabled) const override
 	{
-		const FVector2D Size = Geometry.GetLocalSize();
-		FSlateDrawElement::MakeBox(Elements, Layer, Geometry.ToPaintGeometry(Size,
-			FSlateLayoutTransform(FVector2D(2.f, 6.f))), &Shadow, ESlateDrawEffect::None, Shadow.GetTint(Style));
-
-		// A polished outer bevel, a dark gasket and the tinted lens are separate surfaces.
-		const auto DrawFace = [&](int32 FaceLayer, float Inset, float Radius, FColor Top, FColor Middle, FColor Bottom)
-		{
-			const FVector2D FaceSize = Size - FVector2D(Inset * 2.f);
-			TArray<FSlateGradientStop> Stops;
-			Stops.Emplace(FVector2D::ZeroVector, FLinearColor::FromSRGBColor(Top));
-			Stops.Emplace(FaceSize * .42, FLinearColor::FromSRGBColor(Middle));
-			Stops.Emplace(FaceSize, FLinearColor::FromSRGBColor(Bottom));
-			FSlateDrawElement::MakeGradient(Elements, FaceLayer, Geometry.ToPaintGeometry(FaceSize,
-				FSlateLayoutTransform(FVector2D(Inset))), MoveTemp(Stops), Orient_Horizontal,
-				ESlateDrawEffect::None, FVector4f(Radius, Radius, Radius, Radius));
-		};
-		DrawFace(Layer + 1, 0.f, 29.f, FColor(190, 197, 173), FColor(85, 109, 114), FColor(44, 36, 54));
-		DrawFace(Layer + 2, 3.f, 26.f, FColor(61, 76, 72), FColor(17, 31, 39), FColor(32, 24, 42));
-		DrawFace(Layer + 3, 7.f, 22.f, FColor(89, 118, 114, 244), FColor(41, 67, 79, 235), FColor(66, 49, 75, 245));
-
-		// Diagonal reflection stays inside the lens so the glass retains its rounded silhouette.
-		const FVector2f Reflection[] = {
-			{ .09f, .19f }, { .17f, .08f }, { .69f, .07f },
-			{ .39f, .34f }, { .10f, .70f }, { .06f, .39f }
-		};
-		const uint8 Alpha[] = { 46, 91, 42, 16, 0, 12 };
-		TArray<FSlateVertex> Vertices;
-		Vertices.Reserve(UE_ARRAY_COUNT(Reflection));
-		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Reflection); ++Index)
-		{
-			Vertices.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(Geometry.GetAccumulatedRenderTransform(),
-				Reflection[Index] * FVector2f(Size), FVector2f(.5f, .5f), FColor(255, 235, 190, Alpha[Index])));
-		}
-		const TArray<SlateIndex> Indices{ 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5 };
-		const auto Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
-		const auto Handle = FSlateApplication::Get().GetRenderer()->GetResourceHandle(*Brush);
-		FSlateDrawElement::MakeCustomVerts(Elements, Layer + 4, Handle, Vertices, Indices, nullptr, 0, 0);
-
-		return SCompoundWidget::OnPaint(Args, Geometry, CullingRect, Elements, Layer + 5, Style, bParentEnabled);
+		const FVector2f Size(Geometry.GetLocalSize());
+		// Include the SVG's shadow below the 168-unit glass face.
+		const FVector2f ArtSize(Size.X, Size.Y * 176.f / 168.f);
+		FSlateDrawElement::MakeBox(Elements, Layer, Geometry.ToPaintGeometry(ArtSize, FSlateLayoutTransform()),
+			&GlassBrush, ESlateDrawEffect::NoPixelSnapping, Style.GetColorAndOpacityTint());
+		return SCompoundWidget::OnPaint(Args, Geometry, CullingRect, Elements, Layer + 1, Style, bParentEnabled);
 	}
 
 private:
-	FSlateRoundedBoxBrush Shadow{ FLinearColor(.007f, .009f, .015f, .52f), 29.f };
+	FSlateVectorImageBrush GlassBrush{
+		FPaths::ProjectContentDir() / TEXT("UI/Common/Slate/ItemSlotGlass.svg"), FVector2D(168.f, 176.f)
+	};
 };
 
 class SMWGameplayHUD : public SCompoundWidget
@@ -235,29 +206,35 @@ public:
 						SAssignNew(ItemSlot, SBox).WidthOverride(ItemSlotSize).HeightOverride(ItemSlotSize)
 						.Visibility(EVisibility::Collapsed)
 						[
-							SNew(SMWItemSlotFrame)
+							SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
 							[
-								SNew(SOverlay)
-								+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+								SNew(SBox).WidthOverride(ItemSlotSize).HeightOverride(ItemSlotSize)
 								[
-									SNew(SImage).Image_Lambda([this] { return GetItemSlotBrush(); })
-									.RenderTransformPivot(FVector2D(.5, .5))
-									.RenderTransform_Lambda([this]() -> TOptional<FSlateRenderTransform> {
-										const FVector2D Offset = RouletteStep == INDEX_NONE ? BoosterIconOffset : FVector2D::ZeroVector;
-										return FSlateRenderTransform(ItemIconScale, Offset * ItemIconScale);
-									})
-									.ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(1.f, 1.f, 1.f, ItemIconOpacity)); })
-									.Visibility_Lambda([this] { return GetItemSlotBrush() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
-								]
-								+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-								[
-									SNew(STextBlock).Font(Art.Font(24.f))
-									.ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(.72f, .75f, .80f, ItemIconOpacity)); })
-									.Visibility_Lambda([this] {
-										return !GetItemSlotBrush() && DisplayedItem == EMWItemId::Booster
-											? EVisibility::HitTestInvisible : EVisibility::Collapsed;
-									})
-									.Text(NSLOCTEXT("MWGameplayUI", "BoosterItem", "부스터"))
+									SNew(SMWItemSlotFrame)
+									[
+										SNew(SOverlay)
+										+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+										[
+											SNew(SImage).Image_Lambda([this] { return GetItemSlotBrush(); })
+											.RenderTransformPivot(FVector2D(.5, .5))
+											.RenderTransform_Lambda([this]() -> TOptional<FSlateRenderTransform> {
+												const FVector2D Offset = RouletteStep == INDEX_NONE ? BoosterIconOffset : FVector2D::ZeroVector;
+												return FSlateRenderTransform(ItemIconScale, Offset * ItemIconScale);
+											})
+											.ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(1.f, 1.f, 1.f, ItemIconOpacity)); })
+											.Visibility_Lambda([this] { return GetItemSlotBrush() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+										]
+										+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+										[
+											SNew(STextBlock).Font(Art.Font(24.f))
+											.ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(.72f, .75f, .80f, ItemIconOpacity)); })
+											.Visibility_Lambda([this] {
+												return !GetItemSlotBrush() && DisplayedItem == EMWItemId::Booster
+													? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+											})
+											.Text(NSLOCTEXT("MWGameplayUI", "BoosterItem", "부스터"))
+										]
+									]
 								]
 							]
 						]
@@ -267,7 +244,7 @@ public:
 		];
 	}
 
-	virtual void Tick(const FGeometry&, double CurrentTime, float) override
+	virtual void Tick(const FGeometry& Geometry, double CurrentTime, float) override
 	{
 		const auto* PC = Controller.Get();
 		const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
@@ -275,6 +252,18 @@ public:
 		const bool bItemPhase = bItemPickupTest || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
 		const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
 		ItemSlot->SetVisibility(bShowItemSlot ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+		if (bShowItemSlot)
+		{
+			const FVector2f ViewportSize(Geometry.GetLocalSize());
+			const float CanvasScale = FMath::Min(ViewportSize.X / MWGameplayUI::DesignWidth,
+				ViewportSize.Y / MWGameplayUI::DesignHeight) * Geometry.GetAccumulatedLayoutTransform().GetScale();
+			if (CanvasScale > UE_SMALL_NUMBER)
+			{
+				const float SlotSize = FMath::Clamp(MinItemSlotPixels / CanvasScale, ItemSlotSize, MaxItemSlotSize);
+				ItemSlot->SetWidthOverride(SlotSize);
+				ItemSlot->SetHeightOverride(SlotSize);
+			}
+		}
 		UpdateItemSlot(bShowItemSlot ? Vehicle : nullptr, CurrentTime);
 		if (bItemPickupTest || !GS) return;
 
