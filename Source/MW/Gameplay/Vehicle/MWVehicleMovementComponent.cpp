@@ -9,6 +9,12 @@
 #include "Engine/HitResult.h"
 #include "Engine/World.h"
 #include "CollisionShape.h"
+#include "Math/RotationMatrix.h"
+
+namespace
+{
+	constexpr ECollisionChannel VehicleGroundChannel = ECC_GameTraceChannel1;
+}
 
 UMWVehicleMovementComponent::UMWVehicleMovementComponent()
 {
@@ -494,7 +500,7 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 {
 	// 이번 검사에서 바닥을 찾지 못하면 비접지 상태로 남긴다.
 	bGrounded = false;
-	GroundNormal = FVector::UpVector;
+	GroundNormal = GetGroundProbeUp();
 	GroundDistance = 0.f;
 
 	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent)
@@ -511,12 +517,13 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 		return;
 	}
 
+	const FVector ProbeUp = GetGroundProbeUp();
 	const FVector Start = Collision->GetComponentLocation();
-	const FVector End = Start - FVector::UpVector * DriveConfig.GroundProbeDistance;
+	const FVector End = Start - ProbeUp * DriveConfig.GroundProbeDistance;
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(PawnOwner);
-	const FCollisionResponseParams ResponseParams(Collision->GetCollisionResponseToChannels());
+	// const FCollisionResponseParams ResponseParams(Collision->GetCollisionResponseToChannels());
 
 	const float MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
 	const FCollisionShape Shape = Collision->GetCollisionShape();
@@ -524,7 +531,7 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 	const auto SweepGround = [&](const FCollisionShape& ProbeShape)
 	{
 		return World->SweepSingleByChannel(Hit, Start, End, Collision->GetComponentQuat(),
-			Collision->GetCollisionObjectType(), ProbeShape, QueryParams, ResponseParams);
+			VehicleGroundChannel, ProbeShape, QueryParams);
 	};
 	if (!SweepGround(Shape))
 	{
@@ -532,7 +539,7 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 	}
 
 	if (Hit.bStartPenetrating && Shape.IsBox()
-		&& FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+		&& FVector::DotProduct(Hit.ImpactNormal, ProbeUp) < MinGroundDot)
 	{
 		// 차체 옆벽과의 초기 겹침이 아래쪽 바닥을 가릴 수 있다.
 		// 검사에만 가로 여유를 주고 높이를 유지해 실제 바닥까지의 거리를 구한다.
@@ -547,7 +554,7 @@ void UMWVehicleMovementComponent::UpdateGroundState()
 		}
 	}
 
-	if (!Hit.IsValidBlockingHit() || FVector::DotProduct(Hit.ImpactNormal, FVector::UpVector) < MinGroundDot)
+	if (!Hit.IsValidBlockingHit() || FVector::DotProduct(Hit.ImpactNormal, ProbeUp) < MinGroundDot)
 	{
 		return;
 	}
@@ -704,10 +711,28 @@ void UMWVehicleMovementComponent::AdjustGroundHeight()
 	if (FMath::Abs(CorrectionDistance) <= KINDA_SMALL_NUMBER)
 	{
 		return;
+	
 	}
+	const FVector ProbeUp = GetGroundProbeUp();
 	FHitResult Hit(1.f);
-	SafeMoveUpdatedComponent(-FVector::UpVector * CorrectionDistance,
+	
+	SafeMoveUpdatedComponent(-ProbeUp * CorrectionDistance,
 		UpdatedComponent->GetComponentQuat(), true, Hit);
 	// 간격 보정은 주행 속도에 합산하지 않는다.
 	UpdateGroundState();
+}
+
+FVector UMWVehicleMovementComponent::GetGroundProbeUp() const
+{
+	if (UpdatedComponent)
+	{
+		return UpdatedComponent->GetUpVector();
+	}
+	
+	return FVector::UpVector;
+}
+
+FQuat UMWVehicleMovementComponent::CalculateGroundAlignRotation(const FQuat& CurrentRotation, float DeltaTime) const
+{
+	
 }

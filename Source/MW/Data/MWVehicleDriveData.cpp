@@ -35,6 +35,7 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("GroundProbeDistance"), Config.GroundProbeDistance, 0.f, Largest);
 	RequireRange(TEXT("MaxGroundAngle"), Config.MaxGroundAngle, 0.f, 89.f);
 	RequireRange(TEXT("GroundDetachSpeed"), Config.GroundDetachSpeed, 0.f, Largest);
+	RequireRange(TEXT("GroundAlignSpeed"), Config.GroundAlignSpeed, 0.f, Largest);
 	RequireRange(TEXT("GravityScale"), Config.GravityScale, 0.f, Largest);
 	RequireRange(TEXT("MaxFallSpeed"), Config.MaxFallSpeed, 1.f, Largest);
 	RequireRange(TEXT("VehicleMass"), Config.VehicleMass, 1.f, Largest);

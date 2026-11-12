@@ -85,6 +85,10 @@ struct MW_API FMWVehicleDriveConfig
 	// 바닥 법선 방향으로 이 속도를 넘어서면 접지를 해제한다. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0", Units = "cm/s"))
 	float GroundDetachSpeed = 10.f;
+	
+	// 차체가 노면 방향으로 정렬되는 최대 회전 속도. 단위: deg/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float GroundAlignSpeed = 180.f;
 
 	// 엔진에서 가져온 중력에 적용할 배율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Air", meta = (ClampMin = "0.0"))

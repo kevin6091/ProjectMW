@@ -59,6 +59,10 @@ private:
 
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 
+	FVector GetGroundProbeUp() const;
+	// 현재 회전에서 노면에 정렬된 목표 회전을 계산한다.
+	// 실제 충돌체를 움직이거나 회전시키지는 않는다.
+	FQuat CalculateGroundAlignRotation(const FQuat& CurrentRotation, float DeltaTime) const;
 	// 최근 바닥 검사에서 접지 조건을 만족했는지
 	bool bGrounded = false;
 	// 바닥 표면에서 바깥쪽으로 향하는 수직 방향
