@@ -1,5 +1,6 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Vehicle/MWVehicleSpringArmComponent.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -72,6 +73,7 @@ void AMWVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void AMWVehiclePawn::ResetDriveStream()
 {
+	ResetDrivePresentation();
 	if (!HasAuthority() || GetNetMode() == NM_Standalone)
 	{
 		return;
@@ -121,6 +123,19 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 	if (HasAuthority())
 	{
 		TickAuthorityDrive(DeltaTime);
+		if (GetNetMode() != NM_DedicatedServer)
+		{
+			if (IsPlayerControlled() && !IsLocallyControlled())
+			{
+				// 호스트가 보는 참가자도 입력 패킷 도착 간격과 화면 표시 간격을 분리한다.
+				const FMWVehicleDriveSnapshot Presentation = GetProxyDrivePresentation(DeltaTime);
+				DrivePresentation->SetWorldLocationAndRotation(Presentation.Location, Presentation.Rotation);
+			}
+			else
+			{
+				SmoothDrivePresentation(DeltaTime);
+			}
+		}
 		return;
 	}
 
@@ -135,7 +150,7 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 		PredictedContactMotions.Reset();
 		ProxySnapshots.Reset();
 		bPredictionBufferFull = false;
-		DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
+		ResetDrivePresentation();
 		bWasPredicting = bPredicting;
 	}
 
@@ -221,6 +236,8 @@ void AMWVehiclePawn::TickAuthorityDrive(float DeltaTime)
 			StepInput = DriveInput;
 		}
 		VehicleMovement->SetDriveInput(StepInput);
+		PreviousDriveTransform = CollisionRoot->GetComponentTransform();
+		bHasPreviousDriveTransform = true;
 		VehicleMovement->SimulateDriveStep(DriveStep);
 		DriveStepTime -= DriveStep;
 	}
@@ -272,7 +289,7 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 		DriveStepTime = 0.f;
 		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
 		LastAuthoritativeSnapshot = ServerDriveSnapshot;
-		DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
+		ResetDrivePresentation();
 		bPredictionBufferFull = false;
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
 		AppliedRevision = ServerDriveSnapshot.Revision;
@@ -376,6 +393,8 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move)
 
 	FMWVehiclePredictedImpact Impact;
 	VehicleMovement->SetDriveInput(Move.Command.Input);
+	PreviousDriveTransform = CollisionRoot->GetComponentTransform();
+	bHasPreviousDriveTransform = true;
 	VehicleMovement->SimulateDriveStep(DriveStep, Contacts, &Impact);
 	VehicleMovement->CaptureDriveSnapshot(Move.Result);
 
@@ -447,22 +466,27 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 	const FTransform PreviousRoot = CollisionRoot->GetComponentTransform();
 	PredictedContactMotions.Reset();
 	VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
+	PreviousDriveTransform = CollisionRoot->GetComponentTransform();
+	bHasPreviousDriveTransform = false;
 	for (FPredictedMove& Move : PredictedMoves)
 	{
 		SimulatePredictedMove(Move);
 	}
 
-	// 충돌체는 재실행 결과에 즉시 둔다. 작은 화면 차이만 외형과 카메라에 남겨 부드럽게 없앤다.
+	// 보정 오프셋은 원본 충돌체가 아니라 화면에 표시할 보간 위치를 기준으로 구한다.
 	const FTransform CorrectedRoot = CollisionRoot->GetComponentTransform();
-	const double VisibleDistance = FVector::Dist(PreviousPresentation.GetLocation(), CorrectedRoot.GetLocation());
-	const double VisibleAngle = FMath::RadiansToDegrees(PreviousPresentation.GetRotation().AngularDistance(CorrectedRoot.GetRotation()));
+	const FTransform CorrectedPresentation = GetInterpolatedDriveTransform();
+	const double VisibleDistance = FVector::Dist(PreviousPresentation.GetLocation(), CorrectedPresentation.GetLocation());
+	const double VisibleAngle = FMath::RadiansToDegrees(PreviousPresentation.GetRotation().AngularDistance(CorrectedPresentation.GetRotation()));
 	if (VisibleDistance <= MaxVisualCorrectionDistance && VisibleAngle <= MaxVisualCorrectionAngle)
 	{
-		DrivePresentation->SetWorldLocationAndRotation(PreviousPresentation.GetLocation(), PreviousPresentation.GetRotation());
+		PresentationCorrectionOffset = PreviousPresentation.GetLocation() - CorrectedPresentation.GetLocation();
+		PresentationCorrectionRotation = (PreviousPresentation.GetRotation() * CorrectedPresentation.GetRotation().Inverse()).GetNormalized();
 	}
 	else
 	{
-		DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
+		PresentationCorrectionOffset = FVector::ZeroVector;
+		PresentationCorrectionRotation = FQuat::Identity;
 	}
 	UE_LOG(LogMWVehicleNet, Verbose, TEXT("%s corrected stream %u ack %u (same=%d); replaying %d moves; root delta %.1f cm / %.1f deg"),
 		*GetName(), ServerDriveSnapshot.StreamId, Ack, bSameAck, PredictedMoves.Num(),
@@ -472,31 +496,63 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 
 void AMWVehiclePawn::SmoothDrivePresentation(float DeltaTime)
 {
-	const FVector Offset = DrivePresentation->GetRelativeLocation();
-	const FQuat Rotation = DrivePresentation->GetRelativeRotation().Quaternion();
-	if (Offset.IsZero() && Rotation.IsIdentity())
-	{
-		return;
-	}
+	// 평상시 고정 스텝 보간과 서버 보정 완화는 서로 다른 값으로 관리한다.
+	// 카메라와 차체가 같은 표시 기준을 공유하게 한다.
 	const float Remaining = FMath::Exp2(-DeltaTime / PresentationHalfLife);
-	DrivePresentation->SetRelativeLocationAndRotation(Offset.IsNearlyZero(0.05) ? FVector::ZeroVector : Offset * Remaining,
-		Rotation.IsIdentity(UE_KINDA_SMALL_NUMBER) ? FQuat::Identity : FQuat::Slerp(FQuat::Identity, Rotation, Remaining));
+	PresentationCorrectionOffset = PresentationCorrectionOffset.IsNearlyZero(0.05)
+		? FVector::ZeroVector : PresentationCorrectionOffset * Remaining;
+	PresentationCorrectionRotation = PresentationCorrectionRotation.IsIdentity(UE_KINDA_SMALL_NUMBER)
+		? FQuat::Identity : FQuat::Slerp(FQuat::Identity, PresentationCorrectionRotation, Remaining);
+	const FTransform Presentation = GetInterpolatedDriveTransform();
+	DrivePresentation->SetWorldLocationAndRotation(Presentation.GetLocation() + PresentationCorrectionOffset,
+		(PresentationCorrectionRotation * Presentation.GetRotation()).GetNormalized());
+}
+
+FTransform AMWVehiclePawn::GetInterpolatedDriveTransform() const
+{
+	const FTransform Current = CollisionRoot->GetComponentTransform();
+	if (!bHasPreviousDriveTransform)
+	{
+		return Current;
+	}
+	// 한 스텝 이전부터 현재 결과까지 재생해 100/144FPS에서도 프레임마다 일정하게 진행한다.
+	const double Alpha = FMath::Clamp(DriveStepTime / DriveStep, 0.f, 1.f);
+	const FVector Location = FMath::Lerp(PreviousDriveTransform.GetLocation(), Current.GetLocation(), Alpha);
+	const FQuat Rotation = FQuat::Slerp(PreviousDriveTransform.GetRotation(), Current.GetRotation(), Alpha);
+	return FTransform(Rotation, Location, Current.GetScale3D());
+}
+
+void AMWVehiclePawn::ResetDrivePresentation()
+{
+	PreviousDriveTransform = CollisionRoot->GetComponentTransform();
+	bHasPreviousDriveTransform = false;
+	PresentationCorrectionOffset = FVector::ZeroVector;
+	PresentationCorrectionRotation = FQuat::Identity;
+	DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
+	if (UMWVehicleSpringArmComponent* SpringArm = Cast<UMWVehicleSpringArmComponent>(CameraBoom))
+	{
+		SpringArm->ResetCameraLag();
+	}
 }
 
 void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
+{
+	VehicleMovement->ApplyDriveSnapshot(GetProxyDrivePresentation(DeltaTime));
+}
+
+FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTime)
 {
 	const double ServerNow = GetDriveServerTime();
 	if (AppliedStreamId != ServerDriveSnapshot.StreamId)
 	{
 		// 텔레포트나 조종 변경은 이전 경로와 이어서 보간하지 않는다.
-		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
 		AppliedRevision = ServerDriveSnapshot.Revision;
 		ProxySnapshots.Reset();
 		ProxySnapshots.Add(ServerDriveSnapshot);
 		ProxyInterpolationDelay = FMath::Clamp(ServerNow - ServerDriveSnapshot.ServerTimeSeconds, 0.0, 0.30) + ProxyBufferTime;
 		ProxyPlaybackTime = ServerDriveSnapshot.ServerTimeSeconds - ProxyBufferTime;
-		return;
+		return ServerDriveSnapshot;
 	}
 
 	if (IsNewerSequence(ServerDriveSnapshot.Revision, AppliedRevision))
@@ -567,5 +623,5 @@ void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
 			Presentation.ImpactYawRate = 0.f;
 		}
 	}
-	VehicleMovement->ApplyDriveSnapshot(Presentation);
+	return Presentation;
 }

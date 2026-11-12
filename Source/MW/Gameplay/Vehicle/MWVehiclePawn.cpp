@@ -3,6 +3,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Vehicle/MWVehicleSpringArmComponent.h"
 #include "Gameplay/Vehicle/Visual/MWVehicleSkidMarkComponent.h"
 
 #include "CollisionQueryParams.h"
@@ -62,9 +63,9 @@ AMWVehiclePawn::AMWVehiclePawn()
 	DrivePresentation = CreateDefaultSubobject<USceneComponent>(TEXT("DrivePresentation"));
 	DrivePresentation->SetupAttachment(CollisionRoot);
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom = CreateDefaultSubobject<UMWVehicleSpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(DrivePresentation);
-	CameraBoom->TargetArmLength = 550.f;
+	CameraBoom->TargetArmLength = 750.f;
 	CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 100.f);
 	CameraBoom->bDoCollisionTest = false;
@@ -335,7 +336,7 @@ void AMWVehiclePawn::PostInitializeComponents()
 void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetNetMode() == NM_Client)
+	if (GetNetMode() != NM_DedicatedServer)
 	{
 		// 외형 그룹을 통째로 옮겨 바퀴·차체의 상대 위치를 유지한다. 충돌을 가진 그룹은 그대로 둔다.
 		const TArray<TObjectPtr<USceneComponent>> RootChildren = CollisionRoot->GetAttachChildren();
@@ -352,7 +353,8 @@ void AMWVehiclePawn::BeginPlay()
 		}
 		CameraBoom->AddTickPrerequisiteComponent(VehicleMovement);
 	}
-	// Kevin의 외형 완화 계층 연결을 마친 뒤 기존 바퀴 참조를 한 번 캐시한다.
+	ResetDrivePresentation();
+	// 외형 계층과 표시 이력을 초기화한 뒤 바퀴·가상 접지점 설정을 한 번 캐시한다.
 	InitializeWheelVisuals();
 	if (HasAuthority())
 	{
