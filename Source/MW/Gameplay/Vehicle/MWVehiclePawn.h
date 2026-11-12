@@ -82,7 +82,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Collision")
 	TObjectPtr<UBoxComponent> CollisionRoot;
 
-	// Optional simple convex collision authored in Pawn-local space.
+	// 기존 볼록 충돌 에셋 설정은 보존한다. 이번 통합에서는 박스 루트만 사용한다.
 	UPROPERTY(EditDefaultsOnly, Category="MW|Collision")
 	TObjectPtr<UStaticMesh> DrivingCollisionMesh;
 
@@ -100,6 +100,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Drive")
+	TObjectPtr<USceneComponent> DrivePresentation;
 
 private:
 	friend class UMWVehicleMovementComponent;
@@ -140,6 +143,19 @@ private:
 	{
 		FMWVehicleMoveCommand Command;
 		FMWVehicleDriveSnapshot Result;
+		TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts;
+	};
+
+	// 같은 상대에게 닿아 있는 동안, 이전 스냅샷의 속도로 연속 충격을 만들지 않도록 하는 로컬 추정치.
+	struct FPredictedContactMotion
+	{
+		FObjectKey Vehicle;
+		uint32 StreamId = 0;
+		uint32 Revision = 0;
+		float RemainingTime = 0.f;
+		FVector Location = FVector::ZeroVector;
+		FVector Velocity = FVector::ZeroVector;
+		FVector BeforeImpactVelocity = FVector::ZeroVector;
 	};
 
 	FMWVehicleDriveInput DriveInput;
@@ -149,7 +165,9 @@ private:
 
 	TMap<uint32, FMWVehicleDriveInput> QueuedServerMoves;
 	TArray<FPredictedMove> PredictedMoves;
-	FMWVehicleDriveSnapshot ProxyStart;
+	TArray<FPredictedContactMotion, TInlineAllocator<3>> PredictedContactMotions;
+	FMWVehicleDriveSnapshot LastAuthoritativeSnapshot;
+	TArray<FMWVehicleDriveSnapshot, TInlineAllocator<12>> ProxySnapshots;
 	uint32 LastProcessedMoveId = 0;
 	uint32 NextMoveId = 1;
 	uint32 AppliedStreamId = 0;
@@ -157,10 +175,14 @@ private:
 	float DriveStepTime = 0.f;
 	float SnapshotTime = 0.f;
 	float SendTime = 0.f;
-	float ProxyBlendTime = 0.f;
+	double ProxyPlaybackTime = 0.0;
+	double ProxyInterpolationDelay = 0.0;
 	float RemoteInputSilence = 0.f;
+	float RemoteInputGapTime = 0.f;
 	bool bHadRemoteInput = false;
 	bool bWasPredicting = false;
+	bool bPredictionBufferFull = false;
+	bool bContactSnapshotPending = false;
 
 	UFUNCTION(Server, Unreliable)
 	void ServerSubmitDriveMoves(uint32 StreamId, const TArray<FMWVehicleMoveCommand>& Moves);
@@ -172,5 +194,8 @@ private:
 	void ResetDriveStream();
 	void PublishDriveSnapshot(bool bNewStream = false);
 	void ReconcilePredictedDrive();
+	void SimulatePredictedMove(FPredictedMove& Move);
+	void SmoothDrivePresentation(float DeltaTime);
+	double GetDriveServerTime() const;
 
 };

@@ -7,15 +7,36 @@
 
 #include "CollisionQueryParams.h"
 #include "Components/BoxComponent.h"
+#include "Components/MeshComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "PhysicsEngine/BodySetup.h"
 #include "ProfilingDebugging/CpuProfilerTrace.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/CameraTypes.h"
 #include "GameFramework/SpringArmComponent.h"
 
+
+namespace
+{
+	bool IsVisualBranch(USceneComponent* Component)
+	{
+		TArray<USceneComponent*> Parts;
+		Component->GetChildrenComponents(true, Parts);
+		Parts.Add(Component);
+
+		bool bHasMesh = false;
+		for (const USceneComponent* Part : Parts)
+		{
+			const UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Part);
+			if (Part->GetOwner() != Component->GetOwner() || (Primitive && Primitive->IsCollisionEnabled()))
+			{
+				return false;
+			}
+			bHasMesh |= Part->IsA<UMeshComponent>();
+		}
+		return bHasMesh;
+	}
+}
 
 // 충돌 루트와 Pawn 전용 이동 컴포넌트를 연결한다.
 AMWVehiclePawn::AMWVehiclePawn()
@@ -38,8 +59,11 @@ AMWVehiclePawn::AMWVehiclePawn()
 	VehicleMovement->SetUpdatedComponent(CollisionRoot);
 	ItemComponent = CreateDefaultSubobject<UMWItemComponent>(TEXT("Items"));
 
+	DrivePresentation = CreateDefaultSubobject<USceneComponent>(TEXT("DrivePresentation"));
+	DrivePresentation->SetupAttachment(CollisionRoot);
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->SetupAttachment(DrivePresentation);
 	CameraBoom->TargetArmLength = 550.f;
 	CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 100.f);
@@ -276,45 +300,33 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 void AMWVehiclePawn::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	// 이번 통합은 Kevin의 박스 충돌·접촉 예측 계약을 따른다.
+	// DrivingCollisionMesh와 복구 에셋은 보존하되 루트나 UpdatedComponent를 교체하지 않는다.
 	CollisionRoot->SetGenerateOverlapEvents(true);
-
-	if (!DrivingCollisionMesh)
-	{
-		return;
-	}
-
-	const UBodySetup* BodySetup = DrivingCollisionMesh->GetBodySetup();
-	if (!BodySetup || BodySetup->CollisionTraceFlag == CTF_UseComplexAsSimple ||
-		BodySetup->AggGeom.ConvexElems.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: Driving collision requires simple convex geometry."), *GetName());
-		return;
-	}
-
-	auto* Hull = NewObject<UStaticMeshComponent>(this, TEXT("DrivingCollisionHull"), RF_Transient);
-	Hull->SetStaticMesh(DrivingCollisionMesh);
-	Hull->SetMobility(EComponentMobility::Movable);
-	Hull->SetHiddenInGame(true);
-	Hull->SetCastShadow(false);
-	Hull->SetCollisionProfileName(CollisionRoot->GetCollisionProfileName());
-	Hull->SetCollisionObjectType(CollisionRoot->GetCollisionObjectType());
-	Hull->SetCollisionResponseToChannels(CollisionRoot->GetCollisionResponseToChannels());
-	Hull->SetCollisionEnabled(CollisionRoot->GetCollisionEnabled());
-	Hull->SetGenerateOverlapEvents(CollisionRoot->GetGenerateOverlapEvents());
-	Hull->SetWorldTransform(CollisionRoot->GetComponentTransform());
-	Hull->RegisterComponent();
-
-	SetRootComponent(Hull);
-	// Preserve the authored camera, mesh hierarchy, and relative wheel transforms.
-	CollisionRoot->AttachToComponent(Hull, FAttachmentTransformRules::KeepWorldTransform);
-	CollisionRoot->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	VehicleMovement->SetUpdatedComponent(Hull);
 }
 
 // Called when the game starts or when spawned
 void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
+	if (GetNetMode() == NM_Client)
+	{
+		// 외형 그룹을 통째로 옮겨 바퀴·차체의 상대 위치를 유지한다. 충돌을 가진 그룹은 그대로 둔다.
+		const TArray<TObjectPtr<USceneComponent>> RootChildren = CollisionRoot->GetAttachChildren();
+		for (USceneComponent* Child : RootChildren)
+		{
+			if (IsValid(Child) && Child != DrivePresentation && IsVisualBranch(Child))
+			{
+				Child->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
+			}
+		}
+		if (CameraBoom->GetAttachParent() == CollisionRoot)
+		{
+			CameraBoom->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
+		}
+		CameraBoom->AddTickPrerequisiteComponent(VehicleMovement);
+	}
+	// Kevin의 외형 완화 계층 연결을 마친 뒤 기존 바퀴 참조를 한 번 캐시한다.
 	InitializeWheelVisuals();
 	if (HasAuthority())
 	{

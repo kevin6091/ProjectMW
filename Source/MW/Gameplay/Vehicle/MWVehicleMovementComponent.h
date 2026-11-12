@@ -4,13 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PawnMovementComponent.h"
-#include "MWVehicleDriveInput.h"
+#include "MWVehicleNetworkTypes.h"
 #include "Data/MWVehicleDriveData.h"
 #include "MWVehicleMovementComponent.generated.h"
 
 class AMWVehiclePawn;
 class UMWTrackRuntimeComponent;
-struct FMWVehicleDriveSnapshot;
 
 /**
  *
@@ -25,6 +24,7 @@ public:
 
 	void SetDriveInput(const FMWVehicleDriveInput& NewInput);
 
+	// Pilot ABP와 바퀴 표시는 기존 입력을 조회만 한다. 서버 예측 상태를 변경하지 않는다.
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
 	float GetSteeringInput() const { return DriveInput.Steering; }
 
@@ -55,8 +55,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual bool OverlapTest(const FVector& Location, const FQuat& Rotation, ECollisionChannel Channel,
-		const FCollisionShape& Shape, const AActor* IgnoreActor) const override;
 
 	UPROPERTY(EditDefaultsOnly, Category="MW|Drive")
 	TObjectPtr<UMWVehicleDriveData> DriveData;
@@ -64,9 +62,11 @@ protected:
 private:
 	friend class AMWVehiclePawn;
 
-	void SimulateDriveStep(float DeltaTime);
+	void SimulateDriveStep(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts = {},
+		FMWVehiclePredictedImpact* OutImpact = nullptr);
 	void CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const;
 	void ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot);
+	FMWVehicleContactTuning GetContactTuning() const;
 
 	UPROPERTY(Transient)
 	FMWVehicleDriveConfig DriveConfig;
@@ -78,10 +78,11 @@ private:
 	double TrackBoostEndTime = -1.0;
 	FVector TrackSurfaceVelocity = FVector::ZeroVector;
 	double TrackSurfaceEndTime = -1.0;
-	// 탑승 중인 발판은 소유하지 않으며 이탈·텔레포트·종료 시 선행 틱 연결까지 해제한다.
+	// 발판의 비소유 참조와 선행 틱 수명만 관리한다. Kevin의 스냅샷 계약에는 추가하지 않는다.
 	TWeakObjectPtr<UMWTrackRuntimeComponent> TrackLiftBase;
 
 	bool HasItemBooster() const;
+
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 
 	// 최근 바닥 검사에서 접지 조건을 만족했는지
@@ -92,13 +93,14 @@ private:
 	FQuat TargetRotation = FQuat::Identity;
 	// 아래 방향 Sweep으로 구한 접촉까지의 이동 거리
 	float GroundDistance = 0.f;
+	float ImpactYawRate = 0.f;
 
 	void UpdateDriveVelocity(float DeltaTime);
-	void UpdateSteering(float DeltaTime);
+	void UpdateSteering(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts);
 	void UpdateGroundState();
 	void UpdateAirVelocity(float DeltaTime);
 
-	void MoveVehicle(float DeltaTime);
+	void MoveVehicle(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts, FMWVehiclePredictedImpact* OutImpact);
 
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
