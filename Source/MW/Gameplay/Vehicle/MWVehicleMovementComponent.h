@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PawnMovementComponent.h"
-#include "MWVehicleDriveInput.h"
+#include "MWVehicleNetworkTypes.h"
 #include "Data/MWVehicleDriveData.h"
 #include "MWVehicleMovementComponent.generated.h"
 
 class AMWVehiclePawn;
-struct FMWVehicleDriveSnapshot;
 
 /**
  *
@@ -46,9 +45,11 @@ protected:
 private:
 	friend class AMWVehiclePawn;
 
-	void SimulateDriveStep(float DeltaTime);
+	void SimulateDriveStep(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts = {},
+		FMWVehiclePredictedImpact* OutImpact = nullptr);
 	void CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const;
 	void ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot);
+	FMWVehicleContactTuning GetContactTuning() const;
 
 	UPROPERTY(Transient)
 	FMWVehicleDriveConfig DriveConfig;
@@ -67,13 +68,14 @@ private:
 	FQuat TargetRotation = FQuat::Identity;
 	// 아래 방향 Sweep으로 구한 접촉까지의 이동 거리
 	float GroundDistance = 0.f;
+	float ImpactYawRate = 0.f;
 
 	void UpdateDriveVelocity(float DeltaTime);
-	void UpdateSteering(float DeltaTime);
+	void UpdateSteering(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts);
 	void UpdateGroundState();
 	void UpdateAirVelocity(float DeltaTime);
 
-	void MoveVehicle(float DeltaTime);
+	void MoveVehicle(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts, FMWVehiclePredictedImpact* OutImpact);
 
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
