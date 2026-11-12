@@ -35,6 +35,13 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	FVector_NetQuantize10 Location = FVector::ZeroVector;
 
+	// 스냅샷 시점의 발판 이동량도 보내 수신 월드의 현재 발판 위치를 기준으로 차량 위치를 복원한다.
+	UPROPERTY()
+	TWeakObjectPtr<AActor> TrackLiftBase;
+
+	UPROPERTY()
+	FVector_NetQuantize10 TrackLiftOffset = FVector::ZeroVector;
+
 	UPROPERTY()
 	FRotator Rotation = FRotator::ZeroRotator;
 

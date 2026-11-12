@@ -96,12 +96,26 @@ void UMWVehicleMovementComponent::CaptureDriveSnapshot(FMWVehicleDriveSnapshot& 
 	}
 	OutSnapshot.Velocity = Velocity;
 	OutSnapshot.bGrounded = bGrounded;
+	OutSnapshot.TrackLiftBase = nullptr;
+	OutSnapshot.TrackLiftOffset = FVector::ZeroVector;
+	if (const UMWTrackRuntimeComponent* Base = TrackLiftBase.Get())
+	{
+		OutSnapshot.TrackLiftBase = Base->GetOwner();
+		OutSnapshot.TrackLiftOffset = Base->GetLiftWorldOffset();
+	}
 }
 
 void UMWVehicleMovementComponent::ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot)
 {
 	// 서버 위치를 복원할 때 Sweep하거나 Pawn의 텔레포트 콜백으로 입력을 초기화하지 않는다.
-	UpdatedComponent->SetWorldLocationAndRotation(Snapshot.Location, Snapshot.Rotation, false, nullptr, ETeleportType::TeleportPhysics);
+	// 수신 순간의 발판 위치 차이만 보정해 오래된 스냅샷이 차량을 발판 아래로 끌어내리지 않게 한다.
+	FVector Location = Snapshot.Location;
+	SetTrackLiftBase(Snapshot.TrackLiftBase.Get());
+	if (const UMWTrackRuntimeComponent* Base = TrackLiftBase.Get())
+	{
+		Location += Base->GetLiftWorldOffset() - FVector(Snapshot.TrackLiftOffset);
+	}
+	UpdatedComponent->SetWorldLocationAndRotation(Location, Snapshot.Rotation, false, nullptr, ETeleportType::TeleportPhysics);
 	Velocity = Snapshot.Velocity;
 	bGrounded = Snapshot.bGrounded;
 	TargetRotation = UpdatedComponent->GetComponentQuat();

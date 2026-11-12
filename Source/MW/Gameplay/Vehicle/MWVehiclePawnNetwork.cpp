@@ -55,6 +55,8 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 		&& Snapshot.Location == ServerDriveSnapshot.Location
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
+		&& Snapshot.TrackLiftBase == ServerDriveSnapshot.TrackLiftBase
+		&& Snapshot.TrackLiftOffset == ServerDriveSnapshot.TrackLiftOffset
 		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded)
 	{
 		return;
@@ -227,7 +229,11 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 	if (AckedCount > 0)
 	{
 		const FMWVehicleDriveSnapshot& Prediction = PredictedMoves[AckedCount - 1].Result;
-		bNeedsCorrection = !Prediction.Location.Equals(ServerDriveSnapshot.Location, 3.f)
+		// 서로 다른 시각의 발판 높이를 차량 예측 오차로 오인하지 않도록 발판 이동량을 뺀 좌표로 비교한다.
+		const FVector PredictedPosition = Prediction.Location - Prediction.TrackLiftOffset;
+		const FVector ServerPosition = ServerDriveSnapshot.Location - ServerDriveSnapshot.TrackLiftOffset;
+		bNeedsCorrection = Prediction.TrackLiftBase != ServerDriveSnapshot.TrackLiftBase
+			|| !PredictedPosition.Equals(ServerPosition, 3.f)
 			|| !Prediction.Rotation.Equals(ServerDriveSnapshot.Rotation, 1.f)
 			|| !Prediction.Velocity.Equals(ServerDriveSnapshot.Velocity, 5.f)
 			|| Prediction.bGrounded != ServerDriveSnapshot.bGrounded;
@@ -261,6 +267,11 @@ void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
 	else if (AppliedRevision != ServerDriveSnapshot.Revision)
 	{
 		VehicleMovement->CaptureDriveSnapshot(ProxyStart);
+		// 발판이 바뀌면 공통 기준 좌표가 없으므로 이전 발판 위치와 새 위치를 섞어 보간하지 않는다.
+		if (ProxyStart.TrackLiftBase != ServerDriveSnapshot.TrackLiftBase)
+		{
+			ProxyStart = ServerDriveSnapshot;
+		}
 		AppliedRevision = ServerDriveSnapshot.Revision;
 		ProxyBlendTime = 0.f;
 	}
@@ -271,7 +282,13 @@ void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
 		const float Alpha = ProxyBlendTime / SnapshotInterval;
 		FMWVehicleDriveSnapshot Presentation = ServerDriveSnapshot;
 		Presentation.Location = FMath::Lerp(FVector(ProxyStart.Location), FVector(ServerDriveSnapshot.Location), Alpha);
+		Presentation.TrackLiftOffset = FMath::Lerp(FVector(ProxyStart.TrackLiftOffset), FVector(ServerDriveSnapshot.TrackLiftOffset), Alpha);
 		Presentation.Rotation = FQuat::Slerp(ProxyStart.Rotation.Quaternion(), ServerDriveSnapshot.Rotation.Quaternion(), Alpha).Rotator();
 		VehicleMovement->ApplyDriveSnapshot(Presentation);
+	}
+	else if (ServerDriveSnapshot.TrackLiftBase.IsValid())
+	{
+		// 새 스냅샷이 없는 프레임에도 정지한 원격 차량이 현재 발판 높이를 따라가게 한다.
+		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
 	}
 }
