@@ -6,6 +6,8 @@
 #include "MWVehicleDriveInput.h"
 #include "MWVehicleNetworkTypes.generated.h"
 
+inline constexpr float MWVehicleImpactYawDamping = 8.f;
+
 USTRUCT()
 struct FMWVehicleMoveCommand
 {
@@ -50,6 +52,15 @@ struct FMWVehicleDriveSnapshot
 
 	UPROPERTY()
 	double ServerTimeSeconds = 0.0;
+
+	// 스트림·ACK·위치·속도가 서로 다른 전송 시점의 값으로 섞이지 않도록 한 묶음으로 복제한다.
+	bool NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess);
+};
+
+template<>
+struct TStructOpsTypeTraits<FMWVehicleDriveSnapshot> : TStructOpsTypeTraitsBase2<FMWVehicleDriveSnapshot>
+{
+	enum { WithNetSerializer = true };
 };
 
 struct FMWVehicleContactTuning
@@ -69,8 +80,16 @@ struct FMWVehicleContactSample
 	FVector Location;
 	FQuat Rotation;
 	FVector Velocity;
+	// 새 서버 자료로 상대 위치가 바뀐 양도 연속 Sweep에 포함한다. 충격 계산에는 Velocity만 쓴다.
+	FVector CorrectionDelta = FVector::ZeroVector;
+	float ImpactYawRate = 0.f;
 	FVector Extent;
 	FMWVehicleContactTuning Tuning;
+	// 불변 원본을 남겨 보정 재실행 때 상대 상태를 같은 예측 시각으로 다시 평가한다.
+	double SourceTime = 0.0;
+	FVector SourceLocation = FVector::ZeroVector;
+	FVector SourceVelocity = FVector::ZeroVector;
+	FQuat SourceRotation = FQuat::Identity;
 };
 
 struct FMWVehiclePredictedImpact
@@ -78,4 +97,6 @@ struct FMWVehiclePredictedImpact
 	int32 SampleIndex = INDEX_NONE;
 	double Fraction = 0.0;
 	FVector OtherVelocityDelta = FVector::ZeroVector;
+	FVector Normal = FVector::ZeroVector;
+	float OtherYawRateDelta = 0.f;
 };

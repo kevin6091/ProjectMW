@@ -12,6 +12,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UBoxComponent;
 class UMWVehicleMovementComponent;
+class UMWVehiclePresentationComponent;
 
 UCLASS()
 class MW_API AMWVehiclePawn : public APawn
@@ -53,15 +54,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Drive")
 	TObjectPtr<USceneComponent> DrivePresentation;
 
+	UPROPERTY(VisibleAnywhere, Category="MW|Drive")
+	TObjectPtr<UMWVehiclePresentationComponent> PresentationTick;
+
 private:
 	friend class UMWVehicleMovementComponent;
-
-	struct FPredictedMove
-	{
-		FMWVehicleMoveCommand Command;
-		FMWVehicleDriveSnapshot Result;
-		TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts;
-	};
+	friend class UMWVehiclePresentationComponent;
 
 	// 같은 상대에게 닿아 있는 동안, 이전 스냅샷의 속도로 연속 충격을 만들지 않도록 하는 로컬 추정치.
 	struct FPredictedContactMotion
@@ -73,6 +71,17 @@ private:
 		FVector Location = FVector::ZeroVector;
 		FVector Velocity = FVector::ZeroVector;
 		FVector BeforeImpactVelocity = FVector::ZeroVector;
+		FQuat Rotation = FQuat::Identity;
+		float ImpactYawRate = 0.f;
+	};
+
+	struct FPredictedMove
+	{
+		FMWVehicleMoveCommand Command;
+		FMWVehicleDriveSnapshot Result;
+		TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts;
+		TArray<FPredictedContactMotion, TInlineAllocator<3>> ContactMotions;
+		double ResultTime = 0.0;
 	};
 
 	FMWVehicleDriveInput DriveInput;
@@ -83,9 +92,11 @@ private:
 	TMap<uint32, FMWVehicleDriveInput> QueuedServerMoves;
 	TArray<FPredictedMove> PredictedMoves;
 	TArray<FPredictedContactMotion, TInlineAllocator<3>> PredictedContactMotions;
+	TArray<FPredictedContactMotion, TInlineAllocator<3>> LastAckedContactMotions;
+	double LastAckedContactTime = 0.0;
 	FMWVehicleDriveSnapshot LastAuthoritativeSnapshot;
 	TArray<FMWVehicleDriveSnapshot, TInlineAllocator<12>> ProxySnapshots;
-	// 충돌체는 고정 스텝 결과에 두고, 차체와 카메라는 이전·현재 결과 사이를 표시한다.
+	// 충돌체는 고정 스텝 결과에 둔다. 직전 회전은 남은 짧은 표시 시간의 Yaw 추정에만 쓴다.
 	FTransform PreviousDriveTransform = FTransform::Identity;
 	FVector PresentationCorrectionOffset = FVector::ZeroVector;
 	FQuat PresentationCorrectionRotation = FQuat::Identity;
@@ -105,6 +116,11 @@ private:
 	bool bWasPredicting = false;
 	bool bPredictionBufferFull = false;
 	bool bContactSnapshotPending = false;
+	float ContactPresentationWeight = 0.f;
+	float ContactPresentationTime = 0.f;
+	FVector ContactPresentationNormal = FVector::ZeroVector;
+	TWeakObjectPtr<AMWVehiclePawn> ContactPresentationOther;
+	bool bContactPresentationPending = false;
 
 	UFUNCTION(Server, Unreliable)
 	void ServerSubmitDriveMoves(uint32 StreamId, const TArray<FMWVehicleMoveCommand>& Moves);
@@ -114,13 +130,19 @@ private:
 	void TickPredictedDrive(float DeltaTime);
 	void TickProxyDrive(float DeltaTime);
 	FMWVehicleDriveSnapshot GetProxyDrivePresentation(float DeltaTime);
+	bool GetContactPrediction(const AMWVehiclePawn* Other, double ServerTime, FMWVehicleContactSample& OutContact,
+		bool bUseContactMotion = false) const;
+	void NotifyDriveContact(AMWVehiclePawn* Other, const FVector& Normal);
+	void UpdateDrivePresentation(float DeltaTime);
+	void UpdateNearbyPresentation(FMWVehicleDriveSnapshot& Presentation, float DeltaTime);
 	void ResetDriveStream();
 	void PublishDriveSnapshot(bool bNewStream = false);
 	void ReconcilePredictedDrive();
-	void SimulatePredictedMove(FPredictedMove& Move);
+	void SimulatePredictedMove(FPredictedMove& Move, bool bReplaying = false);
 	void SmoothDrivePresentation(float DeltaTime);
-	FTransform GetInterpolatedDriveTransform() const;
+	FTransform GetLocalDrivePresentation() const;
 	void ResetDrivePresentation();
 	double GetDriveServerTime() const;
+	double GetDrivePredictionTime() const;
 
 };

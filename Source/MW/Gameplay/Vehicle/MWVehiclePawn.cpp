@@ -3,6 +3,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehicleSpringArmComponent.h"
+#include "Gameplay/Vehicle/MWVehiclePresentationComponent.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/MeshComponent.h"
@@ -52,6 +53,8 @@ AMWVehiclePawn::AMWVehiclePawn()
 
 	DrivePresentation = CreateDefaultSubobject<USceneComponent>(TEXT("DrivePresentation"));
 	DrivePresentation->SetupAttachment(CollisionRoot);
+	PresentationTick = CreateDefaultSubobject<UMWVehiclePresentationComponent>(TEXT("PresentationTick"));
+	PresentationTick->AddTickPrerequisiteComponent(VehicleMovement);
 
 	CameraBoom = CreateDefaultSubobject<UMWVehicleSpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(DrivePresentation);
@@ -131,7 +134,7 @@ void AMWVehiclePawn::BeginPlay()
 		{
 			CameraBoom->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
 		}
-		CameraBoom->AddTickPrerequisiteComponent(VehicleMovement);
+		CameraBoom->AddTickPrerequisiteComponent(PresentationTick);
 	}
 	ResetDrivePresentation();
 	if (HasAuthority())

@@ -1,6 +1,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehicleSpringArmComponent.h"
+#include "Gameplay/Vehicle/MWVehiclePresentationComponent.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -23,9 +24,9 @@ namespace
 	constexpr int32 MaxProxySnapshots = 12;
 	constexpr double ProxyBufferTime = 0.075;
 	constexpr double MaxProxyExtrapolation = 0.05;
-	constexpr double MaxContactExtrapolation = 0.10;
+	constexpr double MaxContactExtrapolation = 0.25;
 	constexpr double MaxContactSampleAge = 0.35;
-	constexpr float PredictedContactLifetime = 0.10f;
+	constexpr float PredictedContactLifetime = 0.25f;
 	constexpr float PresentationHalfLife = 0.055f;
 	constexpr double MaxVisualCorrectionDistance = 150.0;
 	constexpr double MaxVisualCorrectionAngle = 45.0;
@@ -63,6 +64,15 @@ double AMWVehiclePawn::GetDriveServerTime() const
 	const UWorld* World = GetWorld();
 	const AGameStateBase* GameState = World->GetGameState();
 	return !HasAuthority() && GameState ? GameState->GetServerWorldTimeSeconds() : World->GetTimeSeconds();
+}
+
+double AMWVehiclePawn::GetDrivePredictionTime() const
+{
+	if (!HasAuthority() && IsLocallyControlled() && AppliedStreamId != 0)
+	{
+		return LastAuthoritativeSnapshot.ServerTimeSeconds + PredictedMoves.Num() * DriveStep;
+	}
+	return GetDriveServerTime() - FMath::Clamp(DriveStepTime, 0.f, DriveStep);
 }
 
 void AMWVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -123,19 +133,6 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 	if (HasAuthority())
 	{
 		TickAuthorityDrive(DeltaTime);
-		if (GetNetMode() != NM_DedicatedServer)
-		{
-			if (IsPlayerControlled() && !IsLocallyControlled())
-			{
-				// 호스트가 보는 참가자도 입력 패킷 도착 간격과 화면 표시 간격을 분리한다.
-				const FMWVehicleDriveSnapshot Presentation = GetProxyDrivePresentation(DeltaTime);
-				DrivePresentation->SetWorldLocationAndRotation(Presentation.Location, Presentation.Rotation);
-			}
-			else
-			{
-				SmoothDrivePresentation(DeltaTime);
-			}
-		}
 		return;
 	}
 
@@ -148,6 +145,8 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 		SendTime = 0.f;
 		PredictedMoves.Reset();
 		PredictedContactMotions.Reset();
+		LastAckedContactMotions.Reset();
+		LastAckedContactTime = 0.0;
 		ProxySnapshots.Reset();
 		bPredictionBufferFull = false;
 		ResetDrivePresentation();
@@ -161,10 +160,6 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 	if (bPredicting)
 	{
 		TickPredictedDrive(DeltaTime);
-	}
-	else
-	{
-		TickProxyDrive(DeltaTime);
 	}
 }
 
@@ -285,10 +280,12 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 	{
 		PredictedMoves.Reset();
 		PredictedContactMotions.Reset();
+		LastAckedContactMotions.Reset();
 		NextMoveId = ServerDriveSnapshot.LastProcessedMoveId + 1;
 		DriveStepTime = 0.f;
 		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
 		LastAuthoritativeSnapshot = ServerDriveSnapshot;
+		LastAckedContactTime = ServerDriveSnapshot.ServerTimeSeconds;
 		ResetDrivePresentation();
 		bPredictionBufferFull = false;
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
@@ -300,31 +297,21 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 		AppliedRevision = ServerDriveSnapshot.Revision;
 	}
 
-	const double ServerNow = GetDriveServerTime();
 	DriveStepTime = FMath::Min(DriveStepTime + DeltaTime, MaxDriveStepTime);
 	while (DriveStepTime >= DriveStep && PredictedMoves.Num() < MaxPendingMoves)
 	{
 		FPredictedMove& Move = PredictedMoves.AddDefaulted_GetRef();
 		Move.Command.MoveId = NextMoveId++;
 		Move.Command.Input = IsValidDriveInput(DriveInput) ? DriveInput : FMWVehicleDriveInput{};
+		const double ContactTime = LastAuthoritativeSnapshot.ServerTimeSeconds
+			+ (Move.Command.MoveId - LastAuthoritativeSnapshot.LastProcessedMoveId - 1) * DriveStep;
 		for (const AMWVehiclePawn* Other : ContactSources)
 		{
-			const FMWVehicleDriveSnapshot& Snapshot = Other->ServerDriveSnapshot;
-			const double Age = ServerNow - DriveStepTime - Snapshot.ServerTimeSeconds;
-			const double Lead = FMath::Clamp(Age, 0.0, MaxContactExtrapolation);
-			const FVector Velocity = Snapshot.Velocity;
-			FMWVehicleContactSample& Sample = Move.Contacts.AddDefaulted_GetRef();
-			Sample.Vehicle = FObjectKey(Other);
-			Sample.StreamId = Snapshot.StreamId;
-			Sample.Revision = Snapshot.Revision;
-			Sample.Location = FVector(Snapshot.Location) + Velocity * Lead;
-			FRotator Rotation = Snapshot.Rotation;
-			Rotation.Yaw += Snapshot.ImpactYawRate * Lead;
-			Sample.Rotation = Rotation.Quaternion();
-			// 오랫동안 새 상태가 없으면 마지막 근사 위치를 사용하되 상대의 이동은 더 추정하지 않는다.
-			Sample.Velocity = Age <= MaxContactSampleAge ? Velocity : FVector::ZeroVector;
-			Sample.Extent = Other->CollisionRoot->GetScaledBoxExtent();
-			Sample.Tuning = Other->VehicleMovement->GetContactTuning();
+			FMWVehicleContactSample Sample;
+			if (GetContactPrediction(Other, ContactTime, Sample))
+			{
+				Move.Contacts.Add(Sample);
+			}
 		}
 		SimulatePredictedMove(Move);
 		DriveStepTime -= DriveStep;
@@ -358,13 +345,31 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 		}
 		ServerSubmitDriveMoves(AppliedStreamId, Batch);
 	}
-	SmoothDrivePresentation(DeltaTime);
 }
 
-void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move)
+void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move, bool bReplaying)
 {
-	// 원본은 그대로 저장한다. 재실행에서도 같은 상대 스냅샷으로 출발해 임시 반응을 다시 계산한다.
+	// 저장한 원본과 ACK 시점의 상대 추정치를 복원한다. 화면에 보이는 과거 위치는 읽지 않는다.
 	TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts = Move.Contacts;
+	const double StepTime = LastAuthoritativeSnapshot.ServerTimeSeconds
+		+ (Move.Command.MoveId - LastAuthoritativeSnapshot.LastProcessedMoveId - 1) * DriveStep;
+	for (FMWVehicleContactSample& Contact : Contacts)
+	{
+		FMWVehicleContactSample Latest;
+		if (GetContactPrediction(Cast<AMWVehiclePawn>(Contact.Vehicle.ResolveObjectPtr()), StepTime, Latest)
+			&& Latest.StreamId == Contact.StreamId && Latest.SourceTime <= StepTime
+			&& Latest.SourceTime > Contact.SourceTime)
+		{
+			// 새 서버 자료가 이 시각까지 도착했다면 이전 추측보다 우선한다.
+			Contact = Latest;
+		}
+		// 내 차와 상대를 같은 시각으로 평가하되 오래된 자료로 계속 멀리 추정하지 않는다.
+		const double Lead = FMath::Clamp(StepTime - Contact.SourceTime, 0.0, MaxContactExtrapolation);
+		Contact.Location = Contact.SourceLocation + Contact.SourceVelocity * Lead;
+		FRotator Rotation = Contact.SourceRotation.Rotator();
+		Rotation.Yaw += Contact.ImpactYawRate * Lead;
+		Contact.Rotation = Rotation.Quaternion();
+	}
 	for (int32 Index = PredictedContactMotions.Num() - 1; Index >= 0; --Index)
 	{
 		FPredictedContactMotion& Motion = PredictedContactMotions[Index];
@@ -372,23 +377,56 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move)
 		{
 			return Contact.Vehicle == Motion.Vehicle && Contact.StreamId == Motion.StreamId;
 		});
-		if (!Sample || Motion.RemainingTime <= 0.f)
+		if (!Sample)
 		{
 			PredictedContactMotions.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			continue;
 		}
 		const bool bServerShowsImpact = IsNewerSequence(Sample->Revision, Motion.Revision)
 			&& FVector::DistSquared(Sample->Velocity, Motion.Velocity) < FVector::DistSquared(Sample->Velocity, Motion.BeforeImpactVelocity);
-		if (bServerShowsImpact)
+		if (bServerShowsImpact || Motion.RemainingTime <= 0.f)
 		{
-			PredictedContactMotions.RemoveAtSwap(Index, 1, EAllowShrinking::No);
-			continue;
+			// 새 스냅샷이 박스 반대편으로 건너뛰더라도 중간 접촉을 빠뜨리지 않는다.
+			const FVector DesiredEnd = Sample->Location + Sample->Velocity * DriveStep;
+			Sample->CorrectionDelta = DesiredEnd - Motion.Location - Sample->Velocity * DriveStep;
+			Sample->Location = Motion.Location;
+			Motion.Location = DesiredEnd;
+			Motion.Rotation = Sample->Rotation;
+			Motion.Velocity = Sample->Velocity;
+			Motion.ImpactYawRate = Sample->ImpactYawRate;
+			Motion.Revision = Sample->Revision;
+			Motion.RemainingTime = 0.f;
 		}
-
-		Sample->Location = Motion.Location;
-		Sample->Velocity = Motion.Velocity;
-		Motion.Location += Motion.Velocity * DriveStep;
-		Motion.RemainingTime -= DriveStep;
+		else
+		{
+			Sample->Location = Motion.Location;
+			Sample->Velocity = Motion.Velocity;
+			Sample->Rotation = Motion.Rotation;
+			Sample->ImpactYawRate = Motion.ImpactYawRate;
+			Motion.Location += Motion.Velocity * DriveStep;
+			FRotator Rotation = Motion.Rotation.Rotator();
+			Rotation.Yaw += Motion.ImpactYawRate * DriveStep;
+			Motion.Rotation = Rotation.Quaternion();
+			Motion.ImpactYawRate *= FMath::Exp(-MWVehicleImpactYawDamping * DriveStep);
+			Motion.RemainingTime -= DriveStep;
+		}
+	}
+	for (const FMWVehicleContactSample& Sample : Contacts)
+	{
+		if (!PredictedContactMotions.ContainsByPredicate([&Sample](const FPredictedContactMotion& Entry)
+		{
+			return Entry.Vehicle == Sample.Vehicle && Entry.StreamId == Sample.StreamId;
+		}))
+		{
+			FPredictedContactMotion& Motion = PredictedContactMotions.AddDefaulted_GetRef();
+			Motion.Vehicle = Sample.Vehicle;
+			Motion.StreamId = Sample.StreamId;
+			Motion.Revision = Sample.Revision;
+			Motion.Location = Sample.Location + Sample.Velocity * DriveStep;
+			Motion.Rotation = Sample.Rotation;
+			Motion.Velocity = Sample.Velocity;
+			Motion.ImpactYawRate = Sample.ImpactYawRate;
+		}
 	}
 
 	FMWVehiclePredictedImpact Impact;
@@ -401,6 +439,15 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move)
 	if (Impact.SampleIndex != INDEX_NONE)
 	{
 		const FMWVehicleContactSample& Sample = Contacts[Impact.SampleIndex];
+		if (!bReplaying)
+		{
+			AMWVehiclePawn* Other = Cast<AMWVehiclePawn>(Sample.Vehicle.ResolveObjectPtr());
+			NotifyDriveContact(Other, Impact.Normal);
+			if (Other)
+			{
+				Other->NotifyDriveContact(this, -Impact.Normal);
+			}
+		}
 		FPredictedContactMotion* Motion = PredictedContactMotions.FindByPredicate([&Sample](const FPredictedContactMotion& Entry)
 		{
 			return Entry.Vehicle == Sample.Vehicle;
@@ -417,8 +464,15 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move)
 		Motion->RemainingTime = PredictedContactLifetime;
 		Motion->BeforeImpactVelocity = Move.Contacts[Impact.SampleIndex].Velocity;
 		Motion->Velocity = Sample.Velocity + Impact.OtherVelocityDelta;
-		Motion->Location = Sample.Location + Sample.Velocity * DriveStep + Impact.OtherVelocityDelta * (DriveStep * (1.0 - Impact.Fraction));
+		Motion->Location = Sample.Location + (Sample.Velocity * DriveStep + Sample.CorrectionDelta) * Impact.Fraction
+			+ Motion->Velocity * (DriveStep * (1.0 - Impact.Fraction));
+		FRotator Rotation = Sample.Rotation.Rotator();
+		Rotation.Yaw += Sample.ImpactYawRate * DriveStep;
+		Motion->Rotation = Rotation.Quaternion();
+		Motion->ImpactYawRate = FMath::Clamp(Sample.ImpactYawRate + Impact.OtherYawRateDelta, -150.f, 150.f);
 	}
+	Move.ContactMotions = PredictedContactMotions;
+	Move.ResultTime = StepTime + DriveStep;
 }
 
 void AMWVehiclePawn::ReconcilePredictedDrive()
@@ -439,15 +493,33 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 
 	// ACK가 같아도 상대가 내 차량을 밀 수 있다. 이때는 같은 ACK의 이전 서버 상태와 비교한다.
 	const FMWVehicleDriveSnapshot* Comparison = bSameAck ? &LastAuthoritativeSnapshot : nullptr;
+	TArray<FPredictedContactMotion, TInlineAllocator<3>> AckedContactMotions = LastAckedContactMotions;
+	double AckedContactTime = LastAckedContactTime;
 	if (AckedCount > 0)
 	{
 		const FPredictedMove& LastAcked = PredictedMoves[AckedCount - 1];
 		if (LastAcked.Command.MoveId == Ack)
 		{
 			Comparison = &LastAcked.Result;
+			AckedContactMotions = LastAcked.ContactMotions;
+			AckedContactTime = LastAcked.ResultTime;
 		}
 	}
 	const bool bNeedsCorrection = !Comparison || NeedsDriveCorrection(*Comparison, ServerDriveSnapshot);
+	const double ContactTimeShift = FMath::Clamp(ServerDriveSnapshot.ServerTimeSeconds - AckedContactTime,
+		-MaxContactExtrapolation, MaxContactExtrapolation);
+	for (FPredictedContactMotion& Motion : AckedContactMotions)
+	{
+		Motion.Location += Motion.Velocity * ContactTimeShift;
+		if (bNeedsCorrection && Comparison && Motion.RemainingTime > 0.f)
+		{
+			// 내 위치를 서버에 맞출 때 붙어 있는 상대 추정치도 같은 양만큼 옮겨 초기 겹침을 막는다.
+			Motion.Location += FVector(ServerDriveSnapshot.Location) - FVector(Comparison->Location);
+		}
+		FRotator Rotation = Motion.Rotation.Rotator();
+		Rotation.Yaw += Motion.ImpactYawRate * ContactTimeShift;
+		Motion.Rotation = Rotation.Quaternion();
+	}
 	if (AckedCount > 0)
 	{
 		PredictedMoves.RemoveAt(0, AckedCount, EAllowShrinking::No);
@@ -455,6 +527,8 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 	if (!bSameAck || bNeedsCorrection)
 	{
 		LastAuthoritativeSnapshot = ServerDriveSnapshot;
+		LastAckedContactMotions = AckedContactMotions;
+		LastAckedContactTime = ServerDriveSnapshot.ServerTimeSeconds;
 	}
 
 	if (!bNeedsCorrection)
@@ -464,18 +538,19 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 
 	const FTransform PreviousPresentation = DrivePresentation->GetComponentTransform();
 	const FTransform PreviousRoot = CollisionRoot->GetComponentTransform();
-	PredictedContactMotions.Reset();
+	// ACK 시점에 살아 있던 상대의 임시 반응도 복원해 같은 접촉을 처음부터 다시 만들지 않는다.
+	PredictedContactMotions = AckedContactMotions;
 	VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
 	PreviousDriveTransform = CollisionRoot->GetComponentTransform();
 	bHasPreviousDriveTransform = false;
 	for (FPredictedMove& Move : PredictedMoves)
 	{
-		SimulatePredictedMove(Move);
+		SimulatePredictedMove(Move, true);
 	}
 
-	// 보정 오프셋은 원본 충돌체가 아니라 화면에 표시할 보간 위치를 기준으로 구한다.
+	// 보정 오프셋은 원본 충돌체가 아니라 화면에 표시할 현재 시각의 위치를 기준으로 구한다.
 	const FTransform CorrectedRoot = CollisionRoot->GetComponentTransform();
-	const FTransform CorrectedPresentation = GetInterpolatedDriveTransform();
+	const FTransform CorrectedPresentation = GetLocalDrivePresentation();
 	const double VisibleDistance = FVector::Dist(PreviousPresentation.GetLocation(), CorrectedPresentation.GetLocation());
 	const double VisibleAngle = FMath::RadiansToDegrees(PreviousPresentation.GetRotation().AngularDistance(CorrectedPresentation.GetRotation()));
 	if (VisibleDistance <= MaxVisualCorrectionDistance && VisibleAngle <= MaxVisualCorrectionAngle)
@@ -496,30 +571,41 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 
 void AMWVehiclePawn::SmoothDrivePresentation(float DeltaTime)
 {
-	// 평상시 고정 스텝 보간과 서버 보정 완화는 서로 다른 값으로 관리한다.
+	// 평상시 짧은 표시 예측과 서버 보정 완화는 서로 다른 값으로 관리한다.
 	// 카메라와 차체가 같은 표시 기준을 공유하게 한다.
-	const float Remaining = FMath::Exp2(-DeltaTime / PresentationHalfLife);
+	const bool bNearContact = ContactPresentationTime > 0.f && !ContactPresentationNormal.IsNearlyZero();
+	const float Remaining = FMath::Exp2(-DeltaTime / (bNearContact ? 0.035f : PresentationHalfLife));
 	PresentationCorrectionOffset = PresentationCorrectionOffset.IsNearlyZero(0.05)
 		? FVector::ZeroVector : PresentationCorrectionOffset * Remaining;
 	PresentationCorrectionRotation = PresentationCorrectionRotation.IsIdentity(UE_KINDA_SMALL_NUMBER)
 		? FQuat::Identity : FQuat::Slerp(FQuat::Identity, PresentationCorrectionRotation, Remaining);
-	const FTransform Presentation = GetInterpolatedDriveTransform();
+	const FTransform Presentation = GetLocalDrivePresentation();
 	DrivePresentation->SetWorldLocationAndRotation(Presentation.GetLocation() + PresentationCorrectionOffset,
 		(PresentationCorrectionRotation * Presentation.GetRotation()).GetNormalized());
 }
 
-FTransform AMWVehiclePawn::GetInterpolatedDriveTransform() const
+FTransform AMWVehiclePawn::GetLocalDrivePresentation() const
 {
 	const FTransform Current = CollisionRoot->GetComponentTransform();
-	if (!bHasPreviousDriveTransform)
+	// 과거 화면을 한 스텝 늦게 재생하지 않고, 계산 뒤 남은 8.33ms 미만의 시간만 현재까지 추정한다.
+	const float Remainder = FMath::Clamp(DriveStepTime, 0.f, DriveStep);
+	FRotator Rotation = Current.Rotator();
+	if (bHasPreviousDriveTransform)
 	{
-		return Current;
+		Rotation.Yaw += FMath::FindDeltaAngleDegrees(PreviousDriveTransform.Rotator().Yaw, Rotation.Yaw) * (Remainder / DriveStep);
 	}
-	// 한 스텝 이전부터 현재 결과까지 재생해 100/144FPS에서도 프레임마다 일정하게 진행한다.
-	const double Alpha = FMath::Clamp(DriveStepTime / DriveStep, 0.f, 1.f);
-	const FVector Location = FMath::Lerp(PreviousDriveTransform.GetLocation(), Current.GetLocation(), Alpha);
-	const FQuat Rotation = FQuat::Slerp(PreviousDriveTransform.GetRotation(), Current.GetRotation(), Alpha);
-	return FTransform(Rotation, Location, Current.GetScale3D());
+	TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts;
+	const double SimulationTime = GetDrivePredictionTime();
+	for (TActorIterator<AMWVehiclePawn> It(GetWorld()); It; ++It)
+	{
+		FMWVehicleContactSample Contact;
+		if (GetContactPrediction(*It, SimulationTime, Contact, true))
+		{
+			Contacts.Add(Contact);
+		}
+	}
+	const FTransform Desired(Rotation, Current.GetLocation() + VehicleMovement->Velocity * Remainder, Current.GetScale3D());
+	return VehicleMovement->LimitDrivePresentation(Desired, Remainder, Contacts);
 }
 
 void AMWVehiclePawn::ResetDrivePresentation()
@@ -528,6 +614,10 @@ void AMWVehiclePawn::ResetDrivePresentation()
 	bHasPreviousDriveTransform = false;
 	PresentationCorrectionOffset = FVector::ZeroVector;
 	PresentationCorrectionRotation = FQuat::Identity;
+	ContactPresentationTime = 0.f;
+	ContactPresentationWeight = 0.f;
+	ContactPresentationOther.Reset();
+	bContactPresentationPending = false;
 	DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
 	if (UMWVehicleSpringArmComponent* SpringArm = Cast<UMWVehicleSpringArmComponent>(CameraBoom))
 	{
@@ -537,7 +627,175 @@ void AMWVehiclePawn::ResetDrivePresentation()
 
 void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
 {
-	VehicleMovement->ApplyDriveSnapshot(GetProxyDrivePresentation(DeltaTime));
+	FMWVehicleDriveSnapshot Presentation = GetProxyDrivePresentation(DeltaTime);
+	UpdateNearbyPresentation(Presentation, DeltaTime);
+	VehicleMovement->ApplyDriveSnapshot(Presentation);
+}
+
+bool AMWVehiclePawn::GetContactPrediction(const AMWVehiclePawn* Other, double ServerTime,
+	FMWVehicleContactSample& OutContact, bool bUseContactMotion) const
+{
+	if (!IsValid(Other) || Other == this || !Other->VehicleMovement->bDriveConfigReady
+		|| !Other->CollisionRoot->IsQueryCollisionEnabled() || Other->ServerDriveSnapshot.StreamId == 0
+		|| CollisionRoot->GetCollisionResponseToChannel(Other->CollisionRoot->GetCollisionObjectType()) != ECR_Block
+		|| Other->CollisionRoot->GetCollisionResponseToChannel(CollisionRoot->GetCollisionObjectType()) != ECR_Block)
+	{
+		return false;
+	}
+	const FMWVehicleDriveSnapshot& Snapshot = Other->ServerDriveSnapshot;
+	OutContact.Vehicle = FObjectKey(Other);
+	OutContact.StreamId = Snapshot.StreamId;
+	OutContact.Revision = Snapshot.Revision;
+	OutContact.Extent = Other->CollisionRoot->GetScaledBoxExtent();
+	OutContact.Tuning = Other->VehicleMovement->GetContactTuning();
+	OutContact.SourceTime = Snapshot.ServerTimeSeconds;
+	OutContact.SourceLocation = Snapshot.Location;
+	OutContact.SourceVelocity = Snapshot.Velocity;
+	OutContact.SourceRotation = Snapshot.Rotation.Quaternion();
+	if (HasAuthority())
+	{
+		OutContact.Location = Other->GetActorLocation();
+		OutContact.Rotation = Other->GetActorQuat();
+		OutContact.Velocity = Other->VehicleMovement->Velocity;
+		OutContact.ImpactYawRate = Other->VehicleMovement->ImpactYawRate;
+		return true;
+	}
+	const double Age = ServerTime - Snapshot.ServerTimeSeconds;
+	const double Lead = FMath::Clamp(Age, 0.0, MaxContactExtrapolation);
+	OutContact.Location = FVector(Snapshot.Location) + FVector(Snapshot.Velocity) * Lead;
+	FRotator Rotation = Snapshot.Rotation;
+	Rotation.Yaw += Snapshot.ImpactYawRate * Lead;
+	OutContact.Rotation = Rotation.Quaternion();
+	const double SourceAge = GetDriveServerTime() - Snapshot.ServerTimeSeconds;
+	OutContact.Velocity = SourceAge <= MaxContactSampleAge ? FVector(Snapshot.Velocity) : FVector::ZeroVector;
+	OutContact.ImpactYawRate = Snapshot.ImpactYawRate;
+	if (bUseContactMotion)
+	{
+		const FPredictedContactMotion* Motion = PredictedContactMotions.FindByPredicate([Other, &Snapshot](const FPredictedContactMotion& Entry)
+		{
+			return Entry.Vehicle == FObjectKey(Other) && Entry.StreamId == Snapshot.StreamId;
+		});
+		if (Motion)
+		{
+			const double MotionTime = GetDrivePredictionTime();
+			const double MotionLead = FMath::Clamp(ServerTime - MotionTime, 0.0, static_cast<double>(DriveStep));
+			OutContact.Location = Motion->Location + Motion->Velocity * MotionLead;
+			OutContact.Velocity = Motion->Velocity;
+			FRotator MotionRotation = Motion->Rotation.Rotator();
+			MotionRotation.Yaw += Motion->ImpactYawRate * MotionLead;
+			OutContact.Rotation = MotionRotation.Quaternion();
+			OutContact.ImpactYawRate = Motion->ImpactYawRate;
+		}
+	}
+	return true;
+}
+
+void AMWVehiclePawn::NotifyDriveContact(AMWVehiclePawn* Other, const FVector& Normal)
+{
+	ContactPresentationOther = Other;
+	ContactPresentationNormal = Normal.GetSafeNormal2D();
+	ContactPresentationTime = 0.18f;
+	bContactPresentationPending = true;
+}
+
+void AMWVehiclePawn::UpdateDrivePresentation(float DeltaTime)
+{
+	ContactPresentationTime = FMath::Max(0.f, ContactPresentationTime - DeltaTime);
+	const bool bLocalDriver = IsLocallyControlled() || !IsPlayerControlled();
+	if (bLocalDriver)
+	{
+		PresentationTick->SetLocalPrerequisite(nullptr);
+	}
+	if (HasAuthority())
+	{
+		if (bLocalDriver)
+		{
+			SmoothDrivePresentation(DeltaTime);
+		}
+		else
+		{
+			FMWVehicleDriveSnapshot Presentation = GetProxyDrivePresentation(DeltaTime);
+			UpdateNearbyPresentation(Presentation, DeltaTime);
+			DrivePresentation->SetWorldLocationAndRotation(Presentation.Location, Presentation.Rotation);
+		}
+	}
+	else if (GetLocalRole() == ROLE_AutonomousProxy && IsLocallyControlled())
+	{
+		SmoothDrivePresentation(DeltaTime);
+	}
+	else if (ServerDriveSnapshot.StreamId != 0)
+	{
+		TickProxyDrive(DeltaTime);
+	}
+	bContactPresentationPending = false;
+}
+
+void AMWVehiclePawn::UpdateNearbyPresentation(FMWVehicleDriveSnapshot& Presentation, float DeltaTime)
+{
+	AMWVehiclePawn* LocalVehicle = nullptr;
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* LocalController = It->Get();
+		if (LocalController && LocalController->IsLocalController())
+		{
+			LocalVehicle = Cast<AMWVehiclePawn>(LocalController->GetPawn());
+			break;
+		}
+	}
+	PresentationTick->SetLocalPrerequisite(LocalVehicle && LocalVehicle != this ? LocalVehicle->PresentationTick : nullptr);
+	if (!LocalVehicle || LocalVehicle == this)
+	{
+		return;
+	}
+	FMWVehicleContactSample Contact;
+	const double PresentationTime = LocalVehicle->GetDrivePredictionTime() + FMath::Clamp(LocalVehicle->DriveStepTime, 0.f, DriveStep);
+	if (!LocalVehicle->GetContactPrediction(this, PresentationTime, Contact, true))
+	{
+		return;
+	}
+	const FTransform LocalPose = LocalVehicle->DrivePresentation->GetComponentTransform();
+	const FVector Direction = (Contact.Location - LocalPose.GetLocation()).GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
+	{
+		return;
+	}
+	const auto Radius = [](const FVector& Axis, const FQuat& Rotation, const FVector& Extent)
+	{
+		return FMath::Abs(Axis | Rotation.GetAxisX()) * Extent.X
+			+ FMath::Abs(Axis | Rotation.GetAxisY()) * Extent.Y
+			+ FMath::Abs(Axis | Rotation.GetAxisZ()) * Extent.Z;
+	};
+	const double LocalRadius = Radius(Direction, LocalPose.GetRotation(), LocalVehicle->CollisionRoot->GetScaledBoxExtent());
+	const double RemoteRadius = Radius(Direction, Contact.Rotation, Contact.Extent);
+	const double Gap = FVector::Dist2D(LocalPose.GetLocation(), Contact.Location) - LocalRadius - RemoteRadius;
+	const double ClosingSpeed = (LocalVehicle->VehicleMovement->Velocity - Contact.Velocity) | Direction;
+	const bool bRecentContact = ContactPresentationOther == LocalVehicle && ContactPresentationTime > 0.f;
+	const bool bApproaching = ClosingSpeed > 20.0 && Gap < ClosingSpeed * 0.35 + 50.0;
+	const bool bNearContact = Gap < 35.0 || bApproaching || bRecentContact;
+	ContactPresentationWeight = FMath::FInterpConstantTo(ContactPresentationWeight, bNearContact ? 1.f : 0.f,
+		DeltaTime, bNearContact ? 10.f : 4.f);
+	if (bNearContact && Gap < 35.0)
+	{
+		LocalVehicle->ContactPresentationNormal = -Direction;
+		LocalVehicle->ContactPresentationTime = FMath::Max(LocalVehicle->ContactPresentationTime, 0.1f);
+	}
+	// 내 차가 서버 보정을 완화하는 동안 붙어 있는 두 외형은 같은 보정 좌표계를 쓴다.
+	// 충돌체나 예측 원본은 바꾸지 않으므로 입력 처리와 서버 판정에 표시 지연을 더하지 않는다.
+	const FVector LocalSimulationLocation = LocalPose.GetLocation() - LocalVehicle->PresentationCorrectionOffset;
+	const FQuat LocalCorrection = LocalVehicle->PresentationCorrectionRotation;
+	const FVector NearbyLocation = LocalPose.GetLocation() + LocalCorrection.RotateVector(
+		Contact.Location - LocalSimulationLocation);
+	const FQuat NearbyRotation = (LocalCorrection * Contact.Rotation).GetNormalized();
+	// 멀리서는 기존 보간을 유지하고, 닿기 전에는 예측에 사용한 같은 위치로 표시 시점을 맞춘다.
+	Presentation.Location = FMath::Lerp(FVector(Presentation.Location), NearbyLocation, ContactPresentationWeight);
+	Presentation.Rotation = FQuat::Slerp(Presentation.Rotation.Quaternion(), NearbyRotation, ContactPresentationWeight).Rotator();
+	Presentation.Velocity = FMath::Lerp(FVector(Presentation.Velocity), Contact.Velocity, ContactPresentationWeight);
+	const FVector Normal = bRecentContact ? LocalCorrection.RotateVector(ContactPresentationNormal)
+		: (NearbyLocation - LocalPose.GetLocation()).GetSafeNormal2D();
+	const FTransform Adjusted = LocalVehicle->VehicleMovement->ConstrainContactPresentation(LocalPose,
+		FTransform(Presentation.Rotation, Presentation.Location), Contact.Extent, Normal,
+		bContactPresentationPending && bRecentContact);
+	Presentation.Location = Adjusted.GetLocation();
 }
 
 FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTime)
@@ -546,6 +804,10 @@ FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTim
 	if (AppliedStreamId != ServerDriveSnapshot.StreamId)
 	{
 		// 텔레포트나 조종 변경은 이전 경로와 이어서 보간하지 않는다.
+		ContactPresentationWeight = 0.f;
+		ContactPresentationTime = 0.f;
+		ContactPresentationOther.Reset();
+		bContactPresentationPending = false;
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
 		AppliedRevision = ServerDriveSnapshot.Revision;
 		ProxySnapshots.Reset();

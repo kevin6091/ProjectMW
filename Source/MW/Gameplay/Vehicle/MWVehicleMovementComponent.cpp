@@ -14,7 +14,7 @@
 namespace
 {
 	constexpr float MaxImpactYawRate = 150.f;
-	constexpr float ImpactYawDamping = 8.f;
+	constexpr float ImpactYawDamping = MWVehicleImpactYawDamping;
 	constexpr double ImpactYawScale = 0.35;
 
 	struct FContactResponse
@@ -152,7 +152,7 @@ namespace
 		for (const FMWVehicleContactSample& Other : Contacts)
 		{
 			// 상대 차량도 이 스텝 동안 움직인다고 보고 두 박스를 상대 이동량으로 검사한다.
-			const FVector RelativeDelta = MoveDelta - Other.Velocity * DeltaTime;
+			const FVector RelativeDelta = MoveDelta - Other.Velocity * DeltaTime - Other.CorrectionDelta;
 			const double Length = RelativeDelta.Size();
 			if (Length <= UE_KINDA_SMALL_NUMBER ||
 				FVector::DistSquared(Location, Other.Location) > FMath::Square(Extent.Size() + Other.Extent.Size() + Length))
@@ -278,6 +278,89 @@ FMWVehicleContactTuning UMWVehicleMovementComponent::GetContactTuning() const
 {
 	return {DriveConfig.VehicleMass, DriveConfig.CollisionRestitution,
 		DriveConfig.CollisionMomentumRetention, DriveConfig.MinBounceSpeed};
+}
+
+FTransform UMWVehicleMovementComponent::LimitDrivePresentation(const FTransform& Desired, float DeltaTime,
+	TArrayView<const FMWVehicleContactSample> Contacts) const
+{
+	FTransform Result = Desired;
+	if (!UpdatedPrimitive || !GetWorld())
+	{
+		return Result;
+	}
+	const FCollisionShape Shape = UpdatedPrimitive->GetCollisionShape();
+	const FVector Start = UpdatedPrimitive->GetComponentLocation();
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(MWDrivePresentation), false, PawnOwner);
+	QueryParams.AddIgnoredActors(UpdatedPrimitive->GetMoveIgnoreActors());
+	for (const FMWVehicleContactSample& Contact : Contacts)
+	{
+		QueryParams.AddIgnoredActor(Cast<AActor>(Contact.Vehicle.ResolveObjectPtr()));
+	}
+	const FCollisionResponseParams Responses(UpdatedPrimitive->GetCollisionResponseToChannels());
+	if (GetWorld()->OverlapBlockingTestByChannel(Start, Result.GetRotation(), UpdatedPrimitive->GetCollisionObjectType(),
+		Shape, QueryParams, Responses))
+	{
+		Result.SetRotation(UpdatedPrimitive->GetComponentQuat());
+	}
+
+	// 짧은 표시 예측도 벽이나 상대를 통과하지 않도록 Sweep으로 이동 범위를 제한한다.
+	const FVector Delta = Desired.GetLocation() - Start;
+	double Fraction = 1.0;
+	FHitResult Hit;
+	if (GetWorld()->SweepSingleByChannel(Hit, Start, Desired.GetLocation(), Result.GetRotation(),
+		UpdatedPrimitive->GetCollisionObjectType(), Shape, QueryParams, Responses))
+	{
+		Fraction = Hit.bStartPenetrating ? 0.0 : Hit.Time;
+	}
+	if (Shape.IsBox() && DeltaTime > 0.f)
+	{
+		double ContactFraction;
+		FVector Normal;
+		if (FindPredictedContact(Start, Result.GetRotation(), Shape.GetBox(), Delta, DeltaTime, Contacts, ContactFraction, Normal))
+		{
+			Fraction = FMath::Min(Fraction, ContactFraction);
+		}
+	}
+	Result.SetLocation(Start + Delta * Fraction);
+	return Result;
+}
+
+FTransform UMWVehicleMovementComponent::ConstrainContactPresentation(const FTransform& LocalPose,
+	const FTransform& OtherPose, const FVector& OtherExtent, const FVector& Normal, bool bShowContact) const
+{
+	FTransform Result = OtherPose;
+	if (!UpdatedPrimitive || !UpdatedPrimitive->GetCollisionShape().IsBox() || Normal.IsNearlyZero())
+	{
+		return Result;
+	}
+	FMWVehicleContactSample Other;
+	Other.Location = OtherPose.GetLocation();
+	Other.Rotation = OtherPose.GetRotation();
+	Other.Extent = OtherExtent;
+	const FVector OwnExtent = UpdatedPrimitive->GetCollisionShape().GetBox();
+	double Fraction;
+	FVector HitNormal;
+	const bool bOverlapping = SweepContactBoxes(LocalPose.GetLocation(), LocalPose.GetRotation(), OwnExtent + FVector(1.5, 1.5, 0.0),
+		Other, FVector::ZeroVector, Fraction, HitNormal);
+	if (!bShowContact && !bOverlapping)
+	{
+		return Result;
+	}
+	// 기울어진 모서리 접촉도 실제 박스 축으로 맞춘다. 서버 충돌체는 움직이지 않는다.
+	constexpr double SearchDistance = 80.0;
+	Other.Location += Normal * SearchDistance;
+	if (SweepContactBoxes(LocalPose.GetLocation(), LocalPose.GetRotation(), OwnExtent, Other,
+		Normal * (SearchDistance * 2.0), Fraction, HitNormal))
+	{
+		// 아직 계산된 접촉이 없으면 아주 작은 여유를 남겨 표시 예측만으로 먼저 부딪혀 보이지 않게 한다.
+		const double Skin = bShowContact ? 0.15 : 1.5;
+		const double Adjustment = SearchDistance - Fraction * SearchDistance * 2.0 + Skin;
+		if (FMath::Abs(Adjustment) <= 40.0)
+		{
+			Result.AddToTranslation(Normal * Adjustment);
+		}
+	}
+	return Result;
 }
 
 void UMWVehicleMovementComponent::ResetDriveInput()
@@ -774,68 +857,67 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime, TArrayView<const 
 			MoveDelta, DeltaTime, PredictedContacts, ContactFraction, ContactNormal);
 	}
 
-	FHitResult Hit(1.f);
 	// 벽이 예측 차량보다 먼저 닿으면 기존 월드 충돌을 우선한다.
-	const FVector SweepDelta = MoveDelta * ContactFraction;
-	SafeMoveUpdatedComponent(SweepDelta, TargetRotation, true, Hit);
-
-	if (Hit.IsValidBlockingHit())
+	if (!MoveWithWorldCollision(MoveDelta * ContactFraction, DeltaTime))
 	{
-		HandleImpact(Hit, DeltaTime, SweepDelta);
-		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
-		{
-			return;
-		}
-
-		if (TryResolveVehicleContact(Hit))
-		{
-			return;
-		}
-
-		// 충돌면 안쪽으로 향하는 속도만 제거한다.
-		const float IntoSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
-
-		if (IntoSurfaceSpeed < 0.f)
-		{
-			Velocity -= Hit.Normal * IntoSurfaceSpeed;
-		}
-
-		// 처음 요청한 이동 중 남은 부분을 표면을 따라 시도한다.
-		SlideAlongSurface(SweepDelta, 1.f - Hit.Time, Hit.Normal, Hit, true);
-
-		// 미끄러지는 도중 다른 면에도 막혔다면 속도를 정리한다.
-		if (Hit.IsValidBlockingHit())
-		{
-			if (TryResolveVehicleContact(Hit))
-			{
-				return;
-			}
-			const float IntoSecondSurfaceSpeed = FVector::DotProduct(Velocity, Hit.Normal);
-
-			if (IntoSecondSurfaceSpeed < 0.f)
-			{
-				Velocity -= Hit.Normal * IntoSecondSurfaceSpeed;
-			}
-		}
+		return;
 	}
-	else if (PredictedHit && IsValid(Box))
+	if (PredictedHit && IsValid(Box))
 	{
 		// 예측에서는 내 차량만 바꾼다. 상대에게 적용될 속도는 다음 예측 Sweep에만 사용한다.
 		const FMWVehicleContactTuning Tuning = GetContactTuning();
 		const FContactResponse Response = CalculateContactResponse(Velocity, PredictedHit->Velocity, ContactNormal, Tuning, PredictedHit->Tuning);
-		const FVector CenterOffset = PredictedHit->Location + PredictedHit->Velocity * (DeltaTime * ContactFraction) - Box->GetComponentLocation();
+		const FVector OtherDelta = PredictedHit->Velocity * DeltaTime + PredictedHit->CorrectionDelta;
+		const FVector CenterOffset = PredictedHit->Location + OtherDelta * ContactFraction - Box->GetComponentLocation();
 		FVector ArmA, ArmB;
 		GetContactArms(ContactNormal, CenterOffset, Box->GetComponentQuat(), Box->GetScaledBoxExtent(),
 			PredictedHit->Rotation, PredictedHit->Extent, ArmA, ArmB);
 		Velocity += Response.DeltaA;
 		ApplyContactYaw(ImpactYawRate, ArmA, ContactNormal * Response.Impulse, Tuning.Mass, Box->GetScaledBoxExtent());
-		if (OutImpact && Response.Impulse > 0.0)
+		if (OutImpact)
 		{
 			OutImpact->SampleIndex = PredictedHit - PredictedContacts.GetData();
 			OutImpact->Fraction = ContactFraction;
 			OutImpact->OtherVelocityDelta = Response.DeltaB;
+			OutImpact->Normal = ContactNormal;
+			ApplyContactYaw(OutImpact->OtherYawRateDelta, ArmB, -ContactNormal * Response.Impulse,
+				PredictedHit->Tuning.Mass, PredictedHit->Extent);
+		}
+		// 접촉이 스텝 중간에 일어나면 바뀐 속도로 남은 시간도 이동한다.
+		// 두 차량의 공통 이동까지 중단하면 붙어서 달릴 때 내 차만 제자리에 막힌다.
+		const float RemainingTime = DeltaTime * (1.0 - ContactFraction);
+		MoveWithWorldCollision(Velocity * RemainingTime, RemainingTime);
+	}
+}
+
+bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, float DeltaTime)
+{
+	FHitResult Hit(1.f);
+	SafeMoveUpdatedComponent(Delta, TargetRotation, true, Hit);
+	if (!Hit.IsValidBlockingHit())
+	{
+		return true;
+	}
+	HandleImpact(Hit, DeltaTime, Delta);
+	if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent) || TryResolveVehicleContact(Hit))
+	{
+		return false;
+	}
+	const float IntoSurfaceSpeed = Velocity | Hit.Normal;
+	if (IntoSurfaceSpeed < 0.f)
+	{
+		Velocity -= Hit.Normal * IntoSurfaceSpeed;
+	}
+	SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
+	if (Hit.IsValidBlockingHit() && !TryResolveVehicleContact(Hit))
+	{
+		const float IntoSecondSurfaceSpeed = Velocity | Hit.Normal;
+		if (IntoSecondSurfaceSpeed < 0.f)
+		{
+			Velocity -= Hit.Normal * IntoSecondSurfaceSpeed;
 		}
 	}
+	return false;
 }
 
 bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit)
@@ -892,6 +974,8 @@ bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit
 	Other->UpdateComponentVelocity();
 	OwnPawn->bContactSnapshotPending = true;
 	OtherPawn->bContactSnapshotPending = true;
+	OwnPawn->NotifyDriveContact(OtherPawn, Normal);
+	OtherPawn->NotifyDriveContact(OwnPawn, -Normal);
 
 	return true;
 }

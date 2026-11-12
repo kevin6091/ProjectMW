@@ -50,6 +50,10 @@ private:
 	void CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const;
 	void ApplyDriveSnapshot(const FMWVehicleDriveSnapshot& Snapshot);
 	FMWVehicleContactTuning GetContactTuning() const;
+	FTransform LimitDrivePresentation(const FTransform& Desired, float DeltaTime,
+		TArrayView<const FMWVehicleContactSample> Contacts) const;
+	FTransform ConstrainContactPresentation(const FTransform& LocalPose, const FTransform& OtherPose,
+		const FVector& OtherExtent, const FVector& Normal, bool bShowContact) const;
 
 	UPROPERTY(Transient)
 	FMWVehicleDriveConfig DriveConfig;
@@ -77,6 +81,7 @@ private:
 
 	void MoveVehicle(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts, FMWVehiclePredictedImpact* OutImpact);
 
+	bool MoveWithWorldCollision(const FVector& Delta, float DeltaTime);
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
 	void AdjustGroundHeight();
