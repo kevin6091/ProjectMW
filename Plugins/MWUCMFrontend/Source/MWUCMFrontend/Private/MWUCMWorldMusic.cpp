@@ -1,6 +1,6 @@
 #include "MWUCMWorldMusic.h"
+#include "MWUCMContinuousMusic.h"
 
-#include "Components/AudioComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/World.h"
@@ -16,7 +16,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogMWUCMMusic, Log, All);
 
 namespace
 {
-constexpr float MusicFadeSeconds = 0.35f;
 constexpr float PlayerReadinessInterval = 0.15f;
 }
 
@@ -50,7 +49,7 @@ void UMWUCMWorldMusic::OnWorldEndPlay(UWorld& World)
     }
     BindGameState(nullptr);
     World.GetTimerManager().ClearTimer(PlayerReadinessTimer);
-    StopMusic(false);
+    // 월드에 묶인 구독과 효과음 준비만 해제한다. 음악 재생 객체는 게임 인스턴스가 관리한다.
     MenuEffectsLoad.Reset();
     Super::OnWorldEndPlay(World);
 }
@@ -109,6 +108,15 @@ void UMWUCMWorldMusic::SetMainMenuVisible(bool bVisible)
     RefreshMusic();
 }
 
+void UMWUCMWorldMusic::SetFrontendMusicActive(bool bActive)
+{
+    if (bFrontendMusicActive != bActive)
+    {
+        bFrontendMusicActive = bActive;
+        RefreshMusic();
+    }
+}
+
 void UMWUCMWorldMusic::PlayMenuHighlight() const
 {
     PlayMenuEffect(MenuHighlight.Get());
@@ -130,7 +138,7 @@ void UMWUCMWorldMusic::PlayMenuEffect(USoundWave* Sound) const
 
 TSoftObjectPtr<USoundWave> UMWUCMWorldMusic::GetDesiredTrack() const
 {
-    if (bMainMenuVisible)
+    if (bFrontendMusicActive)
     {
         return MenuTrack;
     }
@@ -141,7 +149,8 @@ TSoftObjectPtr<USoundWave> UMWUCMWorldMusic::GetDesiredTrack() const
         const auto Session = GameInstance ? GameInstance->GetSessionState() : EMWSessionState::None;
         const auto Phase = Lobby->GetRoomPhase();
         if ((Session == EMWSessionState::Hosting || Session == EMWSessionState::Joined) &&
-            (Phase == EMWRoomPhase::Lobby || Phase == EMWRoomPhase::Starting))
+            (Phase == EMWRoomPhase::Lobby || Phase == EMWRoomPhase::Starting ||
+             Phase == EMWRoomPhase::VehicleSelection))
         {
             return MenuTrack;
         }
@@ -154,8 +163,11 @@ TSoftObjectPtr<USoundWave> UMWUCMWorldMusic::GetDesiredTrack() const
             Phase == EMWRoomPhase::Racing)
         {
             const FName ThemeId = Gameplay->GetRoomSettings().MapThemeId.GetTagName();
-            if (const auto* Theme = ThemeTracks.FindByPredicate([ThemeId](const FMWUCMThemeMusic& Entry)
-                { return Entry.MapThemeId == ThemeId; }))
+            const auto* Theme = ThemeTracks.FindByPredicate([ThemeId](const FMWUCMThemeMusic& Entry)
+            {
+                return Entry.MapThemeId == ThemeId;
+            });
+            if (Theme)
             {
                 return Theme->Track;
             }
@@ -175,19 +187,12 @@ void UMWUCMWorldMusic::RefreshMusic()
 
     const FSoftObjectPath Track = GetDesiredTrack().ToSoftObjectPath();
     auto& Timers = World->GetTimerManager();
-    if (Track == RequestedTrack)
-    {
-        Timers.ClearTimer(PlayerReadinessTimer);
-        return;
-    }
-
-    StopMusic(true);
     const auto* GameInstance = World->GetGameInstance();
     const auto* LocalPlayer = GameInstance ? GameInstance->GetFirstLocalPlayerController(World) : nullptr;
     const bool bNeedsPawn = BoundState.IsValid() && BoundState->IsA<AMWGameplayGameState>();
     if (!Track.IsNull() && (!LocalPlayer || (bNeedsPawn && !LocalPlayer->GetPawn())))
     {
-        // GameState replication may arrive before the local controller or possession.
+        // 경기 상태가 먼저 복제될 수 있으므로 로컬 컨트롤러와 차량 소유가 준비된 뒤 곡을 요청한다.
         if (!Timers.IsTimerActive(PlayerReadinessTimer))
         {
             Timers.SetTimer(PlayerReadinessTimer, this, &ThisClass::RefreshMusic, PlayerReadinessInterval, true);
@@ -198,57 +203,12 @@ void UMWUCMWorldMusic::RefreshMusic()
     Timers.ClearTimer(PlayerReadinessTimer);
     if (Track.IsNull())
     {
+        // 이동 중 아직 다음 곡을 결정할 수 없다는 뜻이다. 기존 음악의 중지 요청으로 취급하지 않는다.
         return;
     }
 
-    RequestedTrack = Track;
-    PendingLoad = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-        Track, FStreamableDelegate::CreateUObject(this, &ThisClass::StartLoadedTrack, Track));
-}
-
-void UMWUCMWorldMusic::StartLoadedTrack(FSoftObjectPath Track)
-{
-    if (Track != RequestedTrack || GetWorld()->bIsTearingDown)
+    if (auto* Playback = GetWorld()->GetGameInstance()->GetSubsystem<UMWUCMContinuousMusic>())
     {
-        return;
+        Playback->RequestTrack(World, TSoftObjectPtr<USoundWave>(Track), MusicVolume);
     }
-
-    if (auto* Sound = Cast<USoundWave>(Track.ResolveObject()))
-    {
-        PlayingMusic = UGameplayStatics::CreateSound2D(this, Sound);
-        if (PlayingMusic)
-        {
-            PlayingMusic->FadeIn(MusicFadeSeconds, MusicVolume);
-            UE_LOG(LogMWUCMMusic, Display, TEXT("Start %s in %s"), *Track.ToString(), *GetWorld()->GetName());
-        }
-    }
-    else
-    {
-        UE_LOG(LogMWUCMMusic, Warning, TEXT("Local music asset unavailable: %s"), *Track.ToString());
-    }
-    PendingLoad.Reset();
-}
-
-void UMWUCMWorldMusic::StopMusic(bool bFade)
-{
-    if (PendingLoad)
-    {
-        PendingLoad->CancelHandle();
-        PendingLoad.Reset();
-    }
-
-    if (IsValid(PlayingMusic))
-    {
-        UE_LOG(LogMWUCMMusic, Display, TEXT("Stop %s in %s"), *RequestedTrack.ToString(), *GetWorld()->GetName());
-        if (bFade)
-        {
-            PlayingMusic->FadeOut(MusicFadeSeconds, 0.f);
-        }
-        else
-        {
-            PlayingMusic->Stop();
-        }
-    }
-    PlayingMusic = nullptr;
-    RequestedTrack.Reset();
 }

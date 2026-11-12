@@ -762,6 +762,9 @@ void AMWUCMTitleFlow::OnSourceMenuSelectionChanged()
 
 void AMWUCMTitleFlow::ApplyEntryPresentation(bool bLoggedIn, bool bMenuRequested)
 {
+    // 방 생성·검색 창이 메인 표지판을 숨겨도 같은 프런트엔드이므로 음악은 계속 재생한다.
+    if (auto* Music = GetWorld()->GetSubsystem<UMWUCMWorldMusic>())
+        Music->SetFrontendMusicActive(bLoggedIn && bStarted && PreviewStage >= 2);
     APlayerController* PC = GetWorld()->GetFirstPlayerController();
     if (!PC) return;
     if (!bLoggedIn)

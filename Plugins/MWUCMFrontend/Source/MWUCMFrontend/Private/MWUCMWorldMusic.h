@@ -6,7 +6,6 @@
 #include "MWUCMWorldMusic.generated.h"
 
 class AGameStateBase;
-class UAudioComponent;
 class USoundWave;
 struct FStreamableHandle;
 
@@ -22,7 +21,7 @@ struct FMWUCMThemeMusic
     TSoftObjectPtr<USoundWave> Track;
 };
 
-// Local frontend and race audio ends with its world.
+// 월드의 경기 상태와 메뉴 상태를 관찰해 곡을 선택한다. 실제 재생은 레벨 이동에도 유지된다.
 UCLASS(Config=Game)
 class UMWUCMWorldMusic : public UWorldSubsystem
 {
@@ -33,6 +32,7 @@ public:
     virtual void OnWorldEndPlay(UWorld& World) override;
 
     void SetMainMenuVisible(bool bVisible);
+    void SetFrontendMusicActive(bool bActive);
     void PlayMenuHighlight() const;
     void PlayMenuConfirm() const;
 
@@ -58,23 +58,18 @@ private:
     UPROPERTY(Config)
     float MenuEffectVolume = 0.65f;
 
-    UPROPERTY(Transient)
-    TObjectPtr<UAudioComponent> PlayingMusic;
-
+    // 월드가 소유한 상태는 관찰만 한다. 종료 시 구독과 준비 확인 타이머를 함께 해제한다.
     TWeakObjectPtr<AGameStateBase> BoundState;
     FTimerHandle PlayerReadinessTimer;
-    FSoftObjectPath RequestedTrack;
-    TSharedPtr<FStreamableHandle> PendingLoad;
     TSharedPtr<FStreamableHandle> MenuEffectsLoad;
     bool bMainMenuVisible = false;
+    bool bFrontendMusicActive = false;
 
     void PlayMenuEffect(USoundWave* Sound) const;
 
     void BindGameState(AGameStateBase* State);
     void HandleGameStateSet(AGameStateBase* State);
     TSoftObjectPtr<USoundWave> GetDesiredTrack() const;
-    void StartLoadedTrack(FSoftObjectPath Track);
-    void StopMusic(bool bFade);
 
     UFUNCTION()
     void RefreshMusic();
