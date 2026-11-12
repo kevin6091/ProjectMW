@@ -17,3 +17,11 @@ The base catalogue remains `/Game/Data/DA_AssetData`. It supports the existing d
 Use the normal project map list. The Asset Manager explicitly cooks the private catalogue and the three official Theme DataAssets and follows their package references. The four existing project maps stay in the normal cook. The Environment diagnostic maps are Editor validation maps. Run a full Cook when switching between the old and new configs so the resulting container represents the selected scope.
 
 The restored materials, meshes, textures and shared dependencies resolve through the Theme DataAssets. Preserve the five shared materials and use the existing private remaps. See [validation](VALIDATION.md) for the current results and the scope of the historical validation summary.
+
+## Optional acceptance plugin
+
+`MWEnvironmentAcceptance` is not enabled by `MW.uproject` and has `EnabledByDefault: false` in its descriptor. Normal Editor/Game builds and runs do not require it. `MWEnvironmentRestore` and `MWEnvironmentGameplay` remain enabled and provide the actual Environment functionality. The acceptance module is excluded from Shipping and Test configurations, even if explicitly enabled.
+
+For an intentional local Development acceptance run, build with UBT's `-BuildPlugin=MWEnvironmentAcceptance` and launch that build with `-EnablePlugins=MWEnvironmentAcceptance` plus the required probe arguments (`-MWEnvSmoke=...`, `-MWEnvFlow=...`, or `-MWEnvPIERequests`). Without a probe argument it performs no automated game actions. Do not enable it in the shared project settings to run a one-off test. Rebuild normally afterwards before preparing a normal game package.
+
+Keep the probe sources: they are still used for regression checks, not game behavior. Their historical validation results in `VALIDATION.md` and `Validation_Summary.json` do not certify newer UI/vehicle/track integrations.

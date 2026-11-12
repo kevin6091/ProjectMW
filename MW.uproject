@@ -62,10 +62,6 @@
 		{
 			"Name": "MWEnvironmentGameplay",
 			"Enabled": true
-		},
-		{
-			"Name": "MWEnvironmentAcceptance",
-			"Enabled": true
 		}
 	]
 }
