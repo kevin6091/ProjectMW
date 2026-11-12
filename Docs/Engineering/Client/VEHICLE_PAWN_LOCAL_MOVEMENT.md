@@ -188,3 +188,13 @@ UE 5.8.4에서 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자�
 - 위의 볼록 충돌 적용 기록은 이전 작업 이력이다. 이번 실행은 기존 BoxComponent를 루트와 UpdatedComponent로 유지하며 DrivingCollisionMesh와 에셋은 삭제하지 않는다.
 - 우리 아이템·트랙 효과·바퀴·HUD 연결을 Kevin 구조에 맞춘다. Pilot ABP의 GetSteeringInput 조회 API도 유지한다.
 - 이전 `47fed23`의 발판 상대 Snapshot/구형 Proxy 보간 코드는 적용하지 않는다. 승강기 위 원격 차량 추종은 Kevin 담당자와 별도 검증·연동이 필요하며 완료로 취급하지 않는다.
+
+### 2026-11-12 투명차 가상 바퀴 스키드마크와 ItemPickup 기본 Pawn
+
+- `L_Dev_Drive_ItemPickup`에 배치된 `BP_MWVehiclePawn_DOUG_C_1`의 `Auto Possess Player`를 `Player 0`에서 `Disabled`로 변경했다. GameMode의 기본 Pawn은 변경하지 않았으며 현재 `BP_MWVehiclePawn_InvisiblePilot`이다. 배치된 Doug가 기본 Pawn 설정을 가로채던 연결만 해제했다.
+- `FMWVehicleVirtualSkidWheel`과 Pawn의 `VirtualSkidWheels` 설정을 추가했다. **차량 BP → Class Defaults → MW → Visual → Skid Marks → Virtual Skid Wheels**에서 각 항목의 `Local Center`(Pawn 로컬 좌표, cm)와 `Radius Cm`을 편집한다. X는 앞/뒤, Y는 좌/우, Z는 위/아래이며 위치에는 Pawn Transform을, 반지름에는 기존 바퀴 표시와 동일한 Actor 스케일을 적용한다.
+- 투명차는 보이는 바퀴 메시를 추가하지 않고 뒤쪽 가상 바퀴 두 개를 사용한다. 현재 BP 초기값은 `(-40, -23, -37)`, `(-40, 23, -37)`, 반지름은 각각 `15 cm`다. 기존 충돌 박스의 반범위 `(60, 25, 52)` 안쪽 뒤축과 바닥 높이에 맞춘 조정 시작값이며, 원본 게임에서 추출한 바퀴 좌표라고 주장하지 않는다. 실제 자국의 간격과 위치는 PIE에서 확인한 뒤 이 BP 값만 조정한다.
+- `VirtualSkidWheels`가 비어 있으면 기존 메시 기반 자국 처리를 유지한다. 값이 있으면 지정한 가상 접지점만 사용하여 중복 자국을 방지한다. 설정은 기존 초기화 시점에 한 번 검증·캐시하며 차종 이름 분기, 새 Tick, 새 물리 바퀴나 SceneComponent는 추가하지 않는다. 바퀴 메시가 0개여도 가상 접지점이 있으면 기존 드리프트·바닥 검사로 자국을 그린다.
+- 이동·접지·충돌·서버 보정·Snapshot·RPC 코드는 변경하지 않았다. 기존 로컬 조종 차량만 자국을 그리는 범위도 유지하므로 다른 플레이어 차량의 자국 동기화는 이번 수정에 포함되지 않는다.
+- 이번 소스의 Editor/Game Win64 Development 빌드는 모두 성공했다. 사용자 요청으로 신규 PIE·주행 검증은 수행하지 않았다. BP 컴파일과 지정 두 에셋의 저장은 완료했으며, 실행 검증과 저장 에셋을 재로드한 회귀 검증은 미완료다. 검증할 항목은 기본 투명차 스폰, 직진 시 자국 없음, `W + Left Shift + A/D` 드리프트 시 두 줄 생성, 드리프트 해제 시 생성 중단, 기존 바퀴 차량 유지다.
+- 변경 바이너리는 `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset`과 `Content/Developers/user/L_Dev_Drive_ItemPickup.umap` 두 개다. 둘 다 현재 Git 제외 대상이므로 소스 PR만 받아서는 BP 값과 레벨 설정까지 전달되지 않는다. 이번 작업에서 UVCS 명령·checkin·예약 변경은 하지 않았다. 팀 전달 시 이 두 에셋의 버전을 별도로 맞춘다.

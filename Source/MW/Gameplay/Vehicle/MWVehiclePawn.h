@@ -18,6 +18,19 @@ class UMWVehicleSkidMarkComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 
+// 보이는 바퀴가 없는 차량의 자국용 접지 정보다. 위치는 Pawn 로컬 좌표(cm)다.
+USTRUCT(BlueprintType)
+struct FMWVehicleVirtualSkidWheel
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skid Mark", meta=(Units="cm"))
+	FVector LocalCenter = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skid Mark", meta=(ClampMin="0.01", Units="cm"))
+	float RadiusCm = 25.f;
+};
+
 /** Per-wheel authoring data; axes are in the mesh parent's coordinates. */
 USTRUCT(BlueprintType)
 struct FMWVehicleWheelVisual
@@ -75,6 +88,10 @@ protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="MW|Visual|Wheels")
     TArray<FMWVehicleWheelVisual> WheelVisuals;
 
+	// 비어 있으면 기존 바퀴 메시를 사용한다. 지정하면 이 접지점만 자국을 남긴다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="MW|Visual|Skid Marks")
+	TArray<FMWVehicleVirtualSkidWheel> VirtualSkidWheels;
+
     // Visual response in 1/s; 12 reaches 95% in about 0.25 s. Zero disables blending.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="MW|Visual|Wheels", meta=(ClampMin="0", UIMax="30"))
     float WheelSteeringInterpSpeed = 12.f;
@@ -124,6 +141,7 @@ private:
     };
 
     TArray<FCachedVisualWheel> CachedVisualWheels;
+	TArray<FMWVehicleVirtualSkidWheel> CachedVirtualSkidWheels;
     FVector PreviousVisualLocation = FVector::ZeroVector;
     bool bVisualLocationValid = false;
     double VisualSteering = 0;

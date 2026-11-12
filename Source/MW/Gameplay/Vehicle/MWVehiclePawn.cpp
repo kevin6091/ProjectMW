@@ -78,6 +78,7 @@ AMWVehiclePawn::AMWVehiclePawn()
 void AMWVehiclePawn::InitializeWheelVisuals()
 {
     CachedVisualWheels.Reset();
+	CachedVirtualSkidWheels.Reset();
     VisualSteering = 0;
     PreviousVisualLocation = GetActorLocation();
     bVisualLocationValid = false;
@@ -128,7 +129,20 @@ void AMWVehiclePawn::InitializeWheelVisuals()
     }
     bHasRearSkidWheels = CachedVisualWheels.ContainsByPredicate(
         [](const FCachedVisualWheel& Wheel) { return !Wheel.bSteers; });
-    if (!CachedVisualWheels.IsEmpty()) AddTickPrerequisiteComponent(VehicleMovement);
+	// BP 설정은 시작할 때 한 번 검증한다. Tick에서 컴포넌트를 찾거나 차종을 구분하지 않는다.
+	for (const FMWVehicleVirtualSkidWheel& Wheel : VirtualSkidWheels)
+	{
+		if (Wheel.LocalCenter.ContainsNaN() || !FMath::IsFinite(Wheel.RadiusCm) || Wheel.RadiusCm <= KINDA_SMALL_NUMBER)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("%s: 가상 바퀴 위치 또는 반지름이 유효하지 않아 자국 접지점에서 제외합니다."), *GetName());
+			continue;
+		}
+		CachedVirtualSkidWheels.Add(Wheel);
+	}
+	if (!CachedVisualWheels.IsEmpty() || !CachedVirtualSkidWheels.IsEmpty())
+	{
+		AddTickPrerequisiteComponent(VehicleMovement);
+	}
 }
 
 void AMWVehiclePawn::Tick(float DeltaSeconds)
@@ -140,7 +154,7 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
 void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
 {
     TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_UpdateWheelVisuals);
-    if (GetNetMode() == NM_DedicatedServer || CachedVisualWheels.IsEmpty()) return;
+    if (GetNetMode() == NM_DedicatedServer || (CachedVisualWheels.IsEmpty() && CachedVirtualSkidWheels.IsEmpty())) return;
 
     const FVector Location = GetActorLocation();
     if (Location.ContainsNaN()) { bVisualLocationValid = false; return; }
@@ -204,6 +218,18 @@ void AMWVehiclePawn::UpdateSkidMarks(bool bResetTrail, double ActorScale)
     {
         SkidMarks->ResetTrail();
     }
+
+	if (!VirtualSkidWheels.IsEmpty())
+	{
+		// 가상 바퀴는 메시 없이 Pawn 로컬 위치를 월드로 변환한다. 이동·충돌 판정에는 사용하지 않는다.
+		const FTransform& PawnTransform = GetActorTransform();
+		for (int32 Index = 0; Index < CachedVirtualSkidWheels.Num(); ++Index)
+		{
+			const FMWVehicleVirtualSkidWheel& Wheel = CachedVirtualSkidWheels[Index];
+			SkidMarks->SampleWheel(Index, PawnTransform.TransformPosition(Wheel.LocalCenter), Wheel.RadiusCm * ActorScale, *DriveCollision);
+		}
+		return;
+	}
 
     for (int32 Index = 0; Index < CachedVisualWheels.Num(); ++Index)
     {
