@@ -22,12 +22,12 @@ void UMWCreateRoomWidget::NativeConstruct()
 		AvailableMapThemeIds = Sessions->GetAvailableMapThemeIds();
 	}
 
-	// Preserve a valid selection when the same widget is added again.
+	// 같은 위젯을 다시 열어도 유효한 테마 선택은 유지한다. 번역된 표시명으로 내부 식별자를 덮어쓰지 않는다.
 	Select_MapTheme->OnSelectionChanged.RemoveDynamic(this, &ThisClass::HandleThemeSelected);
 	Select_MapTheme->ClearOptions();
 	for (FName Id : AvailableMapThemeIds)
 	{
-		Select_MapTheme->AddOption(Id.ToString());
+		Select_MapTheme->AddOption(MWMenu::GetMapThemeDisplayName(Id).ToString());
 	}
 	if (!AvailableMapThemeIds.Contains(SelectedMapThemeId))
 	{
@@ -35,12 +35,12 @@ void UMWCreateRoomWidget::NativeConstruct()
 	}
 	if (!SelectedMapThemeId.IsNone())
 	{
-		Select_MapTheme->SetSelectedOption(SelectedMapThemeId.ToString());
+		Select_MapTheme->SetSelectedIndex(AvailableMapThemeIds.IndexOfByKey(SelectedMapThemeId));
 	}
 	Select_MapTheme->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::HandleThemeSelected);
 
 	const FString PreviousCapacity = Select_MaxPlayers->GetSelectedOption();
-	// Rebuild runtime options so the displayed selection belongs to this instance.
+	// 이전 위젯의 선택 상태가 섞이지 않도록 현재 인스턴스의 인원 항목을 다시 구성한다.
 	Select_MaxPlayers->ClearOptions();
 	Select_MaxPlayers->AddOption(TEXT("2"));
 	Select_MaxPlayers->AddOption(TEXT("3"));
@@ -163,8 +163,8 @@ void UMWCreateRoomWidget::HandleRetryClicked()
 
 void UMWCreateRoomWidget::HandleThemeSelected(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	const FName Id(*SelectedItem);
-	SelectedMapThemeId = AvailableMapThemeIds.Contains(Id) ? Id : NAME_None;
+	const int32 Index = Select_MapTheme->GetSelectedIndex();
+	SelectedMapThemeId = AvailableMapThemeIds.IsValidIndex(Index) ? AvailableMapThemeIds[Index] : NAME_None;
 	RefreshForm();
 }
 

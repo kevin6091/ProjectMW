@@ -2,6 +2,12 @@
 #include "CoreMinimal.h"
 #include "MWMenuTypes.generated.h"
 
+namespace MWMenu
+{
+	// 표시명만 변환한다. 카탈로그 조회와 방 설정에 쓰는 원래 테마 식별자는 바꾸지 않는다.
+    MW_API FText GetMapThemeDisplayName(FName ThemeId);
+}
+
 // Existing menu/BP presentation contract. Never a gameplay permission check.
 UENUM(BlueprintType)
 enum class EMWSessionState : uint8

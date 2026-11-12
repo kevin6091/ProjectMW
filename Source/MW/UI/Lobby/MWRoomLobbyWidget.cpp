@@ -95,7 +95,7 @@ void UMWRoomLobbyWidget::Refresh()
 				Box_RoomInfo->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 				Text_RoomName->SetText(FText::FromString(Settings.RoomName));
 				Text_Capacity->SetText(FText::FromString(FString::Printf(TEXT("참가 인원  %d / %d명"), GS->PlayerArray.Num(), Settings.MaxPlayers)));
-				Text_MapTheme->SetText(FText::FromString(Settings.MapThemeId.ToString()));
+				Text_MapTheme->SetText(MWMenu::GetMapThemeDisplayName(Settings.MapThemeId.GetTagName()));
 				TArray<FString> Rows;
 				for (const APlayerState* Player : GS->PlayerArray)
 				{

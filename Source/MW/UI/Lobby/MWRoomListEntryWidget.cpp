@@ -1,4 +1,5 @@
 #include "UI/Lobby/MWRoomListEntryWidget.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 
@@ -23,7 +24,7 @@ void UMWRoomListEntryWidget::SetRoom(const FMWRoomInfo& Info, int32 Revision)
 	ListRevision = Revision;
 	Text_RoomName->SetText(FText::FromString(Info.RoomName));
 	Text_Capacity->SetText(FText::FromString(FString::Printf(TEXT("%d / %d명"), Info.CurrentPlayers, Info.MaxPlayers)));
-	Text_Theme->SetText(FText::FromName(Info.MapThemeId));
+	Text_Theme->SetText(MWMenu::GetMapThemeDisplayName(Info.MapThemeId));
 	Text_Availability->SetText(FText::FromString(Info.bCanJoin ? TEXT("참가 가능") : Info.UnavailableReason));
 	Button_Row->SetToolTipText(FText::FromString(Info.UnavailableReason));
 	SetSelected(false);
