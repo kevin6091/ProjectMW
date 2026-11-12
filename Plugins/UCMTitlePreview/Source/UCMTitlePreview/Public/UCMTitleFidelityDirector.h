@@ -17,6 +17,8 @@ UCLASS(Blueprintable) class UCMTITLEPREVIEW_API AUCMTitleFidelityDirector:public
 public:
  AUCMTitleFidelityDirector();
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="MW Integration") bool bStartAutomatically=true;
+ UPROPERTY(EditAnywhere,Category="UCM Source") TSoftClassPtr<AActor> MenuTrafficClass;
+ UPROPERTY(Transient) TObjectPtr<AActor> MenuTraffic;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="UCM Source") TArray<FUCMSourcePropMotion> Motions;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="UCM Source") TArray<TObjectPtr<UNiagaraComponent>> SourceParticles;
  UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="UCM Source") TArray<float> SourceSimulationSpeeds;
