@@ -418,6 +418,12 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);
 
 		GroundVelocity += Forward * TravelSign * AppliedSpeedIncrease;
+		// 부스터가 끝나 제한 속도가 낮아져도 가속키를 누른 차량이 초과 속도를 계속 유지하면 안 된다.
+		// 즉시 제한값으로 잘라내지 않고 기존 감속량으로 진행 방향의 초과 속도만 줄인다.
+		// 횡방향 그립과 공중 관성은 기존 계산을 유지하고, 브레이크 감속과 중복 적용하지 않는다.
+		const float ExcessSpeed = FMath::Max(SpeedInRequestedDirection - SpeedLimit, 0.f);
+		const float SpeedReduction = FMath::Min(ExcessSpeed, DriveConfig.CoastDeceleration * DeltaTime);
+		GroundVelocity -= Forward * TravelSign * SpeedReduction;
 	}
 
 	// 드리프트 중에는 횡방향 그립을 낮춘다.
