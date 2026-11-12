@@ -12,22 +12,22 @@ struct FStreamableHandle;
 UCLASS()
 class UMWUCMContinuousMusic : public UGameInstanceSubsystem
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    // 같은 곡을 다시 요청해도 현재 재생 위치를 유지한다. 다른 게임 인스턴스의 월드는 받지 않는다.
-    void RequestTrack(UWorld* World, TSoftObjectPtr<USoundWave> Track, float Volume);
-    virtual void Deinitialize() override;
+	// 같은 곡을 다시 요청해도 현재 재생 위치를 유지한다. 다른 게임 인스턴스의 월드는 받지 않는다.
+	void RequestTrack(UWorld* World, TSoftObjectPtr<USoundWave> Track, float Volume);
+	virtual void Deinitialize() override;
 
 private:
-    // 월드가 교체되어도 재생 객체가 수거되지 않도록 강한 참조를 유지한다.
-    UPROPERTY(Transient)
-    TObjectPtr<UAudioComponent> PlayingMusic;
+	// 월드가 교체되어도 재생 객체가 수거되지 않도록 강한 참조를 유지한다.
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> PlayingMusic;
 
-    FSoftObjectPath RequestedTrack;
-    TSharedPtr<FStreamableHandle> PendingLoad;
-    TWeakObjectPtr<UWorld> RequestWorld;
-    float RequestedVolume = 1.f;
+	FSoftObjectPath RequestedTrack;
+	TSharedPtr<FStreamableHandle> PendingLoad;
+	TWeakObjectPtr<UWorld> RequestWorld;
+	float RequestedVolume = 1.f;
 
-    void StartLoadedTrack(FSoftObjectPath Track);
+	void StartLoadedTrack(FSoftObjectPath Track);
 };
