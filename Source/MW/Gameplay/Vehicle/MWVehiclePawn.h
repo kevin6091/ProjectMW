@@ -85,6 +85,11 @@ private:
 	TArray<FPredictedContactMotion, TInlineAllocator<3>> PredictedContactMotions;
 	FMWVehicleDriveSnapshot LastAuthoritativeSnapshot;
 	TArray<FMWVehicleDriveSnapshot, TInlineAllocator<12>> ProxySnapshots;
+	// 충돌체는 고정 스텝 결과에 두고, 차체와 카메라는 이전·현재 결과 사이를 표시한다.
+	FTransform PreviousDriveTransform = FTransform::Identity;
+	FVector PresentationCorrectionOffset = FVector::ZeroVector;
+	FQuat PresentationCorrectionRotation = FQuat::Identity;
+	bool bHasPreviousDriveTransform = false;
 	uint32 LastProcessedMoveId = 0;
 	uint32 NextMoveId = 1;
 	uint32 AppliedStreamId = 0;
@@ -108,11 +113,14 @@ private:
 	void TickAuthorityDrive(float DeltaTime);
 	void TickPredictedDrive(float DeltaTime);
 	void TickProxyDrive(float DeltaTime);
+	FMWVehicleDriveSnapshot GetProxyDrivePresentation(float DeltaTime);
 	void ResetDriveStream();
 	void PublishDriveSnapshot(bool bNewStream = false);
 	void ReconcilePredictedDrive();
 	void SimulatePredictedMove(FPredictedMove& Move);
 	void SmoothDrivePresentation(float DeltaTime);
+	FTransform GetInterpolatedDriveTransform() const;
+	void ResetDrivePresentation();
 	double GetDriveServerTime() const;
 
 };

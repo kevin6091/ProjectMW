@@ -2,6 +2,7 @@
 
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
+#include "Gameplay/Vehicle/MWVehicleSpringArmComponent.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/MeshComponent.h"
@@ -52,9 +53,9 @@ AMWVehiclePawn::AMWVehiclePawn()
 	DrivePresentation = CreateDefaultSubobject<USceneComponent>(TEXT("DrivePresentation"));
 	DrivePresentation->SetupAttachment(CollisionRoot);
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom = CreateDefaultSubobject<UMWVehicleSpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(DrivePresentation);
-	CameraBoom->TargetArmLength = 550.f;
+	CameraBoom->TargetArmLength = 750.f;
 	CameraBoom->SetRelativeRotation(FRotator(-15.f, 0.f, 0.f));
 	CameraBoom->SocketOffset = FVector(0.f, 0.f, 100.f);
 	CameraBoom->bDoCollisionTest = false;
@@ -115,7 +116,7 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 void AMWVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetNetMode() == NM_Client)
+	if (GetNetMode() != NM_DedicatedServer)
 	{
 		// 외형 그룹을 통째로 옮겨 바퀴·차체의 상대 위치를 유지한다. 충돌을 가진 그룹은 그대로 둔다.
 		const TArray<TObjectPtr<USceneComponent>> RootChildren = CollisionRoot->GetAttachChildren();
@@ -132,6 +133,7 @@ void AMWVehiclePawn::BeginPlay()
 		}
 		CameraBoom->AddTickPrerequisiteComponent(VehicleMovement);
 	}
+	ResetDrivePresentation();
 	if (HasAuthority())
 	{
 		// 기존 Blueprint에서 기본 이동 복제가 켜져 있어도 두 위치 갱신 경로가 경쟁하지 않게 한다.
