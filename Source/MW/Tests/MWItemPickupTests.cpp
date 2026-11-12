@@ -81,6 +81,14 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Leaving Racing clears item and effect"), Items->GetCurrentItemId() == EMWItemId::None && !Items->IsBoosterActive());
 	TestEqual(TEXT("Normal speed limit is restored"), Movement->GetMaxSpeed(), NormalMaxSpeed);
 
+	// 파괴 뒤 구독이 남는 회귀를 검사한다. 실제 화면 클릭이나 효과음 재생까지 보증하는 검사는 아니다.
+	const FName StateChangedFunction(TEXT("HandleGameStateChanged"));
+	TestTrue(TEXT("Item component subscribes while playing"),
+		State->OnGameplayStateChanged.Contains(Items, StateChangedFunction));
+	Items->DestroyComponent();
+	TestFalse(TEXT("Item component releases its GameState subscription on destruction"),
+		State->OnGameplayStateChanged.Contains(Items, StateChangedFunction));
+	World->EndPlay(EEndPlayReason::Quit);
 	World->DestroyWorld(false);
 	GEngine->DestroyWorldContext(World);
 	return true;

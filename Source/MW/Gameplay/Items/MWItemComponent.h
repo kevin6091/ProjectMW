@@ -7,6 +7,7 @@
 #include "MWItemComponent.generated.h"
 
 class ALevelSequenceActor;
+class AMWGameplayGameState;
 class ULevelSequence;
 class UStaticMesh;
 class UStaticMeshComponent;
@@ -113,6 +114,8 @@ private:
 	FTimerHandle BoosterAnimationTimer;
 	double DisplayedFiringEnd = 0.0;
 	bool bBoosterDetaching = false;
+	// 구독 대상의 수명은 소유하지 않는다. 맵 이동으로 먼저 파괴되면 참조도 무효화된다.
+	TWeakObjectPtr<AMWGameplayGameState> ObservedGameState;
 
 	UFUNCTION()
 	void HandleGameStateChanged();

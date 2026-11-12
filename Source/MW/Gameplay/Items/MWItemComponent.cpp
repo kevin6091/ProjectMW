@@ -22,6 +22,8 @@ void UMWItemComponent::BeginPlay()
 	Super::BeginPlay();
 	if (AMWGameplayGameState* State = GetWorld()->GetGameState<AMWGameplayGameState>())
 	{
+		// 종료 시 다른 월드를 조회하지 않고 실제로 구독했던 상태 객체에서 연결을 해제한다.
+		ObservedGameState = State;
 		State->OnGameplayStateChanged.AddUniqueDynamic(this, &ThisClass::HandleGameStateChanged);
 	}
 	OnRep_BoosterPresentation();
@@ -29,6 +31,11 @@ void UMWItemComponent::BeginPlay()
 
 void UMWItemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (AMWGameplayGameState* State = ObservedGameState.Get())
+	{
+		State->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameStateChanged);
+	}
+	ObservedGameState.Reset();
 	RemoveBoosterVisual();
 	Super::EndPlay(EndPlayReason);
 }
