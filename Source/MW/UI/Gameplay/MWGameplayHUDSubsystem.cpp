@@ -45,7 +45,7 @@ constexpr float ItemSlotSize = 168.f;
 constexpr float MinItemSlotPixels = 96.f;
 constexpr float MaxItemSlotSize = MWGameplayUI::DesignHeight * .40f;
 constexpr float ItemIconSize = 158.f;
-// Each card stays visible a little longer than the previous card.
+// 다음 아이콘의 표시 간격을 조금씩 늘려 룰렛이 점점 느려지게 한다. 서버가 지급한 아이템은 바꾸지 않는다.
 constexpr double ItemRouletteSwitchTimes[] = { .045, .095, .15, .215, .29, .38, .49, .63, .80, .99 };
 constexpr float ItemUseDuration = .20f;
 
@@ -65,7 +65,7 @@ public:
 		FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style, bool bParentEnabled) const override
 	{
 		const FVector2f Size(Geometry.GetLocalSize());
-		// Include the SVG's shadow below the 168-unit glass face.
+		// 벡터 유리 면 아래의 그림자까지 그려 크기가 달라져도 하단이 잘리지 않게 한다.
 		const FVector2f ArtSize(Size.X, Size.Y * 176.f / 168.f);
 		FSlateDrawElement::MakeBox(Elements, Layer, Geometry.ToPaintGeometry(ArtSize, FSlateLayoutTransform()),
 			&GlassBrush, ESlateDrawEffect::NoPixelSnapping, Style.GetColorAndOpacityTint());
@@ -317,6 +317,7 @@ public:
 			if (!IsValid(Vehicle) || !Vehicle->GetRootComponent() || State->GetPlayerName().IsEmpty()) continue;
 
 			const FBoxSphereBounds& Bounds = Vehicle->GetRootComponent()->Bounds;
+			// 차량 루트의 충돌 경계 위에 이름을 두고 화면 좌표로 투영해 카메라 거리 변화에 대응한다.
 			const FVector NameAnchor = Bounds.Origin + FVector::UpVector * (Bounds.BoxExtent.Z + 18.f);
 			FVector2D Position;
 			if (!PC->ProjectWorldLocationToScreen(NameAnchor, Position))
@@ -374,7 +375,7 @@ private:
 			}
 			else
 			{
-				// A quick use stops the spin and fades the awarded item.
+				// 룰렛 도중 바로 사용해도 실제 지급 아이템을 기준으로 사용 연출을 마무리한다.
 				UE_LOG(LogMWInGameUI, Verbose, TEXT("Item slot use started"));
 			}
 		}
@@ -406,6 +407,7 @@ private:
 		{
 			++Step;
 		}
+		// 연출이 끝나면 가짜 후보 표시만 해제한다. 아이템 상태의 원본은 기존 아이템 컴포넌트다.
 		if (Step == UE_ARRAY_COUNT(ItemRouletteSwitchTimes))
 		{
 			RouletteStep = INDEX_NONE;
