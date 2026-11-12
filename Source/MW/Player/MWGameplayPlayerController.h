@@ -114,5 +114,7 @@ private:
 	void StopSteer();
 	void StartDrift();
 	void StopDrift();
+
+	// 현재 소유한 차량에만 아이템 사용 의도를 전달하고 서버 판정은 ItemComponent에 맡긴다.
 	void HandleUseItem();
 };

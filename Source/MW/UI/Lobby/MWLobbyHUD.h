@@ -47,10 +47,14 @@ private:
 	void OpenVehicleSelection();
 	void PresentVehicleSelection();
 	void CloseVehicleSelection();
+
+	// 현재 화면의 출발 연출을 한 번만 시작하고 완료 뒤 기존 소유자 보고 경로를 사용한다.
 	void BeginVehicleDeparture();
 	bool bVehicleDepartureStarted = false;
 	UFUNCTION()
 	void HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID);
+
+	// 위젯의 취소 의도를 기존 소유 Controller 요청으로 전달한다.
 	UFUNCTION()
 	void HandleVehicleSelectionCancelRequested(FGameplayTag ExpectedVehicleID);
 

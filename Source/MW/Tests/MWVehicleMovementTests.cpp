@@ -311,37 +311,39 @@ bool FMWDriveFrameRateTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWOverspeedRecoveryTest, "MW.Vehicle.OverspeedRecovery",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+                                 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+// 추진 입력을 유지해도 제한을 넘긴 속도가 기존 감속량으로 줄어드는지 검사한다.
 bool FMWOverspeedRecoveryTest::RunTest(const FString& Parameters)
 {
-	// 가속키 유지·후진·공중 관성을 30/120프레임 간격으로 검사한다. 실제 키보드나 다중 PC 주행 검사는 아니다.
-	for (const float FrameTime : {1.f / 30.f, 1.f / 120.f})
-	{
-		MWVehicleTests::FScene Scene;
-		Scene.Input(1.f);
-		Scene.Movement->Velocity = FVector(2250.f, 0.f, 0.f);
-		Scene.Step(0.1f, FrameTime);
-		TestTrue(TEXT("Overspeed decays without snapping to normal limit"),
-			Scene.Movement->Velocity.X > 2200.f && Scene.Movement->Velocity.X < 2250.f);
-		Scene.Step(4.f, FrameTime);
-		TestTrue(TEXT("Held throttle returns to the normal limit"),
-			FMath::IsNearlyEqual(Scene.Movement->Velocity.X, Scene.Movement->GetMaxSpeed(), 0.1f));
+    // 가속키 유지·후진·공중 관성을 30/120프레임 간격으로 검사한다. 실제 키보드나 다중 PC 주행 검사는 아니다.
+    for (const float FrameTime : {1.f / 30.f, 1.f / 120.f})
+    {
+        MWVehicleTests::FScene Scene;
+        Scene.Input(1.f);
+        Scene.Movement->Velocity = FVector(2250.f, 0.f, 0.f);
+        Scene.Step(0.1f, FrameTime);
+        TestTrue(TEXT("Overspeed decays without snapping to normal limit"),
+                 Scene.Movement->Velocity.X > 2200.f && Scene.Movement->Velocity.X < 2250.f);
+        Scene.Step(4.f, FrameTime);
+        TestTrue(TEXT("Held throttle returns to the normal limit"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, Scene.Movement->GetMaxSpeed(), 0.1f));
 
-		Scene.Reset();
-		Scene.Input(0.f, 1.f);
-		Scene.Movement->Velocity = FVector(-800.f, 0.f, 0.f);
-		Scene.Step(2.f, FrameTime);
-		TestTrue(TEXT("Reverse overspeed also decays to its own limit"),
-			FMath::IsNearlyEqual(Scene.Movement->Velocity.X, -Scene.Movement->GetMaxSpeed(), 0.1f));
+        Scene.Reset();
+        Scene.Input(0.f, 1.f);
+        Scene.Movement->Velocity = FVector(-800.f, 0.f, 0.f);
+        Scene.Step(2.f, FrameTime);
+        TestTrue(TEXT("Reverse overspeed also decays to its own limit"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, -Scene.Movement->GetMaxSpeed(), 0.1f));
 
-		Scene.Reset(FVector(0, 0, 1000));
-		Scene.Input(1.f);
-		Scene.Movement->Velocity = FVector(2250.f, 0.f, 300.f);
-		Scene.Step(0.1f, FrameTime);
-		TestTrue(TEXT("Ground overspeed recovery does not clamp air momentum"),
-			FMath::IsNearlyEqual(Scene.Movement->Velocity.X, 2250.f, 0.1f));
-	}
-	return true;
+        Scene.Reset(FVector(0, 0, 1000));
+        Scene.Input(1.f);
+        Scene.Movement->Velocity = FVector(2250.f, 0.f, 300.f);
+        Scene.Step(0.1f, FrameTime);
+        TestTrue(TEXT("Ground overspeed recovery does not clamp air momentum"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, 2250.f, 0.1f));
+    }
+    return true;
 }
 
 #endif

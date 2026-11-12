@@ -29,7 +29,11 @@ public:
 	// 로컬 차량 선택 UI의 요청 진입점입니다.
 	UFUNCTION(BlueprintCallable, Category = "MW|Vehicle")
 	void RequestConfirmVehicle(FGameplayTag VehicleAssetID);
+
+	// 로컬 소유자의 현재 차량 ID를 취소 요청으로 전달한다.
 	void RequestCancelVehicle(FGameplayTag ExpectedVehicleID);
+
+	// 로컬 출발 연출이 화면을 가린 뒤 소유 Controller로 완료를 보고한다.
 	void ReportVehicleDepartureReady();
 	
 private:

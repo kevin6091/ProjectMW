@@ -282,60 +282,68 @@ FMWVehicleContactTuning UMWVehicleMovementComponent::GetContactTuning() const
 		DriveConfig.CollisionMomentumRetention, DriveConfig.MinBounceSpeed};
 }
 
+// 기존 트랙 가속의 최소 추진량과 종료 시각을 보관한다. 서버 보정 경로는 교체하지 않는다.
 void UMWVehicleMovementComponent::ApplyTrackBoost(float MinimumThrottle, float Duration)
 {
-	TrackMinimumThrottle = FMath::Clamp(MinimumThrottle, 0.f, 1.f);
-	TrackBoostEndTime = GetWorld()->GetTimeSeconds() + Duration;
+    TrackMinimumThrottle = FMath::Clamp(MinimumThrottle, 0.f, 1.f);
+    TrackBoostEndTime = GetWorld()->GetTimeSeconds() + Duration;
 }
 
+// 롤러 등의 표면 속도를 지정한 시간 동안 기존 이동 계산에 전달한다.
 void UMWVehicleMovementComponent::ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration)
 {
-	TrackSurfaceVelocity = VelocityCmPerSecond;
-	TrackSurfaceEndTime = GetWorld()->GetTimeSeconds() + Duration;
+    TrackSurfaceVelocity = VelocityCmPerSecond;
+    TrackSurfaceEndTime = GetWorld()->GetTimeSeconds() + Duration;
 }
 
+// 현재 발판의 약한 참조와 선행 틱 관계를 함께 교체해 발판 이동을 먼저 반영한다.
 void UMWVehicleMovementComponent::SetTrackLiftBase(AActor* Base)
 {
-	if (UMWTrackRuntimeComponent* Current = TrackLiftBase.Get())
-	{
-		if (Current->GetOwner() == Base) return;
-		RemoveTickPrerequisiteComponent(Current);
-	}
-	TrackLiftBase.Reset();
-	if (IsValid(Base) && Base->GetWorld() == GetWorld())
-	{
-		if (UMWTrackRuntimeComponent* Runtime = Base->FindComponentByClass<UMWTrackRuntimeComponent>())
-		{
-			TrackLiftBase = Runtime;
-			// 같은 프레임에서 발판 이동을 먼저 반영한 뒤 차량 이동과 지면 판정을 계산한다.
-			AddTickPrerequisiteComponent(Runtime);
-		}
-	}
+    if (UMWTrackRuntimeComponent* Current = TrackLiftBase.Get())
+    {
+        if (Current->GetOwner() == Base)
+            return;
+        RemoveTickPrerequisiteComponent(Current);
+    }
+    TrackLiftBase.Reset();
+    if (IsValid(Base) && Base->GetWorld() == GetWorld())
+    {
+        if (UMWTrackRuntimeComponent* Runtime = Base->FindComponentByClass<UMWTrackRuntimeComponent>())
+        {
+            TrackLiftBase = Runtime;
+            // 같은 프레임에서 발판 이동을 먼저 반영한 뒤 차량 이동과 지면 판정을 계산한다.
+            AddTickPrerequisiteComponent(Runtime);
+        }
+    }
 }
 
+// 기록된 발판과 같은 대상일 때만 탑승 관계를 끊는다.
 void UMWVehicleMovementComponent::ClearTrackLiftBase(const AActor* Base)
 {
-	if (const UMWTrackRuntimeComponent* Current = TrackLiftBase.Get(); Current && Current->GetOwner() == Base)
-	{
-		SetTrackLiftBase(nullptr);
-	}
+    if (const UMWTrackRuntimeComponent* Current = TrackLiftBase.Get(); Current && Current->GetOwner() == Base)
+    {
+        SetTrackLiftBase(nullptr);
+    }
 }
 
+// 우리 트랙 발판의 약한 참조와 선행 틱 관계를 해제하고 기존 이동 컴포넌트 종료를 유지한다.
 void UMWVehicleMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	SetTrackLiftBase(nullptr);
-	Super::EndPlay(EndPlayReason);
+    SetTrackLiftBase(nullptr);
+    Super::EndPlay(EndPlayReason);
 }
 
+// 기존 월드 시간과 종료 시각으로 트랙 가속의 남은 유효 기간을 판단한다.
 bool UMWVehicleMovementComponent::IsTrackBoostActive() const
 {
-	return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
+    return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
 }
 
+// 소유 차량의 기존 ItemComponent에서 부스터 활성 상태를 읽는다.
 bool UMWVehicleMovementComponent::HasItemBooster() const
 {
-	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
-	return Vehicle && Vehicle->GetItemComponent()->IsBoosterActive();
+    const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+    return Vehicle && Vehicle->GetItemComponent()->IsBoosterActive();
 }
 
 void UMWVehicleMovementComponent::ResetDriveInput()
@@ -437,7 +445,7 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 		return ReverseSpeedLimit;
 	}
 
-	return BoostedForwardSpeedLimit;
+    return BoostedForwardSpeedLimit;
 }
 
 void UMWVehicleMovementComponent::BeginPlay()

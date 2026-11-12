@@ -62,16 +62,20 @@ bool AMWPlayerState::ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAsset
 	return true;
 }
 
+// 서버 권한과 예상 차량 ID를 확인한 뒤 기존 복제 값과 변경 알림으로 선택을 해제한다.
 bool AMWPlayerState::ClearVehicleAssetIDFromServer(FGameplayTag ExpectedVehicleID)
 {
-	if (!HasAuthority() || !ExpectedVehicleID.IsValid()) return false;
-	if (!VehicleAssetID.IsValid()) return true;
-	if (VehicleAssetID != ExpectedVehicleID) return false;
+    if (!HasAuthority() || !ExpectedVehicleID.IsValid())
+        return false;
+    if (!VehicleAssetID.IsValid())
+        return true;
+    if (VehicleAssetID != ExpectedVehicleID)
+        return false;
 
-	VehicleAssetID = FGameplayTag::EmptyTag;
-	ForceNetUpdate();
-	NotifyPlayerStateChanged();
-	return true;
+    VehicleAssetID = FGameplayTag::EmptyTag;
+    ForceNetUpdate();
+    NotifyPlayerStateChanged();
+    return true;
 }
 
 void AMWPlayerState::OnRep_VehicleAssetID()

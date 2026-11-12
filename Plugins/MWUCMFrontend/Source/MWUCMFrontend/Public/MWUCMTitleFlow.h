@@ -121,6 +121,8 @@ private:
     UFUNCTION() 
     void HandleRoomPresentationState(EMWSessionState PreviousState, EMWSessionState NewState);
     
+    // 기존 연결 서비스의 정리 오류를 현재 복구 안내에 반영한다.
+    // 기존 연결 상태가 방 종료로 바뀌면 복귀 표시를 시작한다. 세션 종료 자체를 구현하지 않는다.
     UFUNCTION() 
     void HandleRoomReturnError(const FString& Error);
     
@@ -136,10 +138,13 @@ private:
     // 로드된 월드가 이전 월드와 다르고 예상 맵인지 확인한 뒤 준비 상태로 넘긴다.
     void OnReturnMapLoaded(UWorld* World);
     
+    // 현재 게임 인스턴스의 Viewport에 가림막을 한 번만 연결한다.
     void EnsureReturnCover();
     
+    // 실패·대기 사유와 가능한 재시도·종료 동작을 표시하고 키보드 포커스를 안내로 옮긴다.
     void ShowReturnStatus(const FText& Message, bool bRetry);
     
+    // 기존 안내 내용을 지우고 필요하지 않은 상태 패널을 숨긴다.
     void ClearReturnStatus();
     
     // 실패 이유를 남기고 재시도 가능 여부에 맞춰 안내를 표시한다.
@@ -148,6 +153,7 @@ private:
     // 이전 로비 월드가 아직 유효할 때만 기존 세션 정리 요청을 다시 보낸다.
     FReply RetryReturn();
     
+    // 현재 유효한 로컬 컨트롤러 또는 Viewport를 통해 명시적으로 실행을 종료한다.
     FReply ExitAfterReturnFailure();
     
     // 화면 가림막과 이전·새 월드 참조를 해제하고 커서 표시를 복구한다.
@@ -201,6 +207,7 @@ private:
         Failed              // 실패 안내와 가능한 복구 동작을 표시한다.
     };
     
+    // 복귀 단계가 바뀐 이유를 추적할 수 있도록 이전·다음 상태와 실제 시간을 기록한다.
     void SetReturnPhase(EReturnCoverPhase Phase);
     
     EReturnCoverPhase ReturnCoverPhase = EReturnCoverPhase::Hidden;
@@ -240,19 +247,23 @@ public:
     }
     
 protected:
+    // 기존 루트의 생성 수명을 그대로 따르고 화면 기능을 중복 생성하지 않는다.
     virtual void NativeConstruct() override;
     
+    // 기존 루트가 등록한 위젯·요청 연결의 종료 처리를 유지한다.
     virtual void NativeDestruct() override;
     
     // MW 메인 화면의 중복 표시를 막고 실제 표지판 표시는 UCM 연출에 맡긴다.
     virtual bool CanPresentEntryMenu(bool bLoggedIn) override;
     
+    // 기존 루트가 고른 로그인·메뉴 상태를 현재 월드 연출에 전달한다.
     virtual void OnEntryPresentationUpdated(bool bLoggedIn, bool bMenuRequested) override;
     
     // 카메라 이동 중에는 대체 영역을 사용하고 준비된 기존 화면을 표시한다.
     virtual UWidget* ResolveEntryPresentation(UWidget* Screen, bool bMenuRequested) override;
     
 private:
+    // 기존 소유 플레이어의 정상 게임 종료 경로를 사용한다.
     UFUNCTION()
     void HandleQuit();
 };
@@ -301,12 +312,14 @@ public:
     
     // 카메라 이동의 목적 영역을 기록한다. 이름이 바뀌었다고 이동이 끝난 것은 아니다.
     UPROPERTY(BlueprintReadOnly, Category="MW Integration") 
+    // 카메라 이동의 목적 영역을 기록한다. 이름이 바뀌었다고 이동이 끝난 것은 아니다.
     FName ActiveRegion = TEXT("Main");
     
     // 현재 원본 경로를 재생 중인지 나타낸다.
     UPROPERTY(BlueprintReadOnly, Category="MW Integration") 
     bool bWorldRouteActive = false;
     
+    // 기존 생성·검색 창을 유지하고 해당 배경의 원본 진입·복귀 카메라만 연결한다.
     void PresentEntryWidget(UWidget* Screen, bool bMenuRequested);
     
     // 생성·검색 폼은 표시가 허용될 때까지 기다린다. 경로 재생 종료와 표시 준비를 구분한다.
@@ -328,11 +341,16 @@ public:
     UFUNCTION(BlueprintCallable, Category="MW Integration") 
     bool ShowVehicleSelection();
     
+    // 차량 게시판 표시와 관련 입력을 정리하고 기존 월드 화면으로 돌아간다.
+    // 실제 인트로가 재생 중일 때만 넘긴다. 스킵 입력이 같은 프레임의 메뉴 실행으로 이어지지 않게 한다.
     UFUNCTION(BlueprintCallable, Category="MW Integration") 
     void CloseVehicleSelection();
     
 protected:
+    // 기존 연출과 MW 위젯 이벤트를 연결하고 로컬 컨트롤러 준비 뒤 루트를 초기화한다.
     virtual void BeginPlay() override;
+
+    // 스킵 입력을 먼저 처리한 뒤 기존 경로·출발·로비 표시를 현재 단계에 맞춰 갱신한다.
     virtual void Tick(float DeltaTime) override;
     // 이 월드에서 만든 카메라·위젯·타이머·이벤트 구독을 종료한다.
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
@@ -349,6 +367,7 @@ private:
     // 로컬 컨트롤러 준비를 기다리는 다음 틱 초기화 예약이다. 종료 시 취소한다.
     FTimerHandle InitializeHandle;
     
+    // 현재 월드와 로컬 컨트롤러를 확인하고 Standalone 진입과 실제 네트워크 로비 표시를 구분한다.
     void InitializeRoot();
     
     TSharedPtr<SWidget> IntroSkipOverlay;
@@ -356,8 +375,10 @@ private:
     // 스킵한 프레임을 기억해 같은 입력이 메뉴까지 실행하는 것을 막는다.
     uint64 IntroSkippedFrame = MAX_uint64;
     
+    // 현재 인트로의 클릭 안내를 한 번만 붙이고 약한 액터 참조로 스킵을 전달한다.
     void ShowIntroSkip();
     
+    // 이 Flow가 붙인 인트로 스킵 화면을 제거하고 Slate 참조를 해제한다.
     void HideIntroSkip();
     
     bool bStarted = false;
@@ -368,6 +389,7 @@ private:
     // 복귀 세션이 저장한 시점에서 로비 역방향 경로를 시작한다.
     bool StartRoomReturn(const UMWUCMIntroSession& Session);
     
+    // 표시 이벤트가 다시 루트 갱신을 부르는 재진입을 막고 기존 화면 선택을 갱신한다.
     void RefreshRoot();
     
     // 원본 메뉴 동작 이름을 기존 MW 버튼 인덱스로 연결한다.
@@ -376,6 +398,7 @@ private:
     // 메뉴 가시성·입력 허용과 음악의 메인 메뉴 상태를 함께 갱신한다.
     void SetMainMenuPresentation(bool bVisible, bool bInputEnabled);
     
+    // 입력이 허용된 메뉴 선택 변경에만 기존 강조 효과음을 재생한다.
     void OnSourceMenuSelectionChanged() override;
     
     // 경로 샘플로 움직이는 전용 카메라다. 레벨 종료 때 정리한다.
@@ -386,9 +409,11 @@ private:
     UPROPERTY(Transient) 
     TObjectPtr<UUserWidget> PresentedWidget;
     
+    // 레벨에서 사용할 기존 MW 연동 루트 클래스다. 지정하지 않으면 루트를 만들 수 없다.
     UPROPERTY(Transient) 
     TObjectPtr<UMWRoomLobbyWidget> LobbyWidget;
     
+    // 레벨에서 사용할 기존 MW 연동 루트 클래스다. 지정하지 않으면 루트를 만들 수 없다.
     UPROPERTY(Transient) 
     TObjectPtr<UMWVehicleSelectionWidget> VehicleWidget;
     
@@ -442,6 +467,7 @@ private:
     // 이 월드의 기존 타이틀 배경 동작과 교통 연출을 시작한다.
     void StartFidelity();
     
+    // 현재 로비·차량 위젯과 연출 영역을 맞추고 호스트 종료 확인 연결을 유지한다.
     void UpdateLobbyPresentation();
     
     // 기존 호스트 종료 버튼 연결을 잠시 확인 창으로 바꾸고 원래 콜백은 보관한다.
@@ -450,6 +476,8 @@ private:
     // 확인 창 연결을 제거하고 보관한 기존 종료 버튼 콜백을 돌려놓는다.
     void UnbindHostLeaveConfirmation();
     
+    // 호스트 종료 버튼이 유효할 때 확인 창을 한 번만 띄우고 이전 키보드 포커스를 보관한다.
+    // 실제 인트로가 재생 중일 때만 넘긴다. 스킵 입력이 같은 프레임의 메뉴 실행으로 이어지지 않게 한다.
     UFUNCTION() 
     void ShowHostLeaveConfirmation();
     

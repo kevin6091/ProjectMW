@@ -40,6 +40,8 @@ public:
 
 	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
 	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
+
+	// 서버 권한과 예상 차량 ID를 확인한 뒤 기존 복제 값과 변경 알림으로 선택을 해제한다.
 	bool ClearVehicleAssetIDFromServer(FGameplayTag ExpectedVehicleID);
 	
 	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.

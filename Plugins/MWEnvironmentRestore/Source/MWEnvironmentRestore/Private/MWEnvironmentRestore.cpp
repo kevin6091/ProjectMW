@@ -1,3 +1,5 @@
+// 복구한 테마·배치 자료로 로컬 배경을 구성한다. 경기 규칙과 서버 차량 상태는 바꾸지 않는다.
+
 #include "MWEnvironmentRestore.h"
 
 #include "Camera/CameraActor.h"
@@ -24,20 +26,20 @@
 
 namespace
 {
-constexpr double CmPerUnityUnit = 100;
-constexpr double TileUnity = 500;
-constexpr double TileCm = TileUnity * CmPerUnityUnit;
-constexpr double TileBoundsRadiusCm = TileCm * 0.72;
-constexpr float MaxSunShadowDistanceCm = 120000.0f;
-constexpr int32 MaxTiles = 1024;
-constexpr int32 BuildBudget = 3;
-constexpr int32 InitialBuildBudget = 40;
-constexpr int32 MaxPrewarmTiles = 16;
-constexpr double PrewarmMarginCm = TileCm * 0.4;
-constexpr double TurnPrewarmDistanceCm = 110000.0;
-constexpr int32 MaxPlacementAttempts = 100;
-constexpr int32 RandomMax = MAX_int32;
-const FIntPoint Neighbors[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    constexpr double CmPerUnityUnit = 100;
+    constexpr double TileUnity = 500;
+    constexpr double TileCm = TileUnity * CmPerUnityUnit;
+    constexpr double TileBoundsRadiusCm = TileCm * 0.72;
+    constexpr float MaxSunShadowDistanceCm = 120000.0f;
+    constexpr int32 MaxTiles = 1024;
+    constexpr int32 BuildBudget = 3;
+    constexpr int32 InitialBuildBudget = 40;
+    constexpr int32 MaxPrewarmTiles = 16;
+    constexpr double PrewarmMarginCm = TileCm * 0.4;
+    constexpr double TurnPrewarmDistanceCm = 110000.0;
+    constexpr int32 MaxPlacementAttempts = 100;
+    constexpr int32 RandomMax = MAX_int32;
+    const FIntPoint Neighbors[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 }
 
 AMWEnvironmentGenerator::AMWEnvironmentGenerator()
@@ -70,22 +72,25 @@ AMWEnvironmentGenerator::AMWEnvironmentGenerator()
     PostProcess->bEnabled = false;
 }
 
+// 지정된 테마 입력이 준비된 뒤 배경을 초기화하고 설정된 가시성 갱신을 시작한다.
 void AMWEnvironmentGenerator::BeginPlay()
 {
     Super::BeginPlay();
     InitializeEnvironment();
 }
 
+// 배경 갱신 예약과 생성 자원을 해제해 이전 월드의 타일이 남지 않게 한다.
 void AMWEnvironmentGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     ClearEnvironment();
     Super::EndPlay(EndPlayReason);
 }
 
+// 설정된 시드로 원본 호환 난수 상태를 초기화한다. 서버 시드를 새로 배포하지 않는다.
 void AMWEnvironmentGenerator::ResetRandom()
 {
-    // Legacy System.Random subtractive generator. UE visibility/order and all other
-    // unobserved source RNG consumers still affect parity with Unity's map stream.
+    // 기존 System.Random 방식의 감산 난수 생성기다. UE의 가시성·실행 순서와
+    // 확인하지 못한 원본의 다른 난수 소비 때문에 Unity 맵의 난수 순서와 완전히 같다고 보장하지 않는다.
     const int32 AbsoluteSeed = Seed == MIN_int32 ? MAX_int32 : FMath::Abs(Seed);
     int32 Previous = 161803398 - AbsoluteSeed;
     Samples[55] = Previous;
@@ -105,8 +110,8 @@ void AMWEnvironmentGenerator::ResetRandom()
     {
         for (int32 I = 1; I < 56; ++I)
         {
-            Samples[I] = static_cast<int32>(static_cast<uint32>(Samples[I]) -
-                static_cast<uint32>(Samples[1 + (I + 30) % 55]));
+            Samples[I] =
+                static_cast<int32>(static_cast<uint32>(Samples[I]) - static_cast<uint32>(Samples[1 + (I + 30) % 55]));
             if (Samples[I] < 0)
             {
                 Samples[I] += RandomMax;
@@ -118,6 +123,7 @@ void AMWEnvironmentGenerator::ResetRandom()
     RandomDraws = 0;
 }
 
+// 복구한 감산 난수 순서를 유지한다. 호출 횟수가 바뀌면 이후 배치도 달라진다.
 double AMWEnvironmentGenerator::NextRandom()
 {
     ++RandomDraws;
@@ -136,11 +142,13 @@ double AMWEnvironmentGenerator::NextRandom()
     return static_cast<double>(Value) / RandomMax;
 }
 
+// 같은 난수 스트림에서 지정한 범위의 값을 얻어 배치 순서를 유지한다.
 double AMWEnvironmentGenerator::Range(double Low, double High)
 {
     return FMath::Lerp(Low, High, NextRandom());
 }
 
+// 테마 데이터와 생성 순서를 준비하고 하늘·바닥·조명을 구성한다.
 void AMWEnvironmentGenerator::InitializeEnvironment()
 {
     ClearEnvironment();
@@ -149,11 +157,11 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
         return;
     }
 
-    // Epic GenerateEnvironmentRoutine 0x5FE00A resets the pending floor to zero.
+    // 원본 Epic 빌드의 GenerateEnvironmentRoutine 0x5FE00A는 다음 바닥 인덱스를 0으로 초기화한다.
     NextFloorMaterialIndex = 0;
     ResetRandom();
-    // InitialiseTileGeneration 0x5F2DF0..0x5F2E2E: X is the inner loop.
-    // This changes floor assignment, not the subsequent feature visibility/order.
+    // 원본 InitialiseTileGeneration 0x5F2DF0..0x5F2E2E에서 X가 안쪽 반복문이다.
+    // 이 순서는 바닥 할당에만 반영하며 이후 장식의 가시성·생성 순서를 바꾸지 않는다.
     for (int32 Y = -5; Y <= 5; ++Y)
     {
         for (int32 X = -5; X <= 5; ++X)
@@ -170,8 +178,9 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
     Fog->SetVisibility(true);
     Sun->SetLightColor(Theme->SunColor);
     Sun->SetRelativeRotation(FRotator(-(Theme->SunAngle.X + Theme->SunAngle.Y) * 0.5, -35, 0));
-    // VSM uses the movable sun range to cull distant non-Nanite casters.
-    Sun->SetDynamicShadowDistanceMovableLight(FMath::Min(ViewDistanceUnity * float(CmPerUnityUnit), MaxSunShadowDistanceCm));
+    // VSM이 멀리 있는 비 Nanite 그림자를 제외할 때 이동형 태양의 범위를 사용한다.
+    Sun->SetDynamicShadowDistanceMovableLight(
+        FMath::Min(ViewDistanceUnity * float(CmPerUnityUnit), MaxSunShadowDistanceCm));
     Sun->SetShadowAmount(Theme->ShadowStrength);
     Ambient->SetLightColor(Theme->AmbientColor);
     Ambient->SetLowerHemisphereColor(Theme->AmbientColor * 0.22f);
@@ -179,12 +188,12 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
     Fog->SetFogInscatteringColor(Theme->FogColor);
     Fog->SetFogDensity(0.012f);
     Fog->SetStartDistance((Theme->BuildingFogStart.X + Theme->BuildingFogStart.Y) * 0.5 * CmPerUnityUnit);
-    // UE EndDistance stops integration; it is not Unity's linear fog end.
-    // Retain the existing source mean/density approximation without tuning color.
+    // UE의 EndDistance는 안개 적분 종료 거리이며 Unity의 선형 안개 끝 거리와 다르다.
+    // 색을 임의로 조정하지 않고 기존 원본 평균·밀도 근사를 유지한다.
     Fog->SetEndDistance((Theme->BuildingFogEnd.X + Theme->BuildingFogEnd.Y) * 0.5 * CmPerUnityUnit);
-    // Cutoff excludes the authored sky sphere (radius 2.5 * Far), never FogEnd.
-    // At the source 2000-unit view/far, 4000 exceeds all active floor corners
-    // (< 2000 + 2 * 360), while the sky sphere is at 5000 units.
+    // 안개 제외 거리는 반지름이 Far의 2.5배인 하늘 구체를 제외하기 위한 값이며 FogEnd가 아니다.
+    // 원본 시야·원거리 값이 2000일 때 4000은 모든 활성 바닥 모서리를 포함한다.
+    // 바닥 범위는 2000 + 2 × 360 미만이고 하늘 구체는 5000에 있어 둘을 구분할 수 있다.
     Fog->SetFogCutoffDistance(FMath::Max(ViewDistanceUnity, FarDistanceUnity) * CmPerUnityUnit * 2);
     PostProcess->bEnabled = true;
     FPostProcessSettings& Settings = PostProcess->Settings;
@@ -209,10 +218,12 @@ void AMWEnvironmentGenerator::InitializeEnvironment()
             UpdateVisibility();
         }
         const float FirstDelay = PrewarmEnabled && InitialViewPending ? 0.0f : 0.12f;
-        GetWorldTimerManager().SetTimer(VisibilityTimer, this, &AMWEnvironmentGenerator::UpdateVisibility, 0.12f, true, FirstDelay);
+        GetWorldTimerManager().SetTimer(VisibilityTimer, this, &AMWEnvironmentGenerator::UpdateVisibility, 0.12f, true,
+                                        FirstDelay);
     }
 }
 
+// 생성한 렌더러·타일·캐시를 해제해 다른 테마의 상태가 남지 않게 한다.
 void AMWEnvironmentGenerator::ClearEnvironment()
 {
     if (GetWorld())
@@ -247,6 +258,7 @@ void AMWEnvironmentGenerator::ClearEnvironment()
     Fog->SetVisibility(false);
 }
 
+// 타일을 처음 등록할 때만 바닥 인덱스와 등록 순서를 확정한다.
 void AMWEnvironmentGenerator::RegisterTile(FIntPoint Key)
 {
     if (Tiles.Num() >= MaxTiles || Tiles.Contains(Key))
@@ -256,21 +268,22 @@ void AMWEnvironmentGenerator::RegisterTile(FIntPoint Key)
     FTile& Tile = Tiles.Add(Key);
     if (!Theme->Floors.IsEmpty())
     {
-        // Tile.ctor 0x5FC367..0x5FC4B9 applies the PREVIOUS index, then advances.
-        // Random floors still consume exactly one draw, including one-material themes.
+        // 원본 Tile 생성자 0x5FC367..0x5FC4B9는 이전 인덱스를 적용한 뒤 다음 인덱스로 진행한다.
+        // 바닥 재질이 하나인 테마도 원본과 같이 난수를 한 번 소비한다.
         Tile.FloorIndex = NextFloorMaterialIndex;
-        NextFloorMaterialIndex = Theme->RandomFloor
-            ? FMath::FloorToInt(NextRandom() * Theme->Floors.Num())
-            : (NextFloorMaterialIndex + 1) % Theme->Floors.Num();
+        NextFloorMaterialIndex = Theme->RandomFloor ? FMath::FloorToInt(NextRandom() * Theme->Floors.Num())
+                                                    : (NextFloorMaterialIndex + 1) % Theme->Floors.Num();
     }
     RegistrationOrder.Add(Key);
 }
 
+// 타일 키를 현재 배경 격자의 월드 중심으로 바꾼다.
 FVector AMWEnvironmentGenerator::TileCenter(FIntPoint Key) const
 {
     return GetActorLocation() + FVector(-Key.X * TileCm, Key.Y * TileCm, 0);
 }
 
+// 같은 메시의 배경 장식을 인스턴스로 묶고 로컬 표시용 컴포넌트로 등록한다.
 UInstancedStaticMeshComponent* AMWEnvironmentGenerator::CreateRenderer(UStaticMesh* Mesh)
 {
     const double Started = FPlatformTime::Seconds();
@@ -290,6 +303,7 @@ UInstancedStaticMeshComponent* AMWEnvironmentGenerator::CreateRenderer(UStaticMe
     return Renderer;
 }
 
+// 타일별 반복 생성 대신 재질별 바닥 인스턴스 묶음을 준비한다.
 void AMWEnvironmentGenerator::PrepareFloorRenderers()
 {
     if (!Plane || PreparedFloorCount == RegistrationOrder.Num())
@@ -297,8 +311,8 @@ void AMWEnvironmentGenerator::PrepareFloorRenderers()
         return;
     }
 
-    // The registered floor is inexpensive and ready from every camera angle.
-    // Append each tile once to its material batch and let UE cull the instances.
+    // 등록한 바닥은 비용이 작으므로 시야 방향과 관계없이 준비해 둔다.
+    // 타일은 재질별 배치에 한 번만 넣고 실제 인스턴스 가시성은 UE에 맡긴다.
     TMap<int32, TArray<FTransform>> Batches;
     for (; PreparedFloorCount < RegistrationOrder.Num(); ++PreparedFloorCount)
     {
@@ -306,7 +320,8 @@ void AMWEnvironmentGenerator::PrepareFloorRenderers()
         const int32 FloorIndex = Tiles.FindChecked(Key).FloorIndex;
         if (Theme->Floors.IsValidIndex(FloorIndex))
         {
-            Batches.FindOrAdd(FloorIndex).Emplace(FQuat::Identity, TileCenter(Key), FVector(TileCm / 100, TileCm / 100, 1));
+            Batches.FindOrAdd(FloorIndex)
+                .Emplace(FQuat::Identity, TileCenter(Key), FVector(TileCm / 100, TileCm / 100, 1));
         }
     }
 
@@ -319,7 +334,8 @@ void AMWEnvironmentGenerator::PrepareFloorRenderers()
             Floor = CreateRenderer(Plane);
             Floor->SetMaterial(0, Theme->Floors[Pair.Key]);
             Floor->SetCastShadow(false);
-            Floor->SetCullDistances(0, FMath::CeilToInt(ViewDistanceUnity * CmPerUnityUnit + TileBoundsRadiusCm + PrewarmMarginCm));
+            Floor->SetCullDistances(
+                0, FMath::CeilToInt(ViewDistanceUnity * CmPerUnityUnit + TileBoundsRadiusCm + PrewarmMarginCm));
             Floor->RegisterComponent();
             Slot = Floor;
         }
@@ -327,6 +343,7 @@ void AMWEnvironmentGenerator::PrepareFloorRenderers()
     }
 }
 
+// 원본 배치 설정과 난수 소비 순서로 타일 배치를 계산한다. 표시 생성과 분리한다.
 void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
 {
     const FVector Center = TileCenter(Key);
@@ -349,14 +366,14 @@ void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
             double Height = 0;
             if (Prefab.HasPlacementController)
             {
-                // Epic EnvironmentPropController.Initialise (0x3E2070)
-                // overwrites the authored root TRS, preserving child transforms.
+                // 원본 Epic 빌드의 EnvironmentPropController.Initialise 0x3E2070은
+                // 자식의 상대 변환을 유지하며 작성된 루트 위치·회전·크기를 덮어쓴다.
                 Scale = FVector(Range(Prefab.ScaleRange.X, Prefab.ScaleRange.Y));
                 double Yaw;
                 if (Prefab.FixedRotation)
                 {
-                    const int32 Steps = FMath::Max(1, FMath::RoundToInt(360.0 /
-                        FMath::Clamp(Prefab.RotationRange, 1.0f, 360.0f)));
+                    const int32 Steps =
+                        FMath::Max(1, FMath::RoundToInt(360.0 / FMath::Clamp(Prefab.RotationRange, 1.0f, 360.0f)));
                     Yaw = FMath::FloorToDouble(NextRandom() * Steps) * 360.0 / Steps;
                 }
                 else
@@ -366,23 +383,24 @@ void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
                 Height = Range(Prefab.HeightRangeUnity.X, Prefab.HeightRangeUnity.Y) * CmPerUnityUnit;
                 const double LeanX = FMath::DegreesToRadians(Range(-Prefab.LeanAngle, Prefab.LeanAngle));
                 const double LeanZ = FMath::DegreesToRadians(Range(-Prefab.LeanAngle, Prefab.LeanAngle));
-                // Unity Z-X-Y Euler order. Basis: (x, y, z) -> (-x, z, y).
-                Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(Yaw))
-                    * FQuat(-FVector::ForwardVector, LeanX) * FQuat(FVector::RightVector, LeanZ);
+                // Unity의 Z-X-Y 오일러 순서를 따른다. 좌표 기저는 (x, y, z) → (-x, z, y)로 바꾼다.
+                Rotation = FQuat(FVector::UpVector, FMath::DegreesToRadians(Yaw)) *
+                           FQuat(-FVector::ForwardVector, LeanX) * FQuat(FVector::RightVector, LeanZ);
             }
             for (int32 Attempt = 0; Attempt < MaxPlacementAttempts; ++Attempt)
             {
-                const FVector Location = Center + FVector(Range(-TileCm / 2, TileCm / 2),
-                    Range(-TileCm / 2, TileCm / 2), Height);
-                if (Prefab.AvoidStartArea && FVector::DistSquared2D(Location, GetActorLocation()) < FMath::Square(10000.0))
+                const FVector Location =
+                    Center + FVector(Range(-TileCm / 2, TileCm / 2), Range(-TileCm / 2, TileCm / 2), Height);
+                if (Prefab.AvoidStartArea &&
+                    FVector::DistSquared2D(Location, GetActorLocation()) < FMath::Square(10000.0))
                 {
                     continue;
                 }
                 const FTransform Transform(Rotation, Location, Scale);
                 if (Prefab.DontOverlap && !Prefab.OverlapExtent.IsNearlyZero())
                 {
-                    const FBox Box = FBox(-Prefab.OverlapExtent, Prefab.OverlapExtent)
-                        .TransformBy(Prefab.OverlapBox * Transform);
+                    const FBox Box =
+                        FBox(-Prefab.OverlapExtent, Prefab.OverlapExtent).TransformBy(Prefab.OverlapBox * Transform);
                     bool Blocked = false;
                     for (int32 X = Key.X - 1; X <= Key.X + 1 && !Blocked; ++X)
                     {
@@ -390,7 +408,11 @@ void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
                         {
                             if (const TArray<FBox>* Other = Footprints.Find(FIntPoint(X, Y)))
                             {
-                                Blocked = Other->ContainsByPredicate([&Box](const FBox& B) { return B.Intersect(Box); });
+                                Blocked = Other->ContainsByPredicate(
+                                    [&Box](const FBox& B)
+                                    {
+                                        return B.Intersect(Box);
+                                    });
                             }
                         }
                     }
@@ -409,6 +431,7 @@ void AMWEnvironmentGenerator::GenerateTile(FIntPoint Key, FTile& Tile)
     Tile.Generated = true;
 }
 
+// 계산된 타일 배치를 실제 렌더러로 만들거나 제한된 캐시에서 재사용한다.
 void AMWEnvironmentGenerator::BuildTileRenderers(FIntPoint Key, FTile& Tile)
 {
     ++Timings.Built;
@@ -448,6 +471,7 @@ void AMWEnvironmentGenerator::BuildTileRenderers(FIntPoint Key, FTile& Tile)
         UInstancedStaticMeshComponent* Renderer = nullptr;
         TArray<FTransform> Instances;
     };
+
     TMap<const FMWEnvPart*, int32> BatchIndices;
     TArray<FBatch> Batches;
     for (const FPlacement& Item : Tile.Placements)
@@ -497,6 +521,7 @@ void AMWEnvironmentGenerator::BuildTileRenderers(FIntPoint Key, FTile& Tile)
     }
 }
 
+// 재사용 정책에 맞춰 타일 표시를 숨기거나 해제해 렌더러 수를 제한한다.
 void AMWEnvironmentGenerator::ReleaseTileRenderers(FTile& Tile)
 {
     const double Started = FPlatformTime::Seconds();
@@ -513,6 +538,7 @@ void AMWEnvironmentGenerator::ReleaseTileRenderers(FTile& Tile)
     Timings.Destroy += FPlatformTime::Seconds() - Started;
 }
 
+// 실제 로컬 카메라의 시야와 작업 예산을 기준으로 배경 표시 범위를 갱신한다.
 void AMWEnvironmentGenerator::UpdateVisibility()
 {
     Timings = {};
@@ -534,10 +560,11 @@ void AMWEnvironmentGenerator::UpdateVisibility()
         Angle = Camera->GetComponentRotation();
         HorizontalFov = Camera->FieldOfView;
     }
-    else if (APlayerController* PC = ViewPlayerController.IsValid()
-        ? ViewPlayerController.Get() : GetWorld()->GetFirstPlayerController())
+    else if (APlayerController* PC =
+                 ViewPlayerController.IsValid() ? ViewPlayerController.Get() : GetWorld()->GetFirstPlayerController())
     {
-        if (!PC->IsLocalController() || (PrewarmEnabled && InitialViewPending && PC->GetViewTarget() == PC)) return;
+        if (!PC->IsLocalController() || (PrewarmEnabled && InitialViewPending && PC->GetViewTarget() == PC))
+            return;
         PC->GetPlayerViewPoint(Eye, Angle);
         if (PC->PlayerCameraManager)
         {
@@ -553,7 +580,8 @@ void AMWEnvironmentGenerator::UpdateVisibility()
                 GetViewFrustumBounds(PlayerFrustum, Projection.ComputeViewProjectionMatrix(), true);
                 UsingPlayerProjection = true;
                 const FIntRect Rect = Projection.GetConstrainedViewRect();
-                if (Rect.Height() > 0) Aspect = float(Rect.Width()) / Rect.Height();
+                if (Rect.Height() > 0)
+                    Aspect = float(Rect.Width()) / Rect.Height();
             }
         }
     }
@@ -601,9 +629,9 @@ void AMWEnvironmentGenerator::UpdateVisibility()
                     return PlayerFrustum.IntersectSphere(Center, BoundsRadius);
                 }
                 const double Depth = FVector::DotProduct(Delta, Forward);
-                return Depth >= -BoundsRadius
-                    && FMath::Abs(FVector::DotProduct(Delta, Right)) <= FMath::Max(Depth, 0) * TanX + BoundsRadius
-                    && FMath::Abs(FVector::DotProduct(Delta, Up)) <= FMath::Max(Depth, 0) * TanY + BoundsRadius;
+                return Depth >= -BoundsRadius &&
+                       FMath::Abs(FVector::DotProduct(Delta, Right)) <= FMath::Max(Depth, 0) * TanX + BoundsRadius &&
+                       FMath::Abs(FVector::DotProduct(Delta, Up)) <= FMath::Max(Depth, 0) * TanY + BoundsRadius;
             };
             const bool InView = IntersectsView(TileRadius);
             const bool Visible = Distance <= Far && InView;
@@ -615,8 +643,9 @@ void AMWEnvironmentGenerator::UpdateVisibility()
             {
                 Wanted.Add(Key);
             }
-            else if (PrewarmEnabled && !InitialViewPending && Distance < PrewarmRange
-                && (Distance < TurnPrewarmDistanceCm || ActiveTiles.Contains(Key) || IntersectsView(TileRadius + PrewarmMarginCm)))
+            else if (PrewarmEnabled && !InitialViewPending && Distance < PrewarmRange &&
+                     (Distance < TurnPrewarmDistanceCm || ActiveTiles.Contains(Key) ||
+                      IntersectsView(TileRadius + PrewarmMarginCm)))
             {
                 Prewarm.Add(Key);
             }
@@ -647,8 +676,8 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     {
         InitialViewPending = false;
     }
-    // Build the current view first. Prewarmed renderers stay enabled so a turn
-    // can reveal them immediately through the engine's own frustum culling.
+    // 현재 시야를 먼저 구성한다. 미리 준비한 렌더러는 켜 둬서 시점 회전 시
+    // 엔진의 절두체 컬링에 따라 바로 드러날 수 있게 한다.
     Wanted.Append(Prewarm);
     const TSet<FIntPoint> Desired(Wanted);
     for (auto It = ActiveTiles.CreateIterator(); It; ++It)
@@ -678,7 +707,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
         }
     }
 
-    // Keep layout and renderer budgets independent during cold re-entry.
+    // 캐시가 없는 영역 재진입에서도 배치 계산과 렌더러 구성의 작업 예산을 분리한다.
     int32 LayoutBudget = PrimeFirstView ? InitialBuildBudget : BuildBudget;
     int32 RenderBudget = LayoutBudget;
     for (FIntPoint Key : Wanted)
@@ -728,12 +757,11 @@ void AMWEnvironmentGenerator::UpdateVisibility()
         ActiveTiles.Add(Key);
     }
 
-    // Keep eviction off the rebuild update unless the retirement queue is under pressure.
+    // 폐기 대기가 과도하지 않으면 재구성하는 갱신과 캐시 제거 작업을 같은 차례에 몰지 않는다.
     const int32 WarmLimit = RendererReuseMode == 2 ? 16 : 0;
     const bool bRetirementPressure = InactiveRenderers.Num() > WarmLimit + 16;
-    const int32 ReleaseBudget = RendererReuseMode == 2
-        ? (Timings.Built == 0 || bRetirementPressure ? 1 : 0)
-        : BuildBudget;
+    const int32 ReleaseBudget =
+        RendererReuseMode == 2 ? (Timings.Built == 0 || bRetirementPressure ? 1 : 0) : BuildBudget;
     const int32 Evictions = FMath::Clamp(InactiveRenderers.Num() - WarmLimit, 0, ReleaseBudget);
     for (int32 Index = 0; Index < Evictions; ++Index)
     {
@@ -745,6 +773,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     }
 }
 
+// 현재 생성·표시·재사용 상태를 진단 문자열로 반환한다. 배치 상태를 변경하지 않는다.
 FString AMWEnvironmentGenerator::GetEnvironmentDebug() const
 {
     auto Root = MakeShared<FJsonObject>();
@@ -784,7 +813,8 @@ FString AMWEnvironmentGenerator::GetEnvironmentDebug() const
     Root->SetNumberField(TEXT("destroyed_components"), Timings.Destroyed);
     Root->SetNumberField(TEXT("built_tiles"), Timings.Built);
     Root->SetNumberField(TEXT("warm_hits"), Timings.WarmHits);
-    Root->SetBoolField(TEXT("timer_active"), GetWorld() && GetWorld()->GetTimerManager().IsTimerActive(VisibilityTimer));
+    Root->SetBoolField(TEXT("timer_active"),
+                       GetWorld() && GetWorld()->GetTimerManager().IsTimerActive(VisibilityTimer));
     TArray<TSharedPtr<FJsonValue>> Generated;
     for (FIntPoint Key : RegistrationOrder)
     {
@@ -803,8 +833,8 @@ FString AMWEnvironmentGenerator::GetEnvironmentDebug() const
         uint32 Hash = 0;
         for (const FPlacement& Placement : Tile.Placements)
         {
-            const FString Value = FString::Printf(TEXT("%d/%d/%s"), Placement.Feature, Placement.Prefab,
-                *Placement.Transform.ToString());
+            const FString Value =
+                FString::Printf(TEXT("%d/%d/%s"), Placement.Feature, Placement.Prefab, *Placement.Transform.ToString());
             Hash = FCrc::StrCrc32(*Value, Hash);
         }
         Entry->SetStringField(TEXT("placement_crc"), FString::Printf(TEXT("%08x"), Hash));

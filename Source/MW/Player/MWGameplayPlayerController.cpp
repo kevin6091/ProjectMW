@@ -1,6 +1,5 @@
 
 
-
 #include "Player/MWGameplayPlayerController.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Algo/AllOf.h"
@@ -72,12 +71,13 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	RefreshDrivingInput();
 }
 
+// 현재 소유한 차량에만 아이템 사용 의도를 전달하고 서버 판정은 ItemComponent에 맡긴다.
 void AMWGameplayPlayerController::HandleUseItem()
 {
-	if (AMWVehiclePawn* Vehicle = GetInputVehicle())
-	{
-		Vehicle->GetItemComponent()->RequestUseItem();
-	}
+    if (AMWVehiclePawn* Vehicle = GetInputVehicle())
+    {
+        Vehicle->GetItemComponent()->RequestUseItem();
+    }
 }
 
 void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId)
@@ -485,4 +485,3 @@ void AMWGameplayPlayerController::StopDrift()
 		Vehicle->SubmitDriveInput(Input);
 	}
 }
-

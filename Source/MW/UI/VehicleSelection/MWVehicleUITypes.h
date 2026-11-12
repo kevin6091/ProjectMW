@@ -5,7 +5,7 @@
 
 class UTexture2D;
 
-// Presentation values only. This is not a replicated player or vehicle definition.
+// 화면에 전달하는 표시 값이다. 복제되는 플레이어나 차량 정의의 원본이 아니다.
 USTRUCT(BlueprintType)
 struct FMWVehiclePlayerPresentation
 {
@@ -22,25 +22,42 @@ struct FMWVehiclePlayerPresentation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bHoverPreview = false;
 };
 
-// Indices address art-only PreviewCards and presentation slots, never gameplay VehicleIds.
+// 인덱스는 외형 Preview 카드와 표시 슬롯용이며 실제 차량 ID로 사용하지 않는다.
 USTRUCT(BlueprintType)
 struct FMWVehiclePreviewParticipant
 {
-	GENERATED_BODY()
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 SlotIndex = INDEX_NONE;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText DisplayName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 PreviewCardIndex = INDEX_NONE;
-	// Art-only pointer target while no vehicle has been selected.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 PreviewPointerCardIndex = INDEX_NONE;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool bConfirmed = false;
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 SlotIndex = INDEX_NONE;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FText DisplayName;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 PreviewCardIndex = INDEX_NONE;
+    // 차량을 고르기 전 외형 Preview에서만 사용하는 포인터 대상이다.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 PreviewPointerCardIndex = INDEX_NONE;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bConfirmed = false;
 };
 
 USTRUCT(BlueprintType)
 struct FMWVehiclePreviewScenario
 {
-	GENERATED_BODY()
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FText Label;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Capacity = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 LocalSlotIndex = INDEX_NONE;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) TArray<FMWVehiclePreviewParticipant> Participants;
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FText Label;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Capacity = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 LocalSlotIndex = INDEX_NONE;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FMWVehiclePreviewParticipant> Participants;
 };

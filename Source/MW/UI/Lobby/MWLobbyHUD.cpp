@@ -98,6 +98,7 @@ void AMWLobbyHUD::RefreshLobbyScreen()
 		RoomLobbyWidget->Refresh();
 }
 
+// 현재 화면의 출발 연출을 한 번만 시작하고 완료 뒤 기존 소유자 보고 경로를 사용한다.
 void AMWLobbyHUD::BeginVehicleDeparture()
 {
 	auto* PC = BoundController.Get();
@@ -106,23 +107,24 @@ void AMWLobbyHUD::BeginVehicleDeparture()
 		return;
 	}
 
-	bVehicleDepartureStarted = true;
-	SetActorTickEnabled(false);
-	if (CursorOverlay) CursorOverlay->RemoveFromParent();
-	CursorOverlay = nullptr;
+    bVehicleDepartureStarted = true;
+    SetActorTickEnabled(false);
+    if (CursorOverlay)
+        CursorOverlay->RemoveFromParent();
+    CursorOverlay = nullptr;
 
-	if (auto* Presentation = LobbyPresentation.Get())
-	{
-		if (Presentation->BeginVehicleDeparture(
-			FSimpleDelegate::CreateUObject(PC, &AMWLobbyPlayerController::ReportVehicleDepartureReady)))
-		{
-			return;
-		}
-	}
+    if (auto* Presentation = LobbyPresentation.Get())
+    {
+        if (Presentation->BeginVehicleDeparture(
+                FSimpleDelegate::CreateUObject(PC, &AMWLobbyPlayerController::ReportVehicleDepartureReady)))
+        {
+            return;
+        }
+    }
 
-	// 출발 카메라를 제공하지 않는 로비는 기존처럼 바로 이동할 수 있습니다.
-	CloseVehicleSelection();
-	PC->ReportVehicleDepartureReady();
+    // 출발 카메라를 제공하지 않는 로비는 기존처럼 바로 이동할 수 있습니다.
+    CloseVehicleSelection();
+    PC->ReportVehicleDepartureReady();
 }
 
 void AMWLobbyHUD::OpenVehicleSelection()
@@ -290,9 +292,11 @@ void AMWLobbyHUD::HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID)
 	if (auto* PC = BoundController.Get()) PC->RequestConfirmVehicle(VehicleAssetID);
 }
 
+// 위젯의 취소 의도를 기존 소유 Controller 요청으로 전달한다.
 void AMWLobbyHUD::HandleVehicleSelectionCancelRequested(FGameplayTag ExpectedVehicleID)
 {
-	if (auto* PC = BoundController.Get()) PC->RequestCancelVehicle(ExpectedVehicleID);
+    if (auto* PC = BoundController.Get())
+        PC->RequestCancelVehicle(ExpectedVehicleID);
 }
 
 void AMWLobbyHUD::RefreshBindings()
