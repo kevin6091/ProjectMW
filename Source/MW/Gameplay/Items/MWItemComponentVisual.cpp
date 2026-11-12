@@ -151,6 +151,13 @@ bool UMWItemComponent::SpawnBoosterVisual()
 	{
 		return false;
 	}
+	if (bOverrideBoosterMount && (BoosterMountTransform.ContainsNaN()
+		|| BoosterMountTransform.GetScale3D().GetMin() <= UE_SMALL_NUMBER
+		|| !FMath::IsFinite(BoosterExhaustLengthScale) || BoosterExhaustLengthScale <= UE_SMALL_NUMBER))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: BP의 부스터 장착 변환 또는 배기 길이가 유효하지 않습니다."), *Vehicle->GetName());
+		return false;
+	}
 
 	FActorSpawnParameters Params;
 	Params.Owner = Vehicle;
@@ -164,7 +171,9 @@ bool UMWItemComponent::SpawnBoosterVisual()
 	}
 	BoosterVisual->SetReplicates(false);
 	BoosterVisual->SetActorEnableCollision(false);
-	const FBoosterMount Mount = GetBoosterMount(*Vehicle, *BoosterVisual);
+	const FBoosterMount Mount = bOverrideBoosterMount
+		? FBoosterMount{BoosterMountTransform, BoosterExhaustLengthScale}
+		: GetBoosterMount(*Vehicle, *BoosterVisual);
 	BoosterVisual->SetActorTransform(Mount.Transform * Vehicle->GetActorTransform());
 	BoosterVisual->AttachToComponent(Vehicle->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 	if (!FindVisualNode(*BoosterVisual, BoosterNozzleTag))
@@ -216,12 +225,12 @@ void UMWItemComponent::PlayBoosterAnimation(const TSoftObjectPtr<ULevelSequence>
 	}
 
 	BoosterSequenceActor = SequenceActor;
-	// The imported clips bind a preview actor and one component. Explicit instance
-	// overrides keep the clip on this car and suppress its preview spawnable.
-	const UMovieScene* MovieScene = Sequence->GetMovieScene();
+	// Actor의 생성 트랙도 비어 있지 않으므로 트랙 개수로 Actor와 부품을 구분하면 안 된다.
+	// 원본의 미리보기 Actor 바인딩은 장착 Actor에, 부품 바인딩은 애니메이션 대상에 연결한다.
+	UMovieScene* MovieScene = Sequence->GetMovieScene();
 	for (const FMovieSceneBinding& Binding : MovieScene->GetBindings())
 	{
-		UObject* Object = Binding.GetTracks().IsEmpty()
+		UObject* Object = MovieScene->FindSpawnable(Binding.GetObjectGuid())
 			? static_cast<UObject*>(BoosterVisual.Get()) : AnimatedNode;
 		SequenceActor->BindingOverrides->SetBinding(
 			UE::MovieScene::FFixedObjectBindingID(Binding.GetObjectGuid(), MovieSceneSequenceID::Root), {Object});

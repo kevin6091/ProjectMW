@@ -198,3 +198,11 @@ UE 5.8.4에서 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자�
 - 이동·접지·충돌·서버 보정·Snapshot·RPC 코드는 변경하지 않았다. 기존 로컬 조종 차량만 자국을 그리는 범위도 유지하므로 다른 플레이어 차량의 자국 동기화는 이번 수정에 포함되지 않는다.
 - 이번 소스의 Editor/Game Win64 Development 빌드는 모두 성공했다. 사용자 요청으로 신규 PIE·주행 검증은 수행하지 않았다. BP 컴파일과 지정 두 에셋의 저장은 완료했으며, 실행 검증과 저장 에셋을 재로드한 회귀 검증은 미완료다. 검증할 항목은 기본 투명차 스폰, 직진 시 자국 없음, `W + Left Shift + A/D` 드리프트 시 두 줄 생성, 드리프트 해제 시 생성 중단, 기존 바퀴 차량 유지다.
 - 변경 바이너리는 `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset`과 `Content/Developers/user/L_Dev_Drive_ItemPickup.umap` 두 개다. 둘 다 현재 Git 제외 대상이므로 소스 PR만 받아서는 BP 값과 레벨 설정까지 전달되지 않는다. 이번 작업에서 UVCS 명령·checkin·예약 변경은 하지 않았다. 팀 전달 시 이 두 에셋의 버전을 별도로 맞춘다.
+
+### 2026-11-12 부스터 장착 표시 후속 수정
+
+- 투명차에는 차체 StaticMesh가 없어 기존 메시 기반 장착 계산이 임시값 `(-65, 0, 10) / Scale 0.05`로 빠졌다. ItemComponent에 선택적인 BP 장착 변환을 추가했다. 차량 BP의 상속된 `Items` 컴포넌트에서 `MW → Items → Booster Visual`의 `Override Booster Mount`, `Booster Mount Transform`, `Booster Exhaust Length Scale`을 편집한다. 기본값은 Override 꺼짐이므로 기존 다섯 차량의 장착 계산은 유지한다.
+- 투명차에만 Override를 켜고 Pawn 로컬 위치 `(-42, 0, 4) cm`, Yaw `-90°`, 균일 Scale `0.1`, 배기 길이 배율 `6.2`를 저장한다. 최종 외형 맞춤은 사용자 PIE 확인 후 이 BP 설정을 조정한다. 새 차종 이름 분기는 추가하지 않았다.
+- 복구된 부스터 시퀀스의 Actor 바인딩에도 `MovieSceneSpawnTrack`이 있다. 기존의 `Binding.GetTracks().IsEmpty()`로 Actor와 부품을 구분하던 코드를 `FindSpawnable(Guid)`로 변경하여 Actor 바인딩에는 실제 장착 Actor를, 부품 바인딩에는 해당 부품을 연결한다. 원본 시퀀스와 키 데이터는 수정하지 않았다. 실제 원거리 표시 증상의 해소 여부는 PIE 미검증이다.
+- 효과음 원본 `Booster Fire.wav`(48kHz, stereo, 3.558초)는 peak 약 0.812이고 full-scale 클리핑 샘플은 0개였다. 이는 게임의 최종 믹서 출력 클리핑이 없다는 증거가 아니다. 사용자 지시에 따라 오디오 중복 재생 방지·페이드·볼륨 변경은 추가하지 않았으며 소리 깨짐의 실행 원인은 미확정이다.
+- 최종 Editor/Game Development 빌드 성공. 사용자에게 PIE 검증을 맡겼으며 이번 부스터 수정의 실제 화면·청취 결과는 통과로 기록하지 않는다. 아이템 획득/사용 판정, 지속시간, 서버 복제, 차량 이동·Snapshot 소스는 변경하지 않았다.

@@ -60,6 +60,16 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	// 차체 메시로 장착 위치를 찾을 수 없는 차량은 BP에 지정한 Pawn 로컬 변환을 사용한다.
+	UPROPERTY(EditDefaultsOnly, Category="MW|Items|Booster Visual")
+	bool bOverrideBoosterMount = false;
+
+	UPROPERTY(EditDefaultsOnly, Category="MW|Items|Booster Visual", meta=(EditCondition="bOverrideBoosterMount"))
+	FTransform BoosterMountTransform = FTransform::Identity;
+
+	UPROPERTY(EditDefaultsOnly, Category="MW|Items|Booster Visual", meta=(EditCondition="bOverrideBoosterMount", ClampMin="0.01"))
+	float BoosterExhaustLengthScale = 6.2f;
+
 private:
 	bool IsItemPlayAllowed() const;
 	double GetServerTime() const;
