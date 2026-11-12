@@ -13,6 +13,7 @@
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Sound/SoundBase.h"
+#include "Net/UnrealNetwork.h"
 
 namespace
 {
@@ -40,9 +41,59 @@ UMWTrackRuntimeComponent::UMWTrackRuntimeComponent()
 	PrimaryComponentTick.TickGroup = TG_PrePhysics;
 }
 
-void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& Data)
+void UMWTrackRuntimeComponent::BeginPlay()
 {
-	Piece = &Data;
+	Super::BeginPlay();
+	// 클라이언트의 동적 컴포넌트는 액터 채널 복제로 생성될 수 있어 초기 설정을 여기서도 보완한다.
+	if (!bConfigured)
+	{
+		if (UMWTrackRuntimeSubsystem* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+		{
+			Runtime->ConfigureRuntimeComponent(*this);
+		}
+	}
+}
+
+void UMWTrackRuntimeComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UMWTrackRuntimeComponent, LiftActiveAt);
+}
+
+void UMWTrackRuntimeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	bPreview = true;
+	SetComponentTickEnabled(false);
+	SetTrainBell(false);
+	// 소유 액터에 추가한 충돌·시각 컴포넌트는 자동으로 함께 사라지지 않으므로 직접 해제한다.
+	ClearRiders();
+	for (const TWeakObjectPtr<UActorComponent>& Generated : GeneratedComponents)
+	{
+		if (UActorComponent* Component = Generated.Get())
+		{
+			if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+			{
+				Primitive->OnComponentBeginOverlap.RemoveAll(this);
+				Primitive->OnComponentEndOverlap.RemoveAll(this);
+			}
+			Component->DestroyComponent();
+		}
+	}
+	GeneratedComponents.Reset();
+	Triggers.Reset();
+	RiderTriggers.Reset();
+	Super::EndPlay(EndPlayReason);
+}
+
+void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& InData)
+{
+	if (bConfigured || !IsValid(GetOwner()) || !GetOwner()->GetRootComponent())
+	{
+		return;
+	}
+	Piece = InData;
+	bConfigured = true;
+	const FMWTrackPieceRuntimeData& Data = Piece;
 	AActor& Actor = *GetOwner();
 	TInlineComponentArray<UStaticMeshComponent*> Visuals(&Actor);
 	Motions.Reserve(Data.Motions.Num());
@@ -88,6 +139,7 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& Data)
 			Visual->SetHiddenInGame(true);
 			Visual->ComponentTags.Add(TrainTag);
 			Actor.AddInstanceComponent(Visual);
+			GeneratedComponents.Add(Visual);
 			Visual->RegisterComponent();
 			Train.Add(Visual);
 			TrainBounds += Part.Mesh->GetBoundingBox().TransformBy(Part.Local);
@@ -102,6 +154,7 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& Data)
 		SetTriggerCollision(*Hit);
 		Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Actor.AddInstanceComponent(Hit);
+		GeneratedComponents.Add(Hit);
 		Hit->RegisterComponent();
 		TrainHitbox = Hit;
 		if (Data.TrainBell && GetNetMode() != NM_DedicatedServer)
@@ -121,6 +174,7 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& Data)
 			Audio->SetSound(Data.TrainBell);
 			Audio->ComponentTags.Add(TrainBellTag);
 			Actor.AddInstanceComponent(Audio);
+			GeneratedComponents.Add(Audio);
 			Audio->RegisterComponent();
 			Bell = Audio;
 		}
@@ -196,6 +250,7 @@ UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeDa
 		Component->OnComponentBeginOverlap.AddDynamic(this, &UMWTrackRuntimeComponent::OnTrigger);
 	}
 	Actor.AddInstanceComponent(Component);
+	GeneratedComponents.Add(Component);
 	Component->RegisterComponent();
 	return Component;
 }
@@ -203,7 +258,7 @@ UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeDa
 void UMWTrackRuntimeComponent::SetPreview(bool bInPreview)
 {
 	bPreview = bInPreview;
-	if (!Piece)
+	if (!bConfigured)
 	{
 		return;
 	}
@@ -215,16 +270,16 @@ void UMWTrackRuntimeComponent::SetPreview(bool bInPreview)
 			Road->SetCollisionEnabled(Collision);
 		}
 	}
-	for (const TPair<UPrimitiveComponent*, const FMWTrackShapeData*>& Trigger : Triggers)
+	for (const auto& Trigger : Triggers)
 	{
-		Trigger.Key->SetCollisionEnabled(Collision);
+		if (UPrimitiveComponent* Component = Trigger.Key.Get())
+		{
+			Component->SetCollisionEnabled(Collision);
+		}
 	}
 	if (bPreview)
 	{
-		for (auto& Trigger : RiderTriggers)
-		{
-			Trigger.Value.Riders.Reset();
-		}
+		ClearRiders();
 		SetTrainActive(false);
 		SetTrainBell(false);
 		for (FTrafficSlot& Slot : Traffic)
@@ -250,13 +305,17 @@ void UMWTrackRuntimeComponent::OnTrigger(UPrimitiveComponent* Overlapped, AActor
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& Sweep)
 {
 	AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(OtherActor);
-	if (bPreview || !Vehicle)
+	if (!bConfigured || bPreview || !IsValid(Vehicle))
 	{
 		return;
 	}
 	if (FRiderTrigger* RiderTrigger = RiderTriggers.Find(Overlapped))
 	{
 		RiderTrigger->Riders.Add(Vehicle);
+		if (RiderTrigger->Shape->Trigger == EMWTrackTrigger::LiftRide)
+		{
+			CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->SetTrackLiftBase(GetOwner());
+		}
 		return;
 	}
 	if (!Vehicle->HasAuthority() && !Vehicle->IsLocallyControlled())
@@ -286,12 +345,26 @@ void UMWTrackRuntimeComponent::OnTrigger(UPrimitiveComponent* Overlapped, AActor
 		CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->ApplyTrackBoost(Shape.Amount, Shape.Duration);
 		break;
 	case EMWTrackTrigger::LiftButton:
-		LiftActiveAt = GetRaceTime() + Piece->LiftDelay;
+		if (GetNetMode() != NM_Client && GetOwner()->HasAuthority())
+		{
+			const FMotion* Lift = Motions.FindByPredicate([](const FMotion& Motion) { return Motion.Data.Type == EMWTrackMotion::Lift; });
+			if (Lift && Lift->Data.Rate > 0.f && Lift->Data.Amount > 0.f)
+			{
+				const double Now = GetRaceTime();
+				const double CycleSeconds = 2.0 * Lift->Data.Amount / Lift->Data.Rate + Piece.LiftReturnDelay;
+				// 여러 충돌체나 플레이어의 중복 진입으로 진행 중인 승강기 시작 시각이 계속 밀리지 않게 한다.
+				if (LiftActiveAt < 0.0 || Now >= LiftActiveAt + CycleSeconds)
+				{
+					LiftActiveAt = Now + FMath::Max(0.f, Piece.LiftDelay);
+					GetOwner()->ForceNetUpdate();
+				}
+			}
+		}
 		break;
 	case EMWTrackTrigger::Start:
 	case EMWTrackTrigger::Checkpoint:
 	case EMWTrackTrigger::Finish:
-		Runtime->ProcessRaceTrigger(*Vehicle, *GetOwner(), Shape.Trigger, Piece->RespawnPoints);
+		Runtime->ProcessRaceTrigger(*Vehicle, *GetOwner(), Shape.Trigger, Piece.RespawnPoints);
 		break;
 	default:
 		break;
@@ -307,20 +380,51 @@ void UMWTrackRuntimeComponent::OnRiderEndOverlap(UPrimitiveComponent* Overlapped
 	if (Vehicle && RiderTrigger && !Overlapped->IsOverlappingActor(Vehicle))
 	{
 		RiderTrigger->Riders.Remove(Vehicle);
+		if (RiderTrigger->Shape->Trigger == EMWTrackTrigger::LiftRide)
+		{
+			CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->ClearTrackLiftBase(GetOwner());
+		}
 	}
+}
+
+void UMWTrackRuntimeComponent::ClearRiders()
+{
+	for (auto& Trigger : RiderTriggers)
+	{
+		for (const TWeakObjectPtr<AMWVehiclePawn>& Rider : Trigger.Value.Riders)
+		{
+			if (AMWVehiclePawn* Vehicle = Rider.Get())
+			{
+				CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent())->ClearTrackLiftBase(GetOwner());
+			}
+		}
+		Trigger.Value.Riders.Reset();
+	}
+}
+
+FVector UMWTrackRuntimeComponent::GetLiftWorldOffset() const
+{
+	const AActor* Owner = GetOwner();
+	return IsValid(Owner) ? Owner->GetActorTransform().TransformVector(FVector(0, 0, LiftHeight)) : FVector::ZeroVector;
 }
 
 void UMWTrackRuntimeComponent::UpdateLift(double Time, float DeltaTime)
 {
 	const FMotion* Lift = Motions.FindByPredicate([](const FMotion& Motion) { return Motion.Data.Type == EMWTrackMotion::Lift; });
-	if (!Lift || LiftActiveAt < 0)
+	if (!Lift || LiftActiveAt < 0 || Lift->Data.Rate <= 0.f || Lift->Data.Amount <= 0.f)
 	{
 		return;
 	}
-	const float Target = (Time >= LiftActiveAt && Time < LiftActiveAt + Lift->Data.Amount / Lift->Data.Rate + Piece->LiftReturnDelay)
-		? Lift->Data.Amount : 0.f;
+	const double Elapsed = Time - LiftActiveAt;
+	const double RiseSeconds = Lift->Data.Amount / Lift->Data.Rate;
+	const double ReturnAt = RiseSeconds + FMath::Max(0.f, Piece.LiftReturnDelay);
 	const float PreviousHeight = LiftHeight;
-	LiftHeight = FMath::FInterpConstantTo(LiftHeight, Target, DeltaTime, Lift->Data.Rate);
+	// 서버 기준 시작 시각에서 높이를 다시 계산하면 늦은 복제나 프레임 정지 뒤에도 같은 높이를 복원한다.
+	// 각 기기에서 프레임 간격을 따로 누적하면 승강기 위치가 서로 어긋난다.
+	const double Height = Elapsed <= ReturnAt
+		? Elapsed * Lift->Data.Rate
+		: Lift->Data.Amount - (Elapsed - ReturnAt) * Lift->Data.Rate;
+	LiftHeight = static_cast<float>(FMath::Clamp(Height, 0.0, static_cast<double>(Lift->Data.Amount)));
 	FRiderTrigger* RiderTrigger = RiderTriggers.Find(LiftRide.Get());
 	if (!RiderTrigger || FMath::IsNearlyEqual(LiftHeight, PreviousHeight))
 	{
@@ -337,8 +441,9 @@ void UMWTrackRuntimeComponent::UpdateLift(double Time, float DeltaTime)
 	const FVector Delta = GetOwner()->GetActorTransform().TransformVector(FVector(0, 0, LiftHeight - PreviousHeight));
 	for (const TWeakObjectPtr<AMWVehiclePawn>& Rider : Riders)
 	{
-		if (AMWVehiclePawn* Vehicle = Rider.Get(); Vehicle && (Vehicle->HasAuthority() || Vehicle->IsLocallyControlled()))
+		if (AMWVehiclePawn* Vehicle = Rider.Get())
 		{
+			// 원격 차량도 보간 시작 위치를 기록하기 전에 이번 프레임의 발판 이동량을 반영해야 한다.
 			Vehicle->AddActorWorldOffset(Delta, false, nullptr, ETeleportType::None);
 		}
 	}
@@ -389,7 +494,7 @@ void UMWTrackRuntimeComponent::ApplyMotions(double Time, float GateAlpha)
 
 void UMWTrackRuntimeComponent::UpdateTrain(double Time)
 {
-	const double Interval = Piece->TrainInterval;
+	const double Interval = Piece.TrainInterval;
 	const int32 Cycle = FMath::FloorToInt(Time / Interval);
 	const double Phase = FMath::Fmod(Time, Interval);
 	constexpr double TransitSeconds = 2.5;
@@ -398,7 +503,7 @@ void UMWTrackRuntimeComponent::UpdateTrain(double Time)
 		SetTrainActive(false);
 		return;
 	}
-	const FTransform& Rail = Piece->Rails[Cycle % Piece->Rails.Num()];
+	const FTransform& Rail = Piece.Rails[Cycle % Piece.Rails.Num()];
 	const double Distance = FMath::Lerp(-4400.0, 4400.0, Phase / TransitSeconds);
 	FTransform Route = Rail;
 	Route.AddToTranslation(Rail.GetUnitAxis(EAxis::Y) * Distance);
@@ -406,7 +511,7 @@ void UMWTrackRuntimeComponent::UpdateTrain(double Time)
 	{
 		if (UStaticMeshComponent* Visual = Train[Index].Get())
 		{
-			Visual->SetRelativeTransform(Piece->TrainParts[Index].Local * Route);
+			Visual->SetRelativeTransform(Piece.TrainParts[Index].Local * Route);
 		}
 	}
 	if (UPrimitiveComponent* Hit = TrainHitbox.Get())
@@ -452,12 +557,12 @@ void UMWTrackRuntimeComponent::SetTrainBell(bool bActive)
 
 void UMWTrackRuntimeComponent::ConfigureTraffic()
 {
-	if (Piece->TrafficLanes.IsEmpty() || Piece->TrafficModels.IsEmpty())
+	if (Piece.TrafficLanes.IsEmpty() || Piece.TrafficModels.IsEmpty())
 	{
 		return;
 	}
 	int32 Weight = 0;
-	for (const FMWTrackTrafficModelData& Model : Piece->TrafficModels)
+	for (const FMWTrackTrafficModelData& Model : Piece.TrafficModels)
 	{
 		Weight += Model.VisualClass ? Model.Weight : 0;
 	}
@@ -467,11 +572,11 @@ void UMWTrackRuntimeComponent::ConfigureTraffic()
 	}
 
 	AActor& Actor = *GetOwner();
-	FRandomStream Random(FCrc::StrCrc32(*Piece->VisualClass.ToString()));
-	TrafficLaneStates.SetNum(Piece->TrafficLanes.Num());
-	for (int32 LaneIndex = 0; LaneIndex < Piece->TrafficLanes.Num(); ++LaneIndex)
+	FRandomStream Random(FCrc::StrCrc32(*Piece.VisualClass.ToString()));
+	TrafficLaneStates.SetNum(Piece.TrafficLanes.Num());
+	for (int32 LaneIndex = 0; LaneIndex < Piece.TrafficLanes.Num(); ++LaneIndex)
 	{
-		const FMWTrackTrafficLaneData& Lane = Piece->TrafficLanes[LaneIndex];
+		const FMWTrackTrafficLaneData& Lane = Piece.TrafficLanes[LaneIndex];
 		if (Lane.Length <= 0 || Lane.Speed <= 0)
 		{
 			continue;
@@ -481,7 +586,7 @@ void UMWTrackRuntimeComponent::ConfigureTraffic()
 		for (int32 Index = 0; Index < Lane.Slots; ++Index)
 		{
 			int32 Draw = Random.RandRange(1, Weight);
-			const FMWTrackTrafficModelData* Choice = Piece->TrafficModels.FindByPredicate([&Draw](const FMWTrackTrafficModelData& Model)
+			const FMWTrackTrafficModelData* Choice = Piece.TrafficModels.FindByPredicate([&Draw](const FMWTrackTrafficModelData& Model)
 			{
 				return Model.VisualClass && (Draw -= Model.Weight) <= 0;
 			});
@@ -496,6 +601,7 @@ void UMWTrackRuntimeComponent::ConfigureTraffic()
 			Visual->SetChildActorClass(Choice->VisualClass);
 			Visual->ComponentTags.Add(TrafficTag);
 			Actor.AddInstanceComponent(Visual);
+			GeneratedComponents.Add(Visual);
 			Visual->RegisterComponent();
 			AActor* Child = Visual->GetChildActor();
 			if (!Child)
@@ -524,6 +630,7 @@ void UMWTrackRuntimeComponent::ConfigureTraffic()
 			SetTriggerCollision(*Hit);
 			Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			Actor.AddInstanceComponent(Hit);
+			GeneratedComponents.Add(Hit);
 			Hit->RegisterComponent();
 
 			FTrafficSlot& Slot = Traffic.AddDefaulted_GetRef();
@@ -558,7 +665,7 @@ void UMWTrackRuntimeComponent::UpdateTraffic(double Time)
 {
 	for (FTrafficSlot& Slot : Traffic)
 	{
-		const FMWTrackTrafficLaneData& Lane = Piece->TrafficLanes[Slot.LaneIndex];
+		const FMWTrackTrafficLaneData& Lane = Piece.TrafficLanes[Slot.LaneIndex];
 		FTrafficLaneState& LaneState = TrafficLaneStates[Slot.LaneIndex];
 		const double Phase = FMath::Fmod(Time + Slot.OffsetSeconds, LaneState.DriveSeconds + Lane.SpawnDelay);
 		LaneState.Phase = Phase;
@@ -598,12 +705,16 @@ void UMWTrackRuntimeComponent::UpdateTraffic(double Time)
 void UMWTrackRuntimeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (!bConfigured || bPreview || !IsValid(GetOwner()))
+	{
+		return;
+	}
 	const double Time = FMath::Max(0.0, GetRaceTime());
 	float GateAlpha = 0.f;
 	if (!Train.IsEmpty())
 	{
 		UpdateTrain(Time);
-		const double Phase = FMath::Fmod(Time, static_cast<double>(Piece->TrainInterval));
+		const double Phase = FMath::Fmod(Time, static_cast<double>(Piece.TrainInterval));
 		GateAlpha = static_cast<float>(FMath::Clamp(FMath::Min(4.0 - Phase, Phase + 0.25), 0.0, 1.0));
 		SetTrainBell(GateAlpha > 0.f);
 	}
@@ -621,7 +732,7 @@ void UMWTrackRuntimeComponent::ApplyRollers()
 	for (auto& Trigger : RiderTriggers)
 	{
 		FRiderTrigger& Entry = Trigger.Value;
-		if (Entry.Shape->Trigger != EMWTrackTrigger::Roller || Entry.Riders.IsEmpty()) continue;
+		if (!Trigger.Key.IsValid() || Entry.Shape->Trigger != EMWTrackTrigger::Roller || Entry.Riders.IsEmpty()) continue;
 		const FVector Velocity = Trigger.Key->GetForwardVector() * Entry.Shape->Amount;
 		for (auto It = Entry.Riders.CreateIterator(); It; ++It)
 		{

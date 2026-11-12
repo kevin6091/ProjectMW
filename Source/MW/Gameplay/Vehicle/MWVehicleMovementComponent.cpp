@@ -2,6 +2,7 @@
 
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Items/MWItemComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
@@ -125,6 +126,39 @@ void UMWVehicleMovementComponent::ApplyTrackSurfaceVelocity(const FVector& Veloc
 	TrackSurfaceEndTime = GetWorld()->GetTimeSeconds() + Duration;
 }
 
+void UMWVehicleMovementComponent::SetTrackLiftBase(AActor* Base)
+{
+	if (UMWTrackRuntimeComponent* Current = TrackLiftBase.Get())
+	{
+		if (Current->GetOwner() == Base) return;
+		RemoveTickPrerequisiteComponent(Current);
+	}
+	TrackLiftBase.Reset();
+	if (IsValid(Base) && Base->GetWorld() == GetWorld())
+	{
+		if (UMWTrackRuntimeComponent* Runtime = Base->FindComponentByClass<UMWTrackRuntimeComponent>())
+		{
+			TrackLiftBase = Runtime;
+			// 같은 프레임에서 발판 이동을 먼저 반영한 뒤 차량 이동과 지면 판정을 계산한다.
+			AddTickPrerequisiteComponent(Runtime);
+		}
+	}
+}
+
+void UMWVehicleMovementComponent::ClearTrackLiftBase(const AActor* Base)
+{
+	if (const UMWTrackRuntimeComponent* Current = TrackLiftBase.Get(); Current && Current->GetOwner() == Base)
+	{
+		SetTrackLiftBase(nullptr);
+	}
+}
+
+void UMWVehicleMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	SetTrackLiftBase(nullptr);
+	Super::EndPlay(EndPlayReason);
+}
+
 bool UMWVehicleMovementComponent::IsTrackBoostActive() const
 {
 	return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
@@ -133,6 +167,7 @@ bool UMWVehicleMovementComponent::IsTrackBoostActive() const
 void UMWVehicleMovementComponent::OnTeleported()
 {
 	Super::OnTeleported();
+	SetTrackLiftBase(nullptr);
 	TrackBoostEndTime = -1.0;
 	TrackSurfaceEndTime = -1.0;
 	ResetDriveInput();
@@ -418,6 +453,7 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);
 
 		GroundVelocity += Forward * TravelSign * AppliedSpeedIncrease;
+
 		// 부스터가 끝나 제한 속도가 낮아져도 가속키를 누른 차량이 초과 속도를 계속 유지하면 안 된다.
 		// 즉시 제한값으로 잘라내지 않고 기존 감속량으로 진행 방향의 초과 속도만 줄인다.
 		// 횡방향 그립과 공중 관성은 기존 계산을 유지하고, 브레이크 감속과 중복 적용하지 않는다.

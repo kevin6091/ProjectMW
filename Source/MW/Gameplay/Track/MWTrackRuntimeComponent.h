@@ -21,7 +21,11 @@ public:
 	UMWTrackRuntimeComponent();
 	void Configure(const FMWTrackPieceRuntimeData& Data);
 	void SetPreview(bool bInPreview);
+	FVector GetLiftWorldOffset() const;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	struct FMovedPart
@@ -77,11 +81,17 @@ private:
 	void UpdateLift(double Time, float DeltaTime);
 	void ApplyMotions(double Time, float GateAlpha);
 	void ApplyRollers();
+	void ClearRiders();
 	double GetRaceTime() const;
 
-	const FMWTrackPieceRuntimeData* Piece = nullptr;
-	TMap<UPrimitiveComponent*, const FMWTrackShapeData*> Triggers;
-	TMap<UPrimitiveComponent*, FRiderTrigger> RiderTriggers;
+	// 설정 값과 그 안의 에셋 참조는 이 컴포넌트의 수명 동안 보관한다.
+	UPROPERTY(Transient)
+	// 설정 배열 원소를 가리키는 포인터 대신 값을 보관해 카탈로그 조회 수명과 분리한다.
+	FMWTrackPieceRuntimeData Piece;
+	bool bConfigured = false;
+	TMap<TWeakObjectPtr<UPrimitiveComponent>, const FMWTrackShapeData*> Triggers;
+	TMap<TWeakObjectPtr<UPrimitiveComponent>, FRiderTrigger> RiderTriggers;
+	TArray<TWeakObjectPtr<UActorComponent>> GeneratedComponents;
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> RoadCollision;
 	TArray<FMotion> Motions;
 	TArray<TWeakObjectPtr<UStaticMeshComponent>> Train;
@@ -93,6 +103,8 @@ private:
 	bool bTrainActive = false;
 	bool bBellActive = false;
 	FVector TrainCenter = FVector::ZeroVector;
+	// 작동 시작은 서버가 결정하고 각 기기는 복제된 서버 시각으로 같은 높이를 계산한다.
+	UPROPERTY(Replicated)
 	double LiftActiveAt = -1;
 	float LiftHeight = 0;
 	bool bPreview = false;

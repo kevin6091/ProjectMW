@@ -9,6 +9,7 @@
 #include "MWVehicleMovementComponent.generated.h"
 
 class AMWVehiclePawn;
+class UMWTrackRuntimeComponent;
 struct FMWVehicleDriveSnapshot;
 
 /**
@@ -45,12 +46,15 @@ public:
 	void ResetDriveInput();
 	void ApplyTrackBoost(float MinimumThrottle, float Duration);
 	void ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration);
+	void SetTrackLiftBase(AActor* Base);
+	void ClearTrackLiftBase(const AActor* Base);
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
 	bool IsTrackBoostActive() const;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual bool OverlapTest(const FVector& Location, const FQuat& Rotation, ECollisionChannel Channel,
 		const FCollisionShape& Shape, const AActor* IgnoreActor) const override;
 
@@ -74,6 +78,8 @@ private:
 	double TrackBoostEndTime = -1.0;
 	FVector TrackSurfaceVelocity = FVector::ZeroVector;
 	double TrackSurfaceEndTime = -1.0;
+	// 탑승 중인 발판은 소유하지 않으며 이탈·텔레포트·종료 시 선행 틱 연결까지 해제한다.
+	TWeakObjectPtr<UMWTrackRuntimeComponent> TrackLiftBase;
 
 	bool HasItemBooster() const;
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;

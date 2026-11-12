@@ -37,6 +37,8 @@ public:
 	void ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActor& Track,
 		EMWTrackTrigger Trigger, const TArray<FTransform>& RespawnPoints);
 	void SetTrackPreview(AActor& Actor, bool bPreview);
+	// 복제로 생성된 승강기 컴포넌트에도 기존 카탈로그의 설정을 적용한다.
+	void ConfigureRuntimeComponent(UMWTrackRuntimeComponent& Component);
 
 protected:
 	virtual bool DoesSupportWorldType(EWorldType::Type WorldType) const override;
@@ -50,7 +52,7 @@ private:
 		double StartTime = -1;
 	};
 
-	void AttachTrack(AActor* Actor);
+	void AttachTrack(AActor* Actor, bool bInitialWorldActor = false);
 	void OnActorSpawned(AActor* Actor);
 
 	UPROPERTY() TObjectPtr<UMWTrackRuntimeData> Catalog;
