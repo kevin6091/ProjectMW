@@ -85,6 +85,14 @@ private:
 	UPROPERTY(Config, EditAnywhere, Category = "Assets")
 	TSoftObjectPtr<UMWAssetData> StartupAssetData;
 
+    // 선택 설치한 카탈로그입니다. 로드나 검증에 실패하면 기본 목록을 사용합니다.
+    UPROPERTY(Config, EditAnywhere, Category = "Assets")
+    TSoftObjectPtr<UMWAssetData> StartupAssetDataOverride;
+
+    // 직접 ID로 조회할 수 있는 개발 항목을 선택 목록에서만 숨깁니다.
+    UPROPERTY(Config, EditAnywhere, Category = "Assets")
+    TArray<FName> UnlistedOverrideAssetIds;
+
 	// 현재 적용한 원본 목록을 메모리에 유지합니다. 실제 조회에는 아래에 복사해 둔 경로와 분류를 사용합니다.
 	UPROPERTY(Transient)
 	TObjectPtr<UMWAssetData> AssetData;

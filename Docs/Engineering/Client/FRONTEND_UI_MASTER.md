@@ -177,12 +177,12 @@ SHA 중복 PNG 후보: 44개 / 23,414,337 bytes. 유지할 동일 SHA 대표 경
 
 ### 주요 코드 위치
 
-- [TitleRoot](../../../Source/MW/UI/MWTitleRootWidget.cpp)
-- [Vehicle selection](../../../Source/MW/UI/MWVehicleSelectionWidget.cpp)
-- [Card](../../../Source/MW/UI/MWVehicleCardWidget.cpp)
-- [Player Entry](../../../Source/MW/UI/MWVehiclePlayerEntryWidget.cpp)
-- [Player Marker](../../../Source/MW/UI/MWVehiclePlayerMarkerWidget.cpp)
-- [Preview host](../../../Source/MW/UI/MWVehicleSelectionPreviewActor.cpp)
+- [TitleRoot](../../../Source/MW/UI/Title/MWTitleRootWidget.cpp)
+- [Vehicle selection](../../../Source/MW/UI/VehicleSelection/MWVehicleSelectionWidget.cpp)
+- [Card](../../../Source/MW/UI/VehicleSelection/MWVehicleCardWidget.cpp)
+- [Player Entry](../../../Source/MW/UI/VehicleSelection/MWVehiclePlayerEntryWidget.cpp)
+- [Player Marker](../../../Source/MW/UI/VehicleSelection/MWVehiclePlayerMarkerWidget.cpp)
+- [Preview host](../../../Source/MW/UI/VehicleSelection/MWVehicleSelectionPreviewActor.cpp)
 - [AssetManager](../../../Source/MW/System/MWAssetManager.h)
 - [Vehicle Definition](../../../Source/MW/Data/MWVehicleDefinitionData.h)
 - [MultiplayerSubsystem](../../../Source/MW/System/MultiplayerSubSystem/MWMultiplayerSubsystem.h)

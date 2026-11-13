@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/NetSerialization.h"
+#include "UObject/ObjectKey.h"
 #include "MWVehicleDriveInput.h"
 #include "MWVehicleNetworkTypes.generated.h"
 
@@ -43,4 +44,38 @@ struct FMWVehicleDriveSnapshot
 
 	UPROPERTY()
 	bool bGrounded = false;
+
+	UPROPERTY()
+	float ImpactYawRate = 0.f;
+
+	UPROPERTY()
+	double ServerTimeSeconds = 0.0;
+};
+
+struct FMWVehicleContactTuning
+{
+	float Mass;
+	float Restitution;
+	float MomentumRetention;
+	float MinBounceSpeed;
+};
+
+// 로컬 이력에만 저장한다. 보정 재실행에서 지금 보이는 상대 위치를 다시 읽지 않는다.
+struct FMWVehicleContactSample
+{
+	FObjectKey Vehicle;
+	uint32 StreamId;
+	uint32 Revision;
+	FVector Location;
+	FQuat Rotation;
+	FVector Velocity;
+	FVector Extent;
+	FMWVehicleContactTuning Tuning;
+};
+
+struct FMWVehiclePredictedImpact
+{
+	int32 SampleIndex = INDEX_NONE;
+	double Fraction = 0.0;
+	FVector OtherVelocityDelta = FVector::ZeroVector;
 };

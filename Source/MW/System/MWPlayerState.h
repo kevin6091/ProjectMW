@@ -6,8 +6,8 @@
 #include "MWGameplayTags.h"
 #include "MWPlayerState.generated.h"
 
-class UMWPlayerConstructionComponent;
 class UMWPlayerCursorComponent;
+class UMWPlayerConstructionComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWPlayerStateChanged);
 
@@ -18,7 +18,6 @@ class MW_API AMWPlayerState : public APlayerState
 
 public:
 	AMWPlayerState();
-	
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void OnRep_PlayerName() override;
@@ -41,6 +40,9 @@ public:
 
 	// 서버가 승인한 선택 결과를 저장합니다. Server RPC는 아닙니다.
 	bool ConfirmVehicleAssetIDFromServer(FGameplayTag InVehicleAssetID);
+
+	// 서버 권한과 예상 차량 ID를 확인한 뒤 기존 복제 값과 변경 알림으로 선택을 해제한다.
+	bool ClearVehicleAssetIDFromServer(FGameplayTag ExpectedVehicleID);
 	
 	// 공용 개인 상태는 특정 로비 GameState나 Widget을 직접 호출하지 않습니다.
 	UPROPERTY(BlueprintAssignable, Category = "MW|Player")
