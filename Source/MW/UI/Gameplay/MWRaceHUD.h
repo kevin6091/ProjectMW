@@ -7,6 +7,7 @@
 
 class APlayerController;
 class AMWVehiclePawn;
+class SMWRaceSpeedometer;
 class STextBlock;
 
 // 소유 차량의 주행 정보만 표시한다. 이동 값이나 서버 경기 판정을 변경하지 않는다.
@@ -14,12 +15,14 @@ class SMWRaceHUD : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SMWRaceHUD)
+        : _SpeedometerMaxKmh(120.f)
     {
     }
 
         SLATE_ARGUMENT(APlayerController*, Controller)
         SLATE_ARGUMENT(bool, bItemPickupTest)
         SLATE_ATTRIBUTE(TOptional<EMWRoomPhase>, RoomPhase)
+        SLATE_ARGUMENT(float, SpeedometerMaxKmh)
 
     SLATE_END_ARGS()
 
@@ -40,7 +43,7 @@ private:
 
     TSharedPtr<SWidget> SpeedPanel;
 
-    TSharedPtr<STextBlock> SpeedText;
+    TSharedPtr<SMWRaceSpeedometer> Speedometer;
 
     TSharedPtr<SWidget> PhasePanel;
 
@@ -52,7 +55,7 @@ private:
 
     FMWGameplayUIArt Art;
 
-    int32 DisplayedSpeedKmh = INDEX_NONE;
+    bool bResetNeedlePending = true;
 
     double NextSpeedUpdateTime = 0.0;
 

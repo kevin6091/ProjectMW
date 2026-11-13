@@ -24,6 +24,10 @@ class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
 
 public:
 
+    // 계기판 눈금 상한만 조절한다. 차량의 실제 최고 속도에는 영향을 주지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "HUD|Speedometer", meta = (ClampMin = "30", ClampMax = "600"))
+    float SpeedometerMaxKmh = 120.f;
+
     UPROPERTY(Config)
     TSoftObjectPtr<UFont> DisplayFont;
 

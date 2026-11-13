@@ -202,6 +202,7 @@ namespace
                      .Controller(Args._Controller)
                      .bItemPickupTest(bItemPickupTest)
                      .RoomPhase(Args._RoomPhase)
+                     .SpeedometerMaxKmh(Settings->SpeedometerMaxKmh)
                      .Visibility(EVisibility::HitTestInvisible)
                  ] +
                  SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
