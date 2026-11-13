@@ -22,6 +22,7 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/Gameplay/MWGameplaySign.h"
+#include "UI/Gameplay/MWRaceHUD.h"
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Images/SImage.h"
@@ -194,6 +195,13 @@ namespace
 
             ChildSlot
                 [SNew(SOverlay) + SOverlay::Slot()[CenteredHUD] +
+                 SOverlay::Slot()
+                 [
+                     SNew(SMWRaceHUD)
+                     .Controller(Args._Controller)
+                     .bItemPickupTest(bItemPickupTest)
+                     .Visibility(EVisibility::HitTestInvisible)
+                 ] +
                  SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
                      SNew(SOverlay) +
                          SOverlay::Slot()
