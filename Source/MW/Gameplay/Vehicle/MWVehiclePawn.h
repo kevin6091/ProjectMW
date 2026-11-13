@@ -81,6 +81,7 @@ private:
 		FMWVehicleDriveSnapshot Result;
 		TArray<FMWVehicleContactSample, TInlineAllocator<3>> Contacts;
 		TArray<FPredictedContactMotion, TInlineAllocator<3>> ContactMotions;
+		// 이 입력을 처음 예측한 서버 추정 시각. 재실행해도 패킷 도착 시각으로 바꾸지 않는다.
 		double ResultTime = 0.0;
 	};
 
@@ -93,7 +94,6 @@ private:
 	TArray<FPredictedMove> PredictedMoves;
 	TArray<FPredictedContactMotion, TInlineAllocator<3>> PredictedContactMotions;
 	TArray<FPredictedContactMotion, TInlineAllocator<3>> LastAckedContactMotions;
-	double LastAckedContactTime = 0.0;
 	FMWVehicleDriveSnapshot LastAuthoritativeSnapshot;
 	TArray<FMWVehicleDriveSnapshot, TInlineAllocator<12>> ProxySnapshots;
 	// 충돌체는 고정 스텝 결과에 둔다. 직전 회전은 남은 짧은 표시 시간의 Yaw 추정에만 쓴다.
@@ -110,6 +110,9 @@ private:
 	float SendTime = 0.f;
 	double ProxyPlaybackTime = 0.0;
 	double ProxyInterpolationDelay = 0.0;
+	// 상대 외형의 실제 표시 결과. 목표 위치가 바뀌어도 물리 속도와 보정 속도를 분리한다.
+	FMWVehicleDriveSnapshot LastProxyPresentation;
+	bool bHasProxyPresentation = false;
 	float RemoteInputSilence = 0.f;
 	float RemoteInputGapTime = 0.f;
 	bool bHadRemoteInput = false;
@@ -135,6 +138,7 @@ private:
 	void NotifyDriveContact(AMWVehiclePawn* Other, const FVector& Normal);
 	void UpdateDrivePresentation(float DeltaTime);
 	void UpdateNearbyPresentation(FMWVehicleDriveSnapshot& Presentation, float DeltaTime);
+	void SmoothProxyPresentation(FMWVehicleDriveSnapshot& Presentation, float DeltaTime);
 	void ResetDriveStream();
 	void PublishDriveSnapshot(bool bNewStream = false);
 	void ReconcilePredictedDrive();
