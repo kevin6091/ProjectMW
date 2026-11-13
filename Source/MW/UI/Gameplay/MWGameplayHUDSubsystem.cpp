@@ -22,7 +22,8 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/Gameplay/MWGameplaySign.h"
-#include "UI/Gameplay/MWRaceHUD.h"
+#include "UI/Gameplay/MWRaceHUDWidget.h"
+#include "Widgets/SNullWidget.h"
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Images/SImage.h"
@@ -95,7 +96,7 @@ namespace
         SLATE_ARGUMENT(APlayerController*, Controller)
         SLATE_ARGUMENT(bool, bItemPickupTest)
         SLATE_ATTRIBUTE(EMWItemId, HeldItem)
-        SLATE_ATTRIBUTE(TOptional<EMWRoomPhase>, RoomPhase)
+        SLATE_ARGUMENT(TSharedPtr<SWidget>, RaceHUD)
         SLATE_END_ARGS()
 
         // 기존 경기 상태를 읽는 표지판·대기판·아이템 슬롯의 Slate 구조와 설정 자원을 준비한다.
@@ -198,12 +199,7 @@ namespace
                 [SNew(SOverlay) + SOverlay::Slot()[CenteredHUD] +
                  SOverlay::Slot()
                  [
-                     SNew(SMWRaceHUD)
-                     .Controller(Args._Controller)
-                     .bItemPickupTest(bItemPickupTest)
-                     .RoomPhase(Args._RoomPhase)
-                     .SpeedometerMaxKmh(Settings->SpeedometerMaxKmh)
-                     .Visibility(EVisibility::HitTestInvisible)
+                     MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)
                  ] +
                  SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
                      SNew(SOverlay) +
@@ -661,17 +657,25 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     PC->OnPossessedPawnChanged.AddUniqueDynamic(this, &ThisClass::HandlePossessedPawnChanged);
     HandlePossessedPawnChanged(nullptr, PC->GetPawn());
 
+    // WBP는 월드당 한 번 만들고 UObject 참조를 유지해 Slate 표시 중 수집되지 않게 한다.
+    const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
+    UClass* WidgetClass = Settings->RaceHUDWidgetClass.LoadSynchronous();
+    RaceHUDWidget = WidgetClass ? CreateWidget<UMWRaceHUDWidget>(PC, WidgetClass) : nullptr;
+    if (RaceHUDWidget)
+    {
+        RaceHUDWidget->SetItemPickupTest(IsItemPickupTestPIE(*World));
+    }
+    else
+    {
+        UE_LOG(LogMWInGameUI, Error, TEXT("경기 HUD WBP를 만들 수 없습니다. RaceHUDWidgetClass 설정을 확인하세요."));
+    }
+
     const TWeakObjectPtr<UMWGameplayHUDSubsystem> WeakThis(this);
     Overlay = SNew(SMWGameplayHUD)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
                   .bItemPickupTest(IsItemPickupTestPIE(*World))
-                  .RoomPhase_Lambda(
-                      [WeakThis]
-                      {
-                          const UMWGameplayHUDSubsystem* HUD = WeakThis.Get();
-                          return HUD ? HUD->GetObservedRoomPhase() : TOptional<EMWRoomPhase>();
-                      })
+                  .RaceHUD(RaceHUDWidget ? RaceHUDWidget->TakeWidget() : SNullWidget::NullWidget)
                   .HeldItem_Lambda(
                       [WeakThis]
                       {
@@ -792,5 +796,6 @@ void UMWGameplayHUDSubsystem::RemoveOverlay()
     if (Overlay && Viewport.IsValid())
         Viewport->RemoveViewportWidgetContent(Overlay.ToSharedRef());
     Overlay.Reset();
+    RaceHUDWidget = nullptr;
     Viewport.Reset();
 }

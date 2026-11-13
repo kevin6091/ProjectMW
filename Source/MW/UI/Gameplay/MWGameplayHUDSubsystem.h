@@ -15,6 +15,7 @@ class UFont;
 class UMaterialInterface;
 class UTexture2D;
 class UMWVehicleSelectionWidget;
+class UMWRaceHUDWidget;
 
 // 월드에서 로컬 HUD 연결을 준비하고 Pawn 교체·월드 종료 때 실제 구독과 화면을 정리한다.
 UCLASS(Config = Game)
@@ -24,9 +25,9 @@ class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
 
 public:
 
-    // 계기판 눈금 상한만 조절한다. 차량의 실제 최고 속도에는 영향을 주지 않는다.
-    UPROPERTY(Config, EditAnywhere, Category = "HUD|Speedometer", meta = (ClampMin = "30", ClampMax = "600"))
-    float SpeedometerMaxKmh = 120.f;
+    // 화면 디자인은 지정된 WBP에서 편집하고 기존 Slate HUD에는 그 결과만 연결한다.
+    UPROPERTY(Config)
+    TSoftClassPtr<UMWRaceHUDWidget> RaceHUDWidgetClass;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UFont> DisplayFont;
@@ -76,6 +77,9 @@ protected:
     virtual void Deinitialize() override;
 
 private:
+    UPROPERTY(Transient)
+    TObjectPtr<UMWRaceHUDWidget> RaceHUDWidget;
+
     // 월드의 실제 GameState가 바뀌면 이전 구독을 해제하고 현재 값을 즉시 읽는다.
     void RefreshGameStateBinding();
 
