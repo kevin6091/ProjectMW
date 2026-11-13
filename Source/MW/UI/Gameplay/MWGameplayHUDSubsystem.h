@@ -3,9 +3,11 @@
 #include "CoreMinimal.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "System/MWRoomTypes.h"
 #include "MWGameplayHUDSubsystem.generated.h"
 
 class APawn;
+class AMWGameplayGameState;
 class APlayerController;
 class SWidget;
 class UGameViewportClient;
@@ -49,10 +51,16 @@ public:
     // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
     virtual void Tick(float DeltaTime) override;
 
-    // 오버레이 준비가 필요한 로컬 게임 월드에서만 초기 연결용 틱을 허용한다.
+    // 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
     virtual bool IsTickable() const override;
 
     virtual TStatId GetStatId() const override;
+
+    // HUD 소비자는 관찰 중인 서버 단계만 읽는다. 준비된 GameState가 없으면 값이 없다.
+    TOptional<EMWRoomPhase> GetObservedRoomPhase() const
+    {
+        return RoomPhase;
+    }
 
 protected:
     virtual bool DoesSupportWorldType(EWorldType::Type WorldType) const override;
@@ -64,6 +72,13 @@ protected:
     virtual void Deinitialize() override;
 
 private:
+    // 월드의 실제 GameState가 바뀌면 이전 구독을 해제하고 현재 값을 즉시 읽는다.
+    void RefreshGameStateBinding();
+
+    // 호스트의 직접 변경과 클라이언트의 RepNotify가 보내는 기존 이벤트를 함께 받는다.
+    UFUNCTION()
+    void HandleGameplayStateChanged();
+
     // 실제 구독했던 Controller·ItemComponent와 Viewport에서 연결을 해제한다.
     void RemoveOverlay();
 
@@ -74,6 +89,10 @@ private:
     // 실제 받은 보유 아이템만 표시 모델에 반영한다. 룰렛이 지급 결과를 다시 정하지 않는다.
     UFUNCTION()
     void HandleHeldItemChanged(EMWItemId ItemId);
+
+    TWeakObjectPtr<AMWGameplayGameState> ObservedGameState;
+
+    TOptional<EMWRoomPhase> RoomPhase;
 
     TWeakObjectPtr<APlayerController> ItemController;
 

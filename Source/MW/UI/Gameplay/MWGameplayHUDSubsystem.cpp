@@ -95,6 +95,7 @@ namespace
         SLATE_ARGUMENT(APlayerController*, Controller)
         SLATE_ARGUMENT(bool, bItemPickupTest)
         SLATE_ATTRIBUTE(EMWItemId, HeldItem)
+        SLATE_ATTRIBUTE(TOptional<EMWRoomPhase>, RoomPhase)
         SLATE_END_ARGS()
 
         // 기존 경기 상태를 읽는 표지판·대기판·아이템 슬롯의 Slate 구조와 설정 자원을 준비한다.
@@ -200,6 +201,7 @@ namespace
                      SNew(SMWRaceHUD)
                      .Controller(Args._Controller)
                      .bItemPickupTest(bItemPickupTest)
+                     .RoomPhase(Args._RoomPhase)
                      .Visibility(EVisibility::HitTestInvisible)
                  ] +
                  SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
@@ -613,12 +615,22 @@ bool UMWGameplayHUDSubsystem::DoesSupportWorldType(EWorldType::Type Type) const
     return Type == EWorldType::Game || Type == EWorldType::PIE;
 }
 
-// 오버레이 준비가 필요한 로컬 게임 월드에서만 초기 연결용 틱을 허용한다.
+// 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
 bool UMWGameplayHUDSubsystem::IsTickable() const
 {
     const UWorld* World = GetWorld();
-    return !Overlay && World && World->GetNetMode() != NM_DedicatedServer &&
-           (World->GetGameState<AMWGameplayGameState>() || IsItemPickupTestPIE(*World));
+    if (!World || World->GetNetMode() == NM_DedicatedServer)
+    {
+        return false;
+    }
+
+    const AMWGameplayGameState* GameState = World->GetGameState<AMWGameplayGameState>();
+    GameState = IsValid(GameState) ? GameState : nullptr;
+    const bool bNeedsStateBinding = ObservedGameState.Get() != GameState || (!GameState && RoomPhase.IsSet());
+
+    // 오버레이 생성 전이라도 원본 상태가 사라졌으면 이전 구독과 캐시를 정리한다.
+    const bool bCanAttach = GameState || IsItemPickupTestPIE(*World);
+    return bNeedsStateBinding || (!Overlay && bCanAttach);
 }
 
 // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
@@ -626,6 +638,17 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    RefreshGameStateBinding();
+    if (Overlay)
+    {
+        return;
+    }
+
     auto* GameInstance = World->GetGameInstance();
     auto* PC =
         GameInstance ? Cast<AMWGameplayPlayerController>(GameInstance->GetFirstLocalPlayerController(World)) : nullptr;
@@ -642,6 +665,12 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
                   .bItemPickupTest(IsItemPickupTestPIE(*World))
+                  .RoomPhase_Lambda(
+                      [WeakThis]
+                      {
+                          const UMWGameplayHUDSubsystem* HUD = WeakThis.Get();
+                          return HUD ? HUD->GetObservedRoomPhase() : TOptional<EMWRoomPhase>();
+                      })
                   .HeldItem_Lambda(
                       [WeakThis]
                       {
@@ -651,6 +680,48 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     Viewport = GameViewport;
     GameViewport->AddViewportWidgetContent(Overlay.ToSharedRef(), 20);
     UE_LOG(LogMWInGameUI, Verbose, TEXT("Attached gameplay HUD in %s to %s"), *GetNameSafe(World), *GetNameSafe(PC));
+}
+
+// 초기 조회와 이벤트 구독을 같은 곳에서 처리해 HUD 생성 전에 바뀐 단계도 놓치지 않는다.
+void UMWGameplayHUDSubsystem::RefreshGameStateBinding()
+{
+    AMWGameplayGameState* GameState = GetWorld()->GetGameState<AMWGameplayGameState>();
+    GameState = IsValid(GameState) ? GameState : nullptr;
+    if (ObservedGameState.Get() == GameState)
+    {
+        if (!GameState)
+        {
+            RoomPhase.Reset();
+        }
+        return;
+    }
+
+    if (AMWGameplayGameState* Previous = ObservedGameState.Get())
+    {
+        Previous->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameplayStateChanged);
+    }
+
+    ObservedGameState = GameState;
+    if (GameState)
+    {
+        GameState->OnGameplayStateChanged.AddUniqueDynamic(this, &ThisClass::HandleGameplayStateChanged);
+    }
+
+    HandleGameplayStateChanged();
+}
+
+void UMWGameplayHUDSubsystem::HandleGameplayStateChanged()
+{
+    const AMWGameplayGameState* GameState = ObservedGameState.Get();
+    if (!GameState || GameState->GetWorld() != GetWorld())
+    {
+        RoomPhase.Reset();
+        return;
+    }
+
+    RoomPhase = GameState->GetRoomPhase();
+    UE_LOG(LogMWInGameUI, Verbose, TEXT("[MWRaceHUD] 경기 단계 갱신. World=%s Phase=%s"),
+           *GetNameSafe(GetWorld()), *UEnum::GetValueAsString(RoomPhase.GetValue()));
 }
 
 // 이 기능의 틱 비용을 엔진 통계에서 구분할 수 있도록 식별자를 반환한다.
@@ -704,6 +775,13 @@ void UMWGameplayHUDSubsystem::HandleHeldItemChanged(EMWItemId ItemId)
 // 실제 구독했던 Controller·ItemComponent와 Viewport에서 연결을 해제한다.
 void UMWGameplayHUDSubsystem::RemoveOverlay()
 {
+    if (AMWGameplayGameState* GameState = ObservedGameState.Get())
+    {
+        GameState->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameplayStateChanged);
+    }
+    ObservedGameState.Reset();
+    RoomPhase.Reset();
+
     if (APlayerController* PC = ItemController.Get())
     {
         PC->OnPossessedPawnChanged.RemoveDynamic(this, &ThisClass::HandlePossessedPawnChanged);

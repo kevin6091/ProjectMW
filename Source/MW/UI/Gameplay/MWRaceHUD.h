@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "System/MWRoomTypes.h"
 #include "UI/Gameplay/MWGameplaySign.h"
 #include "Widgets/SCompoundWidget.h"
 
@@ -18,6 +19,7 @@ public:
 
         SLATE_ARGUMENT(APlayerController*, Controller)
         SLATE_ARGUMENT(bool, bItemPickupTest)
+        SLATE_ATTRIBUTE(TOptional<EMWRoomPhase>, RoomPhase)
 
     SLATE_END_ARGS()
 
@@ -26,6 +28,9 @@ public:
     virtual void Tick(const FGeometry& Geometry, double CurrentTime, float DeltaTime) override;
 
 private:
+    // 서버에서 받은 단계가 바뀔 때만 문구와 표시 여부를 갱신한다.
+    void UpdatePhase(TOptional<EMWRoomPhase> Phase);
+
     // 위치 차분 대신 기존 이동 속도를 읽어 텔레포트·서버 위치 보정을 속도로 오인하지 않는다.
     void UpdateSpeed(const AMWVehiclePawn* Vehicle, double CurrentTime);
 
@@ -36,6 +41,14 @@ private:
     TSharedPtr<SWidget> SpeedPanel;
 
     TSharedPtr<STextBlock> SpeedText;
+
+    TSharedPtr<SWidget> PhasePanel;
+
+    TSharedPtr<STextBlock> PhaseText;
+
+    TAttribute<TOptional<EMWRoomPhase>> RoomPhase;
+
+    TOptional<EMWRoomPhase> DisplayedPhase;
 
     FMWGameplayUIArt Art;
 
