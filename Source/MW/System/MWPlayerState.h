@@ -54,6 +54,8 @@ public:
 	UMWPlayerCursorComponent* GetCursorComponent() const { return CursorComponent; }
 
 private:
+	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
+	TObjectPtr<UMWPlayerConstructionComponent> PlayerConstructionComponent;
 	// 화면 수명이 끝나면 폐기하는 표시 상태다. CopyProperties로 맵 간 인계하지 않는다.
 	UPROPERTY(VisibleAnywhere, Category="MW|Cursor")
 	TObjectPtr<UMWPlayerCursorComponent> CursorComponent;
@@ -75,7 +77,4 @@ private:
 	UFUNCTION()
 	void OnRep_VehicleAssetID();
 	void NotifyPlayerStateChanged();
-	
-	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
-	UMWPlayerConstructionComponent* PlayerConstructionComponent;
 };

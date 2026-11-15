@@ -13,6 +13,7 @@ namespace
 	constexpr float RemoteInputTimeout = 1.f;
 	constexpr int32 MaxMovesPerPacket = 32;
 	constexpr int32 MaxPendingMoves = 120;
+	constexpr float GroundNormalTolerance = 0.001f;
 
 	bool IsValidDriveInput(const FMWVehicleDriveInput& Input)
 	{
@@ -49,13 +50,21 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 {
 	FMWVehicleDriveSnapshot Snapshot = ServerDriveSnapshot;
 	VehicleMovement->CaptureDriveSnapshot(Snapshot);
+	
+	// 비접지 상태에서는 법선 차이만으로 갱신하지 않는다.
+	const bool bSameGroundNormal =
+		!Snapshot.bGrounded
+		|| Snapshot.GroundNormal.Equals(
+			ServerDriveSnapshot.GroundNormal,
+			GroundNormalTolerance);
 
 	if (!bNewStream
 		&& Snapshot.LastProcessedMoveId == LastProcessedMoveId
 		&& Snapshot.Location == ServerDriveSnapshot.Location
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
-		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded)
+		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded
+		&& bSameGroundNormal)
 	{
 		return;
 	}
@@ -227,10 +236,20 @@ void AMWVehiclePawn::ReconcilePredictedDrive()
 	if (AckedCount > 0)
 	{
 		const FMWVehicleDriveSnapshot& Prediction = PredictedMoves[AckedCount - 1].Result;
-		bNeedsCorrection = !Prediction.Location.Equals(ServerDriveSnapshot.Location, 3.f)
+		const bool bGroundNormalMismatch = 
+			Prediction.bGrounded 
+			&& ServerDriveSnapshot.bGrounded 
+			&& !Prediction.GroundNormal.Equals(
+			ServerDriveSnapshot.GroundNormal,
+			GroundNormalTolerance);
+		
+		bNeedsCorrection = 
+			!Prediction.Location.Equals(ServerDriveSnapshot.Location, 3.f)
 			|| !Prediction.Rotation.Equals(ServerDriveSnapshot.Rotation, 1.f)
 			|| !Prediction.Velocity.Equals(ServerDriveSnapshot.Velocity, 5.f)
-			|| Prediction.bGrounded != ServerDriveSnapshot.bGrounded;
+			|| Prediction.bGrounded != ServerDriveSnapshot.bGrounded
+			|| bGroundNormalMismatch;
+		
 		PredictedMoves.RemoveAt(0, AckedCount, EAllowShrinking::No);
 	}
 

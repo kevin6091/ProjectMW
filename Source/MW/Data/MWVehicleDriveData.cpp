@@ -35,12 +35,21 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("GroundProbeDistance"), Config.GroundProbeDistance, 0.f, Largest);
 	RequireRange(TEXT("MaxGroundAngle"), Config.MaxGroundAngle, 0.f, 89.f);
 	RequireRange(TEXT("GroundDetachSpeed"), Config.GroundDetachSpeed, 0.f, Largest);
+	RequireRange(TEXT("GroundAlignSpeed"), Config.GroundAlignSpeed, 0.f, Largest);
 	RequireRange(TEXT("GravityScale"), Config.GravityScale, 0.f, Largest);
 	RequireRange(TEXT("MaxFallSpeed"), Config.MaxFallSpeed, 1.f, Largest);
 	RequireRange(TEXT("VehicleMass"), Config.VehicleMass, 1.f, Largest);
 	RequireRange(TEXT("CollisionRestitution"), Config.CollisionRestitution, 0.f, 1.f);
 	RequireRange(TEXT("MinBounceSpeed"), Config.MinBounceSpeed, 0.f, Largest);
 	RequireRange(TEXT("CollisionMomentumRetention"), Config.CollisionMomentumRetention, 0.f, 1.f);
+	RequireRange(TEXT("DownforceReferenceSpeed"), Config.DownforceReferenceSpeed, 1.f, Largest);
+	RequireRange(TEXT("DownforceAtReferenceSpeed"), Config.DownforceAtReferenceSpeed, 0.f, Largest);
+	RequireRange(TEXT("MaxDownforceAcceleration"), Config.MaxDownforceAcceleration, 0.f, Largest);
+	RequireRange(TEXT("GroundCurvatureProbeDistance"), Config.GroundCurvatureProbeDistance, 1.f, Largest);
+	RequireRange(TEXT("GroundCurvatureProbeHeight"), Config.GroundCurvatureProbeHeight, 1.f, Largest);
+	RequireRange(TEXT("GroundSupportTolerance"), Config.GroundSupportTolerance, 0.f, Largest);
+	RequireRange(TEXT("TireFrictionCoefficient"), Config.TireFrictionCoefficient, 0.f, Largest);
+	
 	if (Config.GroundProbeDistance <= Config.GroundClearance)
 	{
 		OutErrors.Add(FText::FromString(TEXT("GroundProbeDistance must be > GroundClearance.")));

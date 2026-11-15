@@ -85,6 +85,10 @@ struct MW_API FMWVehicleDriveConfig
 	// 바닥 법선 방향으로 이 속도를 넘어서면 접지를 해제한다. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0", Units = "cm/s"))
 	float GroundDetachSpeed = 10.f;
+	
+	// 차체가 노면 방향으로 정렬되는 최대 회전 속도. 단위: deg/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float GroundAlignSpeed = 180.f;
 
 	// 엔진에서 가져온 중력에 적용할 배율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Air", meta = (ClampMin = "0.0"))
@@ -109,6 +113,36 @@ struct MW_API FMWVehicleDriveConfig
 	// 차량끼리 부딪힌 뒤 접촉 법선 방향의 공통 운동량을 유지하는 비율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CollisionMomentumRetention = 0.35f;
+	
+	// 다운포스의 기준 속도. 단위: cm/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "1.0", Units = "cm/s"))
+	float DownforceReferenceSpeed = 1800.f;
+
+	// 기준 속도에서 발생하는 다운포스 가속도.
+	// 질량으로 나눈 힘을 사용한다. 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "0.0"))
+	float DownforceAtReferenceSpeed = 600.f;
+
+	// 다운포스 가속도의 상한. 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "0.0"))
+	float MaxDownforceAcceleration = 1800.f;
+
+	// 진행 방향으로 노면 변화를 조사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundCurvatureProbeDistance = 500.f;
+
+	// 곡률 검사 지점에서 위아래로 조사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundCurvatureProbeHeight = 100.f;
+
+	// 접지를 유지 중일 때 허용할 작은 하중 계산 오차.
+	// 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float GroundSupportTolerance = 20.f;
+
+	// 타이어가 전달할 수 있는 힘의 한계를 결정하는 계수.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))
+	float TireFrictionCoefficient = 2.f;
 };
 
 UCLASS()
