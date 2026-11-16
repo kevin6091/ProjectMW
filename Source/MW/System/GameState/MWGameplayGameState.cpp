@@ -16,8 +16,26 @@ void AMWGameplayGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AMWGameplayGameState, RoomSettings);
-	DOREPLIFETIME(AMWGameplayGameState, RoomPhase);
-	DOREPLIFETIME(AMWGameplayGameState, CountdownEndServerTime);
+	DOREPLIFETIME(AMWGameplayGameState, Progress);
+}
+
+void AMWGameplayGameState::ApplyProgressFromServer(const FMWGameplayProgress& NewProgress)
+{
+	if (!HasAuthority())
+		return;
+
+	if (Progress == NewProgress)
+		return;
+
+	Progress = NewProgress;
+
+	ForceNetUpdate();
+	NotifyRoomStateChanged();
+}
+
+void AMWGameplayGameState::OnRep_Progress()
+{
+	NotifyRoomStateChanged();
 }
 
 void AMWGameplayGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings)
@@ -31,10 +49,17 @@ void AMWGameplayGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Se
 
 void AMWGameplayGameState::SetRoomPhaseFromServer(EMWRoomPhase Phase)
 {
-	if (!HasAuthority() || RoomPhase == Phase) return;
-	RoomPhase = Phase;
-	ForceNetUpdate();
-	NotifyRoomStateChanged();
+	if (!HasAuthority() || Progress.Phase == Phase)
+	{
+		return;
+	}
+	
+	FMWGameplayProgress NewProgress = Progress;
+
+	NewProgress.Phase = Phase;
+	NewProgress.PhaseEndServerTime = 0.0;
+
+	ApplyProgressFromServer(NewProgress);
 }
 
 void AMWGameplayGameState::OnRep_RoomState()
@@ -44,9 +69,18 @@ void AMWGameplayGameState::OnRep_RoomState()
 
 void AMWGameplayGameState::NotifyRoomStateChanged()
 {
-	UE_LOG(LogMWServer, Log, TEXT("[MWRoomState] World=%s Authority=%d Phase=%s CountdownEnd=%.2f"),
-		*GetNameSafe(GetWorld()), HasAuthority() ? 1 : 0,
-		*UEnum::GetValueAsString(RoomPhase), CountdownEndServerTime);
+	UE_LOG(
+	   LogMWServer,
+	   Log,
+	   TEXT("[MWGameplayState] World=%s Authority=%d Phase=%s Round=%d Epoch=%d End=%.2f Mode=%s"),
+	   *GetNameSafe(GetWorld()),
+	   HasAuthority() ? 1 : 0,
+	   *UEnum::GetValueAsString(Progress.Phase),
+	   Progress.RoundIndex,
+	   Progress.RoundEpoch,
+	   Progress.PhaseEndServerTime,
+	   *UEnum::GetValueAsString(Progress.RaceMode));
+
 	OnGameplayStateChanged.Broadcast();
 }
 

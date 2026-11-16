@@ -23,11 +23,16 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
+	FMWGameplayProgress GetProgress() const { return Progress; }
+	void ApplyProgressFromServer(const FMWGameplayProgress& NewProgress);
+	
+	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
 	FMWRoomSettings GetRoomSettings() const { return RoomSettings; }
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
-	EMWRoomPhase GetRoomPhase() const { return RoomPhase; }
+	EMWRoomPhase GetRoomPhase() const { return Progress.Phase; }
 
+	
 	void ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings);
 	void SetRoomPhaseFromServer(EMWRoomPhase Phase);
 	
@@ -39,18 +44,18 @@ public:
 	UMWTrackConstructionComponent* GetConstructionComponent() const { return TrackConstructionComponent; }
 
 private:
+	// RoomSettings - RoomState
 	UPROPERTY(ReplicatedUsing = OnRep_RoomState)
 	FMWRoomSettings RoomSettings;
-	
-	UPROPERTY(ReplicatedUsing = OnRep_RoomState)
-	EMWRoomPhase RoomPhase = EMWRoomPhase::PreparingConstruction;
-	
-	// 기존 필드의 이전입니다. 실제 카운트다운 시작/종료 로직을 추가한 것은 아닙니다.
-	UPROPERTY(ReplicatedUsing = OnRep_RoomState)
-	double CountdownEndServerTime = 0.0;
-	
 	UFUNCTION()
 	void OnRep_RoomState();
+	
+	// Progress
+	UPROPERTY(ReplicatedUsing = OnRep_Progress)
+	FMWGameplayProgress Progress;
+	UFUNCTION()
+	void OnRep_Progress();
+	
 	void NotifyRoomStateChanged();
 	
 	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
