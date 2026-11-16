@@ -109,6 +109,7 @@ void UMWVehicleSelectionWidget::NativeConstruct()
 // 소프트웨어 커서·버튼·참가자 상태 연결을 해제해 다음 화면의 입력을 덮어쓰지 않는다.
 void UMWVehicleSelectionWidget::NativeDestruct()
 {
+    SetWorldPresentationLayout(false);
     ReleaseSoftwareCursor();
     PendingRequest = ESelectionRequest::None;
     ResetPointerHit();
@@ -357,6 +358,93 @@ void UMWVehicleSelectionWidget::AddCard(UMWVehicleCardWidget* Card)
     Cards.Add(Card);
 }
 
+// 카메라 Flow는 표시 방식만 요청한다. 내부 위젯 이름·좌표는 이 위젯의 설정에서 읽는다.
+void UMWVehicleSelectionWidget::SetWorldPresentationLayout(bool bEnabled, float SurfaceScale)
+{
+    if (bWorldLayoutApplied == bEnabled)
+        return;
+
+    if (!bEnabled)
+    {
+        // 파괴된 슬롯은 건너뛴다. 이동 중인 커서 위치는 되감지 않고 배율·클릭 끝점만 복원한다.
+        for (const auto& Pair : SavedWorldCanvasSlots)
+        {
+            if (UCanvasPanelSlot* CanvasSlot = Pair.Key.Get())
+            {
+                CanvasSlot->SetPosition(Pair.Value.Position);
+                CanvasSlot->SetSize(Pair.Value.Size);
+            }
+        }
+        for (const auto& Pair : SavedWorldRenderScales)
+        {
+            if (UWidget* Widget = Pair.Key.Get())
+                Widget->SetRenderScale(Pair.Value);
+        }
+        if (UMWVehiclePlayerMarkerWidget* SavedCursor = SavedWorldCursor.Get())
+            SavedCursor->SetRenderTransformPivot(SavedWorldCursorPivot);
+        if (UCanvasPanelSlot* CanvasSlot = SavedWorldCursorSlot.Get())
+            CanvasSlot->SetAlignment(SavedWorldCursorAlignment);
+
+        CardMarkerScale = SavedCardMarkerScale;
+        SavedWorldCanvasSlots.Reset();
+        SavedWorldRenderScales.Reset();
+        SavedWorldCursor.Reset();
+        SavedWorldCursorSlot.Reset();
+        bWorldLayoutApplied = false;
+        return;
+    }
+
+    if (!FMath::IsFinite(SurfaceScale) || SurfaceScale <= 0.f || WorldCardGroup.IsNone() ||
+        WorldCardPosition.ContainsNaN() || WorldCardSize.ContainsNaN() ||
+        WorldCardSize.X <= 0. || WorldCardSize.Y <= 0. || WorldLegendOffset.ContainsNaN() ||
+        !FMath::IsFinite(WorldCardMarkerScale) || WorldCardMarkerScale <= 0.f)
+    {
+        UE_LOG(LogDefault, Warning, TEXT("차량 선택 월드 배치 설정이 유효하지 않아 원래 배치를 유지합니다."));
+        return;
+    }
+
+    const auto FindCanvasSlot = [this](FName Name) -> UCanvasPanelSlot*
+    {
+        UWidget* Child = GetWidgetFromName(Name);
+        return Child ? Cast<UCanvasPanelSlot>(Child->Slot) : nullptr;
+    };
+    UCanvasPanelSlot* CardSlot = FindCanvasSlot(WorldCardGroup);
+    if (!CardSlot)
+    {
+        UE_LOG(LogDefault, Warning, TEXT("차량 선택 카드 영역을 찾지 못했습니다: %s"), *WorldCardGroup.ToString());
+        return;
+    }
+
+    SavedWorldCanvasSlots.Add(CardSlot, {CardSlot->GetPosition(), CardSlot->GetSize()});
+    for (FName Name : WorldShiftedWidgets)
+    {
+        if (UCanvasPanelSlot* CanvasSlot = FindCanvasSlot(Name))
+        {
+            // 중복 이름이 있어도 최초 기준을 보존한다.
+            if (!SavedWorldCanvasSlots.Contains(CanvasSlot))
+                SavedWorldCanvasSlots.Add(CanvasSlot, {CanvasSlot->GetPosition(), CanvasSlot->GetSize()});
+            CanvasSlot->SetPosition(SavedWorldCanvasSlots.FindChecked(CanvasSlot).Position + WorldLegendOffset);
+        }
+    }
+    CardSlot->SetPosition(WorldCardPosition);
+    CardSlot->SetSize(WorldCardSize);
+
+    SavedCardMarkerScale = CardMarkerScale;
+    if (IsValid(LocalPlayerCursor))
+    {
+        SavedWorldCursor = LocalPlayerCursor;
+        SavedWorldCursorPivot = LocalPlayerCursor->GetRenderTransformPivot();
+        SavedWorldRenderScales.Add(LocalPlayerCursor, LocalPlayerCursor->GetRenderTransform().Scale);
+        if (UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(LocalPlayerCursor->Slot))
+        {
+            SavedWorldCursorSlot = CanvasSlot;
+            SavedWorldCursorAlignment = CanvasSlot->GetAlignment();
+        }
+    }
+    bWorldLayoutApplied = true;
+    SetWorldPreviewMarkerScales(1.f / SurfaceScale, WorldCardMarkerScale);
+}
+
 // 기존 외형 Preview 표시 배율만 조정하고 실제 서버 선택 상태는 변경하지 않는다.
 void UMWVehicleSelectionWidget::SetWorldPreviewMarkerScales(float PinnedScale, float CardScale)
 {
@@ -374,10 +462,17 @@ void UMWVehicleSelectionWidget::SetWorldPreviewMarkerScales(float PinnedScale, f
 }
 
 // 현재 카드 안의 표시 요소에 설정된 Preview 배율을 적용한다.
-void UMWVehicleSelectionWidget::ApplyCardMarkerScale(UMWVehicleCardWidget* Card) const
+void UMWVehicleSelectionWidget::ApplyCardMarkerScale(UMWVehicleCardWidget* Card)
 {
+    if (!IsValid(Card))
+        return;
     if (UWidget* Markers = Card->GetWidgetFromName(TEXT("Grid_PlayerMarkers")))
+    {
+        // 월드 표시 중 카드가 재생성되어도 각 인스턴스의 원래 배율을 한 번만 저장한다.
+        if (bWorldLayoutApplied && !SavedWorldRenderScales.Contains(Markers))
+            SavedWorldRenderScales.Add(Markers, Markers->GetRenderTransform().Scale);
         Markers->SetRenderScale(FVector2D(CardMarkerScale));
+    }
 }
 
 // 카탈로그의 실제 ID로 기존 카드 순서를 유지하고 비밀 차량은 별도 표시 모델로 보관한다.

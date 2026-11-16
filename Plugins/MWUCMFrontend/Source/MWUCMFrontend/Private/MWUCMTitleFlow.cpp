@@ -4,7 +4,6 @@
 #include "ProfilingDebugging/CsvProfiler.h"
 #include "Components/WidgetComponent.h"
 #include "Components/Button.h"
-#include "Components/CanvasPanelSlot.h"
 #include "Components/WidgetSwitcher.h"
 #include "Blueprint/WidgetTree.h"
 #include "Engine/GameInstance.h"
@@ -174,40 +173,6 @@ namespace
     constexpr double ReturnSessionWarningSeconds = 6.;
     constexpr double ReturnPreparationTimeoutSeconds = 8.;
     constexpr float VehiclePreviewBoardScale = 1.33f;
-
-    // 기존 차량 선택 위젯 인스턴스만 게시판 구도에 맞추고 공유 WBP 디자인은 덮어쓰지 않는다.
-    void FitVehiclePreview(UMWVehicleSelectionWidget* Widget)
-    {
-        if (!Widget)
-            return;
-
-        // UCM 화면도 기존 차량 레이아웃을 사용한다. 공유 클래스 대신 이 인스턴스만
-        // 월드 게시판의 1920×1080 캔버스에 맞춘다.
-        const auto FindCanvasSlot = [Widget](FName Name) -> UCanvasPanelSlot*
-        {
-            UWidget* Child = Widget->GetWidgetFromName(Name);
-            return Child ? Cast<UCanvasPanelSlot>(Child->Slot) : nullptr;
-        };
-        if (auto* Cards = FindCanvasSlot(TEXT("AlignmentCardGroup")))
-        {
-            Cards->SetPosition(FVector2D(60, 210));
-            Cards->SetSize(FVector2D(1800, 440));
-        }
-
-        const FName LegendWidgets[] = {TEXT("Legend_Select"),        TEXT("Legend_Cancel"),
-                                       TEXT("SelectionStatePanel"),  TEXT("SelectionLegendRow"),
-                                       TEXT("Button_SecretVehicle"), TEXT("ArcadeLegendStrip"),
-                                       TEXT("ArcadeLegendBolt0"),    TEXT("ArcadeLegendBolt1"),
-                                       TEXT("ArcadeLegendBolt2"),    TEXT("ArcadeLegendBolt3")};
-        for (FName Name : LegendWidgets)
-        {
-            if (auto* Slot = FindCanvasSlot(Name))
-                Slot->SetPosition(Slot->GetPosition() - FVector2D(0, 70));
-        }
-        // 카드 표시는 확대된 카드 크기를 따르지만 움직이는 커서는
-        // Slate에서 그리므로 원래 Viewport 크기를 유지한다.
-        Widget->SetWorldPreviewMarkerScales(1.f / VehiclePreviewBoardScale, .58f);
-    }
 
     // 실제 경과 시간과 렌더 프레임으로 복귀 지점을 기록한다. 캡처 간격을 프레임 시간으로 대신하지 않는다.
     void RecordRoomReturn(const TCHAR* Event)
@@ -1300,7 +1265,7 @@ void AMWUCMTitleFlow::UpdateLobbyPresentation()
             auto* Surface = VehiclePreviewActor->PreviewSurface.Get();
             Surface->SetOwnerPlayer(VehicleWidget->GetOwningLocalPlayer());
             Surface->SetWidget(VehicleWidget);
-            FitVehiclePreview(VehicleWidget);
+            VehicleWidget->SetWorldPresentationLayout(true, VehiclePreviewBoardScale);
             Surface->SetVisibility(false);
             Surface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         }
@@ -1308,6 +1273,7 @@ void AMWUCMTitleFlow::UpdateLobbyPresentation()
         {
             MWWorldSurface->SetVisibility(false);
             MWWorldSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            VehicleWidget->SetWorldPresentationLayout(false);
             VehicleWidget->AddToViewport();
             if (auto* PC = VehicleWidget->GetOwningPlayer()) PC->SetInputMode(FInputModeUIOnly());
         }
@@ -1427,6 +1393,7 @@ void AMWUCMTitleFlow::SetLobbyWidgets(UMWRoomLobbyWidget* Lobby, UMWVehicleSelec
     LobbyWidget = Lobby;
     if (VehicleWidget != Selection && VehicleWidget)
     {
+        VehicleWidget->SetWorldPresentationLayout(false);
         VehicleWidget->RemoveFromParent();
         if (VehiclePreviewActor && VehiclePreviewActor->PreviewSurface)
         {
@@ -1469,7 +1436,8 @@ bool AMWUCMTitleFlow::ShowVehicleSelection()
         CloseVehicleSelection();
         return false;
     }
-    FitVehiclePreview(Cast<UMWVehicleSelectionWidget>(VehiclePreviewActor->PreviewSurface->GetUserWidgetObject()));
+    if (auto* Widget = Cast<UMWVehicleSelectionWidget>(VehiclePreviewActor->PreviewSurface->GetUserWidgetObject()))
+        Widget->SetWorldPresentationLayout(true, VehiclePreviewBoardScale);
     VehiclePreviewActor->PreviewSurface->SetVisibility(false);
     VehiclePreviewActor->PreviewSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     return true;

@@ -108,3 +108,43 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 - 차량 이동·Pawn·네트워크·아이템 판정 cpp·로비 서버·기존 미추적 문서 및 보호한 BP의 SHA-256 유지 확인. 차량 선택 파일 안의 팀원 공유 커서 함수도 변경 전과 동일하다.
 - 이번 변경에서 3인 커서 동기화·전체 EOS 흐름·Cook·패키징은 재검증하지 않았다. 앞 절의 접지 검사 실패와 테스트 맵 VehicleGround 연결 문제를 해결한 것으로 간주하지 않는다.
 - 설정 분리용 기록은 프로젝트 밖 `outputs/FRONTEND_DECOUPLING_20261116`의 `CONFIG_AND_BLUEPRINTS.json`, `MOUNTS_PIE.json`, `Automation/index.json`, `FINAL_VERIFICATION.json`을 따른다.
+
+
+## 후속: 차량 선택 월드 배치 설정 분리 — 2026-11-16
+
+기존 `MWUCMTitleFlow.cpp::FitVehiclePreview()`는 차량 선택 WBP 안의 이름을 직접 찾아 카드 좌표·크기를 바꾸고 안내 위젯을 현재 위치에서 70씩 위로 옮겼다. 같은 인스턴스에 다시 호출하면 안내 위치가 누적될 수 있는 구조였다. 실제 사용자 세션에서 이 누적 현상을 재현했다고 주장하지 않는다.
+
+이제 Flow는 `SetWorldPresentationLayout(true, VehiclePreviewBoardScale)`로 월드 표시만 요청한다. 내부 배치는 기존 `UMWVehicleSelectionWidget`이 담당한다. 새 Subsystem·Tick·타이머는 추가하지 않았다.
+
+### 배치 수정 위치
+
+`Config/DefaultGame.ini`의 `[/Script/MW.MWVehicleSelectionWidget]`에서 다음 월드용 값을 편집한다. 기존 WBP의 Designer 배치와 구분하며 런타임 인스턴스에서 설정을 바꾸는 용도가 아니다.
+
+| 설정 | 현재 값 | 의미 |
+|---|---|---|
+| `WorldCardGroup` | `AlignmentCardGroup` | 크기·위치를 바꿀 기존 카드 영역 |
+| `WorldCardPosition` | `(60, 210)` | 기존 1920×1080 캔버스의 카드 위치 |
+| `WorldCardSize` | `(1800, 440)` | 월드 게시판에 표시할 카드 영역 크기 |
+| `WorldShiftedWidgets` | 기존 안내·장식 위젯 10개 | 이동할 위젯 이름 목록 |
+| `WorldLegendOffset` | `(0, -70)` | 최초 위치 기준 이동량 |
+| `WorldCardMarkerScale` | `0.58` | 기존 카드 안 표시 배율 |
+
+카메라·월드 게시판의 `VehiclePreviewBoardScale=1.33`은 그대로 둔다. 커서 보정도 기존처럼 그 역수를 사용한다. 서버 참가자 색, 공유 커서 투영·동기화 함수, 선택·취소 요청은 수정하지 않았다.
+
+### 적용·복원 방식
+
+- 첫 적용 때 바꿀 Canvas 슬롯의 위치·크기와 커서·카드 표시의 원래 배율을 저장한다. 반복 적용은 아무것도 더 움직이지 않는다.
+- 해제, 위젯 교체, 화면 표시로의 전환, `NativeDestruct()`에서 저장값을 복원한다. 원래 카드 영역은 위치 `(470, 300)`, 크기 `(980, 240)`이다. WBP 파일에 월드용 값을 덮어쓰지 않는다.
+- 커서의 현재 마우스 위치는 되감지 않는다. 배율·Pivot·Alignment만 복원한다. 카드가 재생성되면 새 카드의 원래 표시 배율도 보관한다.
+- 저장 대상은 약한 참조로 보관하고 파괴된 대상은 건너뛴다. 무효 배율·배치 값 또는 없는 카드 영역이면 원래 배치를 유지하고 경고를 남긴다.
+
+### 이번 변경의 검증과 한계
+
+- Editor Development 빌드 성공: 15.13초. Game Development 빌드 성공: 51.24초. Editor 첫 시도에서 새 지역 변수명이 UWidget 멤버와 겹쳐 컴파일 오류가 났으며 이름 수정 후 재빌드했다.
+- 실제 차량 선택 WBP Dev·Preview 및 타이틀 Flow BP 3개 컴파일 성공. BP·맵 저장 없음.
+- 원본 MW의 실제 `L_Title` PIE와 UCM 카메라에서 5개 카드 표시를 확인했다. 기존 `-MWConnectionLocal`과 개발 Preview 시나리오를 사용했으며 EOS·멀티클라이언트 검증을 대신하지 않는다.
+- 변경 전후 위치·크기·앵커·정렬·배율·Pivot이 일치했다. 움직이는 커서의 현재 위치는 비교에서 제외했다. 반복 적용, 해제·재적용, 두 번 닫기·재진입, 카드 재생성 후 복원, 잘못된 배율 거부도 통과했다.
+- CUA 실제 좌클릭을 시도했지만 이 개발 Preview 실행에서는 선택 확정이 확인되지 않았다. 클릭 성공 또는 전체 선택·취소 회귀 통과로 보고하지 않는다. 변경 전 시도에서도 확정이 관측되지 않았지만 원인을 확정하지 않았으므로 기존 버그라고 단정하지 않는다. 입력·서버 코드를 추가 수정하지 않았다.
+- 외부 스크립트의 첫 기준 PIE는 시간 제한으로 끝났지만 배치 스냅샷·화면은 확보했다. 추가 검증 중 `EditDefaultsOnly` 설정의 인스턴스 편집 시도가 거부된 실행도 보존하며, 정상 재실행 결과와 구분한다.
+- 수정 대상 외 보호 파일 345개의 SHA-256과 같은 cpp 안 팀원 공유 커서 함수가 유지됐다. 기존 미추적 문서 2개는 그대로 둔다. UVCS·Push·PR 작업은 하지 않았다.
+- 프로젝트 밖 `outputs/VEHICLE_LAYOUT_20261116`의 `LAYOUT_COMPARISON.json`, `FINAL_VERIFICATION.json`, `CONFIG_AND_BP.json`, `AFTER_PIE.json`, `AFTER_INPUT_FINAL_PIE.json`, `BEFORE_INITIAL.png`, `AFTER_INITIAL.png`에서 근거를 확인한다. 실패·중단 기록은 성공 근거와 분리한다.

@@ -11,6 +11,7 @@ class AMWLobbyGameState;
 class AMWPlayerState;
 class UButton;
 class UCanvasPanel;
+class UCanvasPanelSlot;
 class UGameViewportClient;
 class SWidget;
 class SWindow;
@@ -91,6 +92,10 @@ public:
     // 개발 검토용 조작부만 표시하거나 숨긴다.
     UFUNCTION(BlueprintCallable, Category = "MW|Vehicle UI|Preview")
     void SetPreviewControlsVisible(bool bVisible);
+
+    // 월드 게시판 배치를 한 번 적용하고 해제할 때 원래 Designer 배치로 돌린다.
+    UFUNCTION(BlueprintCallable, Category = "MW|Vehicle UI")
+    void SetWorldPresentationLayout(bool bEnabled, float SurfaceScale = 1.f);
 
     // 기존 외형 Preview 표시 배율만 조정하고 실제 서버 선택 상태는 변경하지 않는다.
     void SetWorldPreviewMarkerScales(float PinnedScale, float CardScale);
@@ -173,6 +178,26 @@ FLinearColor WaitingSlotTint;
 
 UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|Cursor", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 float RemoteCursorScale = 1.f;
+
+// 월드용 값만 별도로 보관한다. 위치·크기는 위젯 캔버스 단위이며 WBP 저장값은 보존한다.
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout")
+FName WorldCardGroup;
+
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout")
+FVector2D WorldCardPosition = FVector2D::ZeroVector;
+
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout")
+FVector2D WorldCardSize = FVector2D::ZeroVector;
+
+// 이 목록의 위젯만 최초 위치를 기준으로 이동한다. 같은 배치를 재요청해도 누적하지 않는다.
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout")
+TArray<FName> WorldShiftedWidgets;
+
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout")
+FVector2D WorldLegendOffset = FVector2D::ZeroVector;
+
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|World Layout", meta = (ClampMin = "0.01"))
+float WorldCardMarkerScale = 1.f;
 
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview")
 bool bPreviewOnly = false;
@@ -378,7 +403,7 @@ TWeakObjectPtr<UMWVehicleCardWidget> SelectedCard;
     UMWVehicleCardWidget* FindVehicleCard(FGameplayTag Id) const;
 
     // 현재 카드 안의 표시 요소에 설정된 Preview 배율을 적용한다.
-    void ApplyCardMarkerScale(UMWVehicleCardWidget* Card) const;
+    void ApplyCardMarkerScale(UMWVehicleCardWidget* Card);
 
     // 실제 요청 대기·선택 잠금 상태로 입력을 조절하고 불필요한 Preview 안내를 숨긴다.
     void RefreshControls();
@@ -440,6 +465,21 @@ TWeakPtr<SWindow> CursorWindow;
 FDelegateHandle WindowDeactivatedHandle;
 bool bCursorInUI = false;
 float CardMarkerScale = 1.f;
+
+// 배치 변경 대상은 약한 참조로만 보관해 위젯 교체·파괴 뒤 이전 객체를 붙잡지 않는다.
+struct FWorldCanvasSlotState
+{
+    FVector2D Position;
+    FVector2D Size;
+};
+TMap<TWeakObjectPtr<UCanvasPanelSlot>, FWorldCanvasSlotState> SavedWorldCanvasSlots;
+TMap<TWeakObjectPtr<UWidget>, FVector2D> SavedWorldRenderScales;
+TWeakObjectPtr<UMWVehiclePlayerMarkerWidget> SavedWorldCursor;
+TWeakObjectPtr<UCanvasPanelSlot> SavedWorldCursorSlot;
+FVector2D SavedWorldCursorPivot = FVector2D::ZeroVector;
+FVector2D SavedWorldCursorAlignment = FVector2D::ZeroVector;
+float SavedCardMarkerScale = 1.f;
+bool bWorldLayoutApplied = false;
 
 // 개발용 참가자 목록에서 지정된 로컬 슬롯을 찾는다. 실제 서버 참가자를 만들지 않는다.
 FMWVehiclePreviewParticipant* FindLocalPreviewParticipant();
