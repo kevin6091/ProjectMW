@@ -1,0 +1,30 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "local-test-only",
+  "FriendlyName": "Environment Integration Acceptance",
+  "CanContainContent": false,
+  "Plugins": [
+    {
+      "Name": "MWEnvironmentRestore",
+      "Enabled": true
+    },
+    {
+      "Name": "MWEnvironmentGameplay",
+      "Enabled": true
+    }
+  ],
+  "Modules": [
+    {
+      "Name": "MWEnvironmentAcceptance",
+      "Type": "Runtime",
+      "LoadingPhase": "PostEngineInit",
+      "TargetConfigurationDenyList": [
+        "Shipping",
+        "Test"
+      ]
+    }
+  ],
+  "EnabledByDefault": false,
+  "Description": "Optional local Environment acceptance probes. Disabled for normal runs; not compiled for Shipping or Test."
+}

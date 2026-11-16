@@ -1,0 +1,178 @@
+{
+  "base_main": "035910bbc331986804ed8643350aa48da40430c0",
+  "engine": "5.8.4 / CL58902052",
+  "MWEditor_Development_build_exit": 0,
+  "theme_map_pie": [
+    {
+      "theme": "City",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_City",
+      "data_asset": "/Game/EnvironmentRestore/Themes/City/DA_Environment_City.DA_Environment_City",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Forest",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Forest",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Forest/DA_Environment_Forest.DA_Environment_Forest",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Lunar",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Lunar",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Lunar/DA_Environment_Lunar.DA_Environment_Lunar",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Snow",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Snow",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Snow/DA_Environment_Snow.DA_Environment_Snow",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Volcano",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Volcano",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Volcano/DA_Environment_Volcano.DA_Environment_Volcano",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Tropic",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Tropic",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Tropic/DA_Environment_Tropic.DA_Environment_Tropic",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Toybox",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Toybox",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Toybox/DA_Environment_Toybox.DA_Environment_Toybox",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    },
+    {
+      "theme": "Canyon",
+      "map": "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Canyon",
+      "data_asset": "/Game/EnvironmentRestore/Themes/Canyon/DA_Environment_Canyon.DA_Environment_Canyon",
+      "worlds": 2,
+      "initial_registered": 121,
+      "generated_expanded_reactivated": true,
+      "same_seed_preserved": true,
+      "other_seed_changed": true,
+      "cleanup_passed": true
+    }
+  ],
+  "vehicle_BP_compile": [
+    {
+      "asset": "/Game/Gameplay/Vehicles/BP_MWVehiclePawn_Smiet",
+      "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+      "saved": false
+    },
+    {
+      "asset": "/Game/Gameplay/Vehicles/BP_MWVehiclePawn_MAMMOTH",
+      "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+      "saved": false
+    },
+    {
+      "asset": "/Game/Gameplay/Vehicles/BP_MWVehiclePawn_UFOLOGY",
+      "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+      "saved": false
+    },
+    {
+      "asset": "/Game/Gameplay/Vehicles/BP_MWVehiclePawn_FRED",
+      "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+      "saved": false
+    },
+    {
+      "asset": "/Game/Gameplay/Vehicles/BP_MWVehiclePawn_DOUG",
+      "status": "<BlueprintStatus.BS_UP_TO_DATE: 3>",
+      "saved": false
+    }
+  ],
+  "actual_lobby_to_match_pie": {
+    "passed": true,
+    "phase_observed": "PreparingRace",
+    "local_Pawn_camera_each_world": true,
+    "worlds": 2,
+    "input_method": "EnhancedInput forced W/D keys, not hardware/manual driving",
+    "samples": [
+      {
+        "distance_cm": 770.8334130244245,
+        "after_turn_yaw_degrees": 39.166668534279246,
+        "camera_still_pawn": true
+      },
+      {
+        "distance_cm": 784.2778622094891,
+        "after_turn_yaw_degrees": 39.166668534279246,
+        "camera_still_pawn": true
+      }
+    ]
+  },
+  "not_verified": [
+    "complete race lifecycle",
+    "manual drift/corner/fall visibility acceptance",
+    "driving-driven long-range expansion",
+    "visual equality with original game",
+    "live EOS/internet"
+  ],
+  "MW_Development_build_exit": 0,
+  "asset_binaries_distributed": false,
+  "UVCS_operations": 0,
+  "cook_stage": {
+    "configuration": "Windows Development",
+    "scope": "normal ProjectMW GameInstance/AssetManager; no SkipSoftReferences",
+    "maps": [
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_City",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Forest",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Lunar",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Snow",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Volcano",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Tropic",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Toybox",
+      "/Game/EnvironmentRestore/Maps/L_EnvironmentRestore_Canyon"
+    ],
+    "exit": 0
+  },
+  "packaged_runtime": [
+    {
+      "theme": "City",
+      "exit": 0,
+      "passed": true
+    },
+    {
+      "theme": "Forest",
+      "exit": 0,
+      "passed": true
+    }
+  ]
+}

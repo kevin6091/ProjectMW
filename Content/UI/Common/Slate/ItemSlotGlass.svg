@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="168" height="176" viewBox="0 0 168 176">
+<defs>
+  <linearGradient id="bevel" x1="0%" y1="0%" x2="75%" y2="100%">
+    <stop stop-color="#dfddbe"/><stop offset=".24" stop-color="#a4b09f"/>
+    <stop offset=".57" stop-color="#455b60"/><stop offset=".85" stop-color="#6d647b"/>
+    <stop offset="1" stop-color="#34323e"/>
+  </linearGradient>
+  <linearGradient id="rimInner" x1="0%" y1="0%" x2="90%" y2="100%">
+    <stop stop-color="#d8d9c5"/><stop offset=".24" stop-color="#8e9e93"/>
+    <stop offset=".62" stop-color="#4d6469"/><stop offset="1" stop-color="#9c889f"/>
+  </linearGradient>
+  <linearGradient id="gasket" x1="0%" y1="0%" x2="80%" y2="100%">
+    <stop stop-color="#677a72"/><stop offset=".28" stop-color="#263a3c"/>
+    <stop offset="1" stop-color="#171722"/>
+  </linearGradient>
+  <radialGradient id="glass" cx="36%" cy="19%" r="96%">
+    <stop stop-color="#2c4848"/><stop offset=".52" stop-color="#1b3039"/>
+    <stop offset="1" stop-color="#2c2336"/>
+  </radialGradient>
+  <linearGradient id="reflection" x1="10%" y1="0%" x2="0%" y2="100%">
+    <stop stop-color="#fff0b5" stop-opacity=".60"/>
+    <stop offset=".32" stop-color="#eedbba" stop-opacity=".43"/>
+    <stop offset=".67" stop-color="#efc4d5" stop-opacity=".27"/>
+    <stop offset="1" stop-color="#d0c8d7" stop-opacity=".09"/>
+  </linearGradient>
+  <linearGradient id="rimLight" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop stop-color="#b9c7bd" stop-opacity="0"/>
+    <stop offset=".20" stop-color="#bccbbf" stop-opacity=".07"/>
+    <stop offset=".42" stop-color="#c4d0c5" stop-opacity=".40"/>
+    <stop offset=".64" stop-color="#b8c8bf" stop-opacity=".24"/>
+    <stop offset=".88" stop-color="#a8bbb7" stop-opacity=".035"/>
+    <stop offset="1" stop-color="#a8bbb7" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="bottomLight" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop stop-color="#898da2" stop-opacity="0"/>
+    <stop offset=".15" stop-color="#8c8da4" stop-opacity=".035"/>
+    <stop offset=".45" stop-color="#9390ac" stop-opacity=".13"/>
+    <stop offset=".62" stop-color="#9691ae" stop-opacity=".16"/>
+    <stop offset=".82" stop-color="#898da4" stop-opacity=".045"/>
+    <stop offset="1" stop-color="#858ca0" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+<path d="M31 2 C66 0 109 0 137 3 C156 5 163 14 165 34 C168 65 168 110 165 137 C163 155 154 163 136 165 C105 168 62 168 31 165 C12 163 5 154 3 135 C0 104 0 63 3 33 C5 14 12 4 31 2Z"
+      transform="translate(0 5)" fill="#100f18" opacity=".50"/>
+<path d="M31 2 C66 0 109 0 137 3 C156 5 163 14 165 34 C168 65 168 110 165 137 C163 155 154 163 136 165 C105 168 62 168 31 165 C12 163 5 154 3 135 C0 104 0 63 3 33 C5 14 12 4 31 2Z"
+      fill="url(#bevel)" stroke="#26353a" stroke-width=".9"/>
+<g transform="translate(84 84) scale(.975) translate(-84 -84)">
+  <path d="M31 2 C66 0 109 0 137 3 C156 5 163 14 165 34 C168 65 168 110 165 137 C163 155 154 163 136 165 C105 168 62 168 31 165 C12 163 5 154 3 135 C0 104 0 63 3 33 C5 14 12 4 31 2Z" fill="url(#rimInner)"/>
+</g>
+<g transform="translate(84 84) scale(.925) translate(-84 -84)">
+  <path d="M31 2 C66 0 109 0 137 3 C156 5 163 14 165 34 C168 65 168 110 165 137 C163 155 154 163 136 165 C105 168 62 168 31 165 C12 163 5 154 3 135 C0 104 0 63 3 33 C5 14 12 4 31 2Z" fill="url(#gasket)"/>
+</g>
+<g transform="translate(84 84) scale(.875) translate(-84 -84)">
+  <path d="M31 2 C66 0 109 0 137 3 C156 5 163 14 165 34 C168 65 168 110 165 137 C163 155 154 163 136 165 C105 168 62 168 31 165 C12 163 5 154 3 135 C0 104 0 63 3 33 C5 14 12 4 31 2Z" fill="url(#glass)"/>
+  <!-- Nested vector contours soften the curved reflection boundary. -->
+  <path d="M1.507 114.341 C0.132 87.265 0.630 56.700 3.000 33.000 C5 14 12 4 31 2 C60.050 0.340 94.611 0.058 121.532 1.725 C66.000 4.000 17.000 51.000 1.507 114.341Z" fill="url(#reflection)" opacity="0.08"/>
+  <path d="M1.426 112.692 C0.153 86.030 0.678 56.220 3.000 33.000 C5 14 12 4 31 2 C59.560 0.368 93.447 0.068 120.164 1.642 C65.000 3.600 16.000 50.000 1.426 112.692Z" fill="url(#reflection)" opacity="0.13"/>
+  <path d="M1.349 111.035 C0.176 84.800 0.726 55.740 3.000 33.000 C5 14 12 4 31 2 C59.070 0.396 92.286 0.078 118.782 1.563 C64.000 3.200 15.000 49.000 1.349 111.035Z" fill="url(#reflection)" opacity="0.18"/>
+  <path d="M1.277 109.370 C0.200 83.576 0.774 55.260 3.000 33.000 C5 14 12 4 31 2 C58.580 0.424 91.128 0.090 117.389 1.487 C63.000 2.800 14.000 48.000 1.277 109.370Z" fill="url(#reflection)" opacity="0.22"/>
+  <path d="M1.210 107.698 C0.225 82.358 0.822 54.780 3.000 33.000 C5 14 12 4 31 2 C58.090 0.452 89.973 0.102 115.983 1.414 C62.000 2.400 13.000 47.000 1.210 107.698Z" fill="url(#reflection)" opacity="0.22"/>
+  <path d="M1.147 106.019 C0.252 81.145 0.870 54.300 3.000 33.000 C5 14 12 4 31 2 C57.600 0.480 88.821 0.115 114.566 1.345 C61.000 2.000 12.000 46.000 1.147 106.019Z" fill="url(#reflection)" opacity="0.17"/>
+  <path d="M4 71 C3 56 3 43 5 33 C7 16 15 7 32 5 C67 2 109 2 136 5"
+        fill="none" stroke="url(#rimLight)" stroke-width="3.6" stroke-opacity=".08" stroke-linecap="round"/>
+  <path d="M4 71 C3 56 3 43 5 33 C7 16 15 7 32 5 C67 2 109 2 136 5"
+        fill="none" stroke="url(#rimLight)" stroke-width="2" stroke-opacity=".16" stroke-linecap="round"/>
+  <path d="M4 71 C3 56 3 43 5 33 C7 16 15 7 32 5 C67 2 109 2 136 5"
+        fill="none" stroke="url(#rimLight)" stroke-width=".75" stroke-opacity=".25" stroke-linecap="round"/>
+  <path d="M62 163 C90 165 119 165 136 162 C153 159 159 152 162 136 C165 118 165 104 165 91"
+        fill="none" stroke="url(#bottomLight)" stroke-width="6" stroke-opacity=".55" stroke-linecap="round"/>
+  <path d="M31 165 C64 168 106 168 136 165 C154 163 162 155 165 137 C168 109 167 67 165 34"
+        fill="none" stroke="url(#bottomLight)" stroke-width=".75" stroke-opacity=".60" stroke-linecap="round"/>
+</g>
+</svg>

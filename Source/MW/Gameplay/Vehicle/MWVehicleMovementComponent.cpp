@@ -2,6 +2,8 @@
 
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Items/MWItemComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
@@ -137,6 +139,66 @@ void UMWVehicleMovementComponent::ApplyDriveSnapshot(const FMWVehicleDriveSnapsh
 	UpdateComponentVelocity();
 }
 
+// 기존 트랙 효과의 수명과 발판 틱 순서만 연결한다. main의 주행·접지 함수는 유지한다.
+void UMWVehicleMovementComponent::ApplyTrackBoost(float MinimumThrottle, float Duration)
+{
+	TrackMinimumThrottle = FMath::Clamp(MinimumThrottle, 0.f, 1.f);
+	TrackBoostEndTime = GetWorld()->GetTimeSeconds() + Duration;
+}
+
+void UMWVehicleMovementComponent::ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration)
+{
+	TrackSurfaceVelocity = VelocityCmPerSecond;
+	TrackSurfaceEndTime = GetWorld()->GetTimeSeconds() + Duration;
+}
+
+void UMWVehicleMovementComponent::SetTrackLiftBase(AActor* Base)
+{
+	if (UMWTrackRuntimeComponent* Current = TrackLiftBase.Get())
+	{
+		if (Current->GetOwner() == Base)
+		{
+			return;
+		}
+		RemoveTickPrerequisiteComponent(Current);
+	}
+	TrackLiftBase.Reset();
+	if (IsValid(Base) && Base->GetWorld() == GetWorld())
+	{
+		if (UMWTrackRuntimeComponent* Runtime = Base->FindComponentByClass<UMWTrackRuntimeComponent>())
+		{
+			TrackLiftBase = Runtime;
+			// 같은 프레임에서 발판 이동을 먼저 반영한 뒤 차량 이동과 지면 판정을 계산한다.
+			AddTickPrerequisiteComponent(Runtime);
+		}
+	}
+}
+
+void UMWVehicleMovementComponent::ClearTrackLiftBase(const AActor* Base)
+{
+	if (const UMWTrackRuntimeComponent* Current = TrackLiftBase.Get(); Current && Current->GetOwner() == Base)
+	{
+		SetTrackLiftBase(nullptr);
+	}
+}
+
+void UMWVehicleMovementComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	SetTrackLiftBase(nullptr);
+	Super::EndPlay(EndPlayReason);
+}
+
+bool UMWVehicleMovementComponent::IsTrackBoostActive() const
+{
+	return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
+}
+
+bool UMWVehicleMovementComponent::HasItemBooster() const
+{
+	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	return Vehicle && Vehicle->GetItemComponent()->IsBoosterActive();
+}
+
 void UMWVehicleMovementComponent::ResetDriveInput()
 {
 	DriveInput = FMWVehicleDriveInput{};
@@ -146,6 +208,9 @@ void UMWVehicleMovementComponent::ResetDriveInput()
 void UMWVehicleMovementComponent::OnTeleported()
 {
 	Super::OnTeleported();
+	SetTrackLiftBase(nullptr);
+	TrackBoostEndTime = -1.0;
+	TrackSurfaceEndTime = -1.0;
 	ResetDriveInput();
 	bGrounded = false;
 	GroundNormal = FVector::UpVector;
@@ -204,6 +269,8 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 
 	const float ForwardSpeed = FVector::DotProduct(Velocity, UpdatedComponent->GetForwardVector());
 	const float ForwardSpeedLimit = FMath::Max(DriveConfig.MaxForwardSpeed, 0.f);
+	// 후진 제한은 그대로 두고 기존 전진 부스터 배율만 적용한다.
+	const float BoostedForwardSpeedLimit = HasItemBooster() ? ForwardSpeedLimit * 1.25f : ForwardSpeedLimit;
 	const float Threshold = FMath::Max(DriveConfig.DirectionChangeSpeedThreshold, 0.f);
 	const float ReverseSpeedLimit = FMath::Min(ForwardSpeedLimit, FMath::Max(DriveConfig.MaxReverseSpeed, 0.f));
 
@@ -214,7 +281,7 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 
 	if (ForwardSpeed > Threshold)
 	{
-		return ForwardSpeedLimit;
+		return BoostedForwardSpeedLimit;
 	}
 
 	float EffectiveThrottle = 0.f;
@@ -232,7 +299,7 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 		return ReverseSpeedLimit;
 	}
 
-	return ForwardSpeedLimit;
+	return BoostedForwardSpeedLimit;
 }
 
 void UMWVehicleMovementComponent::BeginPlay()
@@ -303,7 +370,8 @@ void UMWVehicleMovementComponent::ResolveDriveControl(float& OutThrottle, float&
 		return;
 	}
 
-	const float ForwardRequest = DriveInput.Throttle;
+	const float MinimumThrottle = HasItemBooster() ? 1.f : IsTrackBoostActive() ? TrackMinimumThrottle : 0.f;
+	const float ForwardRequest = FMath::Max(DriveInput.Throttle, MinimumThrottle);
 	const float ReverseRequest = DriveInput.Reverse;
 
 	const bool bForwardRequested = ForwardRequest > KINDA_SMALL_NUMBER;
@@ -556,11 +624,18 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 		const float RemainingSpeed = FMath::Max(SpeedLimit - SpeedInRequestedDirection, 0.f);
 		const float RequestedSpeedIncrease =
 			DriveConfig.DriveAcceleration *
+			(EffectiveThrottle > 0.f && HasItemBooster() ? 1.5f : 1.f) *
 			FMath::Abs(EffectiveThrottle) *
 			DeltaTime;
 		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);
 
 		GroundVelocity += Forward * TravelSign * AppliedSpeedIncrease;
+
+		// 부스터 종료 후 초과 속도는 기존 자연 감속량으로 줄인다.
+		// 이 요청도 아래 main의 타이어 접지력 제한을 통과하므로 속도를 강제로 자르지 않는다.
+		const float ExcessSpeed = FMath::Max(SpeedInRequestedDirection - SpeedLimit, 0.f);
+		const float SpeedReduction = FMath::Min(ExcessSpeed, DriveConfig.CoastDeceleration * DeltaTime);
+		GroundVelocity -= Forward * TravelSign * SpeedReduction;
 	}
 
 	// 드리프트 중에는 횡방향 그립을 낮춘다.
@@ -1230,7 +1305,10 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		return;
 	}
 
-	const FVector MoveDelta = Velocity * DeltaTime;
+	// 롤러 등 기존 표면 효과의 이동량만 더하고 main의 Sweep·충돌 응답은 유지한다.
+	const FVector SurfaceVelocity = GetWorld()->GetTimeSeconds() < TrackSurfaceEndTime
+		? TrackSurfaceVelocity : FVector::ZeroVector;
+	const FVector MoveDelta = (Velocity + SurfaceVelocity) * DeltaTime;
 
 	FHitResult Hit(1.f);
 

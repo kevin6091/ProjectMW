@@ -9,6 +9,7 @@
 #include "MWVehicleMovementComponent.generated.h"
 
 class AMWVehiclePawn;
+class UMWTrackRuntimeComponent;
 struct FMWVehicleDriveSnapshot;
 
 /**
@@ -24,6 +25,15 @@ public:
 
 	void SetDriveInput(const FMWVehicleDriveInput& NewInput);
 
+	// 파일럿·핸들·바퀴 표시에서 입력을 조회만 한다. 주행과 서버 상태는 변경하지 않는다.
+	UFUNCTION(BlueprintPure, Category="MW|Drive")
+	float GetSteeringInput() const { return DriveInput.Steering; }
+
+	float GetUnboostedForwardSpeed() const
+	{
+		return bDriveConfigReady ? FMath::Max(0.f, DriveConfig.MaxForwardSpeed) : 0.f;
+	}
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
@@ -37,8 +47,20 @@ public:
 
 	void ResetDriveInput();
 
+	// 기존 트랙 효과의 요청만 보관한다. main의 Snapshot과 접지 판정은 유지한다.
+	void ApplyTrackBoost(float MinimumThrottle, float Duration);
+	void ApplyTrackSurfaceVelocity(const FVector& VelocityCmPerSecond, float Duration);
+
+	// 발판을 먼저 갱신하도록 약한 참조와 틱 선행 관계를 함께 관리한다.
+	void SetTrackLiftBase(AActor* Base);
+	void ClearTrackLiftBase(const AActor* Base);
+
+	UFUNCTION(BlueprintPure, Category="MW|Drive")
+	bool IsTrackBoostActive() const;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UPROPERTY(EditDefaultsOnly, Category="MW|Drive")
 	TObjectPtr<UMWVehicleDriveData> DriveData;
@@ -56,6 +78,15 @@ private:
 	FMWVehicleDriveInput DriveInput;
 
 	bool bDriveConfigReady = false;
+
+	float TrackMinimumThrottle = 0.f;
+	double TrackBoostEndTime = -1.0;
+	FVector TrackSurfaceVelocity = FVector::ZeroVector;
+	double TrackSurfaceEndTime = -1.0;
+	TWeakObjectPtr<UMWTrackRuntimeComponent> TrackLiftBase;
+
+	// 기존 아이템의 활성 상태만 읽으며 효과 확정과 복제는 변경하지 않는다.
+	bool HasItemBooster() const;
 
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 

@@ -1,7 +1,7 @@
 
 
-
 #include "Player/MWGameplayPlayerController.h"
+#include "Gameplay/Items/MWItemComponent.h"
 #include "Algo/AllOf.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
@@ -69,6 +69,15 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	Super::PostSeamlessTravel();
 	ApplyGameplayInputMode();
 	RefreshDrivingInput();
+}
+
+// 현재 소유한 차량에만 아이템 사용 의도를 전달하고 서버 판정은 ItemComponent에 맡긴다.
+void AMWGameplayPlayerController::HandleUseItem()
+{
+    if (AMWVehiclePawn* Vehicle = GetInputVehicle())
+    {
+        Vehicle->GetItemComponent()->RequestUseItem();
+    }
 }
 
 void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId)
@@ -224,6 +233,7 @@ void AMWGameplayPlayerController::RefreshDrivingInput()
 	const UInputAction* Reverse = Data->FindInputActionByTag(MWGameplayTags::Input_Reverse);
 	const UInputAction* Steer = Data->FindInputActionByTag(MWGameplayTags::Input_Steer);
 	const UInputAction* Drift = Data->FindInputActionByTag(MWGameplayTags::Input_Drift);
+	const UInputAction* UseItem = Data->FindInputActionByTag(MWGameplayTags::Input_UseItem);
 	if (!Accel || !Reverse || !Steer || !Drift
 		|| Accel->ValueType != EInputActionValueType::Axis1D
 		|| Reverse->ValueType != EInputActionValueType::Axis1D
@@ -253,6 +263,10 @@ void AMWGameplayPlayerController::RefreshDrivingInput()
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Triggered, this, &ThisClass::StartDrift).GetHandle());
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Completed, this, &ThisClass::StopDrift).GetHandle());
 	DrivingBindingHandles.Add(EnhancedInput->BindAction(Drift, ETriggerEvent::Canceled, this, &ThisClass::StopDrift).GetHandle());
+	if (UseItem && UseItem->ValueType == EInputActionValueType::Boolean)
+	{
+		DrivingBindingHandles.Add(EnhancedInput->BindAction(UseItem, ETriggerEvent::Started, this, &ThisClass::HandleUseItem).GetHandle());
+	}
 	Subsystem->AddMappingContext(DrivingMappingContext.Get(), 0);
 	UE_LOG(LogTemp, Log, TEXT("%s: Driving input bound to %s (12 bindings)."), *GetName(), *Vehicle->GetName());
 }
@@ -471,4 +485,3 @@ void AMWGameplayPlayerController::StopDrift()
 		Vehicle->SubmitDriveInput(Input);
 	}
 }
-

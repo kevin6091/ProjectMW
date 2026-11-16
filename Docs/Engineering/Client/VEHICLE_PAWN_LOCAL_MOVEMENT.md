@@ -123,3 +123,120 @@ UE 5.8.4에서 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자�
 아이템 충격 효과와 경기 단계 전체 통합은 후속 범위다.
 
 주행 입력 Controller 이전 후 Win64 Development의 MWEditor·MW 빌드와 차량 자동화 6개를 통과했다. 기존 테스트 Controller BP와 native Gameplay Controller 각각에서 W, W+D, W+S, S, 드리프트 누름·해제, 조종 해제와 재조종을 PIE로 확인했다. native Controller 검증은 주행 테스트 GameMode의 Controller 클래스만 프로세스 안에서 바꿔 실행했다. 3인 Listen Server에서도 같은 native Controller로 원격 주행과 호스트 주행이 전달됐다. 결과는 로컬 `Saved/Codex/ControllerDrivingInput`에 있다.
+
+### 복구 차량 외형·바퀴 표시 이관 — 2026-11-05
+
+`feature/vehicle-visuals`의 로컬 ProjectMW에서 Smiet, Mammoth, Ufology, Doug, Fred의 Pawn Blueprint 5개를 직접 메시 구조로 변경했다. Commit/Push/UVCS 제출은 수행하지 않았다.
+
+- 계층은 `CollisionRoot → VehicleBody(StaticMesh) → 바퀴·장식(StaticMesh)`다. 네이티브 CollisionRoot, VehicleMovement, SpringArm/Camera는 유지하며 외형용 중간 SceneComponent와 별도 외형 Actor 스폰은 제거했다. 기존 입력·VehicleDefinition 경로도 유지했다.
+- 차체 원본의 누적 변환을 새 `Art/DirectMeshes/SM_MW_*_Body` 메시 5개에 베이크했다. 차체 컴포넌트에 비균일 스케일을 두면 회전한 하위 메시가 틀어질 수 있으므로, 차체 컴포넌트에는 균일 스케일을 사용하고 바퀴·장식의 원본 누적 위치·회전·스케일을 직접 연결했다. 기존 주행 Box Collision 크기와 충돌 방식은 유지한다.
+- 바퀴 회전·조향은 각 Pawn Blueprint의 EventGraph가 처리한다. 이동 거리와 각 바퀴 반지름으로 회전량을 구하고, Movement의 실제 Steering 입력으로 앞바퀴를 ±35도로 조향한다. 정지 상태에서도 A/D로 조향하며 입력 해제 시 중앙으로 복귀한다. 조향을 위해 차체의 정지 주행 동작을 바꾸지 않았다.
+- 원본 복구 데이터의 유효 바퀴 수는 Smiet 2개, Mammoth 4개, Ufology 3개, Doug 4개, Fred 4개다. Smiet의 뒷바퀴 슬롯은 원본에서 비활성/스케일 0이고 Ufology의 앞바퀴 두 항목은 동일 메시·동일 위치라 중복을 제거했다. Mammoth의 큰 뒷바퀴와 Smiet의 좌우 크기 차이는 원본 누적 스케일에 근거한다. 이전의 일괄 4개 검증을 정정한다.
+- Doug에만 `DougSwim` Timeline과 외부 `Animation/CF_DougSwim` Curve를 연결했다. 꼬리 ±30도, 지느러미 ±15도, 속도 0~70m/s에 따라 0.5~6Hz로 변화한다. 해당 Blueprint의 명시적 Tail/Fin 참조와 편집 가능한 파라미터를 사용하며, 다른 차량에서 Doug 부품을 검색하지 않는다. Fred 눈 및 Smiet 경적 연동 눈 애니메이션은 추가하지 않았다.
+- `MWVehicleWheelVisualComponent.h/.cpp`, 자체 추가했던 `MWVehicleVisualValidationTests.cpp`, 임시 `MWDirectMeshAuthoringLibrary.h/.cpp`를 프로젝트에서 제거했다. 임시 Editor 모듈 의존성도 복원했다. 이전 외형 Actor BP 5종(BP_VehicleVisual_Smiet/Mammoth/Ufology/Doug/Fred)을 참조 검사·백업 후 삭제했다. Smiet이 참조되던 L_Title_WorldUI_Dev와 L_VehicleSelection_UI_Dev에서는 REBUILD_DecorativeSmiet 장식 4대를 사용자 지시로 제거했다. 기존 GameMode 클래스 경로는 유지했고 UI Widget·현재 주행 GameMode·C++는 변경하지 않았다. 누락된 구형 클래스 경로 보존을 위한 메모리 전용 직렬화 객체는 디스크에 저장하지 않았다. 새 Pawn은 이전 외형 Actor를 스폰하지 않는다.
+- 남은 C++ 변경은 Pawn Blueprint Tick 활성화/PostPhysics 순서 지정과 읽기 전용 `GetSteeringInput()` 노출뿐이다. 이동 계산, 충돌, RPC, 복제 코드는 수정하지 않았다.
+- 최종 삭제 후 원본 MW의 Editor/Game Win64 Development 빌드와 기존 `MW.Vehicle` 자동화 6/6을 통과했다. 새 프로세스에서 저장된 5개 Blueprint 컴파일, 메시 부모 계층, 별도 외형 Actor 부재, Doug 전용 Timeline을 확인했다.
+- `Developers/user/L_Dev_Drive`의 NullRHI PIE에서 엔진 Enhanced Input 강제 키 W/A/D로 5종을 검사했다. 정지 중 앞바퀴 좌우 ±35도 및 복귀, 차체 정지, 바퀴 중심 유지, 전진 시 바퀴 회전, Doug 꼬리·지느러미 변화가 확인됐다. 이는 실제 하드웨어 키보드 입력 또는 멀티클라이언트 검증을 대체하지 않는다. 새 바퀴 조향의 원격 표시 및 패키징은 미검증이다.
+- Content는 기존 `.gitignore`에서 제외된다. 수정 Pawn 5개와 새 차체 메시 5개·Curve 1개는 로컬 Content에 있으며, 코드 브랜치만 전달하면 함께 전달되지 않는다. Git/UVCS 제출은 별도다.
+- 백업·해시·그래프·PIE 수치는 Codex 작업 폴더의 `outputs/VEHICLE_DIRECT_MESH_20261105`에 보관한다. 현재 원본 MW의 `Developers/user/L_Dev_Drive`는 BP_MWDriveTestGameMode의 DefaultPawnClass가 BP_MWVehiclePawn_DOUG로 설정돼 Doug를 생성한다. 해당 설정은 이전 차량 테스트 때 변경된 것으로 확인했으며 사용자 요청으로 UVCS 잠금을 해제했다. 후속 검사에서는 이 GameMode를 수정하거나 다시 잠그지 않았다. Smiet Pawn의 최신 이름은 BP_MWVehicle_Smiet이며 기존 BP_MWVehicleCharacter 리다이렉터는 보존한다.
+
+### 휠 시각 처리 C++ 전환 — 2026-11-06
+
+- 최신 휠 구현은 `AMWVehiclePawn::InitializeWheelVisuals/UpdateWheelVisuals`다. 차량별 BP의 `MW|Visual|Wheels`에서 메시 참조, 실제 반지름(cm), 부모 좌표 기준 회전축·조향축, 조향 여부와 최대 각도를 설정한다. 부품 참조와 기본 회전은 시작 시 한 번 캐시하고, 실제 이동 거리로 구름량을 계산하며 값이 변한 경우에만 회전을 적용한다. 정지 조향과 텔레포트 시 이동 이력 초기화를 포함한다.
+- Smiet/Mammoth/Ufology/Fred의 휠 EventGraph는 비웠다. Doug에는 기존 꼬리·지느러미 Timeline/Curve와 재생 속도 BP 처리만 남겼다. 전체 그래프 노드는 232→27이며, 남은 27개에는 차량별 빈 ConstructionScript 진입 노드가 포함된다. 메시 계층·위치·스케일·재질은 이주 전후 일치 검사를 통과했다. `WheelVisualComponent`와 별도 외형 Actor를 다시 추가하지 않았다.
+- 이번 작업 시점의 Smiet 정본 경로는 `/Game/Gameplay/Vehicles/BP_MWVehiclePawn_Smiet`이다. 현재 GameMode와 기존 리다이렉터는 수정하지 않았다. 5개 Pawn BP에서 이전 WheelDistance/VisualPreviousLocation/SteeringAngleDegrees 변수를 제거하고 현재 값은 새 설정에 이관했다.
+- 임시 Editor 이주 도구 `MWVehicleWheelMigrationLibrary.h/.cpp`는 작업 후 삭제했고, MWEditor.Build.cs는 작업 전 바이트로 복원했다. 임시 도구가 없는 최종 Editor/Game Development 빌드, 실제 렌더 및 NullRHI PIE의 5종 W/A/D/S 강제 입력·정지 조향·중립 복귀·전후진 회전·텔레포트 검사와 기존 MW.Vehicle 자동화 6/6을 통과했다. 하드웨어 입력·패키징·멀티클라이언트 검증은 수행하지 않았다.
+- 이동/충돌/RPC/복제 스냅샷은 변경하지 않았다. 현재 스냅샷에 조향값이 없어 원격 차량의 정지 조향 표시 문제는 별도 네트워크 검토 범위로 남는다. CPU trace는 확보했지만 이번 전환의 FPS 개선율을 측정했다고 주장하지 않는다. Git/UVCS 제출은 하지 않았다.
+- 백업·변경 코드·BP 그래프 전후·실제 PIE 수치·렌더 캡처는 Codex 작업 폴더 `outputs/VEHICLE_NATIVE_WHEELS_20261106`에 보관한다.
+
+### 최신 브랜치 이식 및 위치 복원 시각 회전 보완 — 2026-11-06
+
+- `feature/vehicle-visuals-latest`는 `origin/main@035910b`에서 분기했다. main의 PlayerController 입력 소유권과 공유 커서 구현을 유지하고 차량 시각 처리만 이식했다. 이동·충돌 계산, RPC, Snapshot 타입과 송수신 구현은 변경하지 않았다.
+- 직접 컴포넌트 위치 복원이 이전 프레임과의 차이로 계산되어 바퀴 회전이 튀는 문제를 보완했다. 로컬/Authority의 명시적 순간이동과 새 이동 스트림에서 시각 위치 이력을 무효화한다. SimulatedProxy의 일반 보간도 TeleportPhysics를 사용하므로, 보간마다 초기화하지 않고 스트림 변경을 구분한다. Root TransformUpdated는 약한 참조로 연결하고 EndPlay에서 해제한다.
+- 실제 저장된 `Developers/user/BP_MWDriveTestGameMode`의 구형 Controller 참조를 native `MWGameplayPlayerController`로 교체했다. 기본 Pawn은 유지했다. 새 프로세스에서 메모리 Controller 교체 없이 저장된 주행 레벨과 GameMode를 사용했다. 다른 팀원 소유 주행 레벨은 저장하지 않았다.
+- 수정 후 Editor/Game Win64 Development 빌드와 기존 MW.Vehicle 자동화 6/6을 통과했다. 5종 렌더 PIE에서 정지 조향, 전후진, 감속, 회전, 일반/직접 컴포넌트 위치 복원, 10도 경사 상승, 부모 Pitch/Yaw/Roll 변경, 바퀴 중심 유지와 캐시된 컴포넌트 제거를 확인했다. 직접 위치 복원 시 회전 튐은 5종 모두 재현 후 수정본에서 사라졌다. 이 PIE 입력은 엔진 Enhanced Input 테스트 명령을 사용했다.
+- OS 키보드 입력 검증은 일부 진행 후 사용자 Escape로 중단되어 5종 전체 완료가 아니다. 이번 보완의 실제 멀티클라이언트, 패키징, 비균일 스케일 검증도 완료하지 않았다. 이전 기록의 성공을 이 미검증 항목의 성공으로 해석하지 않는다.
+- Git 전달 범위는 차량 C++ 3개와 이 문서다. Content는 기존 UVCS 관리 정책을 유지하므로, 차량 BP 5종·메시·Curve·저장한 GameMode는 이 Git 브랜치 Push에 포함되지 않는다. 동일 에셋 버전은 별도로 맞춰야 한다. 작업 중 사용자가 저장한 Doug와 이후 편집 내용은 덮어쓰지 않았다.
+- 전후 프레임별 Transform, 실행 로그와 테스트 결과는 Codex 작업 폴더의 `outputs/VEHICLE_REMAINING_FIX_20261106`에 보존한다. 사용자는 OS 키보드 전체 검증 미완료 상태를 유지한 작업 브랜치 Commit/Push를 별도로 승인했다.
+
+### 휠 시각 조향 블렌딩 — 2026-11-06
+
+- 본인 소유 `AMWVehiclePawn`의 휠 표시 코드에만 보간을 추가했다. 이동 입력·물리 조향·충돌·RPC·Snapshot·Doug Timeline은 변경하지 않았다. 기존 Tick에서 Pawn당 한 번만 지수 보간하고 그 결과를 조향 바퀴에 적용한다. 부품 검색이나 별도 Tick/컴포넌트는 추가하지 않았다.
+- `MW|Visual|Wheels > WheelSteeringInterpSpeed` 기본값은 12(1/s)다. 목표각의 약 95%까지 약 0.25초이며 값이 작으면 느리게, 크면 빠르게 따라간다. 입력 해제 시 중립 복귀와 정지 좌우 조향에도 적용한다. 기존 바퀴 구름 거리·반지름·회전축·조향축과 바퀴 중심은 유지한다. 기존 차량 BP 5종을 저장하거나 덮어쓰지 않았다.
+- Editor/Game Development 빌드와 기존 MW.Vehicle 자동화 6/6을 통과했다. 실제 렌더 PIE의 5종에서 정지 조향·반전·중립 복귀·바퀴 중심 유지·전후진 구름과 Doug 꼬리 동작을 확인했다. Smiet의 30/60/120FPS 상한 조건에서는 첫 유효 조향 프레임이 각각 약 11.54/6.34/3.33도였고 모두 약 35도로 수렴했다. 이 입력은 Enhanced Input 강제 키이며 OS 키보드 및 실제 멀티클라이언트 검증은 아니다.
+- 코드에는 0으로 보간을 끄는 분기가 있으나, 0 설정 실행 검증은 테스트 fixture의 EditDefaultsOnly 값 적용 실패로 미완료다. 주요 7개 조건은 완료됐지만 초기 전체 테스트 runner는 이 추가 조건에서 실패했다. 이를 8개 전체 성공으로 기록하지 않는다. 프로젝트 코드 수정으로 테스트 제한을 우회하지 않았다.
+- 백업·실제 조향 곡선·빌드/회귀 로그와 실패한 추가 fixture 기록은 Codex 작업 폴더 `outputs/WHEEL_STEERING_BLEND_20261106`에 보존한다. Commit/Push/UVCS checkin은 하지 않았다.
+
+
+### 차량 간 충돌 예측과 보정
+
+- 서버는 기존 박스 충돌로 두 차량의 수평 속도를 확정한다. 옆으로 치우친 접촉은 접촉 구간 중심으로 Yaw 회전 속도도 계산한다. 회전 속도는 조향과 별도로 감쇠하며, 벽이나 차량에 겹치는 회전은 적용하지 않는다.
+- 소유 클라이언트는 최근 서버 상태에서 상대 박스의 위치를 최대 100ms 추정하고 상대 이동량을 포함해 접촉을 검사한다. 로컬 반응은 자기 차량에만 적용한다. 다음 스텝의 접촉 검사에는 상대도 밀렸다고 잠시 가정해 이전 스냅샷 때문에 같은 충격을 연달아 적용하는 일을 줄인다.
+- 보정은 ACK와 정확히 일치하는 입력의 실행 결과와 비교한다. ACK가 그대로여도 서버가 차량을 밀었으면 다시 보정할 수 있다. 서버 위치·회전·속도·접지·충돌 회전 속도를 복원한 뒤 입력별로 저장한 상대 박스로 미확인 입력을 다시 계산한다.
+- 작은 보정은 충돌체를 즉시 맞추고 `DrivePresentation` 아래 차체와 카메라만 약 55ms 반감기로 따라오게 한다. 평상시 고정 스텝 보간과 보정 오프셋을 분리한다. 150cm 또는 45도를 넘는 표시 차이나 새 조종 스트림은 보정 오프셋을 비운다. Blueprint에서 새 외형을 붙일 때는 충돌 없는 외형을 `DrivePresentation`에 연결한다.
+- 상대 차량은 패킷 수신 시점마다 다시 보간을 시작하지 않고 서버 시간 순서대로 재생한다. 약 75ms의 여유를 두고, 새 상태가 없을 때 마지막 상태를 최대 50ms만 연장한 뒤 유지한다.
+- 입력 이력은 120Hz 기준 최대 1.5초다. 서버는 짧은 순번 누락은 재전송을 기다리고, 누락이나 송신 중단이 길어지면 새 조종 스트림을 시작한다. `LogMWVehicleNet`의 Verbose 로그로 같은 ACK 보정, 재실행 수, 이력 포화와 스트림 초기화를 확인할 수 있다.
+
+차량 간 충돌은 가까운 상대의 움직임을 짧게 추정한다. 여러 차량의 물리를 함께 되감거나 아이템 효과를 예측하는 기능은 포함하지 않는다.
+
+`L_Dev_Drive`의 2인 로컬 IP Listen Server를 별도 프로세스로 실행해 60FPS, 양쪽 송신 지연 95ms(편차 25ms), 손실 7%에서 검증했다. 옆으로 치우친 추돌의 Yaw가 서버 결과 수신 전에 소유자에서 시작했고, 피해 차량의 ACK를 잠시 고정해도 보정이 적용됐다. 정지 후 두 차량의 위치는 서버에서 각각 0.05cm 안에 일치했다. 원격 입력 송신을 약 1.45초 끊으면 서버가 스트림을 재설정했으며 복구 후 입력을 다시 처리했다. 차량 BP 5종의 외형 컴포넌트가 클라이언트에서 `DrivePresentation` 아래에 있는 것도 확인했다. 렌더링을 끈 측정이므로 실제 화면에서 카메라와 차체의 체감은 별도로 확인한다.
+
+
+### 2026-11-12 Kevin 기준 통합 범위
+
+- 기준은 `fix/Network-Prediction@de73fd4`다. 차량 네트워크 소스와 Snapshot 타입은 해당 기준을 그대로 사용한다.
+- 위의 볼록 충돌 적용 기록은 이전 작업 이력이다. 이번 실행은 기존 BoxComponent를 루트와 UpdatedComponent로 유지하며 DrivingCollisionMesh와 에셋은 삭제하지 않는다.
+- 우리 아이템·트랙 효과·바퀴·HUD 연결을 Kevin 구조에 맞춘다. Pilot ABP의 GetSteeringInput 조회 API도 유지한다.
+- 이전 `47fed23`의 발판 상대 Snapshot/구형 Proxy 보간 코드는 적용하지 않는다. 승강기 위 원격 차량 추종은 Kevin 담당자와 별도 검증·연동이 필요하며 완료로 취급하지 않는다.
+
+### 2026-11-12 투명차 가상 바퀴 스키드마크와 ItemPickup 기본 Pawn
+
+- `L_Dev_Drive_ItemPickup`에 배치된 `BP_MWVehiclePawn_DOUG_C_1`의 `Auto Possess Player`를 `Player 0`에서 `Disabled`로 변경했다. GameMode의 기본 Pawn은 변경하지 않았으며 현재 `BP_MWVehiclePawn_InvisiblePilot`이다. 배치된 Doug가 기본 Pawn 설정을 가로채던 연결만 해제했다.
+- `FMWVehicleVirtualSkidWheel`과 Pawn의 `VirtualSkidWheels` 설정을 추가했다. **차량 BP → Class Defaults → MW → Visual → Skid Marks → Virtual Skid Wheels**에서 각 항목의 `Local Center`(Pawn 로컬 좌표, cm)와 `Radius Cm`을 편집한다. X는 앞/뒤, Y는 좌/우, Z는 위/아래이며 위치에는 Pawn Transform을, 반지름에는 기존 바퀴 표시와 동일한 Actor 스케일을 적용한다.
+- 투명차는 보이는 바퀴 메시를 추가하지 않고 뒤쪽 가상 바퀴 두 개를 사용한다. 현재 BP 초기값은 `(-40, -23, -37)`, `(-40, 23, -37)`, 반지름은 각각 `15 cm`다. 기존 충돌 박스의 반범위 `(60, 25, 52)` 안쪽 뒤축과 바닥 높이에 맞춘 조정 시작값이며, 원본 게임에서 추출한 바퀴 좌표라고 주장하지 않는다. 실제 자국의 간격과 위치는 PIE에서 확인한 뒤 이 BP 값만 조정한다.
+- `VirtualSkidWheels`가 비어 있으면 기존 메시 기반 자국 처리를 유지한다. 값이 있으면 지정한 가상 접지점만 사용하여 중복 자국을 방지한다. 설정은 기존 초기화 시점에 한 번 검증·캐시하며 차종 이름 분기, 새 Tick, 새 물리 바퀴나 SceneComponent는 추가하지 않는다. 바퀴 메시가 0개여도 가상 접지점이 있으면 기존 드리프트·바닥 검사로 자국을 그린다.
+- 이동·접지·충돌·서버 보정·Snapshot·RPC 코드는 변경하지 않았다. 기존 로컬 조종 차량만 자국을 그리는 범위도 유지하므로 다른 플레이어 차량의 자국 동기화는 이번 수정에 포함되지 않는다.
+- 이번 소스의 Editor/Game Win64 Development 빌드는 모두 성공했다. 사용자 요청으로 신규 PIE·주행 검증은 수행하지 않았다. BP 컴파일과 지정 두 에셋의 저장은 완료했으며, 실행 검증과 저장 에셋을 재로드한 회귀 검증은 미완료다. 검증할 항목은 기본 투명차 스폰, 직진 시 자국 없음, `W + Left Shift + A/D` 드리프트 시 두 줄 생성, 드리프트 해제 시 생성 중단, 기존 바퀴 차량 유지다.
+- 변경 바이너리는 `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset`과 `Content/Developers/user/L_Dev_Drive_ItemPickup.umap` 두 개다. 둘 다 현재 Git 제외 대상이므로 소스 PR만 받아서는 BP 값과 레벨 설정까지 전달되지 않는다. 이번 작업에서 UVCS 명령·checkin·예약 변경은 하지 않았다. 팀 전달 시 이 두 에셋의 버전을 별도로 맞춘다.
+
+### 2026-11-12 부스터 장착 표시 후속 수정
+
+- 투명차에는 차체 StaticMesh가 없어 기존 메시 기반 장착 계산이 임시값 `(-65, 0, 10) / Scale 0.05`로 빠졌다. ItemComponent에 선택적인 BP 장착 변환을 추가했다. 차량 BP의 상속된 `Items` 컴포넌트에서 `MW → Items → Booster Visual`의 `Override Booster Mount`, `Booster Mount Transform`, `Booster Exhaust Length Scale`을 편집한다. 기본값은 Override 꺼짐이므로 기존 다섯 차량의 장착 계산은 유지한다.
+- 투명차에만 Override를 켜고 Pawn 로컬 위치 `(-42, 0, 4) cm`, Yaw `-90°`, 균일 Scale `0.1`, 배기 길이 배율 `6.2`를 저장한다. 최종 외형 맞춤은 사용자 PIE 확인 후 이 BP 설정을 조정한다. 새 차종 이름 분기는 추가하지 않았다.
+- 복구된 부스터 시퀀스의 Actor 바인딩에도 `MovieSceneSpawnTrack`이 있다. 기존의 `Binding.GetTracks().IsEmpty()`로 Actor와 부품을 구분하던 코드를 `FindSpawnable(Guid)`로 변경하여 Actor 바인딩에는 실제 장착 Actor를, 부품 바인딩에는 해당 부품을 연결한다. 원본 시퀀스와 키 데이터는 수정하지 않았다. 실제 원거리 표시 증상의 해소 여부는 PIE 미검증이다.
+- 효과음 원본 `Booster Fire.wav`(48kHz, stereo, 3.558초)는 peak 약 0.812이고 full-scale 클리핑 샘플은 0개였다. 이는 게임의 최종 믹서 출력 클리핑이 없다는 증거가 아니다. 사용자 지시에 따라 오디오 중복 재생 방지·페이드·볼륨 변경은 추가하지 않았으며 소리 깨짐의 실행 원인은 미확정이다.
+- 최종 Editor/Game Development 빌드 성공. 사용자에게 PIE 검증을 맡겼으며 이번 부스터 수정의 실제 화면·청취 결과는 통과로 기록하지 않는다. 아이템 획득/사용 판정, 지속시간, 서버 복제, 차량 이동·Snapshot 소스는 변경하지 않았다.
+
+### 2026-11-12 차체와 카메라의 고정 스텝 표시 보완
+
+실제 2인 Listen Server의 충돌체, FRED 차체 메시, `DrivePresentation`, `FollowCamera`, `PlayerCameraManager` 위치를 매 프레임 측정했다. 100FPS 등속 주행에서 차체 이동량은 120Hz 고정 스텝 수에 따라 달라졌고 카메라는 SpringArm의 Camera Lag로 더 부드럽게 이동했다. 두 위치의 갱신 방식 차이가 자기 차량의 화면상 흔들림을 만들었다. 측정 구간의 카메라 컴포넌트 위치와 최종 카메라 캐시는 일치했다.
+
+- 호스트 자기 차량과 소유 클라이언트는 이전·현재 고정 스텝 위치를 남은 시간 비율로 보간한다. 표시 지연은 한 스텝인 약 8.33ms다. 충돌체, 서버 판정과 입력 ACK는 이 표시 위치를 사용하지 않는다.
+- `DrivePresentation`의 외형 연결과 카메라 Tick 선행 조건은 호스트에도 적용한다. 기존 Camera Lag 설정과 사용자 카메라 거리는 유지한다.
+- 호스트가 보는 참가자 차량은 서버 스냅샷 시간축으로 외형만 보간한다. 참가자 충돌체는 서버가 계산한 실제 위치에 유지한다. 클라이언트의 기존 상대 차량 보간도 같은 함수로 계산한다.
+- 서버 보정은 보간된 표시 위치를 기준으로 월드 좌표 오프셋을 구한다. 보정 재실행, 조종 스트림 변경과 텔레포트 시 이전 표시 이력을 구분한다.
+
+렌더링을 켜고 프레임 시간이 변하는 조건에서도 측정했다. 차체 보간을 적용한 후에도 기존 SpringArm Camera Lag의 프레임 시간 의존성이 카메라 흔들림을 남겼다. `UMWVehicleSpringArmComponent`는 이전 목표와 현재 목표 사이의 선형 이동을 고려한 지수 감쇠로 위치 Lag를 계산한다. 회전 Lag는 가장 짧은 회전 차이를 사용하며, 조종 스트림 변경과 텔레포트 시 카메라 이력을 초기화한다. `CameraBoom` 이름, Camera Lag 활성화·속도, 팔 길이, 소켓 오프셋과 충돌 검사는 유지한다. 해석적인 감쇠를 사용하므로 Lag 계산에 기존 SpringArm의 시간 쪼개기 옵션은 사용하지 않는다.
+
+다음 값은 등속 주행에서 실제 프레임 이동량과 `속도 × 프레임 시간`의 차이를 계산한 RMS이며 단위는 cm다. 서버와의 위치 오차를 뜻하지 않는다. 먼저 렌더링을 끄고 동일한 60·100·144FPS 조건에서 수정 전후를 비교했다.
+
+| 실행 | FPS | 차체 수정 전 | 차체 수정 후 |
+|---|---:|---:|---:|
+| 호스트 | 100 | 6.0001 | 0.0003 |
+| 참가자 | 100 | 5.9999 | 0.0003 |
+| 호스트 | 144 | 5.5908 | 0.0007 |
+| 참가자 | 144 | 5.5900 | 0.0007 |
+
+100FPS에서 호스트 화면의 상대 차체와 자기 카메라 사이 프레임별 거리 변화 RMS는 5.6764cm에서 0.0004cm로 줄었다. 상대 차량의 네트워크 상태나 프레임 시간이 급변하는 경우까지 화면 변화가 완전히 없어지는 것을 보장하는 수치는 아니다.
+
+실제 D3D SM6 렌더링을 켠 960×540 게임 창 두 개에서도 위치를 기록하고 화면을 확인했다. Camera Lag 수정 전 가변 FPS에서 남았던 카메라 이동 오차를 수정 후 0.001cm 미만으로 줄였다. 실제 FPS 약 47~116인 일반 렌더링 측정과 양쪽 송신 지연 95ms·손실 7%인 최종 렌더링 측정에서 호스트·참가자 자기 차체 기준점의 프레임별 투영 화면 좌표 변화는 기록 정밀도인 0.0001픽셀 이내였다. 등속 측정 구간에 한정한 결과이며 가속·조향 시 의도한 Camera Lag 이동을 없애지 않는다.
+
+최종 렌더링에서는 서버에만 있는 벽으로 보정을 강제했다. 정지 후 서버와 참가자 위치 차이는 약 0.002cm였고 5,000cm 텔레포트와 이후 주행도 복구됐다. 별도 카메라 검사에서는 60FPS·144FPS·혼합 프레임 시간으로 같은 위치·회전 Lag 결과를 얻었고 Yaw 회전 경계, 일시 정지와 이력 초기화를 확인했다. 임시 계측·검사 코드와 생성 파일을 제거한 후 MWEditor·MW Win64 Development 빌드 및 기존 `MW.Vehicle` 6개 검사를 다시 통과했다.
+
+
+### 2026-11-12 예측보정 수정2와 Item UI 통합
+
+- 실제 merge 대상은 `fix/Network-Prediction@bab3245`와 `fix/item-ui-polish@b201e1a`다. 서버 보정·Snapshot 및 새 SpringArm 구현은 Kevin 원본을 유지하고 기존 UI·아이템·바퀴·가상 접지점 표시를 보존한다.
+- 충돌한 Pawn include는 두 시각 컴포넌트를 모두 포함하고 BeginPlay는 외형 재연결 → `ResetDrivePresentation()` → `InitializeWheelVisuals()` 순서로 연결한다. `GetSteeringInput()` 조회 API를 유지해 파일럿 Animation BP와의 계약이 빠지지 않게 한다.
+- 위 2인 지연·손실·프레임 측정 수치는 Kevin 브랜치의 이전 검증 기록이다. 이번 통합에서 새로 수행한 PIE 결과가 아니다. 사용자가 PIE 검증을 담당하므로 통합본의 실제 입력·다중 클라이언트·음성 결과는 별도로 확인해야 한다.
+- 이번 통합본의 신규 검증은 MWEditor/MW Win64 Development 빌드 성공과 차량 6종·파일럿 ABP·UI 6종, 총 13개 BP 컴파일 성공이다. 에셋은 저장하지 않았으며 로컬 차량 에셋·테스트 맵·GameMode·개인 설정 170개 해시가 통합 전과 같다. 차량 6종의 CameraBoom은 새 `MWVehicleSpringArmComponent`이고 BP 기본 팔 길이는 모두 750cm로 확인했다. PIE·원격 승강기 추종·부스터 소리의 실행 검증은 아직 완료되지 않았다.

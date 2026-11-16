@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "System/MWRoomTypes.h"
-#include "UI/MWMenuTypes.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "MWMultiplayerSubsystem.generated.h"
 class UMWGameInstance;
 /** Legacy Blueprint compatibility only. Owns no online interfaces, session state or world flow. */

@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "System/MWRoomTypes.h"
-#include "UI/MWMenuTypes.h"
+#include "UI/Common/MWMenuTypes.h"
 #include "MWGameInstance.generated.h"
 
 class UMWConnectionSubsystem;
