@@ -142,6 +142,11 @@ FMWVehicleSelectionBackRequested OnBackRequested;
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
 FGameplayTag VehicleAssetRoot;
 
+// 일반 카드의 표시 순서다. 실제 차량 정의와 선택 가능 여부는 기존 카탈로그·서버가 결정한다.
+// 비밀 차량은 기존 SecretVehicleAssetId 경로로 별도 연결한다.
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
+TArray<FGameplayTag> VisibleVehicleAssetIds;
+
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
 TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> VehicleThumbnails;
 

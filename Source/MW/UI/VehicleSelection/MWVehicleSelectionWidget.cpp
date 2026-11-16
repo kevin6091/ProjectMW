@@ -484,11 +484,15 @@ void UMWVehicleSelectionWidget::RefreshVehicles()
 	ClearCards();
 	Text_Error->SetText(FText());
 	UMWAssetManager& Assets = UMWAssetManager::Get();
-	// Keep the authored card order. The existing native tags identify the gameplay assets.
-	const TArray<FGameplayTag> AssetIds{
-		MWGameplayTags::Asset_Vehicle_SMIET, MWGameplayTags::Asset_Vehicle_MAMMOTH,
-		MWGameplayTags::Asset_Vehicle_UFOLOGY, MWGameplayTags::Asset_Vehicle_DOUG,
-		MWGameplayTags::Asset_Vehicle_FRED};
+	// 설정 순서를 유지하되 잘못된 태그·중복은 카드와 등록 개수에 포함하지 않는다.
+	TArray<FGameplayTag> AssetIds;
+	for (const FGameplayTag Id : VisibleVehicleAssetIds)
+	{
+		if (Id.IsValid())
+		{
+			AssetIds.AddUnique(Id);
+		}
+	}
 	TMap<FGameplayTag, UMWVehicleDefinitionData*> Definitions;
 	for (const FGameplayTag Id : AssetIds)
 	{

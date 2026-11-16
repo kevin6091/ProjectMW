@@ -23,6 +23,20 @@ UMWItemComponent::UMWItemComponent()
 void UMWItemComponent::BeginPlay()
 {
     Super::BeginPlay();
+    // 설정 오류를 수명 시작 때 한 번 정리한다. 잘못된 배율로 속도가 오염되지 않게 무배율로 복구한다.
+    if (!FMath::IsFinite(BoosterSpeedMultiplier) || BoosterSpeedMultiplier < 1.f ||
+        !FMath::IsFinite(BoosterAccelerationMultiplier) || BoosterAccelerationMultiplier < 1.f)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("부스터 배율은 유한한 1 이상이어야 합니다. 잘못된 값은 1로 복구합니다."));
+        if (!FMath::IsFinite(BoosterSpeedMultiplier) || BoosterSpeedMultiplier < 1.f)
+        {
+            BoosterSpeedMultiplier = 1.f;
+        }
+        if (!FMath::IsFinite(BoosterAccelerationMultiplier) || BoosterAccelerationMultiplier < 1.f)
+        {
+            BoosterAccelerationMultiplier = 1.f;
+        }
+    }
     if (AMWGameplayGameState* State = GetWorld()->GetGameState<AMWGameplayGameState>())
     {
         // 종료 시 다른 월드를 조회하지 않고 실제로 구독했던 상태 객체에서 연결을 해제한다.

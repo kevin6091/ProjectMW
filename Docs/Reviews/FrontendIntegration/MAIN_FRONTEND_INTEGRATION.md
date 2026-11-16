@@ -201,3 +201,34 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 - GitHub 조회에서 PR #11은 closed/merged=false이고 #12는 현재 main으로 병합됐다. `fix/frontend-main` head 검색 결과 등록된 PR은 없었다. 새 PR·리뷰 요청·Push·UVCS 작업을 실행하지 않았다. 독립 검토·에셋 인계·남은 검사 판단 전에는 병합 완료나 전체 검증 통과로 표시하지 않는다.
 
 외부 근거: `outputs/PR_READINESS_20261116/GIT_AUDIT.json`, `ASSET_AUDIT.json`, `BLUEPRINT_READINESS.json`. 전체 package 참조 간선은 외부 Asset Registry 기록에 보존하고, Git에는 인계에 필요한 진입 에셋 목록만 포함한다.
+
+## 후속: 남은 조정값 설정 분리 — 2026-11-16
+
+기존 숫자와 목록을 C++에서 `Config/DefaultGame.ini`로 옮겼다. 값을 바꾼 작업이 아니다. 이후 설정을 고치고 게임을 다시 실행하면 C++ 재빌드 없이 조정할 수 있다. WBP Designer로 이전한 작업과는 구분한다.
+
+| 대상 | 이전 | 지금 수정하는 위치 | 소비 코드 |
+|---|---|---|---|
+| 일반 차량 표시 순서 | `RefreshVehicles()`에 5개 태그 나열 | `MWVehicleSelectionWidget.VisibleVehicleAssetIds` | 설정 순서를 읽고 중복·빈 태그를 제외한 뒤 기존 카탈로그로 카드를 만든다. 비밀 차량 경로는 유지한다. |
+| 아이템 슬롯·대기판 치수 | Slate의 크기·여백·글자 크기 숫자 | `MWGameplayHUDSubsystem.ItemSlotLayout`, `WaitingBoardLayout` | `InitializeLayout()`에서 생성 시 한 번 복사·검증한다. 매 프레임 설정 로드나 Widget 재생성은 추가하지 않았다. |
+| 부스터 배율 | 이동 연결부의 `1.25f`, `1.5f` | `MWItemComponent.BoosterSpeedMultiplier=1.25`, `BoosterAccelerationMultiplier=1.5` | `GetActiveItemBooster()`가 현재 Pawn의 활성 아이템을 읽고 두 getter로 배율을 가져온다. |
+
+- 기본 카드 순서 SMIET→MAMMOTH→UFOLOGY→DOUG→FRED, 슬롯 168·최소 96px·아이콘 158, 대기판 1152×676, 룰렛 45~990ms·사용 200ms를 유지했다. 설정 치수가 유효하지 않으면 기존 배치로 복구한다.
+- 부스터 배율은 클라이언트와 서버에 같은 Config를 배포해야 한다. 잘못된 배율은 `BeginPlay()`에서 한 번 경고하고 해당 값을 1로 복구한다. 서버 승인·복제 필드·효과 종료 시각·후진 제한·초과 속도 감속은 변경하지 않았다.
+- main 이동 핵심 함수 27개, 네트워크·Snapshot·DriveData 파일 4개는 그대로다. 세 소비 함수의 새 getter를 기존 상수로 치환하면 변경 전 함수와 일치한다. 아이템 승인·사용·복제·종료 함수 9개도 내용이 같다.
+- SVG의 원본 168×176 좌표와 공용 디자인 캔버스, 색상·모양·이름표 등의 나머지 표현 코드는 이번에 이동하지 않았다. 모든 UI 하드코딩이나 Slate 의존성이 제거됐다고 설명하지 않는다.
+
+### 이번 실행 결과
+
+- 최종 Editor/Game Development 빌드 성공(26.55초 / 25.24초). 필수 BP 20개 저장 없이 컴파일 성공. 설정 기본값·기존 BP 상속 검사 40개 성공.
+- `MW.Items.PickupAndUse`, `MW.UI.RaceHUD.StateLifetime`, `MW.Vehicle.OverspeedRecovery` 3개 자동검사 성공. 이전 접지 검사 실패를 고친 결과가 아니며 관련 코드는 유지했다.
+- 일반 `UnrealEditor -game` 표시 fixture에서 대기판·아이템 슬롯을 1280×720, 1920×1080으로 캡처했다. 크기·여백·글자 및 아이콘 표시를 확인했다. fixture의 차량 열은 카탈로그 로딩 흐름을 만들지 않아 비어 있다. 실제 방 생성·인터넷 접속·실제 마우스 선택을 이번에 다시 통과했다고 표시하지 않는다.
+- PIE 대기판 fixture는 초기 GameState 구성·Python API 접근 및 Editor `set` 제한 때문에 실패했다. 그 기록을 보존하고 일반 게임 실행의 표시 검증으로 전환했다. PIE 대기판 검증 성공이나 전후 실플레이 비교로 대체 표기하지 않는다.
+- 기존 UI·차량·레벨을 포함한 진입 에셋 52개의 디스크 해시를 보존했다. 새 에셋·플러그인·런타임 검색 Tick을 추가하지 않았다. 기존 미추적 Kevin 비교 문서도 그대로 둔다. UVCS·Push·PR 등록은 실행하지 않는다.
+
+### 캡처 중 확인한 개발 맵 바닥 겹침
+
+`/Game/Developers/user/L_Dev_Drive_ItemPickup`의 `PersistentLevel.StaticMeshActor_1`(Plane)과 생성된 Snow 바닥이 모두 Z=0이었다. Snow 바닥은 Plane 메시 인스턴스 121개이며 표본 12개의 Z도 모두 0이었다. 이 실행에서 개발 Plane 표시만 숨긴 전후 캡처로 겹침이 사라지는 것을 확인했다.
+
+`DefaultGame.ini`의 기존 `MWEnvironmentGameplay.HiddenBackdropActorPaths`에 그 Actor 경로 1개를 추가했다. 기존 로직이 Environment가 생성됐을 때만 개발 바닥을 숨기고 종료 때 기존 표시 상태를 복원한다. 수동 숨김 없는 새 실행에서도 대기판과 슬롯을 다시 캡처했다. 개발 맵 에셋, 바닥 높이·충돌, Environment 생성기·주행·서버 코드는 수정하지 않았다. 다른 경기 맵의 Z-fighting까지 해결했다고 주장하지 않는다.
+
+외부 근거: `outputs/SETTINGS_CLEANUP_20261116/SETTINGS_AND_BP.json`, `Automation/index.json`, `PRESERVATION.json`, `LAYOUT_GAME.json`, `FLOOR_PROBE.json`, `EDITOR_FINAL.log`, `GAME_FINAL.log`. 실패한 fixture 기록과 최종 일반 실행 기록을 분리해 보존했다.

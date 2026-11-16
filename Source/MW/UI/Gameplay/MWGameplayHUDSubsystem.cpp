@@ -46,10 +46,6 @@ namespace
                                                          TEXT("/Game/Developers/user/L_Dev_Drive_ItemPickup");
     }
 
-    constexpr float ItemSlotSize = 168.f;
-    constexpr float MinItemSlotPixels = 96.f;
-    constexpr float MaxItemSlotSize = MWGameplayUI::DesignHeight * .40f;
-    constexpr float ItemIconSize = 158.f;
 
     class SMWItemSlotFrame : public SCompoundWidget
     {
@@ -57,13 +53,14 @@ namespace
         SLATE_BEGIN_ARGS(SMWItemSlotFrame)
         {
         }
+        SLATE_ARGUMENT(float, Inset)
         SLATE_DEFAULT_SLOT(FArguments, Content)
         SLATE_END_ARGS()
 
         // 아이템 내부 콘텐츠와 벡터 유리 외곽을 같은 슬롯 크기에 연결한다.
         void Construct(const FArguments& Args)
         {
-            ChildSlot.Padding(5.f)[Args._Content.Widget];
+            ChildSlot.Padding(Args._Inset)[Args._Content.Widget];
         }
 
         // SVG 테두리와 그림자를 현재 Geometry로 그려 확대 시 외곽이 깨지는 것을 줄인다.
@@ -103,12 +100,13 @@ namespace
             bItemPickupTest = Args._bItemPickupTest;
             HeldItem = Args._HeldItem;
             const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
+            InitializeLayout(*Settings);
             InitializeItemTiming(*Settings);
             BoosterTexture.Reset(Settings->BoosterIcon.LoadSynchronous());
             if (BoosterTexture)
             {
                 const FVector2D TextureSize(BoosterTexture->GetSizeX(), BoosterTexture->GetSizeY());
-                const FVector2D IconSize = TextureSize * (ItemIconSize / FMath::Max(1.0, TextureSize.GetMax()));
+                const FVector2D IconSize = TextureSize * (ItemLayout.IconSize / FMath::Max(1.0, TextureSize.GetMax()));
                 BoosterIconOffset = (FVector2D(.5, .5) - Settings->BoosterIconContentCenter) * IconSize;
                 UObject* IconResource = BoosterTexture.Get();
                 if (UMaterialInterface* Material = Settings->ItemIconMaterial.LoadSynchronous())
@@ -127,7 +125,7 @@ namespace
                 if (UTexture2D* Texture = Icon.LoadSynchronous())
                 {
                     const FVector2D TextureSize(Texture->GetSizeX(), Texture->GetSizeY());
-                    const FVector2D IconSize = TextureSize * (ItemIconSize / FMath::Max(1.0, TextureSize.GetMax()));
+                    const FVector2D IconSize = TextureSize * (ItemLayout.IconSize / FMath::Max(1.0, TextureSize.GetMax()));
                     RouletteTextures.Emplace(Texture);
                     RouletteBrushes.Emplace(FSlateImageBrush(Texture, IconSize));
                 }
@@ -140,45 +138,45 @@ namespace
                 SOverlay::Slot()
                     [SAssignNew(WaitingBoard, SOverlay).Visibility(EVisibility::Collapsed) +
                      SOverlay::Slot().HAlign(HAlign_Center)[SNew(SBox).WidthOverride(
-                         122.f)[SNew(SBorder)
+                         BoardLayout.PoleWidth)[SNew(SBorder)
                                     .BorderImage(Brush)
                                     .BorderBackgroundColor(FLinearColor(.12f, .14f, .17f))
-                                    .Padding(FMargin(26.f, 0.f, 12.f, 0.f))
+                                    .Padding(BoardLayout.PoleOuterPadding)
                                         [SNew(SBorder)
                                              .BorderImage(Brush)
                                              .BorderBackgroundColor(FLinearColor(.20f, .23f, .27f))
-                                             .Padding(FMargin(28.f, 0.f, 21.f, 0.f))
+                                             .Padding(BoardLayout.PoleInnerPadding)
                                                  [SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(
                                                      FLinearColor(.30f, .34f, .38f))]]]] +
                      SOverlay::Slot()
                          .HAlign(HAlign_Center)
                          .VAlign(VAlign_Top)
-                         .Padding(0.f, 36.f, 0.f, 0.f)[SNew(SBox).WidthOverride(200.f).HeightOverride(
-                             192.f)[SNew(SImage).Image(Art.LogoBrush())]] +
+                         .Padding(BoardLayout.LogoMargin)[SNew(SBox).WidthOverride(BoardLayout.LogoSize.X).HeightOverride(
+                             BoardLayout.LogoSize.Y)[SNew(SImage).Image(Art.LogoBrush())]] +
                      SOverlay::Slot()
                          .HAlign(HAlign_Center)
                          .VAlign(VAlign_Center)
-                         .Padding(0.f, 80.f, 0.f, 0.f)
+                         .Padding(BoardLayout.PanelMargin)
                              [SNew(SMWGameplayPanel)
-                                  .Size(FVector2D(1152.f, 676.f))
+                                  .Size(BoardLayout.PanelSize)
                                   .Fill(FLinearColor::FromSRGBColor(FColor(92, 145, 211)))
                                   .Border(FLinearColor::FromSRGBColor(FColor(126, 174, 227)))
-                                  .BorderWidth(4.f)[SNew(SVerticalBox) +
+                                  .BorderWidth(BoardLayout.BorderWidth)[SNew(SVerticalBox) +
                                                     SVerticalBox::Slot().AutoHeight()
                                                         [SNew(SBox)
-                                                             .HeightOverride(106.f)
+                                                             .HeightOverride(BoardLayout.TitleHeight)
                                                              .HAlign(HAlign_Center)
                                                              .VAlign(VAlign_Center)
                                                                  [SNew(STextBlock)
                                                                       .Text(NSLOCTEXT("MWGameplayUI",
                                                                                       "RaceWaitingTitle", "경기 준비"))
-                                                                      .Font(Art.Font(64.f))
+                                                                      .Font(Art.Font(BoardLayout.TitleFontSize))
                                                                       .ColorAndOpacity(FLinearColor::White)]] +
                                                     SVerticalBox::Slot().AutoHeight()[SNew(SBox).HeightOverride(
-                                                        5.f)[SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(
+                                                        BoardLayout.DividerHeight)[SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(
                                                         FLinearColor(.11f, .19f, .32f))]] +
                                                     SVerticalBox::Slot().AutoHeight().Padding(
-                                                        26.f, 4.f)[SAssignNew(Roster, SGridPanel)]]]] +
+                                                        BoardLayout.RosterPadding)[SAssignNew(Roster, SGridPanel)]]]] +
                 SOverlay::Slot()
                     .HAlign(HAlign_Center)
                     .VAlign(VAlign_Center)[SAssignNew(SelectSign, SMWGameplaySign)
@@ -202,16 +200,17 @@ namespace
                          SOverlay::Slot()
                              .HAlign(HAlign_Left)
                              .VAlign(VAlign_Bottom)
-                             .Padding(48.f, 0.f, 0.f, 48.f)
+                             .Padding(ItemLayout.Margin)
                                  [SAssignNew(ItemSlot, SBox)
-                                      .WidthOverride(ItemSlotSize)
-                                      .HeightOverride(ItemSlotSize)
+                                      .WidthOverride(ItemLayout.Size)
+                                      .HeightOverride(ItemLayout.Size)
                                       .Visibility(EVisibility::Collapsed)
                                           [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
                                                [SNew(SBox)
-                                                    .WidthOverride(ItemSlotSize)
-                                                    .HeightOverride(ItemSlotSize)
+                                                    .WidthOverride(ItemLayout.Size)
+                                                    .HeightOverride(ItemLayout.Size)
                                                         [SNew(SMWItemSlotFrame)
+                                                             .Inset(ItemLayout.FrameInset)
                                                              [SNew(SOverlay) +
                                                               SOverlay::Slot()
                                                                   .HAlign(HAlign_Center)
@@ -294,7 +293,8 @@ namespace
                                           Geometry.GetAccumulatedLayoutTransform().GetScale();
                 if (CanvasScale > UE_SMALL_NUMBER)
                 {
-                    const float SlotSize = FMath::Clamp(MinItemSlotPixels / CanvasScale, ItemSlotSize, MaxItemSlotSize);
+                    const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemLayout.Size,
+                                                       MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction);
                     ItemSlot->SetWidthOverride(SlotSize);
                     ItemSlot->SetHeightOverride(SlotSize);
                 }
@@ -392,6 +392,48 @@ namespace
         }
 
     private:
+        // 크기 설정은 생성 시 한 번 검증한다. 잘못된 입력은 기존 배치로 복구해 NaN·역전된 Clamp를 막는다.
+        void InitializeLayout(const UMWGameplayHUDSubsystem& Settings)
+        {
+            ItemLayout = Settings.ItemSlotLayout;
+            BoardLayout = Settings.WaitingBoardLayout;
+            const auto Positive = [](double Value) { return FMath::IsFinite(Value) && Value > 0.0; };
+            const auto ValidMargin = [](const FMargin& Margin)
+            {
+                return FMath::IsFinite(Margin.Left) && FMath::IsFinite(Margin.Top) &&
+                       FMath::IsFinite(Margin.Right) && FMath::IsFinite(Margin.Bottom);
+            };
+            if (!Positive(ItemLayout.Size) || !Positive(ItemLayout.MinimumPixels) ||
+                !Positive(ItemLayout.IconSize) || !Positive(ItemLayout.MaximumHeightFraction) ||
+                ItemLayout.MaximumHeightFraction > 1.f ||
+                ItemLayout.Size > MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction ||
+                !FMath::IsFinite(ItemLayout.FrameInset) || ItemLayout.FrameInset < 0.f ||
+                ItemLayout.FrameInset * 2.f >= ItemLayout.Size || !ValidMargin(ItemLayout.Margin))
+            {
+                UE_LOG(LogMWInGameUI, Warning, TEXT("아이템 슬롯 치수가 잘못되어 기존 기본 배치로 복구합니다."));
+                ItemLayout = FMWItemSlotLayout();
+            }
+            bool bValidBoard = ValidMargin(BoardLayout.PanelMargin) && ValidMargin(BoardLayout.LogoMargin) &&
+                               ValidMargin(BoardLayout.PoleOuterPadding) && ValidMargin(BoardLayout.PoleInnerPadding) &&
+                               ValidMargin(BoardLayout.RosterPadding) && ValidMargin(BoardLayout.CellPadding);
+            for (const double Value : {BoardLayout.PanelSize.X, BoardLayout.PanelSize.Y,
+                                      BoardLayout.LogoSize.X, BoardLayout.LogoSize.Y,
+                                      double(BoardLayout.BorderWidth), double(BoardLayout.PoleWidth),
+                                      double(BoardLayout.TitleHeight), double(BoardLayout.TitleFontSize),
+                                      double(BoardLayout.DividerHeight), double(BoardLayout.HeaderHeight),
+                                      double(BoardLayout.RowHeight), double(BoardLayout.HeaderFontSize),
+                                      double(BoardLayout.RowFontSize), BoardLayout.ColumnWidths.X,
+                                      BoardLayout.ColumnWidths.Y, BoardLayout.ColumnWidths.Z, BoardLayout.ColumnWidths.W})
+            {
+                bValidBoard &= Positive(Value);
+            }
+            if (!bValidBoard)
+            {
+                UE_LOG(LogMWInGameUI, Warning, TEXT("대기판 치수가 잘못되어 기존 기본 배치로 복구합니다."));
+                BoardLayout = FMWWaitingBoardLayout();
+            }
+        }
+
         // 설정은 화면 생성 때 한 번 복사한다. 진행 중인 연출의 기준이 중간에 바뀌지 않게 한다.
         void InitializeItemTiming(const UMWGameplayHUDSubsystem& Settings)
         {
@@ -513,12 +555,10 @@ namespace
         // 공통 글꼴과 색으로 대기판 셀을 추가해 참가자 열 배치를 일치시킨다.
         void AddRosterCell(int32 Column, int32 Row, const FText& Text, FLinearColor Tint)
         {
-            static constexpr float Widths[] = {112.f, 452.f, 358.f, 174.f};
             Roster->AddSlot(Column, Row)
-                .Padding(FMargin(
-                    0.f, 2.f))[SNew(SBox)
-                                   .WidthOverride(Widths[Column])
-                                   .HeightOverride(Row == 0 ? 58.f : 55.f)
+                .Padding(BoardLayout.CellPadding)[SNew(SBox)
+                                   .WidthOverride(BoardLayout.ColumnWidths[Column])
+                                   .HeightOverride(Row == 0 ? BoardLayout.HeaderHeight : BoardLayout.RowHeight)
                                        [SNew(SScaleBox)
                                             .Stretch(EStretch::ScaleToFit)
                                             .StretchDirection(EStretchDirection::DownOnly)
@@ -526,7 +566,7 @@ namespace
                                             .VAlign(VAlign_Center)[SNew(STextBlock)
                                                                        .Text(Text)
                                                                        .ColorAndOpacity(Tint)
-                                                                       .Font(Art.Font(Row == 0 ? 38.f : 32.f))]]];
+                                                                       .Font(Art.Font(Row == 0 ? BoardLayout.HeaderFontSize : BoardLayout.RowFontSize))]]];
         }
 
         // 기존 GameState의 참가자와 선택 차량·대기 상태를 대기판에 반영한다.
@@ -596,6 +636,8 @@ namespace
                           : FLinearColor::White;
         }
 
+        FMWItemSlotLayout ItemLayout;
+        FMWWaitingBoardLayout BoardLayout;
         TWeakObjectPtr<APlayerController> Controller;
         TSharedPtr<SOverlay> WaitingBoard;
         TSharedPtr<SGridPanel> Roster;

@@ -9,6 +9,7 @@
 #include "MWVehicleMovementComponent.generated.h"
 
 class AMWVehiclePawn;
+class UMWItemComponent;
 class UMWTrackRuntimeComponent;
 struct FMWVehicleDriveSnapshot;
 
@@ -85,8 +86,8 @@ private:
 	double TrackSurfaceEndTime = -1.0;
 	TWeakObjectPtr<UMWTrackRuntimeComponent> TrackLiftBase;
 
-	// 기존 아이템의 활성 상태만 읽으며 효과 확정과 복제는 변경하지 않는다.
-	bool HasItemBooster() const;
+	// 현재 호출에서만 쓰는 Pawn 소유 참조다. 활성 상태·배율을 읽으며 효과 확정과 복제는 변경하지 않는다.
+	const UMWItemComponent* GetActiveItemBooster() const;
 
 	void ResolveDriveControl(float& OutThrottle, float& OutBrake) const;
 

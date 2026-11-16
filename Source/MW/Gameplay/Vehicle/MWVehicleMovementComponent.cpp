@@ -193,10 +193,11 @@ bool UMWVehicleMovementComponent::IsTrackBoostActive() const
 	return GetWorld() && GetWorld()->GetTimeSeconds() < TrackBoostEndTime;
 }
 
-bool UMWVehicleMovementComponent::HasItemBooster() const
+const UMWItemComponent* UMWVehicleMovementComponent::GetActiveItemBooster() const
 {
 	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
-	return Vehicle && Vehicle->GetItemComponent()->IsBoosterActive();
+	const UMWItemComponent* Items = Vehicle ? Vehicle->GetItemComponent() : nullptr;
+	return IsValid(Items) && Items->IsBoosterActive() ? Items : nullptr;
 }
 
 void UMWVehicleMovementComponent::ResetDriveInput()
@@ -270,7 +271,9 @@ float UMWVehicleMovementComponent::GetMaxSpeed() const
 	const float ForwardSpeed = FVector::DotProduct(Velocity, UpdatedComponent->GetForwardVector());
 	const float ForwardSpeedLimit = FMath::Max(DriveConfig.MaxForwardSpeed, 0.f);
 	// 후진 제한은 그대로 두고 기존 전진 부스터 배율만 적용한다.
-	const float BoostedForwardSpeedLimit = HasItemBooster() ? ForwardSpeedLimit * 1.25f : ForwardSpeedLimit;
+	const UMWItemComponent* Booster = GetActiveItemBooster();
+	const float BoostedForwardSpeedLimit =
+		Booster ? ForwardSpeedLimit * Booster->GetBoosterSpeedMultiplier() : ForwardSpeedLimit;
 	const float Threshold = FMath::Max(DriveConfig.DirectionChangeSpeedThreshold, 0.f);
 	const float ReverseSpeedLimit = FMath::Min(ForwardSpeedLimit, FMath::Max(DriveConfig.MaxReverseSpeed, 0.f));
 
@@ -370,7 +373,7 @@ void UMWVehicleMovementComponent::ResolveDriveControl(float& OutThrottle, float&
 		return;
 	}
 
-	const float MinimumThrottle = HasItemBooster() ? 1.f : IsTrackBoostActive() ? TrackMinimumThrottle : 0.f;
+	const float MinimumThrottle = GetActiveItemBooster() ? 1.f : IsTrackBoostActive() ? TrackMinimumThrottle : 0.f;
 	const float ForwardRequest = FMath::Max(DriveInput.Throttle, MinimumThrottle);
 	const float ReverseRequest = DriveInput.Reverse;
 
@@ -622,9 +625,10 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 
 		const float SpeedLimit = GetMaxSpeed();
 		const float RemainingSpeed = FMath::Max(SpeedLimit - SpeedInRequestedDirection, 0.f);
+		const UMWItemComponent* Booster = EffectiveThrottle > 0.f ? GetActiveItemBooster() : nullptr;
 		const float RequestedSpeedIncrease =
 			DriveConfig.DriveAcceleration *
-			(EffectiveThrottle > 0.f && HasItemBooster() ? 1.5f : 1.f) *
+			(Booster ? Booster->GetBoosterAccelerationMultiplier() : 1.f) *
 			FMath::Abs(EffectiveThrottle) *
 			DeltaTime;
 		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);

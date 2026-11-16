@@ -83,6 +83,11 @@ public:
     // 현재 서버 시각 기준의 남은 시간으로 부스터 활성 여부를 판단한다.
     bool IsBoosterActive() const;
 
+    // 활성 효과에 적용할 설정 배율이다. 아이템 사용 승인·종료 시각·Snapshot은 변경하지 않는다.
+    float GetBoosterSpeedMultiplier() const { return BoosterSpeedMultiplier; }
+
+    float GetBoosterAccelerationMultiplier() const { return BoosterAccelerationMultiplier; }
+
     // 복제된 종료 시각에서 남은 초를 계산하고 이미 끝났으면 0을 반환한다.
     float GetBoosterTimeRemaining() const;
 
@@ -104,6 +109,13 @@ protected:
     float BoosterExhaustLengthScale = 6.2f;
 
 private:
+    // 예측과 권한 시뮬레이션이 같은 값을 사용해야 하므로 서버·클라이언트에 동일한 Config를 배포한다.
+    UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Items|Booster", meta = (ClampMin = "1"))
+    float BoosterSpeedMultiplier = 1.25f;
+
+    UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Items|Booster", meta = (ClampMin = "1"))
+    float BoosterAccelerationMultiplier = 1.5f;
+
     // Config의 차량별 기본값이다. BP override가 없을 때만 사용한다.
     UPROPERTY(Config)
     TArray<FMWBoosterMountPreset> BoosterMountPresets;
