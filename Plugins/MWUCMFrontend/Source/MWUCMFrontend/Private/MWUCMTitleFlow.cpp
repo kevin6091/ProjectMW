@@ -606,6 +606,9 @@ bool UMWUCMTitleRootWidget::CanPresentEntryMenu(bool bLoggedIn)
 // 기존 루트가 고른 로그인·메뉴 상태를 현재 월드 연출에 전달한다.
 void UMWUCMTitleRootWidget::OnEntryPresentationUpdated(bool bLoggedIn, bool bMenuRequested)
 {
+    // 기본 루트의 화면 갱신 뒤 UCM의 빈 전체 화면 영역만 입력을 통과시킨다. 자식 입력창·버튼은 유지한다.
+    if (GetVisibility() == ESlateVisibility::Visible)
+        SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     if (IsValid(Flow))
         Flow->ApplyEntryPresentation(bLoggedIn, bMenuRequested);
 }

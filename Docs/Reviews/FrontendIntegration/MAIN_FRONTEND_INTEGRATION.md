@@ -148,3 +148,26 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 - 외부 스크립트의 첫 기준 PIE는 시간 제한으로 끝났지만 배치 스냅샷·화면은 확보했다. 추가 검증 중 `EditDefaultsOnly` 설정의 인스턴스 편집 시도가 거부된 실행도 보존하며, 정상 재실행 결과와 구분한다.
 - 수정 대상 외 보호 파일 345개의 SHA-256과 같은 cpp 안 팀원 공유 커서 함수가 유지됐다. 기존 미추적 문서 2개는 그대로 둔다. UVCS·Push·PR 작업은 하지 않았다.
 - 프로젝트 밖 `outputs/VEHICLE_LAYOUT_20261116`의 `LAYOUT_COMPARISON.json`, `FINAL_VERIFICATION.json`, `CONFIG_AND_BP.json`, `AFTER_PIE.json`, `AFTER_INPUT_FINAL_PIE.json`, `BEFORE_INITIAL.png`, `AFTER_INITIAL.png`에서 근거를 확인한다. 실패·중단 기록은 성공 근거와 분리한다.
+
+## 후속: 차량 선택 실제 클릭·취소 검증 — 2026-11-16
+
+### 원인과 수정
+
+앞 절에서 미검증으로 남겼던 선택 입력을 다시 조사했다. 차량 게시판의 충돌 Trace는 `PreviewSurface`에 도달했지만, Slate 입력 이벤트는 투명한 전체 화면 `WBP_TitleRoot_UCM_Dev`에 막혔다. 루트의 빈 영역이 월드 Widget보다 먼저 클릭을 받았다.
+
+우리 `UMWUCMTitleRootWidget::OnEntryPresentationUpdated()`에 3줄을 추가했다. 기본 루트가 표시 상태를 갱신한 다음, `Visible`인 루트만 `SelfHitTestInvisible`로 바꾼다. 빈 영역은 입력을 통과시키고 로그인 입력칸·버튼 같은 자식은 계속 입력을 받는다. 기본 클래스의 갱신이 표시 상태를 다시 지정하므로 생성 시점 한 번만 바꾸는 시도는 실패했으며 최종 코드에서 제거했다. Kevin의 기본 루트·선택 RPC·서버 승인·공유 커서 코드는 수정하지 않았다.
+
+### 새로 확인한 결과
+
+- 최종 저장 코드로 새 Editor를 실행한 `L_Title` PIE: CUA 좌클릭으로 Smiet 선택 완료, 실제 우클릭으로 취소 확인. 선택·취소 API를 직접 호출하지 않았다. 외부 관측 스크립트는 개발 Preview 진입과 버튼 이벤트·상태 기록에 사용했다.
+- 별도 게임 프로세스 3개를 LocalIP로 연결: CUA로 준비 3명·호스트 시작을 눌러 실제 차량 선택 단계에 진입했다. 클라이언트의 MAMMOTH 선택·우클릭 취소와 서버 차량 ID 변경을 확인했다.
+- UFOLOGY 위 비밀 영역은 삭제되지 않았다. 실제 호스트 클릭으로 서버 ID가 `Asset.Vehicle.InvisiblePilot`이 되고 우클릭 후 `None`으로 돌아왔다. 개발용 `bPreviewOnly=true` 모드에서는 기존 조건에 따라 숨겨진다. 실제 방은 같은 Preview WBP라도 `bPreviewOnly=false`로 사용한다.
+- 상대 화면에서 빨강·파랑·초록 커서와 닉네임을 확인했다. 호스트에서 2·3번 커서, 2번 클라이언트에서 호스트·3번 커서의 실제 렌더 캡처를 확보했다. 포커스가 다른 앱으로 넘어가면 커서가 숨겨지는 상태와 구분했다. 모든 PC·방향 조합을 검증한 것은 아니다.
+- Editor/Game Development 빌드 성공: 15.33초 / 21.13초. 차량 선택 Dev·Preview, 타이틀 Flow, 타이틀 Root BP 4개 컴파일 성공. 저장한 에셋·맵 없음.
+- 보호 파일 345개 SHA-256 일치. 소스 변경은 우리 UCM Flow cpp 3줄뿐이다. UVCS·Push·PR 작업 없음.
+
+### 남은 범위
+
+단일 Editor의 다중 PIE에서는 클라이언트 입력을 확인하지 못해 별도 프로세스 실행으로 검증했다. 그 모드의 입력 문제 원인을 엔진 결함으로 확정하지 않는다. EOS 인터넷 연결·다른 PC·Cook·패키징은 이번 검증에 포함하지 않았다. 인비저블맨 선택은 승인되지만 아래 참가자 판의 차량 그림은 비어 있는 상태를 확인했으며 이번 입력 수정 범위에서 변경하지 않았다. 앞 절의 접지 자동 검사 실패도 이번 작업으로 해결한 것이 아니다.
+
+검증 근거는 프로젝트 밖 `outputs/VEHICLE_CLICK_20261116`에 둔다. `Final/CLICK_PIE.json`, `SECRET_SELECTED.json`, `SECRET_CANCELLED.json`, `GAME_OBSERVER_29852.json`, `GAME_OBSERVER_13916.json`, `REMOTE_*.png`, `BLUEPRINT_COMPILE.json`, `EDITOR_FINAL.log`, `GAME_FINAL.log`를 확인한다. 실패한 중간 시도와 최종 저장 코드의 성공 기록은 구분해 보존했다.
