@@ -145,6 +145,10 @@ FGameplayTag VehicleAssetRoot;
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
 TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> VehicleThumbnails;
 
+// 로비가 제공한 썸네일이 없을 때만 사용하는 UI 설정이다. 기존 차량별 그림이 우선한다.
+UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
+TMap<FGameplayTag, TSoftObjectPtr<UTexture2D>> DefaultVehicleThumbnails;
+
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Data")
 FGameplayTag SecretVehicleAssetId;
 

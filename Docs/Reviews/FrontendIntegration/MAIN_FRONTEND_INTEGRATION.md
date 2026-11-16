@@ -171,3 +171,19 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 단일 Editor의 다중 PIE에서는 클라이언트 입력을 확인하지 못해 별도 프로세스 실행으로 검증했다. 그 모드의 입력 문제 원인을 엔진 결함으로 확정하지 않는다. EOS 인터넷 연결·다른 PC·Cook·패키징은 이번 검증에 포함하지 않았다. 인비저블맨 선택은 승인되지만 아래 참가자 판의 차량 그림은 비어 있는 상태를 확인했으며 이번 입력 수정 범위에서 변경하지 않았다. 앞 절의 접지 자동 검사 실패도 이번 작업으로 해결한 것이 아니다.
 
 검증 근거는 프로젝트 밖 `outputs/VEHICLE_CLICK_20261116`에 둔다. `Final/CLICK_PIE.json`, `SECRET_SELECTED.json`, `SECRET_CANCELLED.json`, `GAME_OBSERVER_29852.json`, `GAME_OBSERVER_13916.json`, `REMOTE_*.png`, `BLUEPRINT_COMPILE.json`, `EDITOR_FINAL.log`, `GAME_FINAL.log`를 확인한다. 실패한 중간 시도와 최종 저장 코드의 성공 기록은 구분해 보존했다.
+
+## 후속: 인비저블맨 하단 썸네일 연결 — 2026-11-16
+
+선택 요청과 서버 승인은 정상이었지만, 기존 로비의 썸네일 표에는 일반 차량 5대만 있었다. 비밀 차량 카드가 빈 그림을 받아 하단 `Image_Vehicle`이 숨겨지는 것이 원인이었다.
+
+- 우리 `MWVehicleSelectionWidget.h`에 `DefaultVehicleThumbnails` 설정을 추가하고, `CreateVehicleCard()`는 기존 `VehicleThumbnails`에 그림이 없을 때만 이 설정을 읽는다. 기존 로비·WBP의 그림이 우선한다. 차종별 분기·새 Tick·런타임 SceneCapture는 추가하지 않았다.
+- `Config/DefaultGame.ini`의 `[/Script/MW.MWVehicleSelectionWidget]`에 `Asset.Vehicle.InvisiblePilot` 그림 한 개만 연결했다. 팀원의 로비·서버·선택 RPC와 차량 정의·BP·맵은 수정하지 않았다.
+- 새 로컬 에셋: `Content/UI/Lobby/VehicleSelection/T_MW_VehiclePreview_InvisiblePilot.uasset`. 현재 InvisiblePilot BP의 Pilot 메시와 재질·Idle 포즈를 에디터에서 촬영한 1024×1024 UI 텍스처다. 비압축 UI 설정과 투명 배경을 사용한다. 기존 그림·원본 UCM 에셋은 덮어쓰지 않았다.
+- 에셋 SHA-256: `187B1799516495F7CF573F4575CDEFE18B89393FCB931E90B6D68DB56EDD3E9D`.
+- Editor/Game Development 빌드 성공: 35.20초 / 47.41초. 차량 선택 Dev·Preview BP 2개 컴파일 및 설정 상속 확인 성공. 새 BP 저장 없음.
+- 실제 CUA 마우스로 LocalIP 호스트·클라이언트 각각 비밀 영역을 선택하고 우클릭 취소했다. 양쪽 화면의 올바른 썸네일 Brush·선택 완료·취소 후 그림 숨김을 확인했다. 일반 차량 5종도 각각 클릭해 기존 그림 경로와 화면이 일치함을 확인했다. 스크립트에서 선택·취소 RPC를 호출하지 않았다.
+- 이번 실제 입력 검증은 같은 PC의 별도 `UnrealEditor -game` 프로세스 2개다. PIE·다른 PC·EOS 인터넷·Cook·패키징을 새로 검증한 것으로 표시하지 않는다. 기존 `/Game/UI/Lobby` AlwaysCook 설정은 유지했으며 새 패키징은 실행하지 않았다.
+- 보호 파일 345개 SHA-256 유지. 최초 촬영용 명령줄 실행의 셰이더 대기와 텍스처 색공간 변경 중 assert는 실패 기록으로 보존했다. 최종 에셋은 일반 에디터 촬영→PNG 임포트로 생성했고, 새 실행에서 정상 로드·표시됐다. 관측 스크립트의 Python API 이름 오류도 수정 후 정상 기록과 구분한다.
+- Content는 기존 Git 제외 정책을 유지한다. 이 커밋에는 코드·설정·이 기록만 포함한다. 다른 PC에서 사용하려면 위 신규 `.uasset`을 별도 에셋 전달에 포함해야 한다. UVCS 명령·Push·PR은 실행하지 않았고 공개 배포 권한을 확인한 것으로 취급하지 않는다.
+
+외부 근거: `outputs/INVISIBLE_THUMBNAIL_20261116/CONFIG_AND_BP.json`, `HOST_SECRET_SELECTED.json`, `CLIENT_SEES_HOST_SECRET.json`, `CLIENT_SECRET_SELECTED_18960.json`, `CLIENT_SECRET_SELECTED_5196.json`, `CLIENT_CANCELLED_*.json`, `HOST_*_SELECTED.json`, `SCREEN_18960_0.png`, `SCREEN_5196_7.png`, `EDITOR_BUILD.log`, `GAME_BUILD.log`. 숨김 검증 프로세스 2개는 사용자의 명시적 승인 후 종료했고, 실제 검증 창은 CUA로 정상 종료했다.

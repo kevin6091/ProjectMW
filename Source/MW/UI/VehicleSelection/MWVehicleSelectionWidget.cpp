@@ -551,9 +551,13 @@ UMWVehicleCardWidget* UMWVehicleSelectionWidget::CreateVehicleCard(FGameplayTag 
     TArray<FText> Errors;
     const bool bValid =
         PawnClass && !PawnClass->HasAnyClassFlags(CLASS_Abstract) && Definition.ValidateDefinition(Errors);
+    TSoftObjectPtr<UTexture2D> Thumbnail = VehicleThumbnails.FindRef(Id);
+    if (Thumbnail.IsNull())
+        Thumbnail = DefaultVehicleThumbnails.FindRef(Id);
+
     auto* Card = CreateWidget<UMWVehicleCardWidget>(GetOwningPlayer(), CardWidgetClass);
     if (Card)
-        Card->SetVehicle(Id, &Definition, VehicleThumbnails.FindRef(Id), bValid, bValid ? FText() : InvalidVehicleText);
+        Card->SetVehicle(Id, &Definition, Thumbnail, bValid, bValid ? FText() : InvalidVehicleText);
     return Card;
 }
 
