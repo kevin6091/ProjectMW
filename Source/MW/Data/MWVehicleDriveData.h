@@ -143,6 +143,48 @@ struct MW_API FMWVehicleDriveConfig
 	// 타이어가 전달할 수 있는 힘의 한계를 결정하는 계수.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))
 	float TireFrictionCoefficient = 2.f;
+	
+	// 충돌 Box 크기와 독립적인 자세 추정 범위. 차체 전방 기준 앞뒤 반거리다.
+	// 좁은 충돌체에서도 여러 도로 면을 함께 조사한다. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfLength = 100.f;
+
+	// 자세 추정에 사용할 좌우 반거리. 실제 접지 여부는 기존 Box Sweep으로 판단한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfWidth = 40.f;
+
+	// 각 조사 지점에서 위아래로 검사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfHeight = 15.f;
+
+	// 실제 접촉 법선과 조사된 면 사이의 최대 허용 각도.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", ClampMax = "89.0"))
+	float GroundPlaneMaxNormalAngle = 15.f;
+
+	// 실제 접촉 평면과 조사점 사이의 최대 높이 차이. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundPlaneMaxHeightError = 8.f;
+
+	// 조사점들이 계산한 평면에서 벗어날 수 있는 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundPlaneMaxFitError = 0.5f;
+	
+	// 목표 간격 주변에서 보정을 생략할 범위. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundHeightTolerance = 0.2f;
+
+	// 일반적인 높이 보정의 최대 이동 속도. 단위: cm/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "1.0", Units = "cm/s"))
+	float GroundHeightCorrectionSpeed = 40.f;
+
+	// 유지하려는 최소 안전 간격. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundMinClearance = 0.2f;
+
+	// 접지 검사 거리의 끝까지 간격이 벌어지지 않도록 남길 여유.
+	// 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.01", Units = "cm"))
+	float GroundProbeSafetyMargin = 1.f;
 };
 
 UCLASS()

@@ -182,6 +182,8 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 		NextMoveId = ServerDriveSnapshot.LastProcessedMoveId + 1;
 		DriveStepTime = 0.f;
 		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
+		// 새 스트림만 초기화한다. 일반 보정·재실행에서는 표시 완충을 유지한다.
+		ResetGroundVisual();
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
 		AppliedRevision = ServerDriveSnapshot.Revision;
 	}
@@ -273,6 +275,7 @@ void AMWVehiclePawn::TickProxyDrive(float DeltaTime)
 	{
 		// 텔레포트나 새 조종 스트림은 중간 위치를 거치지 않는다.
 		VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
+		ResetGroundVisual();
 		AppliedStreamId = ServerDriveSnapshot.StreamId;
 		AppliedRevision = ServerDriveSnapshot.Revision;
 		ProxyBlendTime = SnapshotInterval;
