@@ -50,9 +50,6 @@ namespace
     constexpr float MinItemSlotPixels = 96.f;
     constexpr float MaxItemSlotSize = MWGameplayUI::DesignHeight * .40f;
     constexpr float ItemIconSize = 158.f;
-    // 다음 아이콘의 표시 간격을 조금씩 늘려 룰렛이 점점 느려지게 한다. 서버가 지급한 아이템은 바꾸지 않는다.
-    constexpr double ItemRouletteSwitchTimes[] = {.045, .095, .15, .215, .29, .38, .49, .63, .80, .99};
-    constexpr float ItemUseDuration = .20f;
 
     class SMWItemSlotFrame : public SCompoundWidget
     {
@@ -106,6 +103,7 @@ namespace
             bItemPickupTest = Args._bItemPickupTest;
             HeldItem = Args._HeldItem;
             const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
+            InitializeItemTiming(*Settings);
             BoosterTexture.Reset(Settings->BoosterIcon.LoadSynchronous());
             if (BoosterTexture)
             {
@@ -394,6 +392,31 @@ namespace
         }
 
     private:
+        // 설정은 화면 생성 때 한 번 복사한다. 진행 중인 연출의 기준이 중간에 바뀌지 않게 한다.
+        void InitializeItemTiming(const UMWGameplayHUDSubsystem& Settings)
+        {
+            RouletteSwitchTimes = Settings.ItemRouletteSwitchTimes;
+            UseDurationSeconds = Settings.ItemUseDuration;
+            double PreviousTime = 0.0;
+            for (const double SwitchTime : RouletteSwitchTimes)
+            {
+                if (!FMath::IsFinite(SwitchTime) || SwitchTime <= PreviousTime)
+                {
+                    UE_LOG(LogMWInGameUI, Warning,
+                           TEXT("아이템 룰렛 시각은 유한한 양수·오름차순이어야 합니다. 룰렛 표시를 생략합니다."));
+                    RouletteSwitchTimes.Reset();
+                    break;
+                }
+                PreviousTime = SwitchTime;
+            }
+            if (!FMath::IsFinite(UseDurationSeconds) || UseDurationSeconds < 0.f)
+            {
+                UE_LOG(LogMWInGameUI, Warning,
+                       TEXT("아이템 사용 표시 시간은 유한한 0 이상이어야 합니다. 슬롯을 즉시 비웁니다."));
+                UseDurationSeconds = 0.f;
+            }
+        }
+
         // 실제 보유 값의 변경으로 획득 룰렛과 사용 축소·페이드를 시작한다.
         void UpdateItemSlot(const AMWVehiclePawn* Vehicle, double CurrentTime)
         {
@@ -417,7 +440,7 @@ namespace
                 {
                     DisplayedItem = CurrentItem;
                     ItemIconScale = ItemIconOpacity = 1.f;
-                    if (RouletteBrushes.Num() < 2)
+                    if (RouletteBrushes.Num() < 2 || RouletteSwitchTimes.IsEmpty())
                     {
                         ItemTransitionStart.Reset();
                         return;
@@ -441,7 +464,9 @@ namespace
                 return;
             }
 
-            const float Progress = FMath::Clamp(static_cast<float>(Elapsed / ItemUseDuration), 0.f, 1.f);
+            const float Progress = UseDurationSeconds > 0.f
+                                       ? FMath::Clamp(static_cast<float>(Elapsed / UseDurationSeconds), 0.f, 1.f)
+                                       : 1.f;
             ItemIconScale = FMath::InterpEaseOut(1.f, .72f, Progress, 2.f);
             ItemIconOpacity = 1.f - Progress;
             if (Progress >= 1.f)
@@ -456,12 +481,12 @@ namespace
         void UpdateItemRoulette(double Elapsed)
         {
             int32 Step = 0;
-            while (Step < UE_ARRAY_COUNT(ItemRouletteSwitchTimes) && Elapsed >= ItemRouletteSwitchTimes[Step])
+            while (Step < RouletteSwitchTimes.Num() && Elapsed >= RouletteSwitchTimes[Step])
             {
                 ++Step;
             }
             // 연출이 끝나면 가짜 후보 표시만 해제한다. 아이템 상태의 원본은 기존 아이템 컴포넌트다.
-            if (Step == UE_ARRAY_COUNT(ItemRouletteSwitchTimes))
+            if (Step == RouletteSwitchTimes.Num())
             {
                 RouletteStep = INDEX_NONE;
                 ItemTransitionStart.Reset();
@@ -582,6 +607,8 @@ namespace
         EMWItemId DisplayedItem = EMWItemId::None;
         EMWItemId TargetItem = EMWItemId::None;
         TOptional<double> ItemTransitionStart;
+        TArray<double> RouletteSwitchTimes;
+        float UseDurationSeconds = 0.f;
         float ItemIconScale = 1.f;
         float ItemIconOpacity = 1.f;
         int32 RouletteStep = INDEX_NONE;

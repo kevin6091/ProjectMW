@@ -43,6 +43,15 @@ public:
     UPROPERTY(Config)
     TArray<TSoftObjectPtr<UTexture2D>> ItemRouletteIcons;
 
+    // 획득 후 아이콘을 바꾸는 누적 시각(초)이다. 양수·오름차순이며 마지막 값에서 실제 아이템에 멈춘다.
+    // 빈 배열은 룰렛을 생략하고 실제 지급 아이템을 바로 표시한다.
+    UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Item Animation", meta = (DisplayName = "룰렛 전환 누적 시각(초)"))
+    TArray<double> ItemRouletteSwitchTimes;
+
+    // 사용 시 축소·페이드 시간(초)이다. 0이면 즉시 비우며 서버 아이템 사용 시점에는 관여하지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Item Animation", meta = (ClampMin = "0", Units = "s"))
+    float ItemUseDuration = .20f;
+
     UPROPERTY(Config)
     TSoftObjectPtr<UMaterialInterface> ItemIconMaterial;
 
