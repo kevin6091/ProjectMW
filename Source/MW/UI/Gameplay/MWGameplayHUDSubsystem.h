@@ -14,7 +14,6 @@ class UGameViewportClient;
 class UFont;
 class UMaterialInterface;
 class UTexture2D;
-class UMWVehicleSelectionWidget;
 class UMWRaceHUDWidget;
 
 // 월드에서 로컬 HUD 연결을 준비하고 Pawn 교체·월드 종료 때 실제 구독과 화면을 정리한다.
@@ -37,9 +36,6 @@ public:
 
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardBolt;
-
-    UPROPERTY(Config)
-    TSoftClassPtr<UMWVehicleSelectionWidget> VehiclePalette;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoosterIcon;

@@ -88,3 +88,23 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 - 기존 미추적 `KEVIN3_COMPARISON_AND_PR_SPLIT.md`, `PR_DRAFT.md`는 수정·커밋하지 않는다.
 - 빌드 로그·자동 검사 JSON·CUA 캡처·변경 전 보존 자료는 프로젝트 밖 `outputs/MAIN_FRONTEND_INTEGRATION_20261116`에 둔다. 핵심 결과는 `MAIN_PRESERVATION.json`, `BLUEPRINT_COMPILE.json`, `Automation/index.json`, `VEHICLE_VISUAL_SUMMARY.json`, `SKID_INSTANCES.json`, `BOOST_RECOVERY_PIE_SUMMARY.json`, `PIE_VEHICLES.log`다.
 - 변경은 작업 브랜치에 커밋해 보존한다. 자동 검사 실패와 에셋 연결 조건은 미해결로 남긴다. 이번 작업에서는 PR 등록과 main 병합을 하지 않는다.
+
+
+## 후속: 우리 표시 코드의 설정 분리
+
+- 실제 참가자 색은 `DefaultGame.ini`의 `[/Script/MW.MWParticipantPalette]`에서 편집한다. 차량 선택의 실제 참가자 표시와 경기 닉네임이 같은 설정을 읽는다. 경기 HUD는 더 이상 색을 얻으려고 차량 선택 WBP를 로드하지 않는다.
+- 차량 선택의 개발 Preview 팔레트는 기존 BP 저장값을 유지한다. Preview를 위한 값을 실제 경기의 공통 설정과 혼동하지 않는다.
+- 차량별 부스터 기본 장착은 `[/Script/MW.MWItemComponent]`의 `BoosterMountPresets`에서 편집한다. `VehicleClass`는 BP 클래스의 전체 경로, `Transform`은 Pawn 로컬 cm·회전·배율, `ExhaustLengthScale`은 배기 길이 배율이다.
+- 우선순위는 기존 BP의 `bOverrideBoosterMount` → 가장 구체적인 클래스의 Config 기본값 → 기존 외형 경계 계산이다. 투명차의 BP override와 미등록 차량의 계산 경로를 보존한다. 실제 클래스 경로를 비교하며 메시 이름으로 차종을 검사하지 않는다.
+- 이 변경은 표시 설정만 옮긴다. 아이템 지급·사용·복제, 차량 이동·보정·Snapshot, 트랙·GameMode 코드는 수정하지 않는다. BP·맵도 저장하지 않는다. 검증 결과는 후속 기록을 따른다.
+
+
+### 설정 분리 검증 — 2026-11-16
+
+- Editor/Game Development 빌드 성공: 48.70초 / 45.09초. 기존 MovieScene 비상수 GetBindings C4996 경고는 남아 있다.
+- 차량·UI BP 15개 모두 컴파일 성공, 에셋 저장 없음. 기존 4색·대체 색과 무효 MemberId·팔레트 순환 9개 조회가 이전 값과 일치했다.
+- 실제 아이템 테스트 맵 PIE에서 기존 픽업 중첩으로 6종에 부스터를 생성했다. 5종의 이전 C++ 장착 표와 투명차 BP override를 기준으로 위치·Yaw·배율·배기 길이 모두 일치했다. 키보드·마우스로 운전한 검사가 아니라 외부 스크립트로 실제 PIE를 계측한 결과다.
+- 기존 `MW.Items.PickupAndUse`, `MW.UI.RaceHUD.StateLifetime` 자동 검사 2개 통과.
+- 차량 이동·Pawn·네트워크·아이템 판정 cpp·로비 서버·기존 미추적 문서 및 보호한 BP의 SHA-256 유지 확인. 차량 선택 파일 안의 팀원 공유 커서 함수도 변경 전과 동일하다.
+- 이번 변경에서 3인 커서 동기화·전체 EOS 흐름·Cook·패키징은 재검증하지 않았다. 앞 절의 접지 검사 실패와 테스트 맵 VehicleGround 연결 문제를 해결한 것으로 간주하지 않는다.
+- 설정 분리용 기록은 프로젝트 밖 `outputs/FRONTEND_DECOUPLING_20261116`의 `CONFIG_AND_BLUEPRINTS.json`, `MOUNTS_PIE.json`, `Automation/index.json`, `FINAL_VERIFICATION.json`을 따른다.

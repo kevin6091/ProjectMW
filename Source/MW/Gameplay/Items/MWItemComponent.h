@@ -13,6 +13,23 @@ class UStaticMesh;
 class UStaticMeshComponent;
 class USoundBase;
 
+// 차량별 부스터 장착 기본값이다. 좌표는 Pawn 로컬 cm이며 BP override가 우선한다.
+USTRUCT()
+struct FMWBoosterMountPreset
+{
+    GENERATED_BODY()
+
+    // 메시 이름 대신 실제 차량 클래스로 연결한다. 조회 때문에 클래스를 동기 로드하지 않는다.
+    UPROPERTY(EditAnywhere)
+    TSoftClassPtr<AActor> VehicleClass;
+
+    UPROPERTY(EditAnywhere)
+    FTransform Transform = FTransform::Identity;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0.01"))
+    float ExhaustLengthScale = 6.2f;
+};
+
 // 다른 플레이어가 볼 외형 상태다. 보유 아이템과 사용 요청 검증 값은 소유자용 경로와 구분한다.
 USTRUCT()
 struct FMWBoosterPresentation
@@ -36,7 +53,7 @@ enum class EMWItemId : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMWHeldItemChanged, EMWItemId, ItemId);
 
 // 차량과 수명을 같이하는 서버 아이템 상태와 표시 연결이다.
-UCLASS()
+UCLASS(Config = Game)
 class MW_API UMWItemComponent : public UActorComponent
 {
     GENERATED_BODY()
@@ -75,7 +92,7 @@ protected:
 
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-    // 차체 메시로 장착 위치를 찾을 수 없는 차량은 BP에 지정한 Pawn 로컬 변환을 사용한다.
+    // 기존 BP 장착값을 최우선으로 사용한다. 차량 에셋에 저장된 override는 그대로 유지한다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Items|Booster Visual")
     bool bOverrideBoosterMount = false;
 
@@ -87,6 +104,13 @@ protected:
     float BoosterExhaustLengthScale = 6.2f;
 
 private:
+    // Config의 차량별 기본값이다. BP override가 없을 때만 사용한다.
+    UPROPERTY(Config)
+    TArray<FMWBoosterMountPreset> BoosterMountPresets;
+
+    // 가장 구체적인 차량 클래스부터 기본값을 찾고 없으면 기존 외형 경계 계산을 사용한다.
+    bool FindBoosterMountPreset(FTransform& OutTransform, float& OutExhaustLengthScale) const;
+
     // 기존 경기 단계 또는 명시된 주행 테스트 환경인지 확인한다. UI 상태로 사용을 승인하지 않는다.
     bool IsItemPlayAllowed() const;
 
@@ -99,7 +123,7 @@ private:
     // 기본 외형과 음원을 준비하되 원본 시퀀스는 CDO 시점에 강제로 로드하지 않는다.
     void LoadBoosterVisualAssets();
 
-    // 원래 차량 장착표 또는 BP의 명시적 override로 로컬 부스터 외형을 붙인다.
+    // BP override·설정 기본값·외형 경계 순서로 로컬 부스터 외형을 붙인다.
     bool SpawnBoosterVisual();
 
     // 복구 시퀀스의 루트와 부품 바인딩을 현재 장착 외형으로 연결한다.

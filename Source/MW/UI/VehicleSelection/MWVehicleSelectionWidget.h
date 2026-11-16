@@ -161,10 +161,11 @@ TEnumAsByte<EVerticalAlignment> CardVerticalAlignment = VAlign_Fill;
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer")
 FMargin PlayerEntryPadding;
 
-UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer")
+// 기존 Preview 에셋의 저장값은 보존한다. 실제 참가자 색은 공통 Config 팔레트를 사용한다.
+UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview", meta = (EditCondition = "bPreviewOnly"))
 TArray<FLinearColor> ParticipantTints;
 
-UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer")
+UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Preview", meta = (EditCondition = "bPreviewOnly"))
 FLinearColor FallbackParticipantTint;
 
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Designer")

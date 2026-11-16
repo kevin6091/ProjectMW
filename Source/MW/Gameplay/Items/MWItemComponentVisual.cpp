@@ -60,36 +60,6 @@ namespace
 
     FBoosterMount GetBoosterMount(const AActor& Vehicle, const AActor& Booster)
     {
-        struct FMount
-        {
-            FName BodyMesh;
-            FVector Origin;
-            double Scale;
-            double ExhaustLengthScale = 6.2;
-        };
-
-        // 보이는 차체의 뒤 데크 안쪽에 부스터 장착 발이 들어가도록 맞춘다.
-        static const FMount Mounts[] = {// Doug의 뒤 데크 중앙에 장착하고 배기가 꼬리지느러미 앞에서 끝나게 한다.
-                                        {TEXT("SM_MW_Doug_Body"), {-46.0, 0.0, 35.4}, 0.099, 2.5},
-                                        {TEXT("SM_MW_Fred_Body"), {-37.6, 0.0, 1.4}, 0.155},
-                                        {TEXT("SM_MW_Mammoth_Body"), {-43.7, 0.0, 43.9}, 0.115},
-                                        {TEXT("SM_MW_Smiet_Body"), {-14.1, 0.0, 34.2}, 0.142},
-                                        {TEXT("SM_MW_Ufology_Body"), {-44.0, 0.0, 8.2}, 0.161}};
-        for (const UStaticMeshComponent* Component : TInlineComponentArray<UStaticMeshComponent*>(&Vehicle))
-        {
-            if (const UStaticMesh* Mesh = Component->GetStaticMesh())
-            {
-                for (const FMount& Mount : Mounts)
-                {
-                    if (Mesh->GetFName() == Mount.BodyMesh)
-                    {
-                        return {FTransform(FRotator(0.0, -90.0, 0.0), Mount.Origin, FVector(Mount.Scale)),
-                                Mount.ExhaustLengthScale};
-                    }
-                }
-            }
-        }
-
         const FBox Bounds = GetLocalMeshBounds(Vehicle);
         const FBox BoosterBounds = GetLocalMeshBounds(Booster);
         if (!Bounds.IsValid || !BoosterBounds.IsValid || BoosterBounds.GetSize().X <= UE_SMALL_NUMBER)
@@ -119,6 +89,28 @@ namespace
     }
 }
 
+// 실제 클래스 경로를 비교하므로 메시 교체와 관계없이 장착 설정을 찾는다.
+// 자식 BP는 가장 가까운 부모의 설정을 상속하고 조회 중 에셋을 추가 로드하지 않는다.
+bool UMWItemComponent::FindBoosterMountPreset(FTransform& OutTransform, float& OutExhaustLengthScale) const
+{
+    const AActor* Owner = GetOwner();
+    for (const UClass* VehicleClass = Owner ? Owner->GetClass() : nullptr;
+         VehicleClass; VehicleClass = VehicleClass->GetSuperClass())
+    {
+        const FSoftObjectPath ClassPath(VehicleClass);
+        for (const FMWBoosterMountPreset& Preset : BoosterMountPresets)
+        {
+            if (Preset.VehicleClass.ToSoftObjectPath() == ClassPath)
+            {
+                OutTransform = Preset.Transform;
+                OutExhaustLengthScale = Preset.ExhaustLengthScale;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // 기본 외형과 음원을 준비하되 원본 시퀀스는 CDO 시점에 강제로 로드하지 않는다.
 void UMWItemComponent::LoadBoosterVisualAssets()
 {
@@ -142,7 +134,7 @@ void UMWItemComponent::LoadBoosterVisualAssets()
     BoosterFireSound = Sound.Object;
 }
 
-// 원래 차량 장착표 또는 BP의 명시적 override로 로컬 부스터 외형을 붙인다.
+// 기존 BP override를 우선하고 차량별 기본값은 Config에서 읽어 외형을 붙인다.
 bool UMWItemComponent::SpawnBoosterVisual()
 {
     if (IsValid(BoosterVisual))
@@ -154,11 +146,14 @@ bool UMWItemComponent::SpawnBoosterVisual()
     {
         return false;
     }
-    if (bOverrideBoosterMount &&
-        (BoosterMountTransform.ContainsNaN() || BoosterMountTransform.GetScale3D().GetMin() <= UE_SMALL_NUMBER ||
-         !FMath::IsFinite(BoosterExhaustLengthScale) || BoosterExhaustLengthScale <= UE_SMALL_NUMBER))
+    FTransform MountTransform = BoosterMountTransform;
+    float ExhaustLengthScale = BoosterExhaustLengthScale;
+    const bool bHasExplicitMount = bOverrideBoosterMount || FindBoosterMountPreset(MountTransform, ExhaustLengthScale);
+    if (bHasExplicitMount &&
+        (MountTransform.ContainsNaN() || MountTransform.GetScale3D().GetMin() <= UE_SMALL_NUMBER ||
+         !FMath::IsFinite(ExhaustLengthScale) || ExhaustLengthScale <= UE_SMALL_NUMBER))
     {
-        UE_LOG(LogTemp, Warning, TEXT("%s: BP의 부스터 장착 변환 또는 배기 길이가 유효하지 않습니다."),
+        UE_LOG(LogTemp, Warning, TEXT("%s: BP 또는 Config의 부스터 장착 변환·배기 길이가 유효하지 않습니다."),
                *Vehicle->GetName());
         return false;
     }
@@ -174,8 +169,8 @@ bool UMWItemComponent::SpawnBoosterVisual()
     }
     BoosterVisual->SetReplicates(false);
     BoosterVisual->SetActorEnableCollision(false);
-    const FBoosterMount Mount = bOverrideBoosterMount ? FBoosterMount{BoosterMountTransform, BoosterExhaustLengthScale}
-                                                      : GetBoosterMount(*Vehicle, *BoosterVisual);
+    const FBoosterMount Mount = bHasExplicitMount ? FBoosterMount{MountTransform, ExhaustLengthScale}
+                                                 : GetBoosterMount(*Vehicle, *BoosterVisual);
     BoosterVisual->SetActorTransform(Mount.Transform * Vehicle->GetActorTransform());
     BoosterVisual->AttachToComponent(Vehicle->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
     if (!FindVisualNode(*BoosterVisual, BoosterNozzleTag))

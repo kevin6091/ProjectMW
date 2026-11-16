@@ -29,6 +29,7 @@
 #include "UI/Cursor/MWPointerCursor.h"
 #include "UI/Cursor/MWCursorProjection.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
+#include "UI/Common/MWParticipantPalette.h"
 
 bool UMWVehicleSelectionWidget::SampleSharedCursor(const UWidgetComponent* Surface, FVector2D& OutNormalizedPosition) const
 {
@@ -534,14 +535,23 @@ bool UMWVehicleSelectionWidget::AreAllPreviewParticipantsConfirmed() const
 // 기존 팔레트 범위 안에서 표시 색을 조회하고 없는 경우 대체 색을 사용한다.
 FLinearColor UMWVehicleSelectionWidget::GetParticipantTint(int32 SlotIndex) const
 {
-    return ParticipantTints.IsValidIndex(SlotIndex) ? ParticipantTints[SlotIndex] : FallbackParticipantTint;
+    // 개발 Preview의 기존 BP 팔레트는 보존하고 실제 경기는 공통 표시 설정을 사용한다.
+    if (bPreviewOnly)
+    {
+        return ParticipantTints.IsValidIndex(SlotIndex) ? ParticipantTints[SlotIndex] : FallbackParticipantTint;
+    }
+    return GetDefault<UMWParticipantPalette>()->GetColorForSlot(SlotIndex);
 }
 
 // 화면별 자리 배정 순서 대신 공유 MemberId로 같은 플레이어 색을 고른다.
 FLinearColor UMWVehicleSelectionWidget::GetParticipantTintForMember(int32 MemberId) const
 {
-    return MemberId > 0 && !ParticipantTints.IsEmpty() ? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
+    if (bPreviewOnly)
+    {
+        return MemberId > 0 && !ParticipantTints.IsEmpty() ? GetParticipantTint((MemberId - 1) % ParticipantTints.Num())
                                                        : FallbackParticipantTint;
+    }
+    return GetDefault<UMWParticipantPalette>()->GetColorForMember(MemberId);
 }
 
 // 빈 하단 슬롯에 사용할 대기 문구와 표시 색을 구성한다.

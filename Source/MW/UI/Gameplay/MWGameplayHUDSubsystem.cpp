@@ -24,7 +24,7 @@
 #include "UI/Gameplay/MWGameplaySign.h"
 #include "UI/Gameplay/MWRaceHUDWidget.h"
 #include "Widgets/SNullWidget.h"
-#include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
+#include "UI/Common/MWParticipantPalette.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
@@ -136,8 +136,6 @@ namespace
             }
             ForceVolatile(true);
             const auto* Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
-            if (const UClass* Selection = GetDefault<UMWGameplayHUDSubsystem>()->VehiclePalette.LoadSynchronous())
-                Palette.Reset(Cast<UMWVehicleSelectionWidget>(Selection->GetDefaultObject()));
 
             const TSharedRef<SWidget> CenteredHUD = MWGameplayUI::FitDesignCanvas(
                 SNew(SOverlay) +
@@ -569,8 +567,8 @@ namespace
         FLinearColor GetPlayerTint(const APlayerState* State) const
         {
             const auto* Player = Cast<AMWPlayerState>(State);
-            return Palette && Player ? Palette->GetParticipantTintForMember(Player->GetLobbyMemberId())
-                                     : FLinearColor::White;
+            return Player ? GetDefault<UMWParticipantPalette>()->GetColorForMember(Player->GetLobbyMemberId())
+                          : FLinearColor::White;
         }
 
         TWeakObjectPtr<APlayerController> Controller;
@@ -596,7 +594,6 @@ namespace
         TArray<FText> DisplayedCells;
         TArray<FLinearColor> DisplayedVehicleTints;
         FMWGameplayUIArt Art;
-        TStrongObjectPtr<UMWVehicleSelectionWidget> Palette;
         TOptional<EMWRoomPhase> LastPhase;
         double PhaseStarted = 0.0;
         double NextRosterRefresh = 0.0;
