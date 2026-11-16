@@ -187,3 +187,17 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 - Content는 기존 Git 제외 정책을 유지한다. 이 커밋에는 코드·설정·이 기록만 포함한다. 다른 PC에서 사용하려면 위 신규 `.uasset`을 별도 에셋 전달에 포함해야 한다. UVCS 명령·Push·PR은 실행하지 않았고 공개 배포 권한을 확인한 것으로 취급하지 않는다.
 
 외부 근거: `outputs/INVISIBLE_THUMBNAIL_20261116/CONFIG_AND_BP.json`, `HOST_SECRET_SELECTED.json`, `CLIENT_SEES_HOST_SECRET.json`, `CLIENT_SECRET_SELECTED_18960.json`, `CLIENT_SECRET_SELECTED_5196.json`, `CLIENT_CANCELLED_*.json`, `HOST_*_SELECTED.json`, `SCREEN_18960_0.png`, `SCREEN_5196_7.png`, `EDITOR_BUILD.log`, `GAME_BUILD.log`. 숨김 검증 프로세스 2개는 사용자의 명시적 승인 후 종료했고, 실제 검증 창은 CUA로 정상 종료했다.
+
+## PR 준비 점검 — 2026-11-16
+
+- 등록할 제목: **최신 main 기반 UI·아이템·차량 시각·3테마 통합**. 본문은 저장소의 `.github/PULL_REQUEST_TEMPLATE.md` 항목을 그대로 사용한 [PR_DRAFT.md](PR_DRAFT.md)다. 과거 설명서는 PR #11 당시 기록임을 표시했다.
+- 원격 fetch 후 기준 main은 계속 `ed6cbe3de1d6eb5305902f33229f9fab3fecc917`, 검증 구현은 `dc44603aea9408f5146616c142e22c44bcd90915`다. main은 HEAD의 조상이고 가상 병합 결과는 HEAD 트리와 같다. 작업 트리 병합·브랜치 전환·코드 충돌 해결은 필요하지 않았다.
+- 구현 6커밋 기준 134개 변경 경로(수정 37·추가 71·이동 14·삭제 12)다. 옛 UI 경로 이동을 포함한 수치다. 이번 PR 본문·인계 CSV가 추가되면 전체 경로는 136개다. 이전 미병합 PR #11과 race-hud의 기능도 포함하므로 최근 설정 분리만의 PR로 설명하지 않는다.
+- `MWVehiclePawnNetwork.cpp`, `MWVehicleNetworkTypes.h`, `MWVehicleDriveData.h/.cpp`는 main과 같은 Git blob이다. 접지·다운포스·Snapshot 적용 등을 포함한 핵심 이동 함수 27개도 내용이 같다. 부스터·발판 연결부의 기존 변경과 선택 취소·출발 대기용 로비 API는 그대로 diff에 남고 두 팀원이 검토해야 한다. 서버 코드 전체가 main과 같다고 표시하지 않는다.
+- [PR_ASSET_HANDOFF.csv](PR_ASSET_HANDOFF.csv)에 코드·설정의 직접 참조와 UI 진입 에셋 52개의 로컬 경로·크기·SHA-256·소비자를 기록했다. Asset Registry의 hard/soft package 및 management 참조를 따라간 971개 패키지에서 로컬 누락은 없었다. 개발·호환 경로도 포함한 목록이며 전부 신규 에셋이라는 뜻이 아니다. 수신 PC의 버전 일치·UVCS 잠금/예약·공개 배포 권한은 확인하지 않았다.
+- 주요 BP 20개를 이번 점검에서 저장 없이 컴파일했고 모두 성공했다. 차량 6종·파일럿 ABP·선택 Dev/Preview·타이틀·폼·로비·HUD·교통 BP를 포함한다. 컴파일 전후 디스크 해시는 유지됐다. Editor/Game 빌드와 실제 선택·취소는 직전 dc44603 구현 검증 결과를 사용하며, 이번 문서 작업에서 재실행한 것으로 기록하지 않는다.
+- 접지 자동검사 1개의 위쪽 충격 assertion 2건과 테스트 맵 `VehicleGround` 설정은 차량·맵 담당자가 확인할 항목이다. 관련 함수·검사 본문이 main과 같지만 main 단독 실행에서 같은 실패를 재현하지는 않았다. 이번 PR 준비에서는 접지·보정·Snapshot·검사 코드를 수정하거나 실패를 숨기지 않았다.
+- 원격 승강기·최종 전체 매치·다른 PC·인터넷 다중 접속·Cook/패키징은 별도 미검증이다. 이전 타이틀 헤더의 줄 끝 공백 160건은 사용자의 서식 보존 지시에 따라 유지했다. 기능 오류나 병합 충돌로 집계하지 않는다.
+- GitHub 조회에서 PR #11은 closed/merged=false이고 #12는 현재 main으로 병합됐다. `fix/frontend-main` head 검색 결과 등록된 PR은 없었다. 새 PR·리뷰 요청·Push·UVCS 작업을 실행하지 않았다. 독립 검토·에셋 인계·남은 검사 판단 전에는 병합 완료나 전체 검증 통과로 표시하지 않는다.
+
+외부 근거: `outputs/PR_READINESS_20261116/GIT_AUDIT.json`, `ASSET_AUDIT.json`, `BLUEPRINT_READINESS.json`. 전체 package 참조 간선은 외부 Asset Registry 기록에 보존하고, Git에는 인계에 필요한 진입 에셋 목록만 포함한다.
