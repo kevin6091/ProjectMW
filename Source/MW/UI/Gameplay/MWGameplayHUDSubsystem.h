@@ -122,6 +122,10 @@ public:
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardBolt;
 
+    // 중앙 안내는 단계 시작 때만 잠깐 보인다. 0이면 생략하며 서버 단계에는 관여하지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Guidance", meta = (ClampMin = "0", Units = "s"))
+    float ConstructionPromptSeconds = 2.f;
+
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoosterIcon;
 

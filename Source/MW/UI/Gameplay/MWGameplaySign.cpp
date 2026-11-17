@@ -138,7 +138,10 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
                                FSlateWindowElementList& DrawElements, int32 Layer, const FWidgetStyle&, bool) const
 {
     const FVector2f Center(Geometry.GetLocalSize() * .5);
-    const float Radius = FMath::Min(Center.X, Center.Y) * LoadingScale;
+    const float BaseRadius = FMath::Min(Center.X, Center.Y);
+    const float Radius = BaseRadius * LoadingScale;
+    constexpr float BoltOffset = .79f;
+    constexpr float BoltRadius = .025f;
     const float Face = FMath::Cos(LoadingAngle);
     const float Depth = FMath::Sin(LoadingAngle);
     const auto Project = [Center, Radius, Face, Depth](FVector2f Point, float Thickness)
@@ -189,7 +192,7 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
             for (int32 Index = 0; Index < UE_ARRAY_COUNT(Disc); ++Index)
             {
                 const float Angle = Index * (2.f * PI / UE_ARRAY_COUNT(Disc));
-                Disc[Index] = Axis * .79f + FVector2f(FMath::Cos(Angle), FMath::Sin(Angle)) * .025f;
+                Disc[Index] = Axis * BoltOffset + FVector2f(FMath::Cos(Angle), FMath::Sin(Angle)) * BoltRadius;
             }
             Polygon(Disc, FColor(80, 79, 72));
         }
@@ -201,14 +204,32 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
 
     if (Face > .12f)
     {
-        const FVector2D TextSize = Renderer->GetFontMeasureService()->Measure(Label, SignFont);
-        const FVector2D TextScale(Face * LoadingScale, LoadingScale);
-        const FVector2D TextOrigin = FVector2D(Center) - TextSize * TextScale * .5;
-        const auto TextGeometry = Geometry.MakeChild(TextSize, FSlateLayoutTransform(TextOrigin),
-                                                     FSlateRenderTransform(FScale2D(TextScale)), FVector2D::ZeroVector);
-        FSlateDrawElement::MakeText(DrawElements, Layer + 1, TextGeometry.ToPaintGeometry(), Label, SignFont,
-                                    ESlateDrawEffect::None,
-                                    bAnimateLoading ? FLinearColor(.065f, .045f, .027f) : FLinearColor::White);
+        // 줄마다 폭을 따로 재야 짧은 둘째 줄도 판의 중앙에 놓인다.
+        // 글자 블록의 가로·세로 합이 마름모 안쪽에 들어오도록 같은 비율로 축소한다.
+        TArray<FString> Lines;
+        Label.ToString().ParseIntoArrayLines(Lines, false);
+        const auto FontMeasure = Renderer->GetFontMeasureService();
+        const double LineHeight = FontMeasure->GetMaxCharacterHeight(SignFont);
+        double MaximumWidth = 0.0;
+        for (const FString& Line : Lines)
+        {
+            MaximumWidth = FMath::Max(MaximumWidth, FontMeasure->Measure(Line, SignFont).X);
+        }
+        const double TextHeight = LineHeight * Lines.Num();
+        const double TextRadius = BaseRadius * (BoltOffset - BoltRadius * 2.f);
+        const double Fit = FMath::Min(1.0, TextRadius / FMath::Max(1.0, (MaximumWidth + TextHeight) * .5));
+        const FVector2D TextScale(Face * LoadingScale * Fit, LoadingScale * Fit);
+        for (int32 Index = 0; Index < Lines.Num(); ++Index)
+        {
+            const FVector2D TextSize = FontMeasure->Measure(Lines[Index], SignFont);
+            const FVector2D TextOrigin(Center.X - TextSize.X * TextScale.X * .5,
+                                      Center.Y + (LineHeight * Index - TextHeight * .5) * TextScale.Y);
+            const auto TextGeometry = Geometry.MakeChild(TextSize, FSlateLayoutTransform(TextOrigin),
+                                                         FSlateRenderTransform(FScale2D(TextScale)), FVector2D::ZeroVector);
+            FSlateDrawElement::MakeText(DrawElements, Layer + 1, TextGeometry.ToPaintGeometry(), Lines[Index], SignFont,
+                                        ESlateDrawEffect::None,
+                                        bAnimateLoading ? FLinearColor(.065f, .045f, .027f) : FLinearColor::White);
+        }
     }
     return Layer + 1;
 }

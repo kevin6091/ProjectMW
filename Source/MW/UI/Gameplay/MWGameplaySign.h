@@ -82,7 +82,7 @@ private:
 class MW_API SMWGameplaySign : public SCompoundWidget
 {
 public:
-    SLATE_BEGIN_ARGS(SMWGameplaySign)
+    SLATE_BEGIN_ARGS(SMWGameplaySign) : _AnimateLoading(false)
     {
     }
     SLATE_ARGUMENT(FText, Label)

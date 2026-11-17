@@ -138,7 +138,10 @@ void UMWRaceHUDWidget::UpdatePhase(TOptional<EMWRoomPhase> Phase)
     }
 
     DisplayedPhase = Phase;
-    const FText* Label = Phase.IsSet() ? PhaseLabels.Find(Phase.GetValue()) : nullptr;
+    // 선택·배치는 기존 전용 안내창이 담당한다. 같은 자리에 단계 배지를 겹쳐 그리지 않는다.
+    const bool bConstruction = Phase.IsSet() && (Phase.GetValue() == EMWRoomPhase::PreparingConstruction ||
+                                                 Phase.GetValue() == EMWRoomPhase::TrackPlacement);
+    const FText* Label = Phase.IsSet() && !bConstruction ? PhaseLabels.Find(Phase.GetValue()) : nullptr;
     Panel_Phase->SetVisibility(Label && !Label->IsEmpty() ? ESlateVisibility::HitTestInvisible
                                                         : ESlateVisibility::Collapsed);
     Text_Phase->SetText(Label ? *Label : FText::GetEmpty());
