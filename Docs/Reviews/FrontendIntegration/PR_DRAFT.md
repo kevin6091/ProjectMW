@@ -1,31 +1,25 @@
 ## 문제와 변경 후 동작
 
-- 관련 작업/요구: 미병합으로 닫힌 PR #11의 기능과 `race-hud` 후속 작업을 최신 main에 맞춰 통합합니다.
-- 변경 동작: 인트로 스킵, 차량 선택·우클릭 취소·참가자별 커서·출발 연출, 맵 이동 중 BGM 유지, 아이템 룰렛·오른쪽 계기판을 연결합니다. 기존 휠·스키드·부스터와 Snow/Toybox/Tropic도 포함합니다.
-- 범위: 기존 UI를 재사용하고 차량 카드 순서·슬롯/대기판 치수·부스터 배율을 Config로 분리했습니다. 기존 기본값과 연출은 유지합니다. 실제 사용 아이템은 부스터 1종이며 나머지 아이콘은 룰렛 표시용입니다. [최신 변경·검증 기록](https://github.com/kevin6091/ProjectMW/blob/fix/frontend-main/Docs/Reviews/FrontendIntegration/MAIN_FRONTEND_INTEGRATION.md)을 참고해 주세요.
+- 닫힌 #11의 변경과 이후 race-hud 작업을 main에 맞춘 PR입니다. 인트로 스킵, 차량 선택·취소·커서·출발 카메라, 레벨 이동 BGM, 아이템 룰렛·계기판, 부스터·휠·스키드 연결 코드와 3테마를 포함합니다.
+- `7a66505` 안정본에 PR #13 이후 main을 반영해 차량 Pawn 두 파일의 충돌을 해결했습니다. 미검증 안내 UI `592048d`와 접지 실험 `0520c19`는 제외합니다.
 
 ## 영향과 검토
 
-- base: `main` / source: `fix/frontend-main`
-- 작성자: `youngsowicked-commits` / 독립 검토 예정: `kevin6091`, `Yasasayi` / 영역별 승인·병합 담당: 팀 지정 필요. 아직 리뷰를 요청하지 않았습니다.
-- 위험: **고위험** — 로비 API·이동 효과 연결·Config가 함께 바뀌어 두 팀원의 검토가 필요합니다.
-- API·소비자: 선택 취소와 전원 출발 연출 완료 대기는 Widget→HUD→Controller→GameMode/PlayerState까지 포함합니다. 부스터·발판 연결은 이동 컴포넌트의 기존 효과 연결부를 사용합니다. **main의 보정·Snapshot·접지 핵심 함수는 유지합니다.**
-- 의존 PR·순서: #12가 반영된 `main@ed6cbe3` 기준입니다. 수정2·3의 별도 네트워크 구현으로 덮어쓰지 않습니다. 확인 시점 main과 텍스트 충돌은 없습니다.
+- base: `main` / source: `fix/frontend-main`. 커밋 작성·PR 등록: `youngsowicked-commits`. 영역 검토 대상: `kevin6091`, `Yasasayi`; 독립 리뷰·병합 담당 지정 전입니다.
+- 고위험: UI·로비 API·차량 효과·Config를 함께 포함합니다. main의 접지 완충을 유지하며 기존 휠·카메라 연결만 맞췄습니다. 서버 보정·Snapshot 파일은 main과 같습니다.
+- 별도 선행 PR은 없습니다. 최신 main의 `VisualRoot` 아래 기존 BP 부모 `DrivePresentation`을 연결하고 이동 → 표시 → 카메라 순서를 유지합니다.
 
 ## 검증한 변경
 
-- 검증 대상: `b824f94` 이후 설정 분리·개발 바닥 표시 수정까지 포함한 최종 변경 / 기준 main: `ed6cbe3de1d6eb5305902f33229f9fab3fecc917`. 이전 실제 선택·취소 검증은 `dc44603` 기록이며 새 결과와 구분합니다.
-- 최종 추가 검증: Editor/Game 빌드·필수 BP 20개 성공. 실제 PIE에서 대기판 두 해상도·기둥 겹침 수정과 아이템 중첩→룰렛→CUA Space 사용을 확인했습니다. 확장 자동검사는 13개 중 12개 성공입니다. 맵·콜리전·서버 코드의 저장 변경은 없습니다.
-- 기존 입력 검증(이번 재실행 아님): UE 5.8.4 / Win64 Development: Editor·Game 빌드 성공. 주요 BP 20개 컴파일·파일 해시 유지 확인. 실제 LocalIP 호스트·클라이언트에서 비밀 차량 선택·우클릭 취소·양쪽 그림 표시와 기존 5대 썸네일을 확인했습니다.
-- 남은 문제·미실행: 기존 접지 자동검사 1개에서 2개 assertion 실패는 차량 담당자 확인 대상입니다. main 단독 실행과 비교하지 않았습니다. 최종 전체 매치·원격 승강기·다른 PC·인터넷 다중 접속·Cook/패키징은 미검증입니다. 초기 PIE fixture 실패 후 정상 로비 초기화·Travel로 대기판을 확인했으나 전체 매치 검증은 아닙니다. 개발용 아이템 맵 바닥의 VehicleGround Ignore로 전후진이 막힙니다. PIE에서만 Block으로 바꾸면 실제 W/S가 동작했으며 영구 에셋 수정은 보류했습니다. 단계별 이전 PIE·EOS 기록은 상세 문서와 구분합니다.
-- 문서 검사: PR 템플릿 항목·상대 링크·에셋 목록을 확인했습니다. 기존 타이틀 헤더의 줄 끝 공백 경고는 유지했습니다.
+- 제출 HEAD: PR의 head SHA. 기준 main: `b837b504325af7de3b62a4d4f0258de27359d958`.
+- 신규 검증: UE 5.8.4 / Win64 Editor·Game 빌드, BP 15개 컴파일 성공. 서버·접지 핵심·BP 보존 19개 일치. 주행 PIE에서 6종의 박스 루트·카메라 부모와 360도 루프 전진을 확인했습니다. 지속 주행은 Enhanced Input 키 주입을 사용했습니다.
+- 자동 검사 13개 중 12개 통과. 기존 접지 상승 충격 검사 1개 실패가 남습니다. **2인 PIE 클라이언트 Ready 미반영으로 전체 경기 진입은 미완료입니다.** Ready 함수는 안정본·main과 같으며 원인은 미확정입니다.
+- **현재 로컬 BP 6종의 WheelVisuals가 비어 있어 휠·스키드 동작은 미검증입니다.** 이전 에셋 인계 버전과 해시도 다릅니다. 이전 선택·취소·룰렛 등의 성공 기록과 이번 결과를 구분해 [상세 문서](https://github.com/kevin6091/ProjectMW/blob/fix/frontend-main/Docs/Reviews/FrontendIntegration/MAIN_FRONTEND_INTEGRATION.md)에 적었습니다. 다른 PC·전체 매치·Cook은 미실행입니다.
 
 ## 바이너리와 복구
 
-- `.uasset`·`.umap`은 Git에 포함하지 않습니다. [에셋 인계 목록](https://github.com/kevin6091/ProjectMW/blob/fix/frontend-main/Docs/Reviews/FrontendIntegration/PR_ASSET_HANDOFF.csv)의 진입 에셋 53개와 연결 패키지 973개는 로컬에 있습니다. **새 인비저블맨 썸네일·분리된 대기판 로고/기둥을 포함해 수신 PC의 에셋 버전 일치 확인이 필요합니다.** UVCS 버전·잠금/예약·인계 소유자는 이번에 조회하지 않았습니다.
-- 전후 화면·BP·참조 증거는 상세 문서에 기록했습니다. Asset Registry 참조 검사는 Cook 성공이나 수신 PC 검증을 대신하지 않습니다. Git에는 직접 작성한 `ItemSlotGlass.svg` 소스만 별도로 포함됩니다.
-- 복구: 담당자가 소스·Config와 대응 에셋을 함께 확인해 후속 되돌리기 커밋으로 처리합니다. 공유 이력 초기화·타인 파일 덮어쓰기는 하지 않습니다.
-- 병합 후 확인·에셋 인계 담당: 팀 지정 필요. 메뉴→로비→차량 선택→경기 HUD·아이템→방 종료를 수신 버전으로 확인합니다.
+- `.uasset`/`.umap`은 Git 제외입니다. [에셋 인계 목록](https://github.com/kevin6091/ProjectMW/blob/fix/frontend-main/Docs/Reviews/FrontendIntegration/PR_ASSET_HANDOFF.csv)의 대응 에셋·바퀴 설정 확인이 필요합니다. UVCS·잠금은 조회/변경하지 않았고 이번에 에셋을 저장하지 않았습니다.
+- 문제 발생 시 소스·Config와 대응 에셋을 함께 확인해 후속 되돌리기 커밋으로 복구합니다. 인계·병합 후 수신 PC 검증 담당은 팀에서 지정합니다.
 
 ## 병합 직전 확인
 

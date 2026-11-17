@@ -1,6 +1,6 @@
 # 최신 main 기준 프런트엔드 통합
 
-기준일: 2026-11-16. 브랜치: `fix/frontend-main`.
+기준일: 2026-11-17. 브랜치: `fix/frontend-main`. 최신 검증과 제한은 문서 끝의 11월 17일 항목을 우선한다.
 
 - 기준 main: `ed6cbe3de1d6eb5305902f33229f9fab3fecc917`.
 - 가져온 작업: `feature/race-hud@71247e59b37398d42cf0fc3f4d536b6454d2f88a`. 닫힌 PR #11의 미병합 기능과 이후 계기판 작업을 포함한다.
@@ -268,3 +268,29 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 main 주행 핵심 함수 27개, 네트워크·DriveData 4개 파일, 아이템 서버 승인·수명 함수 9개와 기존 진입 에셋 52개 해시는 보존됐다. 새 전체 멀티플레이 매치·EOS·원격 승강기·다른 PC·Cook은 검증하지 않았다. 새 커밋·Push·UVCS 작업은 실행하지 않았다.
 
 외부 근거: `outputs/PIE_HUD_VALIDATION_20261116/FINAL.json`, `FinalLogo/PIE.json`, `FinalLogo/WAITING_INITIAL.png`, `FinalLogo/WAITING_1280x720.png`, `DRIVE_STATE.json`, `DriveDiagnosis/PIE.json`, `FINAL_LOGO_CONFIG_AND_BP.json`, `ASSET_AUDIT.json`, `FINAL_PRESERVATION.json`, `Regression/index.json`. 실패한 외부 관측 스크립트 실행은 별도 파일에 남기고 정상 결과와 구분한다.
+
+
+## 2026-11-17 — main의 PR #13 이후 충돌 해결
+
+이전 `ed6cbe3` 기준 통합 뒤 main에 `b837b50`이 반영되면서 `MWVehiclePawn.h/.cpp`에 다시 충돌이 생겼다.
+`7a66505` 안정본에서 최신 main을 병합했다. 미검증 UI `592048d`와 스피어 접지 실험 `0520c19`는 가져오지 않았다.
+
+- main의 `VisualRoot`, `ResetGroundVisual`, `UpdateGroundVisual`과 이동 뒤 표시 갱신 순서를 유지한다.
+- 기존 BP가 쓰는 `DrivePresentation`은 `VisualRoot` 아래에 두고, 우리 전용 SpringArm과 750cm 기본 카메라 구도를 보존한다.
+- Pawn Tick은 차체 완충 → 기존 휠·스키드 표시 순서로 연결했다. BeginPlay는 main의 선행 틱 관계와 초기화를 유지하고 바퀴 참조를 한 번 캐시한다.
+- 자동 병합으로 중복된 Tick 선언·정의는 한 개로 정리했다. 서버·스냅샷·접지 수식은 이 충돌 해결에서 고치지 않았다.
+- `MWVehiclePawnNetwork.cpp`, Snapshot 자료형, DriveData 및 접지·완충 핵심 함수와 기존 차량 BP를 대조한 19개 항목이 일치했다. 네트워크 파일의 안정본 대비 3줄 증가는 새 main의 표시 초기화 호출을 그대로 받은 것이다.
+
+### 이번에 실행한 검증
+
+- Editor/Game Development 빌드 성공. BP 15개 컴파일 성공. 에셋 저장 없음.
+- MW 자동 검사 13개 중 12개 통과. `MW.Vehicle.CollisionAndGround`의 상승 충격 검사 2개 assertion은 기존과 같은 실패다.
+- 저장된 `L_VehicleMovement_Test`의 왼쪽 360도 트랙에서 차량 6종이 전진했고 Up.Z 약 -1까지 도달했다. 충돌 루트는 모두 기존 Box, 차체·파일럿과 카메라 부모는 main의 VisualRoot 경로를 따른다.
+- 해당 주행은 PIE의 기존 주행 GameMode를 메모리에서 지정하고 Enhanced Input 키를 주입한 검사다. 실제 사람의 지속 키보드 주행이나 전체 경기 흐름 검사로 표현하지 않는다. 맵·GameMode는 저장하지 않았다.
+
+### 남은 문제와 인계 조건
+
+- 2인 LocalIP PIE에서 클라이언트 Ready가 반영되지 않아 로비 뒤 실제 경기 진입은 완료하지 못했다. CUA 클릭도 시도했으나 결과가 바뀌지 않았다. Ready 처리 함수는 안정본 및 main과 같지만 실패 원인은 미확정이다. 서버 코드를 임의로 수정하지 않았다.
+- 현재 로컬 차량 BP 6종은 WheelVisuals 배열이 비어 있고, PR_ASSET_HANDOFF.csv의 이전 검증 에셋과 해시가 다르다. 따라서 휠 애니메이션·스키드마크 동작을 이번 검사에서 통과했다고 주장하지 않는다. 기존 BP를 과거 파일로 덮어쓰지 않았다. 인계 목록의 대응 설정이 있는 에셋 버전 확인이 필요하다.
+- 위 이슈와 다른 PC 에셋 수신, 전체 매치·멀티클라이언트·Cook은 미완료다. 충돌 해결과 빌드 성공을 전체 기능 정상 판정으로 대체하지 않는다.
+- 검증 자료는 외부 `outputs/FRONTEND_MAIN_RESOLVE_20261117`의 PRESERVATION_CHECK.json, READY_CODE_COMPARISON.json, BP_CHECK.json, Automation/index.json, VEHICLE_PIE_RESULTS.json 및 VEHICLE_PIE.png에 보존한다.

@@ -97,12 +97,18 @@ private:
 	FQuat CalculateGroundAlignRotation(const FQuat& CurrentRotation, float DeltaTime) const;
 	// 최근 바닥 검사에서 접지 조건을 만족했는지
 	bool bGrounded = false;
-	// 바닥 표면에서 바깥쪽으로 향하는 수직 방향
+	// 실제 접촉면의 법선.
+	// 접지 조건, 속도 투영, 접지 하중 계산에 사용한다.
 	FVector GroundNormal = FVector::UpVector;
+	// 여러 지점의 높이로 구한 차체 정렬 방향.
+	// 각 이동 단계에서 다시 계산하며 이전 값을 보간해서 누적하지 않는다.
+	FVector GroundOrientationNormal = FVector::UpVector;
 	// 이번 이동 단계에서 적용할 회전
 	FQuat TargetRotation = FQuat::Identity;
 	// 아래 방향 Sweep으로 구한 접촉까지의 이동 거리
 	float GroundDistance = 0.f;
+	// 접지 검사에서 다시 계산하는 값. 단위: cm/s²
+	double GroundNormalLoadAcceleration = 0.0;
 	
 	// 기준 회전에 노면 법선 축의 조향을 더한다.
 	// 실제 충돌체나 TargetRotation은 변경하지 않는다.
@@ -127,7 +133,7 @@ private:
 	// 접지 상태나 속도는 변경하지 않는다.
 	// 반환값이 true일 때만 OutHit을 사용한다.
 	bool FindGroundCandidate(FHitResult& OutHit) const;
-	void UpdateGroundState();
+	void UpdateGroundState(FHitResult* OutAcceptedHit = nullptr);
 	// 노면 정렬과 조향을 충돌·간격 보정과 함께 적용한다.
 	void UpdateGroundRotation(float DeltaTime);
 	
@@ -138,6 +144,11 @@ private:
 		const FVector& FromNormal,
 		const FVector& ToNormal,
 		FVector& OutTangentVelocity);
+	
+	// 승인된 접촉 주변을 조사해 차체 정렬 방향을 계산한다.
+	// 실제 접지 상태, 속도, 위치는 변경하지 않는다.
+	// 실패하면 OutNormal에는 기존 접촉 법선이 남는다.
+	bool TryCalculateGroundOrientation(const FHitResult& Contact, FVector& OutNormal) const;
 	
 	// 다운포스 계산
 	// 한 번의 접지 평가에서만 사용하는 진단 값이다. 예측/복제 상태에는 포함하지 않는다.
@@ -161,13 +172,10 @@ private:
 		FGroundSupportDiagnostics& Diagnostics) const;
 	void LogGroundSupport(const TCHAR* Decision, bool bWasGrounded, const FHitResult* Candidate,
 		const FGroundSupportDiagnostics& Diagnostics) const;
-
-	// 접지 검사에서 다시 계산하는 값. 단위: cm/s²
-	double GroundNormalLoadAcceleration = 0.0;
 	
 	void MoveVehicle(float DeltaTime);
 
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
-	void AdjustGroundHeight();
+	void AdjustGroundHeight(float DeltaTime);
 };
