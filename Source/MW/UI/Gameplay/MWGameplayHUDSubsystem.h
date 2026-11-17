@@ -58,19 +58,13 @@ struct FMWWaitingBoardLayout
     float BorderWidth = 4.f;
 
     UPROPERTY(EditAnywhere)
-    FVector2D LogoSize = FVector2D(200.f, 192.f);
+    FVector2D LogoSize = FVector2D(176.f, 176.f);
 
     UPROPERTY(EditAnywhere)
     FMargin LogoMargin = FMargin(0.f, 36.f, 0.f, 0.f);
 
     UPROPERTY(EditAnywhere)
     float PoleWidth = 122.f;
-
-    UPROPERTY(EditAnywhere)
-    FMargin PoleOuterPadding = FMargin(26.f, 0.f, 12.f, 0.f);
-
-    UPROPERTY(EditAnywhere)
-    FMargin PoleInnerPadding = FMargin(28.f, 0.f, 21.f, 0.f);
 
     UPROPERTY(EditAnywhere)
     float TitleHeight = 106.f;
@@ -121,6 +115,9 @@ public:
 
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardLogo;
+
+    UPROPERTY(Config)
+    TSoftObjectPtr<UTexture2D> BoardPole;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardBolt;

@@ -138,21 +138,16 @@ namespace
                 SOverlay::Slot()
                     [SAssignNew(WaitingBoard, SOverlay).Visibility(EVisibility::Collapsed) +
                      SOverlay::Slot().HAlign(HAlign_Center)[SNew(SBox).WidthOverride(
-                         BoardLayout.PoleWidth)[SNew(SBorder)
-                                    .BorderImage(Brush)
-                                    .BorderBackgroundColor(FLinearColor(.12f, .14f, .17f))
-                                    .Padding(BoardLayout.PoleOuterPadding)
-                                        [SNew(SBorder)
-                                             .BorderImage(Brush)
-                                             .BorderBackgroundColor(FLinearColor(.20f, .23f, .27f))
-                                             .Padding(BoardLayout.PoleInnerPadding)
-                                                 [SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(
-                                                     FLinearColor(.30f, .34f, .38f))]]]] +
+                         BoardLayout.PoleWidth)[SNew(SImage).Image(Art.PoleBrush())]] +
                      SOverlay::Slot()
                          .HAlign(HAlign_Center)
                          .VAlign(VAlign_Top)
                          .Padding(BoardLayout.LogoMargin)[SNew(SBox).WidthOverride(BoardLayout.LogoSize.X).HeightOverride(
-                             BoardLayout.LogoSize.Y)[SNew(SImage).Image(Art.LogoBrush())]] +
+                             BoardLayout.LogoSize.Y)
+                             [SNew(SScaleBox)
+                                  .Stretch(EStretch::ScaleToFit)
+                                  .HAlign(HAlign_Center)
+                                  .VAlign(VAlign_Center)[SNew(SImage).Image(Art.LogoBrush())]]] +
                      SOverlay::Slot()
                          .HAlign(HAlign_Center)
                          .VAlign(VAlign_Center)
@@ -414,7 +409,6 @@ namespace
                 ItemLayout = FMWItemSlotLayout();
             }
             bool bValidBoard = ValidMargin(BoardLayout.PanelMargin) && ValidMargin(BoardLayout.LogoMargin) &&
-                               ValidMargin(BoardLayout.PoleOuterPadding) && ValidMargin(BoardLayout.PoleInnerPadding) &&
                                ValidMargin(BoardLayout.RosterPadding) && ValidMargin(BoardLayout.CellPadding);
             for (const double Value : {BoardLayout.PanelSize.X, BoardLayout.PanelSize.Y,
                                       BoardLayout.LogoSize.X, BoardLayout.LogoSize.Y,

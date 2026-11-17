@@ -33,6 +33,9 @@ struct MW_API FMWGameplayUIArt
     // 공통 로고 자원이 준비됐으면 그 브러시를 반환하고 없으면 표시할 로고가 없음을 알린다.
     const FSlateBrush* LogoBrush() const;
 
+    // 로고와 분리된 원본 기둥을 한 번만 그린다. 자원이 없으면 기둥을 생략한다.
+    const FSlateBrush* PoleBrush() const;
+
     // 공통 볼트 자원을 우선 사용하고 누락된 경우에만 기존 벡터 대체 표시를 반환한다.
     const FSlateBrush* BoltBrush() const;
 
@@ -41,9 +44,13 @@ private:
 
     TStrongObjectPtr<UObject> Logo;
 
+    TStrongObjectPtr<UObject> Pole;
+
     TStrongObjectPtr<UObject> Bolt;
 
     FSlateBrush LogoImage;
+
+    FSlateBrush PoleImage;
 
     FSlateBrush BoltImage;
     FSlateRoundedBoxBrush FallbackBolt{FLinearColor(.34f, .39f, .44f), 12.f};

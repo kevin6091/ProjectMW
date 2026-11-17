@@ -232,3 +232,39 @@ PIE 복제 월드의 해당 바닥만 `VehicleGround=Block`으로 바꾸자 `IsG
 `DefaultGame.ini`의 기존 `MWEnvironmentGameplay.HiddenBackdropActorPaths`에 그 Actor 경로 1개를 추가했다. 기존 로직이 Environment가 생성됐을 때만 개발 바닥을 숨기고 종료 때 기존 표시 상태를 복원한다. 수동 숨김 없는 새 실행에서도 대기판과 슬롯을 다시 캡처했다. 개발 맵 에셋, 바닥 높이·충돌, Environment 생성기·주행·서버 코드는 수정하지 않았다. 다른 경기 맵의 Z-fighting까지 해결했다고 주장하지 않는다.
 
 외부 근거: `outputs/SETTINGS_CLEANUP_20261116/SETTINGS_AND_BP.json`, `Automation/index.json`, `PRESERVATION.json`, `LAYOUT_GAME.json`, `FLOOR_PROBE.json`, `EDITOR_FINAL.log`, `GAME_FINAL.log`. 실패한 fixture 기록과 최종 일반 실행 기록을 분리해 보존했다.
+
+
+## 후속: 실제 PIE 대기판·아이템 및 이동 무반응 확인 — 2026-11-16
+
+### 로고와 기둥 수정
+
+기존 로고 텍스처는 기둥이 들어 있는 1497×2048 이미지였는데, 별도 Slate 기둥 위에 200×192로 늘려 그렸다. 로고 비율이 달라지고 기둥이 겹쳐 보였다. 원본 복구 자료의 기둥 없는 `T_Make_Way__Logo_Small_Sign_5909de5ef398`(1005×1005)과 분리된 `T_Make_Way_Logo_v1_Pole_49ad24987e58`(326×2048)를 로컬 MW에 연결했다.
+
+- `FMWGameplayUIArt`는 텍스처의 원래 크기를 브러시에 전달한다. 로고는 176×176 한도에서 `SScaleBox::ScaleToFit`으로 비율을 유지한다.
+- `SMWGameplayHUD`는 원본 기둥 이미지 하나만 그린다. 직사각형 세 개로 흉내 내던 기둥과 사용하지 않게 된 두 Padding 설정을 제거했다. 임시 UV 자르기 방식은 최종 코드에 없다.
+- 새 설정은 `BoardLogo`, `BoardPole`이다. 원본 Sprite 식별자는 각각 `sharedassets0.assets:1309`, `sharedassets0.assets:1281`이다. UCM 마스터 파일은 수정하지 않았고 두 파일의 복사 전후 SHA-256이 같다. 공개 배포 권한은 별도 확인 대상이며 바이너리를 Git에 넣지 않았다.
+
+### 이번에 실제 실행한 범위
+
+- 원본 ProjectMW Editor/Game Development 빌드 성공: 42.55초 / 38.65초. 필수 BP 20개 저장 없이 컴파일 성공, 디스크 해시 유지. Config·상속값 검사 42개 성공.
+- 실제 Listen Server PIE에서 기존 로비 초기화 후 엔진 ServerTravel로 기존 GameplayGameMode의 PreparingRace에 진입했다. 대기판을 1920×1080, 1280×720으로 캡처하고 로고 비율·기둥 한 개 표시를 확인했다. 이 fixture는 전원 차량 선택부터 진행한 전체 매치가 아니며 차량 열은 비어 있다.
+- Snow 바닥 121개 인스턴스와 개발 Plane의 Z=0 겹침을 기록했다. 기존 설정이 개발 Plane 표시만 숨겼고 충돌 설정은 유지했다. 카메라를 옮긴 캡처에서도 다시 나타나는 깜빡임은 관찰하지 못했다. 모든 맵의 Z-fighting을 검증한 것은 아니다.
+- 저장된 `L_Dev_Drive_ItemPickup` PIE에서 실제 박스 중첩으로 획득하고 CUA Space로 사용했다. 초반 실행 3회와 최종 로고 빌드 1회에서 `None → Booster → None`, 룰렛·실제 아이템 정지·사용 축소·빈 슬롯을 확인했다. 초기 실행은 이동 Tick을 끈 UI 전용 fixture였으므로 주행 성공으로 계산하지 않는다. 최종 실행에서는 이동 Tick을 켜 두었다. 룰렛 정지 약 1002ms, 사용 연출 약 202~209ms는 기존 설정을 유지했다.
+- 확장 자동검사 13개 중 12개 성공. `MW.Vehicle.CollisionAndGround`의 위쪽 충격 관련 assertion 2개는 여전히 실패한다. main과 동일한 해당 함수·테스트는 수정하지 않았지만 main 단독 실행 비교는 하지 않았다.
+- 최종 Asset Registry 검사: 진입 에셋 53개, hard/soft package·management 연결 패키지 973개, 로컬 누락 0개. 이전 52개 진입 에셋의 파일 해시는 보존했다. 기존 기둥 포함 로고 파일도 삭제하지 않았다. 수신 PC·UVCS·Cook 성공을 뜻하지 않는다.
+
+### W/S 무반응의 원인과 남은 수정
+
+사용자가 확인한 초기 UI 검증 실행에서는 외부 검증 스크립트가 차량을 고정하려고 이동 컴포넌트 Tick을 껐다. 이 조건을 미리 알리지 않은 검증 실수이며, 해당 실행은 종료했다. 스크립트의 Tick 비활성화 줄은 제거했고 저장된 제품 코드·맵에는 적용하지 않았다.
+
+이동 Tick을 켠 새 실행에서도 저장된 개발 맵의 Plane이 `VehicleGround` 채널을 Ignore하고 있어 `grounded=false`였다. Controller 입력 잠금은 false였다. 실제 차량은 바닥 충돌 때문에 서 있지만 주행 시스템의 접지 대상으로는 인정되지 않는 상태다. 해당 채널은 `DefaultEngine.ini`의 GameTraceChannel1이고 `FindGroundCandidate()`가 검사한다.
+
+원인을 분리하려고 UEDPIE_0의 Plane 응답만 일시적으로 Block으로 바꿨다. 접지가 true로 바뀌고 실제 CUA W/S 입력으로 전진·후진을 확인했다. 직접 주행 API는 호출하지 않았다. PIE 종료 후 이 임시 설정은 사라진다. **저장된 맵의 영구 수정은 하지 않았다.** 필요한 후속 수정은 해당 개발 Plane의 VehicleGround 응답을 Block으로 지정하는 에셋 설정 1건이다. 주행·보정·Snapshot 코드를 고칠 근거로 삼지 않는다.
+
+### 차량 충돌 확인
+
+기존 5종과 InvisiblePilot 모두 실제 이동 루트·UpdatedComponent는 `BoxComponent`였다. 보존된 `DrivingCollisionMesh` 에셋을 현재 주행 충돌로 사용하지 않는다. Smiet/MAMMOTH/DOUG/FRED/UFOLOGY/InvisiblePilot의 박스 반경(half extent, cm)은 각각 `(33,58,50)`, `(88,58,53)`, `(84,40,45)`, `(60,58,68)`, `(64,59,60)`, `(60,25,52)`다. 이전 main 통합에서 박스를 유지한 결정 그대로이며 이번에 바꾸지 않았다.
+
+main 주행 핵심 함수 27개, 네트워크·DriveData 4개 파일, 아이템 서버 승인·수명 함수 9개와 기존 진입 에셋 52개 해시는 보존됐다. 새 전체 멀티플레이 매치·EOS·원격 승강기·다른 PC·Cook은 검증하지 않았다. 새 커밋·Push·UVCS 작업은 실행하지 않았다.
+
+외부 근거: `outputs/PIE_HUD_VALIDATION_20261116/FINAL.json`, `FinalLogo/PIE.json`, `FinalLogo/WAITING_INITIAL.png`, `FinalLogo/WAITING_1280x720.png`, `DRIVE_STATE.json`, `DriveDiagnosis/PIE.json`, `FINAL_LOGO_CONFIG_AND_BP.json`, `ASSET_AUDIT.json`, `FINAL_PRESERVATION.json`, `Regression/index.json`. 실패한 외부 관측 스크립트 실행은 별도 파일에 남기고 정상 결과와 구분한다.
