@@ -108,7 +108,7 @@ void SMWGameplaySign::Construct(const FArguments& Args)
 {
     Label = Args._Label;
     bAnimateLoading = Args._AnimateLoading;
-    SignFont = Art.Font(bAnimateLoading ? 74.f : 47.f);
+    SignFont = Art.Font(bAnimateLoading ? 74.f : 54.f);
     const float Size = bAnimateLoading ? 568.f : 385.f;
     ChildSlot[SNew(SBox).WidthOverride(Size).HeightOverride(Size)];
 
@@ -138,7 +138,10 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
                                FSlateWindowElementList& DrawElements, int32 Layer, const FWidgetStyle&, bool) const
 {
     const FVector2f Center(Geometry.GetLocalSize() * .5);
-    const float Radius = FMath::Min(Center.X, Center.Y) * LoadingScale;
+    const float BaseRadius = FMath::Min(Center.X, Center.Y);
+    const float Radius = BaseRadius * LoadingScale;
+    constexpr float FaceInset = .872f;
+    constexpr float TextEdgePadding = .025f;
     const float Face = FMath::Cos(LoadingAngle);
     const float Depth = FMath::Sin(LoadingAngle);
     const auto Project = [Center, Radius, Face, Depth](FVector2f Point, float Thickness)
@@ -168,7 +171,7 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
     Polygon(Outline, FColor(127, 105, 68), 1.f, .034f);
     Polygon(Outline, FColor(255, 187, 49));
     Polygon(Outline, FColor(50, 43, 31), .914f);
-    Polygon(Outline, FColor(255, 162, 22), .872f);
+    Polygon(Outline, FColor(255, 162, 22), FaceInset);
 
     if (bAnimateLoading)
     {
@@ -201,14 +204,34 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
 
     if (Face > .12f)
     {
-        const FVector2D TextSize = Renderer->GetFontMeasureService()->Measure(Label, SignFont);
-        const FVector2D TextScale(Face * LoadingScale, LoadingScale);
-        const FVector2D TextOrigin = FVector2D(Center) - TextSize * TextScale * .5;
-        const auto TextGeometry = Geometry.MakeChild(TextSize, FSlateLayoutTransform(TextOrigin),
-                                                     FSlateRenderTransform(FScale2D(TextScale)), FVector2D::ZeroVector);
-        FSlateDrawElement::MakeText(DrawElements, Layer + 1, TextGeometry.ToPaintGeometry(), Label, SignFont,
-                                    ESlateDrawEffect::None,
-                                    bAnimateLoading ? FLinearColor(.065f, .045f, .027f) : FLinearColor::White);
+        // 줄마다 폭을 따로 재서 길이가 다른 문장도 각각 판 중앙에 놓는다.
+        TArray<FString> Lines;
+        Label.ToString().ParseIntoArrayLines(Lines, false);
+        const auto FontMeasure = Renderer->GetFontMeasureService();
+        const double LineHeight = FontMeasure->GetMaxCharacterHeight(SignFont);
+        double MaximumWidth = 0.0;
+        for (const FString& Line : Lines)
+        {
+            MaximumWidth = FMath::Max(MaximumWidth, FontMeasure->Measure(Line, SignFont).X);
+        }
+
+        // 마름모 안쪽 면에서 일정한 여백을 남긴다. 축 끝의 볼트를 기준으로
+        // 전체 문구를 과하게 줄이지 않고, 글자 블록의 모서리가 면 안에 들도록 맞춘다.
+        const double TextHeight = LineHeight * Lines.Num();
+        const double SafeRadius = BaseRadius * (FaceInset - TextEdgePadding);
+        const double Fit = FMath::Min(1.0, SafeRadius / FMath::Max(1.0, (MaximumWidth + TextHeight) * .5));
+        const FVector2D TextScale(Face * LoadingScale * Fit, LoadingScale * Fit);
+        for (int32 Index = 0; Index < Lines.Num(); ++Index)
+        {
+            const FVector2D TextSize = FontMeasure->Measure(Lines[Index], SignFont);
+            const FVector2D TextOrigin(Center.X - TextSize.X * TextScale.X * .5,
+                                      Center.Y + (LineHeight * Index - TextHeight * .5) * TextScale.Y);
+            const auto TextGeometry = Geometry.MakeChild(TextSize, FSlateLayoutTransform(TextOrigin),
+                                                         FSlateRenderTransform(FScale2D(TextScale)), FVector2D::ZeroVector);
+            FSlateDrawElement::MakeText(DrawElements, Layer + 1, TextGeometry.ToPaintGeometry(), Lines[Index], SignFont,
+                                        ESlateDrawEffect::None,
+                                        bAnimateLoading ? FLinearColor(.065f, .045f, .027f) : FLinearColor::Black);
+        }
     }
     return Layer + 1;
 }

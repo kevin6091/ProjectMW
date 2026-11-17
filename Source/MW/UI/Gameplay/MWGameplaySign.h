@@ -83,9 +83,11 @@ class MW_API SMWGameplaySign : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SMWGameplaySign)
+        : _AnimateLoading(false)
     {
     }
     SLATE_ARGUMENT(FText, Label)
+    // 로딩 화면에서만 명시적으로 켠다. 일반 안내판은 회전·확대 모드를 사용하지 않는다.
     SLATE_ARGUMENT(bool, AnimateLoading)
     SLATE_END_ARGS()
 

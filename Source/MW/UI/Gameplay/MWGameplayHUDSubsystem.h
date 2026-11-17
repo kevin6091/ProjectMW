@@ -128,6 +128,10 @@ public:
     UPROPERTY(Config)
     TArray<TSoftObjectPtr<UTexture2D>> ItemRouletteIcons;
 
+    // 선택·배치 단계에 들어온 직후 중앙 안내를 보여 줄 시간이다. 0이면 생략하며 입력은 기다리지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Guidance", meta = (ClampMin = "0", Units = "s"))
+    float ConstructionPromptSeconds = 2.f;
+
     // 획득 후 아이콘을 바꾸는 누적 시각(초)이다. 양수·오름차순이며 마지막 값에서 실제 아이템에 멈춘다.
     // 빈 배열은 룰렛을 생략하고 실제 지급 아이템을 바로 표시한다.
     UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Item Animation", meta = (DisplayName = "룰렛 전환 누적 시각(초)"))

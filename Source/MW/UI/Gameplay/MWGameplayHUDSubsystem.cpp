@@ -101,6 +101,9 @@ namespace
             HeldItem = Args._HeldItem;
             const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
             InitializeLayout(*Settings);
+            // 안내 시간은 화면 생성 때 한 번 읽고, 경기 단계가 바뀔 때 기존 시계를 다시 시작한다.
+            ConstructionPromptSeconds = FMath::IsFinite(Settings->ConstructionPromptSeconds)
+                                            ? FMath::Max(0.f, Settings->ConstructionPromptSeconds) : 0.f;
             InitializeItemTiming(*Settings);
             BoosterTexture.Reset(Settings->BoosterIcon.LoadSynchronous());
             if (BoosterTexture)
@@ -177,7 +180,7 @@ namespace
                     .VAlign(VAlign_Center)[SAssignNew(SelectSign, SMWGameplaySign)
                                                .Visibility(EVisibility::Collapsed)
                                                .Label(NSLOCTEXT("MWGameplayUI", "SelectTrack",
-                                                                "트랙 부속품을\n고르세요"))] +
+                                                                "트랙을\n선택하세요"))] +
                 SOverlay::Slot()
                     .HAlign(HAlign_Center)
                     .VAlign(VAlign_Center)[SAssignNew(BuildSign, SMWGameplaySign)
@@ -314,11 +317,12 @@ namespace
                 NextRosterRefresh = CurrentTime + .25;
             }
 
-            SelectSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::PreparingConstruction
+            SelectSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::PreparingConstruction &&
+                                              CurrentTime - PhaseStarted < ConstructionPromptSeconds
                                           ? EVisibility::HitTestInvisible
                                           : EVisibility::Collapsed);
             BuildSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::TrackPlacement &&
-                                             CurrentTime - PhaseStarted < 2.0
+                                             CurrentTime - PhaseStarted < ConstructionPromptSeconds
                                          ? EVisibility::HitTestInvisible
                                          : EVisibility::Collapsed);
         }
@@ -659,6 +663,7 @@ namespace
         FMWGameplayUIArt Art;
         TOptional<EMWRoomPhase> LastPhase;
         double PhaseStarted = 0.0;
+        float ConstructionPromptSeconds = 0.f;
         double NextRosterRefresh = 0.0;
         bool bRosterBuilt = false;
         bool bItemPickupTest = false;
