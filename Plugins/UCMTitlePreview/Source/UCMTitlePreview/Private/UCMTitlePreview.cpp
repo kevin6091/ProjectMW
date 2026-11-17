@@ -19,6 +19,9 @@
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
+#include "Widgets/SViewport.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
@@ -300,6 +303,77 @@ UUCMWorldWidgetComponent::UUCMWorldWidgetComponent()
     bReceiveHardwareInput = true;
     SetWindowFocusable(true);
     SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+// 엔진 기본 등록은 첫 PIE 창을 사용하므로 우리 표면의 입력은 직접 연결한다.
+void UUCMWorldWidgetComponent::OnRegister()
+{
+    const bool bRequestedHardwareInput = bReceiveHardwareInput;
+    bReceiveHardwareInput = false;
+    Super::OnRegister();
+    bReceiveHardwareInput = bRequestedHardwareInput;
+
+    RegisterOwningViewportInput();
+}
+
+void UUCMWorldWidgetComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    // 컴포넌트 등록 시 창이 없었던 경우, 플레이 시작 시 준비된 소유 창에 연결한다.
+    RegisterOwningViewportInput();
+}
+
+void UUCMWorldWidgetComponent::RegisterOwningViewportInput()
+{
+#if !UE_SERVER
+    UWorld* World = GetWorld();
+    if (HardwareInputViewport.IsValid() || !CanReceiveHardwareInput() || GetWidgetSpace() != EWidgetSpace::World ||
+        !World || !World->IsGameWorld() || World->GetNetMode() == NM_DedicatedServer)
+    {
+        return;
+    }
+
+    const UGameInstance* GameInstance = World->GetGameInstance();
+    const UGameViewportClient* ViewportClient = GameInstance ? GameInstance->GetGameViewportClient() : nullptr;
+    const TSharedPtr<SViewport> Viewport = ViewportClient ? ViewportClient->GetGameViewportWidget() : nullptr;
+    if (!Viewport.IsValid())
+    {
+        return;
+    }
+
+    RegisterHitTesterWithViewport(Viewport);
+    HardwareInputViewport = Viewport;
+    UE_LOG(LogTemp, Verbose, TEXT("MW_UCM WORLD_WIDGET_INPUT_REGISTERED WORLD=%s COMPONENT=%s"),
+           *World->GetPathName(), *GetName());
+#endif
+}
+
+void UUCMWorldWidgetComponent::UnregisterOwningViewportInput()
+{
+#if !UE_SERVER
+    if (const TSharedPtr<SViewport> Viewport = HardwareInputViewport.Pin())
+    {
+        UnregisterHitTesterWithViewport(Viewport);
+    }
+#endif
+    HardwareInputViewport.Reset();
+}
+
+void UUCMWorldWidgetComponent::OnUnregister()
+{
+    // 등록한 창에서 먼저 해제하고 기본 경로가 다른 PIE 창을 건드리지 않게 한다.
+    UnregisterOwningViewportInput();
+    const bool bRequestedHardwareInput = bReceiveHardwareInput;
+    bReceiveHardwareInput = false;
+    Super::OnUnregister();
+    bReceiveHardwareInput = bRequestedHardwareInput;
+}
+
+void UUCMWorldWidgetComponent::DisableHardwareInput()
+{
+    UnregisterOwningViewportInput();
+    bReceiveHardwareInput = false;
 }
 
 AUCMTitleFlowPreview::AUCMTitleFlowPreview()

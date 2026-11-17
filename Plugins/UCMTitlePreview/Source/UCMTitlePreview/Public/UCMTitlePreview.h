@@ -5,6 +5,7 @@
 #include "Components/Button.h"
 #include "GameFramework/Actor.h"
 #include "UCMTitlePreview.generated.h"
+class SViewport;
 class UFontFace;
 class UCanvasPanel;
 class ULevelSequence;
@@ -169,10 +170,20 @@ public:
     UUCMWorldWidgetComponent();
 
     // 메뉴만 전용 포인터를 사용하고 다른 월드 위젯은 기존 하드웨어 입력을 유지한다.
-    void DisableHardwareInput()
-    {
-        bReceiveHardwareInput = false;
-    }
+    void DisableHardwareInput();
+
+protected:
+    virtual void OnRegister() override;
+    virtual void BeginPlay() override;
+    virtual void OnUnregister() override;
+
+private:
+    // 여러 PIE 창에서도 자기 World의 뷰포트에만 입력을 연결한다.
+    void RegisterOwningViewportInput();
+    void UnregisterOwningViewportInput();
+
+    // Slate 창의 수명을 늘리지 않고 등록했던 입력 경로만 기억한다.
+    TWeakPtr<SViewport> HardwareInputViewport;
 };
 
 // 복구 시퀀스 바인딩 ID와 현재 월드 액터 이름을 연결한다.
