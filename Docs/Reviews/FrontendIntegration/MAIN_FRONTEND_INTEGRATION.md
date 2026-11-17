@@ -1,5 +1,7 @@
 # 최신 main 기준 프런트엔드 통합
 
+> 최신 후속 결과는 문서 끝의 ‘2026-11-17 후속 검증’을 따른다. 아래 이전 검증의 Ready 실패·WheelVisuals 공백은 후속 작업에서 복구됐다. 다른 PC 에셋 인계와 나머지 미검증 항목은 여전히 별도다.
+
 기준일: 2026-11-17. 브랜치: `fix/frontend-main`. 최신 검증과 제한은 문서 끝의 11월 17일 항목을 우선한다.
 
 - 기준 main: `ed6cbe3de1d6eb5305902f33229f9fab3fecc917`.
@@ -296,3 +298,21 @@ main 주행 핵심 함수 27개, 네트워크·DriveData 4개 파일, 아이템 
 - 현재 로컬 차량 BP 6종은 WheelVisuals 배열이 비어 있고, PR_ASSET_HANDOFF.csv의 이전 검증 에셋과 해시가 다르다. 따라서 휠 애니메이션·스키드마크 동작을 이번 검사에서 통과했다고 주장하지 않는다. 기존 BP를 과거 파일로 덮어쓰지 않았다. 인계 목록의 대응 설정이 있는 에셋 버전 확인이 필요하다.
 - 위 이슈와 다른 PC 에셋 수신, 전체 매치·멀티클라이언트·Cook은 미완료다. 충돌 해결과 빌드 성공을 전체 기능 정상 판정으로 대체하지 않는다.
 - 검증 자료는 외부 `outputs/FRONTEND_MAIN_RESOLVE_20261117`의 PRESERVATION_CHECK.json, READY_CODE_COMPARISON.json, BP_CHECK.json, Automation/index.json, VEHICLE_PIE_RESULTS.json 및 VEHICLE_PIE.png에 보존한다.
+
+
+## 2026-11-17 후속 검증 — Ready·차량 선택·경기 HUD 복구
+
+코드 커밋: `22304a2`(월드 UI 입력), `821596c`(중앙 안내). main·서버·트랙·차량 이동 코드는 추가 수정하지 않았다.
+
+| 이전에 남은 문제 | 현재 결과 |
+|---|---|
+| 2인 PIE Client Ready 미반영 | 우리 World Widget이 첫 PIE 창 대신 자기 World의 뷰포트에 등록하도록 수정. OnRegister/BeginPlay에서 연결하고 OnUnregister/DisableHardwareInput에서 같은 창을 해제한다. 창은 약한 참조로 보관한다. 실제 Ready·시작 클릭 통과. |
+| 차량 카드 입력 위험 후보 | 호스트·클라이언트 각각 일반 5종+숨김 인비저블맨의 실제 클릭·우클릭 취소 12건 통과. 양쪽 PlayerState 반영 및 숨김 차량 참가자 그림 확인. 일반 PreviewSurface의 정적 우려는 이번 실행에서 재현되지 않음. |
+| 차량 BP 바퀴 설정 누락 | 현재 BP 계층·메시·변환·카메라·박스·Doug 애니메이션을 보존하고 Class Defaults만 복구. 일반 5종 바퀴 2/4/3/4/4개(SMIET/MAMMOTH/UFOLOGY/DOUG/FRED), 조향 보간 6. 인비저블맨은 표시 바퀴 0개·가상 스키드 접지점 2개. 6종 재시작 컴파일·저장 값 확인. |
+| 중앙 안내 글씨 밀림·중복 배지 | 줄별 중앙 정렬·안전 영역 축소, 글씨 확대·검은색·기본 2초 숨김 적용. WBP PhaseLabels에서 선택·배치·주행 배지를 제거. 계기판 디자인과 전용 트랙 안내창은 유지. |
+
+- 2인 로컬 Listen Server PIE에서 실제 CUA 클릭으로 로비 → 차량 선택 → 출발 카메라 → Snow 트랙 선택·배치 → Racing 진입을 확인했다. 지속 주행은 엔진 입력 주입이며 물리 키보드 주행과 구분한다. 서로 다른 경기에서 호스트 FRED/인비저블맨의 자국 0→62/0→60과 계기판 가속·정지 표시를 확인했다. 원격 스키드 공유·3인 커서 전체·전 테마·멀티 PC/EOS·Cook/패키징은 새 검증 범위가 아니다.
+- 최종 소스 전체를 포함한 Editor/Game Development 빌드는 11.41초/16.91초 성공. 기존 접지 상승 충격 검사 실패는 수정하지 않았다. Stop PIE 중 참가자 퇴장 오류와 초기 Lumen 경고를 실제 UI 실행 오류와 구분한다. 후속 검증 종료에는 NewBlankMap을 호출하지 않았고 미저장 맵·콘텐츠 없이 정상 종료했다.
+- 바뀐 로컬 에셋은 차량 BP 6개와 WBP_RaceHUD 1개다. **Git 제외이므로 소스 푸시만으로 다른 PC에 전달되지 않는다.** PR_ASSET_HANDOFF.csv의 크기·해시를 현재 검증본으로 갱신했다. UVCS 조회·잠금·업로드는 하지 않았다.
+- 인비저블맨 부스터 전용 장착 override가 빠져 자동 Bounds 배치를 쓰는 설정 차이가 남았다. 일반 5종 Config 프리셋은 있다. 이번에는 수정하지 않았으며 다음 우선 작업이다. 박스 충돌 유지 방침과 비어 있는 DrivingCollisionMesh 참조도 임의 변경하지 않았다.
+- 상세 동작·설정은 [경기 HUD 문서](../../Engineering/Client/RACE_HUD.md), 에셋 전달은 [인계 목록](PR_ASSET_HANDOFF.csv)을 따른다. 외부 실행 근거: outputs/WORLD_UI_WHEELS_RESTORE_20261117, VEHICLE_CARD_AUDIT_20261117, RACE_SKID_PIE_20261117, SIGN_READABILITY_20261117.

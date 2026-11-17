@@ -124,3 +124,24 @@
 - 기존 MW.Items.PickupAndUse와 MW.UI.RaceHUD.StateLifetime 자동 검사 2개 통과. 보호한 코드·문서·BP 280개 SHA-256 유지 확인.
 - 이번 변경에서는 전체 EOS·멀티클라이언트·Cook·패키징을 다시 검증하지 않았다. 원본 주행·서버·아이템 판정·BP·맵을 수정하지 않았고 UVCS 갱신·체크인과 원격 Push는 하지 않는다.
 - 기록: 프로젝트 밖 `outputs/ITEM_ROULETTE_TIMING_20261116`의 CONFIG_AND_BP.json, BEFORE_PIE.json, AFTER_PIE.json, CUSTOM_PIE.json, 각 PIE 로그, Automation/index.json, FINAL_VERIFICATION.json.
+
+
+## 표지판 정렬·중복 안내 정리 — 2026-11-17
+
+- `WBP_RaceHUD` Class Defaults의 `PhaseLabels`에서 `PreparingConstruction`, `TrackPlacement`, `Racing` 문구를 제거했다. 트랙 선택·배치는 기존 전용 안내창을 사용하고, 원작에 없는 ‘주행 중’ 배지는 표시하지 않는다. 계기판 배치·디자인은 유지했다.
+- `SMWGameplaySign::OnPaint`는 줄마다 폭을 측정해 각각 중앙에 놓는다. 글자 블록의 가로·세로가 마름모 안쪽에 들어오도록 같은 비율로 축소한다. 기존 문구·글꼴·판 모양·로딩 회전은 유지한다.
+- 원본 프로젝트를 재실행한 2인 로컬 Listen Server PIE에서 로비 준비 → 차량 선택 → 트랙 선택·배치 → Racing을 실제 CUA 클릭으로 진행했다. 두 화면의 중복 단계 배지와 ‘주행 중’ 표시가 사라졌고 작은 창의 중앙 문구도 판 안에 들어왔다.
+- 연속 주행은 엔진 `Input.+key/-key`로 입력을 주입했다. 물리 키보드 주행과 구분하며 속도·차량 위치·경기 단계·RPC를 직접 설정하지 않았다. 서로 다른 두 경기에서 FRED와 인비저블맨을 각각 호스트로 조종했다. 자국은 0→62개, 0→60개로 증가했고 실제 화면에도 표시됐다. 인비저블맨은 BP의 가상 바퀴 2개를 사용한다.
+- 계기판 숫자·바늘의 가속/정지 갱신을 확인했다(표시 최대 83km/h, 정지 0). 소유 클라이언트의 정지 계기판도 표시됐다. 클라이언트의 연속 주행·원격 스키드 공유와 전 차량/전 테마를 이번에 모두 검증한 것은 아니다.
+- Editor/Game Development 빌드 성공: 28.40초 / 35.59초. WBP 컴파일·저장·에디터 재시작 후 설정 재로드 확인. 서버·차량·트랙 코드는 변경하지 않았다. UVCS·Commit·Push는 실행하지 않았다.
+- 현재 코드와 함께 변경된 `Content/UI/Race/WBP_RaceHUD.uasset`도 전달해야 한다. Content는 Git 제외 정책을 그대로 사용한다. 캡처·상태 관찰 로그는 프로젝트 밖 `outputs/RACE_SKID_PIE_20261117`에 둔다.
+
+
+## 중앙 안내 글씨 확대·표시 시간 설정 — 2026-11-17
+
+- 선택 안내는 ‘트랙을 / 선택하세요’ 두 줄이다. 일반 안내 글꼴 기준을 47→54로 높이고 검은색으로 표시한다. 표지판 크기·줄별 중앙 정렬을 유지하며 마름모 안쪽 면의 여백에 맞춰 축소한다.
+- `SMWGameplaySign::FArguments`의 `AnimateLoading` 기본값을 false로 명시했다. 생략한 bool의 미초기화 때문에 일반 안내에 로딩용 크기·회전이 섞일 수 있던 부분이다. 로딩 호출부는 기존처럼 true를 명시한다.
+- `DefaultGame.ini`의 `[/Script/MW.MWGameplayHUDSubsystem]` 아래 `ConstructionPromptSeconds=2.0`이 선택·배치 중앙 안내 시간이다. 단계 진입 후 기본 2초에 숨긴다. 0·음수·비정상 값은 생략한다. 화면 생성 때 한 번 읽고 기존 단계 시계를 사용하며 입력이나 경기 진행을 기다리게 하지 않는다.
+- 최종 검은색 코드로 Editor/Game Development 빌드 성공(11.41초/16.91초). 재시작한 2인 로컬 PIE에서 실제 CUA 클릭으로 로비·차량·트랙 선택·배치 단계까지 진행했다. 호스트 렌더에서 선택 안내 1.25초 표시/2.50초 숨김, 배치 안내 1.343초 표시/2.546초 숨김을 확인했다. 캡처 관찰 시각이며 정확한 숨김 이벤트 시각은 아니다.
+- Stop PIE 때 서버가 ‘건설 중 시작 참가자가 나갔습니다’ 오류 1건을 기록했다. UI 검증 중 오류·ensure·크래시는 없었고 서버 코드는 변경하지 않았다. 로딩 초기의 기존 Lumen 경고도 별도다. 모든 언어·해상도, 멀티 PC/EOS·전체 매치는 이번에 다시 검증하지 않았다.
+- 실행 근거는 외부 `outputs/SIGN_READABILITY_20261117/Black`과 `RESULT.json`에 보존한다. Git 코드 커밋은 `821596c`이며 기존 BP 문구 변경은 별도 에셋 전달 대상이다.
