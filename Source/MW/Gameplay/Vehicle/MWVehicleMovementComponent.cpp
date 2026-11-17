@@ -800,14 +800,6 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 		return;
 	}
 	
-	const double IntoSurfaceSpeed = FVector::DotProduct(Velocity, CollisionNormal);
-
-	if (IntoSurfaceSpeed >= 0.f)
-	{
-		return;
-	}
-	
-	const FVector DeltaVelocity = -CollisionNormal * IntoSurfaceSpeed;
 	const UPrimitiveComponent* HitComponent = Hit.GetComponent();
 	const FVector SurfaceNormal = FVector(Hit.ImpactNormal).GetSafeNormal();
 	const FVector ReferenceUp = bGrounded ? GroundNormal.GetSafeNormal() : GetGroundProbeUp();
@@ -821,6 +813,37 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 		&& !ReferenceUp.IsNearlyZero()
 		&& FVector::DotProduct(SurfaceNormal, ReferenceUp) >= MinGroundDot;
 
+	FVector ResponseNormal = CollisionNormal;
+	double Restitution = 0.0;
+	// 다른 차량의 상대 속도와 질량은 서버의 전용 경로에서 처리한다.
+	// 소유 클라이언트에서 그 접촉을 고정된 벽처럼 반사하지 않는다.
+	if (!bSupportContact && bGrounded && !Cast<AMWVehiclePawn>(Hit.GetActor()))
+	{
+		const FVector GroundTangentNormal = FVector::VectorPlaneProject(
+			CollisionNormal, GroundNormal).GetSafeNormal();
+
+		if (!GroundTangentNormal.IsNearlyZero())
+		{
+			// 월드 Z를 지우지 않고 현재 노면 위로 반발 방향을 제한한다.
+			// 경사로와 루프에서도 충돌 때문에 노면 바깥쪽 속도가 생기지 않는다.
+			ResponseNormal = GroundTangentNormal;
+			const double ClosingSpeed = -FVector::DotProduct(Velocity, ResponseNormal);
+			if (ClosingSpeed >= DriveConfig.MinWallBounceSpeed)
+			{
+				Restitution = DriveConfig.WallRestitution;
+			}
+		}
+	}
+
+	const double IntoSurfaceSpeed = FVector::DotProduct(Velocity, ResponseNormal);
+	if (IntoSurfaceSpeed >= 0.f)
+	{
+		return;
+	}
+
+	// 접근 속도를 없애는 양에 반발 속도를 더한다. 접선 방향 속도는 유지한다.
+	const FVector DeltaVelocity = -ResponseNormal * IntoSurfaceSpeed * (1.0 + Restitution);
+
 	// 접지 검사 사이에서 충돌 보정이 접지를 해제하는 경우도 추적한다.
 	// Hit.Normal과 ImpactNormal이 다를 수 있으므로 둘을 구분해 기록한다.
 	if (CVarVehicleSupportLog.GetValueOnGameThread() != 0)
@@ -828,12 +851,14 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 		UE_LOG(LogMWVehicleSupport, Log,
 			TEXT("VehicleContact Time=%.6f Frame=%llu Actor=%s HitActor=%s Component=%s Support=%d ")
 			TEXT("Into=%.6f NX=%.6f NY=%.6f NZ=%.6f ImpactNX=%.6f ImpactNY=%.6f ImpactNZ=%.6f ")
-			TEXT("BeforeVX=%.6f BeforeVY=%.6f BeforeVZ=%.6f DX=%.6f DY=%.6f DZ=%.6f"),
+			TEXT("BeforeVX=%.6f BeforeVY=%.6f BeforeVZ=%.6f DX=%.6f DY=%.6f DZ=%.6f ")
+			TEXT("Restitution=%.6f ResponseNX=%.6f ResponseNY=%.6f ResponseNZ=%.6f"),
 			GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0, GFrameCounter, *GetPathNameSafe(PawnOwner),
 			*GetPathNameSafe(Hit.GetActor()), *GetPathNameSafe(HitComponent), bSupportContact,
 			IntoSurfaceSpeed, CollisionNormal.X, CollisionNormal.Y, CollisionNormal.Z,
 			SurfaceNormal.X, SurfaceNormal.Y, SurfaceNormal.Z,
-			Velocity.X, Velocity.Y, Velocity.Z, DeltaVelocity.X, DeltaVelocity.Y, DeltaVelocity.Z);
+			Velocity.X, Velocity.Y, Velocity.Z, DeltaVelocity.X, DeltaVelocity.Y, DeltaVelocity.Z,
+			Restitution, ResponseNormal.X, ResponseNormal.Y, ResponseNormal.Z);
 	}
 	
 	if (bSupportContact)
@@ -1439,15 +1464,22 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 		return;
 	}
 
-	const FVector MoveDelta = Velocity * DeltaTime;
-
-	FHitResult Hit(1.f);
-
-	SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
-
-	if (Hit.IsValidBlockingHit())
+	// 반발과 연속 접촉 모두 변경된 속도로 남은 시간을 다시 이동한다.
+	// 좁은 코너의 반복 접촉이 한 스텝을 무한히 점유하지 않도록 제한한다.
+	constexpr int32 MaxContactIterations = 4;
+	float RemainingTime = DeltaTime;
+	for (int32 Iteration = 0; Iteration < MaxContactIterations && RemainingTime > SMALL_NUMBER; ++Iteration)
 	{
-		HandleImpact(Hit, DeltaTime, MoveDelta);
+		const FVector MoveDelta = Velocity * RemainingTime;
+		FHitResult Hit(1.f);
+		SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
+
+		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent) || !Hit.IsValidBlockingHit())
+		{
+			return;
+		}
+
+		HandleImpact(Hit, RemainingTime, MoveDelta);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
 		{
 			return;
@@ -1458,15 +1490,14 @@ void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime)
 			return;
 		}
 
+		RemainingTime *= 1.f - Hit.Time;
+		const FVector PreviousVelocity = Velocity;
 		ResolveContactVelocity(Hit);
 
-		// 처음 요청한 이동 중 남은 부분을 표면을 따라 시도한다.
-		SlideAlongSurface(MoveDelta, 1.f - Hit.Time, Hit.Normal, Hit, true);
-
-		// 미끄러지는 도중 다른 면에도 막혔다면 속도를 정리한다.
-		if (Hit.IsValidBlockingHit())
+		// 시간이 진행되지 않고 접촉 속도도 그대로라면 다음 스텝에서 다시 검사한다.
+		if (Hit.Time <= SMALL_NUMBER && Velocity.Equals(PreviousVelocity, KINDA_SMALL_NUMBER))
 		{
-			ResolveContactVelocity(Hit);
+			return;
 		}
 	}
 }

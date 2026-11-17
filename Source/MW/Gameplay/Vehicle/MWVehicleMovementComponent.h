@@ -93,8 +93,8 @@ private:
 	void UpdateAirVelocity(float DeltaTime);
 	// 외부 충격에 의한 속도 변화량을 적용한다. 단위: cm/s
 	void ApplyExternalVelocityChange(const FVector& DeltaVelocity);
-	// 충돌면 안쪽 속도를 제거하고,
-	// 지지면 보정과 장애물 접촉을 구분한다.
+	// 지지면의 안쪽 속도를 제거하고, 접지 중 벽에는 노면과 평행한 반발을 적용한다.
+	// 차량 간 충돌과 공중 접촉에는 벽 반발 설정을 적용하지 않는다.
 	void ResolveContactVelocity(const FHitResult& Hit);
 	
 	// 기하학적으로 유효한 도로 후보를 찾는다.

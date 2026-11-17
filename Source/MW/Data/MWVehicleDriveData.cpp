@@ -42,6 +42,8 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("CollisionRestitution"), Config.CollisionRestitution, 0.f, 1.f);
 	RequireRange(TEXT("MinBounceSpeed"), Config.MinBounceSpeed, 0.f, Largest);
 	RequireRange(TEXT("CollisionMomentumRetention"), Config.CollisionMomentumRetention, 0.f, 1.f);
+	RequireRange(TEXT("WallRestitution"), Config.WallRestitution, 0.f, 1.f);
+	RequireRange(TEXT("MinWallBounceSpeed"), Config.MinWallBounceSpeed, 0.f, Largest);
 	RequireRange(TEXT("DownforceReferenceSpeed"), Config.DownforceReferenceSpeed, 1.f, Largest);
 	RequireRange(TEXT("DownforceAtReferenceSpeed"), Config.DownforceAtReferenceSpeed, 0.f, Largest);
 	RequireRange(TEXT("MaxDownforceAcceleration"), Config.MaxDownforceAcceleration, 0.f, Largest);
