@@ -122,4 +122,24 @@ UE 5.8.4에서 Win64 Development의 MWEditor와 MW 빌드 및 `MW.Vehicle` 자�
 
 아이템 충격 효과와 경기 단계 전체 통합은 후속 범위다.
 
+### 2026-11-16 노면 자세 조사 범위 분리
+
+곡면에서 목표 자세가 면 경계마다 급변하는 현상을 줄이기 위해 자세 조사 범위를 충돌 Box 치수에서 분리했다.
+`GroundPlaneProbeHalfLength`와 `GroundPlaneProbeHalfWidth`는 CollisionRoot 전방/좌우 기준의 반거리(cm)이며,
+기본값은 각각100cm와40cm다. 기존 `GroundPlaneProbeInset` 비율 설정은 제거했다.
+기존 DataAsset에 새 필드가 없으면 구조체 기본값을 사용하며, 이번 변경에서 DataAsset/BP를 다시 저장하지 않는다.
+
+실제 접지와 하중·속도 운반에는 기존 Box Sweep의 `GroundNormal`을 사용한다.
+자세 정렬만 독립 범위의4점 높이에서 구한 `GroundOrientationNormal`을 사용한다.
+면 방향·높이·평면 오차 검사와 실패 시 실제 접촉 법선으로 돌아가는 처리는 유지한다.
+표시 메시나 바퀴 애니메이션의 현재 변환을 이동 계산으로 읽지 않는다.
+
+이 값은 Client/Server 공용 DriveConfig의 초기 사본에 포함된다. 각 이동 스텝에서 공간적으로 다시 계산하므로
+새 시간 보간 상태나 스냅샷 필드를 추가하지 않는다. `VisualRoot` 및 카메라의 보간 설정도 이번 변경에서 조정하지 않는다.
+진단을 켜면 기존 `mw.Vehicle.SupportLog`와 함께 `VehicleOrientation`에 평면 계산 성공 여부, 조사 반거리,
+이번 스텝의 최종 목표 법선을 기록한다. 로그를 위해 추가 Trace를 실행하지 않는다.
+
+100/40cm는 현재 차량·트랙 조합에서 비교한 기본값이다. 모든 차량의 실제 바퀴 간격을 뜻하지 않으며,
+차량/트랙별 적용 시 조사 범위와 유효점·평면 오차 거절 결과를 함께 검증해야 한다.
+
 주행 입력 Controller 이전 후 Win64 Development의 MWEditor·MW 빌드와 차량 자동화 6개를 통과했다. 기존 테스트 Controller BP와 native Gameplay Controller 각각에서 W, W+D, W+S, S, 드리프트 누름·해제, 조종 해제와 재조종을 PIE로 확인했다. native Controller 검증은 주행 테스트 GameMode의 Controller 클래스만 프로세스 안에서 바꿔 실행했다. 3인 Listen Server에서도 같은 native Controller로 원격 주행과 호스트 주행이 전달됐다. 결과는 로컬 `Saved/Codex/ControllerDrivingInput`에 있다.

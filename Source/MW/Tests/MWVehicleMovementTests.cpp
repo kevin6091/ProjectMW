@@ -120,6 +120,9 @@ bool FMWDriveConfigTest::RunTest(const FString& Parameters)
 	Reject(TEXT("Negative detach speed"), [](auto& C) { C.GroundDetachSpeed = -1; });
 	Reject(TEXT("Zero vehicle mass"), [](auto& C) { C.VehicleMass = 0; });
 	Reject(TEXT("Momentum retention outside range"), [](auto& C) { C.CollisionMomentumRetention = 2; });
+	// 새 자세 조사 거리는 0 또는 비유한값을 허용하지 않는다.
+	Reject(TEXT("Zero ground plane length"), [](auto& C) { C.GroundPlaneProbeHalfLength = 0; });
+	Reject(TEXT("Non-finite ground plane width"), [](auto& C) { C.GroundPlaneProbeHalfWidth = std::numeric_limits<float>::infinity(); });
 	return true;
 }
 
