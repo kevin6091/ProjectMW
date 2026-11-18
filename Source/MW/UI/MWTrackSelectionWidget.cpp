@@ -20,6 +20,10 @@ void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetVisibility(ESlateVisibility::HitTestInvisible);
+	if (PlacementStatusSpace)
+	{
+		PlacementStatusSpace->SetVisibility(ESlateVisibility::Collapsed);
+	}
 	TryBindState();
 }
 
@@ -52,6 +56,11 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 	if (!bShowingPlacement)
 	{
 		bShowingPlacement = true;
+		// 배치 문구가 바뀌어도 참가자 목록이 밀리지 않도록 디자이너에서 지정한 공간을 확보한다.
+		if (PlacementStatusSpace)
+		{
+			PlacementStatusSpace->SetVisibility(ESlateVisibility::Hidden);
+		}
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
 		Canvas_Cursors->SetVisibility(ESlateVisibility::Collapsed);
 		if (Text_Title)

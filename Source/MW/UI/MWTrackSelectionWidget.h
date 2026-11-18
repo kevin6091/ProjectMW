@@ -31,6 +31,8 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Title;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UWidget> PlacementStatusSpace;
 
 	// 차량 선택 이름표와 같은 판면을 사용한다. 브러시 색은 기본색, 호버 색은 별도로 편집한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
