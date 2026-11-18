@@ -25,6 +25,7 @@ public class MW : ModuleRules
             "Slate", 
 			"SlateCore",
 			"AssetRegistry",
+			"LevelSequence", "MovieScene",
             "EngineSettings",
             "MWConnection"
         });
