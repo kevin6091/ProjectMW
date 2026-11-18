@@ -1,5 +1,6 @@
 #include "UI/MWTrackSelectionWidget.h"
 
+#include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -18,7 +19,7 @@
 void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-    SetVisibility(ESlateVisibility::HitTestInvisible);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 	TryBindState();
 }
 
@@ -35,6 +36,7 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	}
 	BoundConstruction.Reset();
 	BoundPlayers.Reset();
+	OfferPlates.Reset();
 	RemoteCursorLabels.Reset();
 	SmoothedCursorPositions.Reset();
 	if (Canvas_Cursors) Canvas_Cursors->ClearChildren();
@@ -54,7 +56,7 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 		Canvas_Cursors->SetVisibility(ESlateVisibility::Collapsed);
 		if (Text_Title)
 		{
-			Text_Title->SetText(FText::FromString(TEXT("트랙을 배치하세요")));
+			Text_Title->SetText(FText::FromString(TEXT("트랙 배치")));
 		}
 	}
 	if (!Text_Players->GetText().EqualTo(Players))
@@ -123,10 +125,10 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 {
 	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
 		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
-	if (!Offer) return FText::FromString(TEXT("후보 데이터 대기"));
+	if (!Offer) return FText::FromString(TEXT("트랙 조각"));
 	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Offer->DefinitionAssetId);
 	return Definition && !Definition->GetDisplayName().IsEmpty()
-		? Definition->GetDisplayName() : FText::FromName(Offer->DefinitionAssetId.GetTagName());
+		? Definition->GetDisplayName() : FText::FromString(TEXT("트랙 조각"));
 }
 
 void UMWTrackSelectionWidget::Refresh()
@@ -135,6 +137,11 @@ void UMWTrackSelectionWidget::Refresh()
 	const auto Session = BoundConstruction.IsValid() ? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
 	if (Session.SelectionSessionId != DisplayedSession.SelectionSessionId || Session.OffersRevision != DisplayedSession.OffersRevision)
 	{
+		for (const auto& Pair : OfferPlates)
+		{
+			Pair.Value->RemoveFromParent();
+		}
+		OfferPlates.Reset();
 		bRequestPending = false;
 		AcknowledgedOffer = INDEX_NONE;
 		RequestError = FText::GetEmpty();
@@ -148,7 +155,8 @@ void UMWTrackSelectionWidget::Refresh()
 		for (APlayerState* State : GS->PlayerArray)
 			if (auto* PS = Cast<AMWPlayerState>(State)) Players.Add(PS);
 	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B) { return A.GetLobbyMemberId() < B.GetLobbyMemberId(); });
-	FString Lines;
+	TMap<int32, TArray<FString>> ConfirmedNames;
+	TArray<FString> Lines;
 	bool bOwnConfirmed = false;
 	for (const auto* PS : Players)
 	{
@@ -156,23 +164,97 @@ void UMWTrackSelectionWidget::Refresh()
 		const bool bSame = Selection.SelectionSessionId == Session.SelectionSessionId && Selection.OffersRevision == Session.OffersRevision;
 		const int32 OfferId = Selection.bConfirmed ? Selection.SelectedOfferId : Selection.HoveredOfferId;
 		FString State = TEXT("선택 중");
-		if (bSame && OfferId != INDEX_NONE)
-			State = GetOfferName(OfferId).ToString() + (Selection.bConfirmed ? TEXT(" · 선택 완료") : TEXT(" · 확인 중"));
+		if (bSame && !Selection.bConfirmed && OfferId != INDEX_NONE)
+			State = GetOfferName(OfferId).ToString();
 		if (!bSame) State = TEXT("참여 준비 중");
-		Lines += FString::Printf(TEXT("P%d %s%s · %s\n"), PS->GetLobbyMemberId(), *PS->GetPlayerName(), PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State);
+		const FString Name = PS->GetPlayerName();
+		if (bSame && Selection.bConfirmed)
+		{
+			ConfirmedNames.FindOrAdd(Selection.SelectedOfferId).Add(Name);
+			State = TEXT("선택 완료");
+		}
+		Lines.Add(FString::Printf(TEXT("%s%s  ·  %s"), *Name, PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State));
 		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
 	}
-	Text_Players->SetText(FText::FromString(Lines));
+	Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
+
+	// 이름과 확정자는 선택 상태 변경 때만 갱신한다. 매 프레임에는 화면 위치와 호버색만 맞춘다.
+	for (const FMWTrackOffer& Offer : Session.Offers)
+	{
+		auto& Plate = OfferPlates.FindOrAdd(Offer.OfferId);
+		if (!Plate)
+		{
+			Plate = CreateOfferPlate();
+		}
+		UTextBlock* Label = CastChecked<UTextBlock>(Plate->GetContent());
+		FString Caption = GetOfferName(Offer.OfferId).ToString();
+		if (const auto* Names = ConfirmedNames.Find(Offer.OfferId))
+		{
+			Caption += TEXT("\n") + FString::Join(*Names, TEXT(", ")) + TEXT(" · 선택 완료");
+		}
+		Label->SetText(FText::FromString(Caption));
+	}
 	if (bOwnConfirmed) bRequestPending = false;
-	FString Status = Session.bIsOpen ? TEXT("트랙 위에 마우스를 올리고 좌클릭으로 선택하세요.") : TEXT("다른 플레이어를 기다리고 있습니다.");
+	FString Status = Session.bIsOpen ? TEXT("[좌클릭]  트랙 고르기") : TEXT("다른 플레이어를 기다리고 있습니다.");
 	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Failed)
 	{
 		Status = TEXT("게임을 계속 진행할 수 없습니다.");
 	}
 	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
-	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택했습니다. 다른 플레이어의 선택을 기다립니다.");
-	else if (bRequestPending) Status = TEXT("서버에서 선택을 확인하고 있습니다...");
+	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 참가자 대기 중");
+	else if (bRequestPending) Status = TEXT("선택 확인 중…");
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : FText::FromString(Status));
+}
+
+UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
+{
+	UBorder* Plate = WidgetTree->ConstructWidget<UBorder>();
+	// 판면 색은 한 곳에서만 곱해야 호버 시 원본 텍스처의 명암이 유지된다.
+	FSlateBrush Brush = OfferPlateBrush;
+	Brush.TintColor = FLinearColor::White;
+	Plate->SetBrush(Brush);
+	Plate->SetBrushColor(OfferPlateBrush.TintColor.GetSpecifiedColor());
+	Plate->SetPadding(OfferPlatePadding);
+	Plate->SetVisibility(ESlateVisibility::Collapsed);
+
+	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
+	Label->SetFont(Text_Players->GetFont());
+	Label->SetColorAndOpacity(FLinearColor::White);
+	Label->SetJustification(ETextJustify::Center);
+	Plate->SetContent(Label);
+
+	auto* PlateSlot = Canvas_Cursors->AddChildToCanvas(Plate);
+	PlateSlot->SetAlignment(FVector2D(.5, 1));
+	PlateSlot->SetAutoSize(true);
+	return Plate;
+}
+
+void UMWTrackSelectionWidget::PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered)
+{
+	UBorder* Plate = OfferPlates.FindRef(OfferId);
+	if (!Plate || bShowingPlacement)
+	{
+		return;
+	}
+
+	FVector2D Screen;
+	if (!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(GetOwningPlayer(), WorldPosition, Screen, true))
+	{
+		Plate->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	const FLinearColor Color = bHovered ? OfferHoverColor : OfferPlateBrush.TintColor.GetSpecifiedColor();
+	if (Plate->GetBrushColor() != Color)
+	{
+		Plate->SetBrushColor(Color);
+	}
+	auto* LabelSlot = CastChecked<UCanvasPanelSlot>(Plate->Slot);
+	if (!LabelSlot->GetPosition().Equals(Screen))
+	{
+		LabelSlot->SetPosition(Screen);
+	}
+	Plate->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UMWTrackSelectionWidget::ConfirmOffer(int32 OfferId)

@@ -7,7 +7,6 @@
 
 class UCameraComponent;
 class UBoxComponent;
-class UTextRenderComponent;
 class AMWGameplayPlayerController;
 
 // 실제 트랙 BP를 로컬 월드에 전시한다. 설치된 코스 Actor와는 별도 수명이다.
@@ -43,7 +42,6 @@ private:
 	void ClearOffers();
 	void RefreshMarkers(const FMWTrackSelectionSession& Session);
 	UPROPERTY(Transient) TMap<int32, TObjectPtr<AActor>> Offers;
-	UPROPERTY(Transient) TMap<int32, TObjectPtr<UTextRenderComponent>> Labels;
 	TWeakObjectPtr<AMWGameplayPlayerController> Viewer;
 	int32 SessionId = 0;
 	int32 Revision = 0;

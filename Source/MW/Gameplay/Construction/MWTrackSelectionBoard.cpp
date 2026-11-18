@@ -2,7 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
-#include "Components/TextRenderComponent.h"
+#include "UI/MWTrackSelectionWidget.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
@@ -145,14 +145,7 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - VisualBounds.GetCenter());
 		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20 * LayoutScale));
 		HitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		auto* Label = NewObject<UTextRenderComponent>(this);
-		Label->SetupAttachment(Anchors[Offer.BoardSlotIndex]);
-		Label->SetRelativeLocation(FVector(0, 0, Extent.Z + 130 * LayoutScale));
-		Label->SetHorizontalAlignment(EHTA_Center);
-		Label->SetWorldSize(45 * LayoutScale);
-		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Label->RegisterComponent();
-		Labels.Add(Offer.OfferId, Label);
+
 	}
 	SessionId = Session.SelectionSessionId;
 	Revision = Session.OffersRevision;
@@ -162,9 +155,7 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 void AMWTrackSelectionBoard::ClearOffers()
 {
 	for (const auto& Pair : Offers) if (IsValid(Pair.Value)) Pair.Value->Destroy();
-	for (const auto& Pair : Labels) if (IsValid(Pair.Value)) Pair.Value->DestroyComponent();
 	Offers.Reset();
-	Labels.Reset();
 	for (const auto& Hit : HitAreas) Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SessionId = Revision = 0;
 	LocalHover = SentHover = INDEX_NONE;
@@ -274,28 +265,20 @@ FVector AMWTrackSelectionBoard::GetBuildOrigin() const
 
 void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Session)
 {
-	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	for (const auto& Pair : Offers)
+	auto* Widget = Cast<UMWTrackSelectionWidget>(Viewer->TrackSelectionWidget);
+	if (!Widget)
 	{
-		FString Text = FString::Printf(TEXT("TRACK %d"), Pair.Key);
-		bool bSelected = false;
-		for (APlayerState* State : GS->PlayerArray)
+		return;
+	}
+
+	// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
+	for (const FMWTrackOffer& Offer : Session.Offers)
+	{
+		if (Offers.Contains(Offer.OfferId) && HitAreas.IsValidIndex(Offer.BoardSlotIndex))
 		{
-			const auto* PS = Cast<AMWPlayerState>(State);
-			if (!PS) continue;
-			const auto Selection = PS->GetPlayerConstructionComponent()->GetSelection();
-			if (Selection.SelectionSessionId != Session.SelectionSessionId || Selection.OffersRevision != Session.OffersRevision) continue;
-			const int32 Id = Selection.bConfirmed ? Selection.SelectedOfferId
-				: (PS == Viewer->GetPlayerState<AMWPlayerState>() ? LocalHover : Selection.HoveredOfferId);
-			if (Id != Pair.Key) continue;
-			bSelected |= Selection.bConfirmed;
-			Text += FString::Printf(TEXT("\nP%d %s"), PS->GetLobbyMemberId(), Selection.bConfirmed ? TEXT("SELECTED") : TEXT("HOVER"));
-		}
-		if (UTextRenderComponent* Label = Labels.FindRef(Pair.Key))
-		{
-			Label->SetText(FText::FromString(Text));
-			Label->SetTextRenderColor(bSelected ? FColor::Yellow : LocalHover == Pair.Key ? FColor::Cyan : FColor::White);
-			Label->SetWorldRotation((Camera->GetComponentLocation() - Label->GetComponentLocation()).Rotation());
+			const UBoxComponent* Hit = HitAreas[Offer.BoardSlotIndex];
+			const FVector Top = Hit->GetComponentLocation() + Hit->GetUpVector() * Hit->GetScaledBoxExtent().Z;
+			Widget->PositionOfferLabel(Offer.OfferId, Top, Offer.OfferId == LocalHover);
 		}
 	}
 }
