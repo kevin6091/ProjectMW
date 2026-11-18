@@ -98,6 +98,15 @@ struct FMWWaitingBoardLayout
     float RowFontSize = 32.f;
 };
 
+// 월드 시작 때 한 번 결정하는 개발 맵 전용 표시 옵션이다.
+struct FMWPIEHUDPreview
+{
+    bool bSpeedometer = false;
+    bool bItemSlot = false;
+
+    bool IsEnabled() const { return bSpeedometer || bItemSlot; }
+};
+
 // 월드에서 로컬 HUD 연결을 준비하고 Pawn 교체·월드 종료 때 실제 구독과 화면을 정리한다.
 UCLASS(Config = Game)
 class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
@@ -105,6 +114,17 @@ class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
     GENERATED_BODY()
 
 public:
+
+    // 각 목록에 등록한 PIE 맵에서 해당 HUD를 경기 시작 전에도 검증할 수 있다.
+    UPROPERTY(Config)
+    TArray<TSoftObjectPtr<UWorld>> PIESpeedometerMaps;
+
+    UPROPERTY(Config)
+    TArray<TSoftObjectPtr<UWorld>> PIEItemSlotMaps;
+
+    const FMWPIEHUDPreview& GetPIEPreview() const { return PIEPreview; }
+
+    virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 
     // 화면 디자인은 지정된 WBP에서 편집하고 기존 Slate HUD에는 그 결과만 연결한다.
     UPROPERTY(Config)
@@ -178,6 +198,8 @@ protected:
     virtual void Deinitialize() override;
 
 private:
+    FMWPIEHUDPreview PIEPreview;
+
     UPROPERTY(Transient)
     TObjectPtr<UMWRaceHUDWidget> RaceHUDWidget;
 

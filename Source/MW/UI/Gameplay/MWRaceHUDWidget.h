@@ -17,10 +17,6 @@ class MW_API UMWRaceHUDWidget : public UUserWidget
 {
     GENERATED_BODY()
 
-public:
-    // 기존 아이템 단독 검증 맵 여부는 HUD 연결부에서 한 번 전달한다.
-    void SetItemPickupTest(bool bEnabled);
-
 protected:
     virtual void NativePreConstruct() override;
 
@@ -92,6 +88,4 @@ private:
     int32 DisplayedSpeedKmh = INDEX_NONE;
 
     double NextSpeedSampleTime = 0.0;
-
-    bool bItemPickupTest = false;
 };

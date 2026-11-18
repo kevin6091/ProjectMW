@@ -39,14 +39,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogMWInGameUI, Log, All);
 
 namespace
 {
-    // 명시된 아이템 픽업 개발 맵의 PIE에서만 슬롯 단독 표시를 허용한다.
-    bool IsItemPickupTestPIE(const UWorld& World)
-    {
-        return World.WorldType == EWorldType::PIE && UWorld::RemovePIEPrefix(World.GetOutermost()->GetName()) ==
-                                                         TEXT("/Game/Developers/user/L_Dev_Drive_ItemPickup");
-    }
-
-
     class SMWItemSlotFrame : public SCompoundWidget
     {
     public:
@@ -88,7 +80,7 @@ namespace
         {
         }
         SLATE_ARGUMENT(APlayerController*, Controller)
-        SLATE_ARGUMENT(bool, bItemPickupTest)
+        SLATE_ARGUMENT(FMWPIEHUDPreview, PIEPreview)
         SLATE_ATTRIBUTE(EMWItemId, HeldItem)
         SLATE_ARGUMENT(TSharedPtr<SWidget>, RaceHUD)
         SLATE_END_ARGS()
@@ -97,7 +89,7 @@ namespace
         void Construct(const FArguments& Args)
         {
             Controller = Args._Controller;
-            bItemPickupTest = Args._bItemPickupTest;
+            PIEPreview = Args._PIEPreview;
             HeldItem = Args._HeldItem;
             const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
             InitializeLayout(*Settings);
@@ -280,7 +272,7 @@ namespace
             const auto* PC = Controller.Get();
             const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
             const auto* Vehicle = PC ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
-            const bool bItemPhase = bItemPickupTest || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
+            const bool bItemPhase = PIEPreview.bItemSlot || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
             const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
             ItemSlot->SetVisibility(bShowItemSlot ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
             if (bShowItemSlot)
@@ -298,7 +290,7 @@ namespace
                 }
             }
             UpdateItemSlot(bShowItemSlot ? Vehicle : nullptr, CurrentTime);
-            if (bItemPickupTest || !GS)
+            if (PIEPreview.IsEnabled() || !GS)
                 return;
 
             const bool bHasRoom = GS->GetRoomSettings().MapThemeId.IsValid();
@@ -336,7 +328,7 @@ namespace
                 SCompoundWidget::OnPaint(Args, Geometry, CullingRect, DrawElements, LayerId, Style, bParentEnabled);
             APlayerController* PC = Controller.Get();
             const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
-            if (bItemPickupTest || !GS || !PC->GetPawn() || !FSlateApplication::IsInitialized())
+            if (PIEPreview.IsEnabled() || !GS || !PC->GetPawn() || !FSlateApplication::IsInitialized())
                 return TopLayer;
 
             const EMWRoomPhase Phase = GS->GetRoomPhase();
@@ -666,7 +658,7 @@ namespace
         float ConstructionPromptSeconds = 0.f;
         double NextRosterRefresh = 0.0;
         bool bRosterBuilt = false;
-        bool bItemPickupTest = false;
+        FMWPIEHUDPreview PIEPreview;
         mutable bool bLoggedNameplate = false;
     };
 }
@@ -675,6 +667,22 @@ namespace
 bool UMWGameplayHUDSubsystem::DoesSupportWorldType(EWorldType::Type Type) const
 {
     return Type == EWorldType::Game || Type == EWorldType::PIE;
+}
+
+void UMWGameplayHUDSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+    Super::OnWorldBeginPlay(InWorld);
+    if (InWorld.WorldType == EWorldType::PIE)
+    {
+        // PIE 인스턴스 번호를 제거한 패키지 이름만 비교하므로 맵을 다시 로드하지 않는다.
+        const FName PackageName(*UWorld::RemovePIEPrefix(InWorld.GetOutermost()->GetName()));
+        const auto MatchesWorld = [PackageName](const TSoftObjectPtr<UWorld>& Map)
+        {
+            return Map.ToSoftObjectPath().GetLongPackageFName() == PackageName;
+        };
+        PIEPreview.bSpeedometer = PIESpeedometerMaps.ContainsByPredicate(MatchesWorld);
+        PIEPreview.bItemSlot = PIEItemSlotMaps.ContainsByPredicate(MatchesWorld);
+    }
 }
 
 // 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
@@ -691,7 +699,7 @@ bool UMWGameplayHUDSubsystem::IsTickable() const
     const bool bNeedsStateBinding = ObservedGameState.Get() != GameState || (!GameState && RoomPhase.IsSet());
 
     // 오버레이 생성 전이라도 원본 상태가 사라졌으면 이전 구독과 캐시를 정리한다.
-    const bool bCanAttach = GameState || IsItemPickupTestPIE(*World);
+    const bool bCanAttach = GameState || PIEPreview.IsEnabled();
     return bNeedsStateBinding || (!Overlay && bCanAttach);
 }
 
@@ -706,7 +714,7 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     }
 
     RefreshGameStateBinding();
-    if (Overlay)
+    if (Overlay || (!ObservedGameState.IsValid() && !PIEPreview.IsEnabled()))
     {
         return;
     }
@@ -726,11 +734,7 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
     UClass* WidgetClass = Settings->RaceHUDWidgetClass.LoadSynchronous();
     RaceHUDWidget = WidgetClass ? CreateWidget<UMWRaceHUDWidget>(PC, WidgetClass) : nullptr;
-    if (RaceHUDWidget)
-    {
-        RaceHUDWidget->SetItemPickupTest(IsItemPickupTestPIE(*World));
-    }
-    else
+    if (!RaceHUDWidget)
     {
         UE_LOG(LogMWInGameUI, Error, TEXT("경기 HUD WBP를 만들 수 없습니다. RaceHUDWidgetClass 설정을 확인하세요."));
     }
@@ -739,7 +743,7 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     Overlay = SNew(SMWGameplayHUD)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
-                  .bItemPickupTest(IsItemPickupTestPIE(*World))
+                  .PIEPreview(PIEPreview)
                   .RaceHUD(RaceHUDWidget ? RaceHUDWidget->TakeWidget() : SNullWidget::NullWidget)
                   .HeldItem_Lambda(
                       [WeakThis]
