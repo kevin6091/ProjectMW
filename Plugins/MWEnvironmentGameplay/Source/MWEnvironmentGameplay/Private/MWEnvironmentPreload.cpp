@@ -3,10 +3,12 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
+#include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
 #include "MWEnvironmentRestore.h"
 
-void UMWEnvironmentPreload::SelectTheme(TSoftObjectPtr<UMWEnvironmentTheme> Theme, bool bTraveling)
+void UMWEnvironmentPreload::SelectTheme(FName ThemeId, FName DestinationPackage,
+                                       TSoftObjectPtr<UMWEnvironmentTheme> Theme, bool bTraveling)
 {
     if (SelectedTheme != Theme)
     {
@@ -23,7 +25,16 @@ void UMWEnvironmentPreload::SelectTheme(TSoftObjectPtr<UMWEnvironmentTheme> Them
         // 긴 로비 대기 중 밉 유지 시간이 끝난 경우, 실제 출발 때 한 번 더 요청한다.
         WarmEntryTextures(Theme);
     }
+    SelectedThemeId = ThemeId;
+    SelectedDestinationPackage = DestinationPackage;
     bDepartureStarted = bTraveling;
+}
+
+FName UMWEnvironmentPreload::FindLoadedArrivalTheme(const UWorld& World) const
+{
+    // 로비의 마지막 선택이 가리킨 목적지에서 이미 로드된 테마만 초기 화면에 쓴다.
+    const FName WorldPackage(*UWorld::RemovePIEPrefix(World.GetOutermost()->GetName()));
+    return SelectedTheme.IsValid() && SelectedDestinationPackage == WorldPackage ? SelectedThemeId : NAME_None;
 }
 
 void UMWEnvironmentPreload::WarmEntryTextures(TSoftObjectPtr<UMWEnvironmentTheme> Theme)
@@ -66,6 +77,8 @@ void UMWEnvironmentPreload::ClearSelection()
         LoadHandle.Reset();
     }
     SelectedTheme.Reset();
+    SelectedThemeId = NAME_None;
+    SelectedDestinationPackage = NAME_None;
     bDepartureStarted = false;
 }
 
