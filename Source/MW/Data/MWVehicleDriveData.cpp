@@ -62,6 +62,16 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("GroundHeightCorrectionSpeed"), Config.GroundHeightCorrectionSpeed, 1.f, Largest);
 	RequireRange(TEXT("GroundMinClearance"), Config.GroundMinClearance, 0.f, Largest);
 	RequireRange(TEXT("GroundProbeSafetyMargin"), Config.GroundProbeSafetyMargin, 0.01f, Largest);
+	RequireRange(TEXT("FrontForceOffsetCm"), Config.FrontForceOffsetCm, 0.f, Largest);
+	RequireRange(TEXT("RearForceOffsetCm"), Config.RearForceOffsetCm, -Largest, 0.f);
+	RequireRange(TEXT("LowSpeedMaxSteerAngleDegrees"), Config.LowSpeedMaxSteerAngleDegrees, 0.f, 89.f);
+	RequireRange(TEXT("HighSpeedMaxSteerAngleDegrees"), Config.HighSpeedMaxSteerAngleDegrees, 0.f, 89.f);
+	RequireRange(TEXT("SteerAngleBlendStartSpeed"), Config.SteerAngleBlendStartSpeed, 0.f, Largest);
+	RequireRange(TEXT("SteerAngleBlendEndSpeed"), Config.SteerAngleBlendEndSpeed, 0.f, Largest);
+	RequireRange(TEXT("FrontCorneringStiffness"), Config.FrontCorneringStiffness, 0.f, Largest);
+	RequireRange(TEXT("RearCorneringStiffness"), Config.RearCorneringStiffness, 0.f, Largest);
+	RequireRange(TEXT("SlipReferenceSpeed"), Config.SlipReferenceSpeed, 1.f, Largest);
+	RequireRange(TEXT("YawInertiaPerMass"), Config.YawInertiaPerMass, 1.f, Largest);
 	
 	if (Config.GroundProbeDistance <= Config.GroundClearance)
 	{
@@ -107,6 +117,20 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 		OutErrors.Add(FText::FromString(TEXT(
 			"GroundClearance + GroundHeightTolerance must be < "
 			"GroundProbeDistance - GroundProbeSafetyMargin.")));
+	}
+	
+	// 속력에 따른 조향각 보간 구간은 양의 폭을 가져야 한다.
+	if (Config.SteerAngleBlendEndSpeed <= Config.SteerAngleBlendStartSpeed)
+	{
+		OutErrors.Add(FText::FromString(TEXT(
+			"SteerAngleBlendEndSpeed must be > SteerAngleBlendStartSpeed.")));
+	}
+
+	// 속력이 높아질수록 최대 조향각이 커지는 설정을 막는다.
+	if (Config.HighSpeedMaxSteerAngleDegrees > Config.LowSpeedMaxSteerAngleDegrees)
+	{
+		OutErrors.Add(FText::FromString(TEXT(
+			"HighSpeedMaxSteerAngleDegrees must be <= LowSpeedMaxSteerAngleDegrees.")));
 	}
 
 	return OutErrors.Num() == InitialErrors;
