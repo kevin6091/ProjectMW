@@ -225,7 +225,7 @@ bool UMWTrackRuntimeSubsystem::RespawnAtTrackCheckpoint(AMWVehiclePawn* Vehicle)
     }
     for (const FTransform& Point : Racer->RespawnTransforms)
     {
-        if (Vehicle->TeleportTo(
+        if (Vehicle->RespawnAtCheckpoint(
                 Point.GetLocation(),
                 FRotationMatrix::MakeFromXZ(Point.GetUnitAxis(EAxis::Y), Point.GetUnitAxis(EAxis::Z)).Rotator()))
         {

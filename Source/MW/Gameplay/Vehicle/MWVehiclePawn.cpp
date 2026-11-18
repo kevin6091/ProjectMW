@@ -324,11 +324,28 @@ void AMWVehiclePawn::UnPossessed()
 	}
 }
 
+bool AMWVehiclePawn::RespawnAtCheckpoint(const FVector& Location, const FRotator& Rotation)
+{
+	if (!HasAuthority())
+	{
+		return false;
+	}
+
+	TGuardValue<bool> RespawnGuard(bRespawningAtCheckpoint, true);
+	return TeleportTo(Location, Rotation);
+}
+
 void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 {
 	Super::TeleportSucceeded(bIsATest);
 	if (!bIsATest)
 	{
+		// 첫 복귀 스냅샷에 이전 주행 방향의 속도가 실리지 않도록 성공 콜백에서 정지한다.
+		if (bRespawningAtCheckpoint)
+		{
+			VehicleMovement->StopMovementImmediately();
+		}
+
 		ItemComponent->ResetItemState();
 		BoosterCameraBlend = 0.f;
 		bVisualLocationValid = false;
