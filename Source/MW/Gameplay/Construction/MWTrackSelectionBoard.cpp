@@ -1,4 +1,6 @@
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
+#include "Gameplay/Construction/MWTrackPreviewPreload.h"
+#include "Engine/LocalPlayer.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
@@ -149,6 +151,11 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 	}
 	SessionId = Session.SelectionSessionId;
 	Revision = Session.OffersRevision;
+	// 이제 각 전시 액터가 메시와 재질을 보관하므로 로비의 선로딩 핸들을 놓는다.
+	if (auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer()))
+	{
+		Preload->ReleaseCandidates();
+	}
 	return true;
 }
 
@@ -274,7 +281,9 @@ void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Sess
 	// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
-		if (Offers.Contains(Offer.OfferId) && HitAreas.IsValidIndex(Offer.BoardSlotIndex))
+		const AActor* Track = Offers.FindRef(Offer.OfferId);
+		// 액터 생성과 첫 렌더는 다른 프레임일 수 있다. 조각을 한 번 그린 뒤 이름표를 연다.
+		if (Track && Track->GetLastRenderTime() > 0.f && HitAreas.IsValidIndex(Offer.BoardSlotIndex))
 		{
 			const UBoxComponent* Hit = HitAreas[Offer.BoardSlotIndex];
 			const FVector Top = Hit->GetComponentLocation() + Hit->GetUpVector() * Hit->GetScaledBoxExtent().Z;
