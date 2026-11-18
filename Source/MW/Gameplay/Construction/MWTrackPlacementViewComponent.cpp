@@ -54,7 +54,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 	FString PlayerLines;
 	bool bOwnPlaced = false;
 	bool bOwnReady = false;
-	bCanPlace = false;
+	bool bCanPlace = false;
 	for (const APlayerState* State : GS->PlayerArray)
 	{
 		const auto* PS = Cast<AMWPlayerState>(State);
@@ -87,7 +87,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 			VisiblePlayers.Add(PlayerId);
 			if (bLocal)
 			{
-				UpdateLocalGhost(*PC, Session, *Ghost);
+				bCanPlace = UpdateLocalPreview(*PC, Session, *Ghost);
 			}
 			else if (AActor* Actor = Ghost->Actor.Get())
 			{
@@ -173,8 +173,25 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	return &Ghosts.Add(PlayerId, MoveTemp(Ghost));
 }
 
-bool UMWTrackPlacementViewComponent::UpdatePointer(const AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, const FMWTrackPortFrames& Ports)
+bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
+	const FMWTrackPlacementSession& Session, FGhost& Ghost)
+{
+	if (bWaitingForReply || !UpdateGhostFromPointer(PC, Session, Ghost))
+	{
+		return false;
+	}
+
+	const double Now = GetWorld()->GetTimeSeconds();
+	if (Now >= NextPreviewTime)
+	{
+		PC.ServerUpdateTrackPlacementPreview(SessionId, ++PreviewSequence, Intent);
+		NextPreviewTime = Now + 0.05;
+	}
+	return Ghost.bSnapped;
+}
+
+bool UMWTrackPlacementViewComponent::UpdateGhostFromPointer(const AMWGameplayPlayerController& PC,
+	const FMWTrackPlacementSession& Session, FGhost& Ghost)
 {
 	const auto* LocalPlayer = PC.GetLocalPlayer();
 	const FViewport* Viewport = LocalPlayer && LocalPlayer->ViewportClient ? LocalPlayer->ViewportClient->Viewport : nullptr;
@@ -185,29 +202,16 @@ bool UMWTrackPlacementViewComponent::UpdatePointer(const AMWGameplayPlayerContro
 		return false;
 	}
 	FVector Origin, Ray;
-	return PC.DeprojectMousePositionToWorld(Origin, Ray)
-		&& MWTrackSnap::UpdateIntentFromRay(Ports, Session, Origin, Ray, Intent);
-}
-
-void UMWTrackPlacementViewComponent::UpdateLocalGhost(AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, FGhost& Ghost)
-{
-	if (bWaitingForReply || !UpdatePointer(PC, Session, Ghost.Ports))
+	if (!PC.DeprojectScreenPositionToWorld(X, Y, Origin, Ray)
+		|| !MWTrackSnap::UpdateIntentFromRay(Ghost.Ports, Session, Origin, Ray, Intent))
 	{
-		return;
+		return false;
 	}
 	FTransform Display;
-	bCanPlace = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, Display);
-	DisplayedRevision = Session.CourseRevision;
+	const bool bSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, Display);
 	Ghost.Actor->SetActorTransform(Display);
-	SetGhostSnapColor(Ghost, bCanPlace);
-
-	const double Now = GetWorld()->GetTimeSeconds();
-	if (Now >= NextPreviewTime)
-	{
-		PC.ServerUpdateTrackPlacementPreview(SessionId, ++PreviewSequence, Intent);
-		NextPreviewTime = Now + 0.05;
-	}
+	SetGhostSnapColor(Ghost, bSnapped);
+	return true;
 }
 
 void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const
@@ -282,18 +286,41 @@ void UMWTrackPlacementViewComponent::HandleTurn()
 	if (!bWaitingForReply && !bAccepted)
 	{
 		Intent.bReversed = !Intent.bReversed;
-		bCanPlace = false;
 		LastResult = EMWTrackPlacementResult::Accepted;
 	}
 }
 
 void UMWTrackPlacementViewComponent::HandleAccept()
 {
-	if (bCanPlace && !bWaitingForReply && !bAccepted)
+	if (bWaitingForReply || bAccepted)
 	{
-		bWaitingForReply = true;
-		CastChecked<AMWGameplayPlayerController>(GetOwner())->ServerPlaceTrack(SessionId, DisplayedRevision, Intent);
+		return;
 	}
+
+	auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const auto* PS = PC->GetPlayerState<AMWPlayerState>();
+	if (!PC->IsLocalController() || !GS || !PS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	{
+		return;
+	}
+
+	const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+	const auto& Player = PS->GetPlayerConstructionComponent()->GetPlacement();
+	if (!Session.bIsOpen || Session.SessionId != SessionId || Player.SessionId != SessionId || Player.bPlaced)
+	{
+		return;
+	}
+
+	// 확정 입력은 미리보기 틱보다 먼저 들어올 수 있으므로 지금 커서 위치로 다시 판정한다.
+	FGhost* Ghost = Ghosts.Find(PS->GetLobbyMemberId());
+	if (!Ghost || !Ghost->Actor.IsValid() || !UpdateGhostFromPointer(*PC, Session, *Ghost) || !Ghost->bSnapped)
+	{
+		return;
+	}
+
+	bWaitingForReply = true;
+	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Intent);
 }
 
 void UMWTrackPlacementViewComponent::HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result)
@@ -320,10 +347,8 @@ void UMWTrackPlacementViewComponent::ResetView()
 	Ghosts.Reset();
 	Intent = {};
 	SessionId = 0;
-	DisplayedRevision = 0;
 	PreviewSequence = 0;
 	NextPreviewTime = 0.0;
-	bCanPlace = false;
 	bWaitingForReply = false;
 	bAccepted = false;
 	LastResult = EMWTrackPlacementResult::Accepted;

@@ -33,8 +33,8 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdatePointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, const FMWTrackPortFrames& Ports);
-	void UpdateLocalGhost(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
@@ -43,11 +43,9 @@ private:
 	TArray<uint32> InputBindings;
 	FMWTrackPlacementIntent Intent;
 	int32 SessionId = 0;
-	int32 DisplayedRevision = 0;
 	int32 PreviewSequence = 0;
 	double NextPreviewTime = 0.0;
 	bool bTriedLoadingInput = false;
-	bool bCanPlace = false;
 	bool bWaitingForReply = false;
 	bool bAccepted = false;
 	EMWTrackPlacementResult LastResult = EMWTrackPlacementResult::Accepted;
