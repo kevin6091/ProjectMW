@@ -5,6 +5,7 @@
 
 class AMWEnvironmentGenerator;
 class AMWGameplayGameState;
+class AMWLobbyGameState;
 class UMWEnvironmentTheme;
 class USceneComponent;
 
@@ -29,6 +30,10 @@ public:
 
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     bool Enabled = false;
+
+    // 로비 선로딩만 끄고 같은 경기 화면의 스트리밍 비용을 비교할 수 있다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Streaming")
+    bool bPreloadLobbyTheme = true;
 
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     TArray<FMWEnvironmentBinding> Bindings;
@@ -70,6 +75,12 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;
+
+    TWeakObjectPtr<AMWLobbyGameState> LobbyState;
+    const FMWEnvironmentBinding* FindBinding(FName ThemeId) const;
+
+    UFUNCTION()
+    void RefreshLobbyTheme();
 
     FTimerHandle ReadinessTimer;
 

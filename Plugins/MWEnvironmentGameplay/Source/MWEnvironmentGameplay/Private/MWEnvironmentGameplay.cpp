@@ -1,8 +1,11 @@
 // 기존 경기 테마·단계를 완료된 Environment 생성기에 연결하고 월드 종료 때 정리한다.
 
 #include "MWEnvironmentGameplay.h"
+#include "MWEnvironmentPreload.h"
 #include "MWEnvironmentRestore.h"
 #include "System/GameState/MWGameplayGameState.h"
+#include "System/GameState/MWLobbyGameState.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
@@ -35,12 +38,57 @@ void UMWEnvironmentGameplay::OnWorldBeginPlay(UWorld& World)
     World.GetTimerManager().SetTimer(ReadinessTimer, this, &ThisClass::RefreshState, 0.25f, true);
 }
 
+const FMWEnvironmentBinding* UMWEnvironmentGameplay::FindBinding(FName ThemeId) const
+{
+    return Bindings.FindByPredicate([ThemeId](const FMWEnvironmentBinding& Binding)
+    {
+        return Binding.MapThemeId == ThemeId;
+    });
+}
+
+void UMWEnvironmentGameplay::RefreshLobbyTheme()
+{
+    const AMWLobbyGameState* Lobby = LobbyState.Get();
+    UGameInstance* Game = GetWorld()->GetGameInstance();
+    auto* Preload = Game ? Game->GetSubsystem<UMWEnvironmentPreload>() : nullptr;
+    if (!Lobby || !Preload)
+    {
+        return;
+    }
+    const EMWRoomPhase Phase = Lobby->GetRoomPhase();
+    const auto* Binding = FindBinding(Lobby->GetRoomSettings().MapThemeId.GetTagName());
+    if (!Binding || Phase == EMWRoomPhase::Failed)
+    {
+        Preload->ClearSelection();
+        return;
+    }
+    Preload->SelectTheme(Binding->Environment, Phase == EMWRoomPhase::Traveling);
+}
+
 // 기존 복제 테마·단계와 로컬 컨트롤러를 확인해 완료본 배경 생성기를 연결한다.
 void UMWEnvironmentGameplay::RefreshState()
 {
     UWorld* World = GetWorld();
     if (!World || World->bIsTearingDown)
         return;
+    if (auto* Lobby = World->GetGameState<AMWLobbyGameState>())
+    {
+        if (!bPreloadLobbyTheme)
+        {
+            return;
+        }
+        if (LobbyState.Get() != Lobby)
+        {
+            if (LobbyState.IsValid())
+            {
+                LobbyState->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshLobbyTheme);
+            }
+            LobbyState = Lobby;
+            Lobby->OnLobbyChanged.AddUniqueDynamic(this, &ThisClass::RefreshLobbyTheme);
+            RefreshLobbyTheme();
+        }
+        return;
+    }
     auto* Current = World->GetGameState<AMWGameplayGameState>();
     if (State != Current)
     {
@@ -79,11 +127,7 @@ void UMWEnvironmentGameplay::RefreshState()
         Status = TEXT("WaitingForLocalController");
         return;
     }
-    const auto* Binding = Bindings.FindByPredicate(
-        [ThemeId](const auto& B)
-        {
-            return B.MapThemeId == ThemeId;
-        });
+    const auto* Binding = FindBinding(ThemeId);
     if (!Binding)
     {
         StopEnvironment();
@@ -114,6 +158,11 @@ void UMWEnvironmentGameplay::RefreshState()
         return;
     }
     Generator->Theme = Theme;
+    // 생성기가 테마를 참조한 뒤 로비에서 보관한 로드 핸들을 놓는다.
+    if (auto* Preload = UGameInstance::GetSubsystem<UMWEnvironmentPreload>(World->GetGameInstance()))
+    {
+        Preload->ClearSelection();
+    }
     Generator->Seed = LocalEnvironmentSeed;
     Generator->ViewPlayerController = Local;
     UGameplayStatics::FinishSpawningActor(Generator, FTransform::Identity);
@@ -172,6 +221,17 @@ void UMWEnvironmentGameplay::StopEnvironment()
 // 준비 점검 타이머와 실제 구독 상태를 해제한 뒤 배경 수명을 닫는다.
 void UMWEnvironmentGameplay::Deinitialize()
 {
+    if (auto* Lobby = LobbyState.Get())
+    {
+        Lobby->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshLobbyTheme);
+        if (Lobby->GetRoomPhase() != EMWRoomPhase::Traveling)
+        {
+            if (auto* Preload = UGameInstance::GetSubsystem<UMWEnvironmentPreload>(GetWorld()->GetGameInstance()))
+            {
+                Preload->ClearSelection();
+            }
+        }
+    }
     if (GetWorld())
         GetWorld()->GetTimerManager().ClearTimer(ReadinessTimer);
     if (State)
