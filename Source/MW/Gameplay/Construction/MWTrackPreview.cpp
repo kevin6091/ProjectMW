@@ -6,6 +6,9 @@
 
 namespace
 {
+	// 표시 전용 액터에만 붙는 내부 표식이다. 에셋이나 레벨에서 설정할 필요가 없다.
+	const FName DisplayOnlyTag(TEXT("MWTrackDisplayOnly"));
+
 	bool IsWireframePart(const USceneComponent& Component)
 	{
 		static const FName WireframesName(TEXT("Wireframes"));
@@ -22,6 +25,7 @@ namespace
 
 FBox MWTrackPreview::ShowWireframes(AActor& Track)
 {
+	Track.Tags.AddUnique(DisplayOnlyTag);
 	FBox Bounds(ForceInit);
 	TInlineComponentArray<UPrimitiveComponent*> Parts(&Track);
 	for (UPrimitiveComponent* Part : Parts)
@@ -38,6 +42,11 @@ FBox MWTrackPreview::ShowWireframes(AActor& Track)
 		}
 	}
 	return Bounds;
+}
+
+bool MWTrackPreview::IsDisplayOnly(const AActor& Track)
+{
+	return Track.ActorHasTag(DisplayOnlyTag);
 }
 
 void MWTrackPreview::HideWireframes(AActor& Track)

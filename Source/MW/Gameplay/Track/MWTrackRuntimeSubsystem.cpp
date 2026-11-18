@@ -4,6 +4,7 @@
 
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Gameplay/Construction/MWTrackPreview.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "TimerManager.h"
@@ -76,7 +77,9 @@ void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 // 카탈로그에 대응하는 트랙에만 런타임을 연결하고 이미 있는 컴포넌트는 중복 생성하지 않는다.
 void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActor)
 {
-    if (!IsValid(Actor) || !Actor->GetRootComponent() || Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
+    // 선택판과 고스트에는 다음 틱에도 경기용 충돌·트리거를 만들지 않는다.
+    if (!IsValid(Actor) || MWTrackPreview::IsDisplayOnly(*Actor) || !Actor->GetRootComponent() ||
+        Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
     {
         return;
     }
