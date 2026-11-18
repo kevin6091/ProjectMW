@@ -46,6 +46,12 @@ namespace
                                                          TEXT("/Game/Developers/user/L_Dev_Drive_ItemPickup");
     }
 
+    bool IsVehicleMovementTestPIE(const UWorld& World)
+    {
+        return World.WorldType == EWorldType::PIE && UWorld::RemovePIEPrefix(World.GetOutermost()->GetName()) ==
+                                                         TEXT("/Game/Developers/user/L_VehicleMovement_Test");
+    }
+
 
     class SMWItemSlotFrame : public SCompoundWidget
     {
@@ -691,8 +697,8 @@ bool UMWGameplayHUDSubsystem::IsTickable() const
     const bool bNeedsStateBinding = ObservedGameState.Get() != GameState || (!GameState && RoomPhase.IsSet());
 
     // 오버레이 생성 전이라도 원본 상태가 사라졌으면 이전 구독과 캐시를 정리한다.
-    const bool bCanAttach = GameState || IsItemPickupTestPIE(*World);
-    return bNeedsStateBinding || (!Overlay && bCanAttach);
+    return bNeedsStateBinding ||
+           (!Overlay && (GameState || IsItemPickupTestPIE(*World) || IsVehicleMovementTestPIE(*World)));
 }
 
 // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
@@ -725,10 +731,11 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     // WBP는 월드당 한 번 만들고 UObject 참조를 유지해 Slate 표시 중 수집되지 않게 한다.
     const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
     UClass* WidgetClass = Settings->RaceHUDWidgetClass.LoadSynchronous();
+    const bool bItemPickupTest = IsItemPickupTestPIE(*World);
     RaceHUDWidget = WidgetClass ? CreateWidget<UMWRaceHUDWidget>(PC, WidgetClass) : nullptr;
     if (RaceHUDWidget)
     {
-        RaceHUDWidget->SetItemPickupTest(IsItemPickupTestPIE(*World));
+        RaceHUDWidget->SetSpeedometerOnly(bItemPickupTest || IsVehicleMovementTestPIE(*World));
     }
     else
     {
@@ -739,7 +746,7 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     Overlay = SNew(SMWGameplayHUD)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
-                  .bItemPickupTest(IsItemPickupTestPIE(*World))
+                  .bItemPickupTest(bItemPickupTest)
                   .RaceHUD(RaceHUDWidget ? RaceHUDWidget->TakeWidget() : SNullWidget::NullWidget)
                   .HeldItem_Lambda(
                       [WeakThis]

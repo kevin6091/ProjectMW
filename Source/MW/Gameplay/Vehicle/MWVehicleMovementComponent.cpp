@@ -624,6 +624,11 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 
 	const bool bBraking = EffectiveBrake > KINDA_SMALL_NUMBER;
 	const bool bAccelerating = !FMath::IsNearlyZero(EffectiveThrottle);
+	
+	const double TravelSign = EffectiveThrottle < 0.f ? -1.0 : 1.0;
+	const FVector DriveDirection = Forward * TravelSign;
+	double DriveSpeedLimit = 0.0;
+	double RequestedDriveSpeedIncrease = 0.0;
 
 	if (bBraking || !bAccelerating)
 	{
@@ -644,28 +649,20 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 	}
 	else
 	{
-		const float TravelSign = EffectiveThrottle > 0.f ? 1.f : -1.f;
-		const float ForwardSpeed = FVector::DotProduct(GroundVelocity, Forward);
-		// 요청한 추진 방향으로 얼마나 빨리 움직이고 있는지
-		const float SpeedInRequestedDirection = ForwardSpeed * TravelSign;
+		const double SpeedInRequestedDirection = FVector::DotProduct(GroundVelocity, DriveDirection);
+		DriveSpeedLimit = GetMaxSpeed();
 
-		const float SpeedLimit = GetMaxSpeed();
-		const float RemainingSpeed = FMath::Max(SpeedLimit - SpeedInRequestedDirection, 0.f);
 		const UMWItemComponent* Booster = EffectiveThrottle > 0.f ? GetActiveItemBooster() : nullptr;
-		const float RequestedSpeedIncrease =
-			DriveConfig.DriveAcceleration *
-			(Booster ? Booster->GetBoosterAccelerationMultiplier() : 1.f) *
-			FMath::Abs(EffectiveThrottle) *
-			DeltaTime;
-		const float AppliedSpeedIncrease = FMath::Min(RequestedSpeedIncrease, RemainingSpeed);
+		const double EngineSpeedIncrease = DriveConfig.DriveAcceleration * (Booster ? Booster->GetBoosterAccelerationMultiplier() : 1.f) * FMath::Abs(EffectiveThrottle) * DeltaTime;
 
-		GroundVelocity += Forward * TravelSign * AppliedSpeedIncrease;
+		const double RemainingSpeed = FMath::Max(DriveSpeedLimit - SpeedInRequestedDirection, 0.0);
+		RequestedDriveSpeedIncrease = FMath::Min(EngineSpeedIncrease, RemainingSpeed);
+		GroundVelocity += DriveDirection * RequestedDriveSpeedIncrease;
 
-		// 부스터 종료 후 초과 속도는 기존 자연 감속량으로 줄인다.
-		// 이 요청도 아래 main의 타이어 접지력 제한을 통과하므로 속도를 강제로 자르지 않는다.
-		const float ExcessSpeed = FMath::Max(SpeedInRequestedDirection - SpeedLimit, 0.f);
-		const float SpeedReduction = FMath::Min(ExcessSpeed, DriveConfig.CoastDeceleration * DeltaTime);
-		GroundVelocity -= Forward * TravelSign * SpeedReduction;
+		// 부스터 종료 등으로 종방향 상한을 초과하면 기존 감속량으로 복귀한다.
+		const double ExcessSpeed = FMath::Max(SpeedInRequestedDirection - DriveSpeedLimit, 0.0);
+		const double SpeedReduction = FMath::Min(ExcessSpeed, static_cast<double>(DriveConfig.CoastDeceleration) * DeltaTime);
+		GroundVelocity -= DriveDirection * SpeedReduction;
 	}
 
 	// 드리프트 중에는 횡방향 그립을 낮춘다.
@@ -688,6 +685,25 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 	const FVector AppliedTireDeltaVelocity = RequestedTireDeltaVelocity.GetClampedToMaxSize(MaxTireDeltaSpeed);
 
 	Velocity = VelocityBeforeTireForces + AppliedTireDeltaVelocity;
+	
+	const double SpeedLimitSquared = FMath::Square(DriveSpeedLimit);
+	if (RequestedDriveSpeedIncrease <= 0.0 || Velocity.SizeSquared() <= SpeedLimitSquared)
+	{
+		return;
+	}
+
+	// 접지 한계를 통과한 종방향 추진만 분리해 중력과 횡그립의 결과를 보존한다.
+	const double AppliedDriveSpeedIncrease = FMath::Max(FVector::DotProduct(AppliedTireDeltaVelocity, DriveDirection), 0.0);
+	const FVector VelocityWithoutDrive = Velocity - DriveDirection * AppliedDriveSpeedIncrease;
+
+	const double SpeedAlongDrive = FVector::DotProduct(VelocityWithoutDrive, DriveDirection);
+	const double SideSpeed = FVector::DotProduct(VelocityWithoutDrive, Right);
+
+	// 횡속도가 사용한 몫을 빼고, 상한 안에서 허용되는 종방향 속도를 계산한다.
+	const double MaxSpeedAlongDrive = FMath::Sqrt(FMath::Max(SpeedLimitSquared - FMath::Square(SideSpeed), 0.0));
+	const double AllowedDriveSpeedIncrease = FMath::Max(MaxSpeedAlongDrive - SpeedAlongDrive, 0.0);
+
+	Velocity = VelocityWithoutDrive + DriveDirection * FMath::Min(AppliedDriveSpeedIncrease, AllowedDriveSpeedIncrease);
 }
 
 void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
