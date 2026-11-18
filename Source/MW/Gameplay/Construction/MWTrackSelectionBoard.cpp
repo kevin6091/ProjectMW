@@ -3,7 +3,9 @@
 #include "Engine/LocalPlayer.h"
 
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/BoxComponent.h"
+#include "Gameplay/Construction/MWTrackSelectionExposure.h"
 #include "UI/MWTrackSelectionWidget.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -233,6 +235,11 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 			{
 				Viewer = PC;
 				PC->SetTrackSelectionBoard(this);
+				if (APlayerCameraManager* Manager = PC->PlayerCameraManager;
+					Manager && !Manager->FindCameraModifierByClass(UMWTrackSelectionExposure::StaticClass()))
+				{
+					Manager->AddNewCameraModifier(UMWTrackSelectionExposure::StaticClass());
+				}
 				PC->SetViewTarget(this);
 				break;
 			}
