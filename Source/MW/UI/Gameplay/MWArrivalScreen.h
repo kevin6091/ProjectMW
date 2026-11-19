@@ -31,7 +31,7 @@ private:
     UPROPERTY(Config) TSoftClassPtr<class UUserWidget> LoadingWidgetClass;
     bool Tick(float Delta);
     void HandleConnectionFailure(UWorld* World, const FString& Reason);
-    void ShowFailure(bool bCanRetry = true);
+    void ShowFailure(bool bCanRetry = true, const FText& Message = FText::GetEmpty());
     FDelegateHandle TravelFailure;
     FDelegateHandle NetworkFailure;
     TSharedPtr<SBorder> Cover;

@@ -288,6 +288,12 @@ bool UMWArrivalScreen::Tick(float Delta)
         !State->GetRoomSettings().MapThemeId.IsValid() ||
         FName(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) != ExpectedMap)
         Pending = TEXT("destination world/controller");
+    else if (Phase == EMWRoomPhase::Failed)
+    {
+        Pending = TEXT("server ended gameplay");
+        ShowFailure(false, NSLOCTEXT("MWArrival", "GameStopped", "게임이 중단되었습니다. 방을 나가 주세요."));
+        return true;
+    }
     else if (Phase == EMWRoomPhase::PreparingConstruction)
     {
         const auto& Selection = State->GetConstructionComponent()->GetSelectionSession();
@@ -370,7 +376,7 @@ void UMWArrivalScreen::HandleConnectionFailure(UWorld* World, const FString& Rea
     ShowFailure(false);
 }
 
-void UMWArrivalScreen::ShowFailure(bool bCanRetry)
+void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
 {
     bFailed = true;
     Frame.Reset();
@@ -378,7 +384,8 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry)
     TSharedPtr<SButton> InitialFocus;
     Cover->SetHAlign(HAlign_Fill);
     Cover->SetVAlign(VAlign_Fill);
-    Cover->SetContent(MWGameplayUI::RecoveryPanel(NSLOCTEXT("MWArrival","Failed","첫 화면을 준비할 수 없습니다."),
+    Cover->SetContent(MWGameplayUI::RecoveryPanel(Message.IsEmpty()
+        ? NSLOCTEXT("MWArrival","Failed","첫 화면을 준비할 수 없습니다.") : Message,
         NSLOCTEXT("MWArrival","Retry","첫 화면 다시 준비"), FOnClicked::CreateLambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
         {
             if (auto* Self = Weak.Get())

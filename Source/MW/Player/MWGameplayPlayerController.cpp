@@ -113,15 +113,30 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	// 실패 단계의 안내는 경기 HUD가 소유한다. 종료된 건설판이 오류 배지를 덮지 않게 한다.
 	const bool bShowConstruction = TrackSelectionWidgetClass &&
-		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement || Phase == EMWRoomPhase::Failed);
+		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement);
 	const bool bResetConstructionWidget = PresentedPhase == EMWRoomPhase::TrackPlacement
-		&& (Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::Failed);
+		&& Phase == EMWRoomPhase::PreparingConstruction;
 	PresentedPhase = Phase;
 	if ((!bShowConstruction || bResetConstructionWidget) && IsValid(TrackSelectionWidget))
 	{
 		TrackSelectionWidget->RemoveFromParent();
 		TrackSelectionWidget = nullptr;
+	}
+
+	if (Phase == EMWRoomPhase::Failed)
+	{
+		// 가림 중인 복구창은 자체 포커스를 유지하고, 공개된 화면에서는 기존 게임·UI 입력을 유지한다.
+		if (!GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+		{
+			FInputModeGameAndUI Mode;
+			Mode.SetHideCursorDuringCapture(false);
+			Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(Mode);
+			bShowMouseCursor = true;
+		}
+		return;
 	}
 
 	if (bShowConstruction)
