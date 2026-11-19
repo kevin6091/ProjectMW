@@ -380,8 +380,16 @@ bool UMWArrivalScreen::Tick(float Delta)
     }
     else if (Phase == EMWRoomPhase::PreparingRace && !PC->GetPawn())
     {
-        if (!World->GetSubsystem<UMWGameplayHUDSubsystem>()->HasWaitingBoard(*PC))
-            Pending = TEXT("waiting board");
+        const auto Board = World->GetSubsystem<UMWGameplayHUDSubsystem>()->GetWaitingBoardReadiness(*PC);
+        if (Board == EMWWaitingBoardReadiness::Unavailable)
+        {
+            Pending = TEXT("waiting board asset/binding");
+            ShowFailure(false, NSLOCTEXT("MWArrival", "WaitingBoardUnavailable",
+                "경기 대기판을 불러올 수 없습니다. 방을 나가 주세요."));
+            return true;
+        }
+        if (Board == EMWWaitingBoardReadiness::Pending)
+            Pending = TEXT("waiting board roster");
     }
     else if (Phase == EMWRoomPhase::PreparingRace || Phase == EMWRoomPhase::Countdown || Phase == EMWRoomPhase::Racing)
     {

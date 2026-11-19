@@ -77,6 +77,19 @@ namespace
                 if (RosterHost) RosterHost->SetContent(SAssignNew(Roster, SGridPanel));
                 IconHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("ItemIconHost")));
                 if (ItemSlot.IsValid()) ItemDesignSize = ItemSlot->GetWidthOverride();
+
+                const auto LogMissingBinding = [Panels](bool bBound, const TCHAR* Binding)
+                {
+                    if (!bBound)
+                        UE_LOG(LogMWInGameUI, Warning, TEXT("경기 화면 %s의 %s 바인딩이 없거나 타입이 다릅니다."),
+                            *Panels->GetClass()->GetPathName(), Binding);
+                };
+                LogMissingBinding(WaitingBoard.IsValid(), TEXT("WaitingBoard"));
+                LogMissingBinding(RosterHost != nullptr, TEXT("RosterHost (NativeWidgetHost)"));
+                LogMissingBinding(SelectSign.IsValid(), TEXT("SelectSign"));
+                LogMissingBinding(BuildSign.IsValid(), TEXT("BuildSign"));
+                LogMissingBinding(ItemSlot.IsValid(), TEXT("ItemSlot (SizeBox)"));
+                LogMissingBinding(IconHost != nullptr, TEXT("ItemIconHost (NativeWidgetHost)"));
             }
             // 안내 시간은 화면 생성 때 한 번 읽고, 경기 단계가 바뀔 때 기존 시계를 다시 시작한다.
             ConstructionPromptSeconds = FMath::IsFinite(Settings->ConstructionPromptSeconds)
@@ -143,24 +156,27 @@ namespace
             const auto* Vehicle = PC ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
             const bool bItemPhase = PIEPreview.bItemSlot || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
             const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
-            if (!ItemSlot.IsValid() || !WaitingBoard.IsValid() || !Roster || !SelectSign.IsValid() || !BuildSign.IsValid()) return;
-            ItemSlot->SetVisibility(bShowItemSlot ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-            if (bShowItemSlot)
+            // 각 패널의 바인딩만 검사한다. 안내판 한 개가 없어도 아이템 슬롯은 기존 동작을 유지한다.
+            if (ItemSlot.IsValid())
             {
-                const FVector2f ViewportSize(Geometry.GetLocalSize());
-                const float CanvasScale = FMath::Min(ViewportSize.X / MWGameplayUI::DesignWidth,
-                                                     ViewportSize.Y / MWGameplayUI::DesignHeight) *
-                                          Geometry.GetAccumulatedLayoutTransform().GetScale();
-                if (CanvasScale > UE_SMALL_NUMBER)
+                ItemSlot->SetVisibility(bShowItemSlot ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+                if (bShowItemSlot)
                 {
-                    // 화면이 작으면 슬롯을 최소 픽셀 크기까지 키우되 WBP의 기본 크기보다 작게 줄이지 않는다.
-                    const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemDesignSize,
-                                                       FMath::Max(ItemDesignSize, MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction));
-                    ItemSlot->SetWidthOverride(SlotSize);
-                    ItemSlot->SetHeightOverride(SlotSize);
+                    const FVector2f ViewportSize(Geometry.GetLocalSize());
+                    const float CanvasScale = FMath::Min(ViewportSize.X / MWGameplayUI::DesignWidth,
+                                                         ViewportSize.Y / MWGameplayUI::DesignHeight) *
+                                              Geometry.GetAccumulatedLayoutTransform().GetScale();
+                    if (CanvasScale > UE_SMALL_NUMBER)
+                    {
+                        // 화면이 작으면 슬롯을 최소 픽셀 크기까지 키우되 WBP의 기본 크기보다 작게 줄이지 않는다.
+                        const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemDesignSize,
+                                                           FMath::Max(ItemDesignSize, MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction));
+                        ItemSlot->SetWidthOverride(SlotSize);
+                        ItemSlot->SetHeightOverride(SlotSize);
+                    }
                 }
+                UpdateItemSlot(bShowItemSlot ? Vehicle : nullptr, CurrentTime);
             }
-            UpdateItemSlot(bShowItemSlot ? Vehicle : nullptr, CurrentTime);
             if (PIEPreview.IsEnabled() || !GS)
                 return;
 
@@ -175,27 +191,33 @@ namespace
             }
 
             const bool bShowWaiting = bHasRoom && Phase == EMWRoomPhase::PreparingRace && !PC->GetPawn();
-            WaitingBoard->SetVisibility(bShowWaiting ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-            if (bShowWaiting && CurrentTime >= NextRosterRefresh)
+            if (WaitingBoard.IsValid())
             {
-                RefreshRoster(*GS);
-                NextRosterRefresh = CurrentTime + .25;
+                WaitingBoard->SetVisibility(bShowWaiting && Roster ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+                if (bShowWaiting && Roster && CurrentTime >= NextRosterRefresh)
+                {
+                    RefreshRoster(*GS);
+                    NextRosterRefresh = CurrentTime + .25;
+                }
             }
 
-            SelectSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::PreparingConstruction &&
-                                              CurrentTime - PhaseStarted < ConstructionPromptSeconds
-                                          ? ESlateVisibility::HitTestInvisible
-                                          : ESlateVisibility::Collapsed);
-            BuildSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::TrackPlacement &&
-                                             CurrentTime - PhaseStarted < ConstructionPromptSeconds
-                                         ? ESlateVisibility::HitTestInvisible
-                                         : ESlateVisibility::Collapsed);
+            if (SelectSign.IsValid())
+                SelectSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::PreparingConstruction &&
+                                                  CurrentTime - PhaseStarted < ConstructionPromptSeconds
+                                              ? ESlateVisibility::HitTestInvisible
+                                              : ESlateVisibility::Collapsed);
+            if (BuildSign.IsValid())
+                BuildSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::TrackPlacement &&
+                                                 CurrentTime - PhaseStarted < ConstructionPromptSeconds
+                                             ? ESlateVisibility::HitTestInvisible
+                                             : ESlateVisibility::Collapsed);
         }
 
-        bool IsWaitingBoardReady() const
+        EMWWaitingBoardReadiness GetWaitingBoardReadiness() const
         {
-            return WaitingBoard.IsValid() && WaitingBoard->IsVisible() && Roster &&
-                bRosterBuilt && !DisplayedCells.IsEmpty();
+            if (!WaitingBoard.IsValid() || !Roster) return EMWWaitingBoardReadiness::Unavailable;
+            return WaitingBoard->IsVisible() && bRosterBuilt && !DisplayedCells.IsEmpty()
+                ? EMWWaitingBoardReadiness::Ready : EMWWaitingBoardReadiness::Pending;
         }
 
         // 현재 카메라에 투영한 차량 이름과 선택 커서를 표시하고 화면 밖 대상은 제외한다.
@@ -535,12 +557,12 @@ bool UMWGameplayHUDSubsystem::DoesSupportWorldType(EWorldType::Type Type) const
     return Type == EWorldType::Game || Type == EWorldType::PIE;
 }
 
-bool UMWGameplayHUDSubsystem::HasWaitingBoard(const APlayerController& PC) const
+EMWWaitingBoardReadiness UMWGameplayHUDSubsystem::GetWaitingBoardReadiness(const APlayerController& PC) const
 {
-    // 첫 화면 가림은 이 창의 대기판에 참가자 목록이 만들어진 뒤에 해제할 수 있다.
-    if (!MatchPanels || MatchPanels->GetOwningPlayer() != &PC || RoomPhase != EMWRoomPhase::PreparingRace)
-        return false;
-    return Overlay && StaticCastSharedPtr<SMWGameplayHUD>(Overlay)->IsWaitingBoardReady();
+    // 아직 HUD를 만들지 않은 상태와 필수 대기판 부품이 없는 상태를 구분한다.
+    if (!Overlay || ItemController.Get() != &PC || RoomPhase != EMWRoomPhase::PreparingRace)
+        return EMWWaitingBoardReadiness::Pending;
+    return StaticCastSharedPtr<SMWGameplayHUD>(Overlay)->GetWaitingBoardReadiness();
 }
 
 void UMWGameplayHUDSubsystem::OnWorldBeginPlay(UWorld& InWorld)
@@ -616,7 +638,9 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     const TWeakObjectPtr<UMWGameplayHUDSubsystem> WeakThis(this);
     UClass* PanelsClass = Settings->MatchPanelsClass.LoadSynchronous();
     MatchPanels = PanelsClass ? CreateWidget<UUserWidget>(PC, PanelsClass) : nullptr;
-    if (!MatchPanels) UE_LOG(LogMWInGameUI, Error, TEXT("경기 화면 WBP를 로드할 수 없습니다."));
+    if (!MatchPanels)
+        UE_LOG(LogMWInGameUI, Error, TEXT("경기 화면 WBP를 로드할 수 없습니다. MatchPanelsClass=%s"),
+            *Settings->MatchPanelsClass.ToSoftObjectPath().ToString());
     Overlay = SNew(SMWGameplayHUD).Panels(MatchPanels)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)

@@ -70,6 +70,13 @@ struct FMWPIEHUDPreview
     bool IsEnabled() const { return bSpeedometer || bItemSlot; }
 };
 
+enum class EMWWaitingBoardReadiness : uint8
+{
+    Pending,
+    Ready,
+    Unavailable,
+};
+
 // 월드에서 로컬 HUD 연결을 준비하고 Pawn 교체·월드 종료 때 실제 구독과 화면을 정리한다.
 UCLASS(Config = Game)
 class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
@@ -140,7 +147,7 @@ public:
     // 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
     virtual bool IsTickable() const override;
 
-    bool HasWaitingBoard(const APlayerController& PC) const;
+    EMWWaitingBoardReadiness GetWaitingBoardReadiness(const APlayerController& PC) const;
 
     virtual TStatId GetStatId() const override;
 
