@@ -208,6 +208,7 @@ void UMWArrivalScreen::Begin(APlayerController& Controller, FName Destination)
     Cancel();
     Source = Controller.GetWorld();
     ExpectedMap = Destination;
+    MapTravelStartedAt = FPlatformTime::Seconds();
     Viewport = Client;
     Attempt = FGuid::NewGuid();
     VisibleSeconds = 0;
@@ -306,7 +307,27 @@ bool UMWArrivalScreen::Tick(float Delta)
         Cancel();
         return false;
     }
-    if (bFailed || World == Source.Get()) return true;
+    if (bFailed) return true;
+
+    const FName WorldPackage = World ? FName(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) : NAME_None;
+    if (MapTravelStartedAt.IsSet())
+    {
+        if (World && World != Source.Get() && !ExpectedMap.IsNone() && WorldPackage == ExpectedMap)
+        {
+            MapTravelStartedAt.Reset();
+        }
+        else
+        {
+            // 서버의 출발 준비 보고 제한 이후에도 클라이언트가 출발 월드에 남을 수 있다.
+            if (FPlatformTime::Seconds() - MapTravelStartedAt.GetValue() >= FMath::Max(1.f, MapTravelTimeoutSeconds))
+            {
+                Pending = FString::Printf(TEXT("map travel timeout source=%s current=%s destination=%s"),
+                    *GetNameSafe(Source.Get()), *WorldPackage.ToString(), *ExpectedMap.ToString());
+                ShowFailure(false, NSLOCTEXT("MWArrival", "MapTravelTimeout", "경기 맵으로 이동하지 못했습니다. 방을 나가 주세요."));
+            }
+            return true;
+        }
+    }
     VisibleSeconds += Delta;
     Pending.Reset();
     auto* State = World ? World->GetGameState<AMWGameplayGameState>() : nullptr;
@@ -317,7 +338,7 @@ bool UMWArrivalScreen::Tick(float Delta)
     if (!World || !State || !PC || PC->GetWorld() != World || !PC->GetLocalPlayer() ||
         PC->GetLocalPlayer()->ViewportClient != Client || !Camera || !Client->Viewport ||
         !State->GetRoomSettings().MapThemeId.IsValid() ||
-        FName(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) != ExpectedMap)
+        WorldPackage != ExpectedMap)
         Pending = TEXT("destination world/controller");
     else if (Phase == EMWRoomPhase::Failed)
     {
@@ -488,6 +509,7 @@ void UMWArrivalScreen::Cancel()
     Cover.Reset();
     Viewport.Reset();
     Source.Reset();
+    MapTravelStartedAt.Reset();
 }
 
 void UMWArrivalScreen::Deinitialize()

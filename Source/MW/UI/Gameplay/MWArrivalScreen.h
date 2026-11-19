@@ -43,6 +43,11 @@ private:
     TWeakObjectPtr<UGameViewportClient> Viewport;
     TWeakObjectPtr<UWorld> Source;
     FName ExpectedMap;
+
+    // 월드가 정지하거나 바뀌어도 출발 가림부터 목적지까지의 시간은 계속 잰다.
+    UPROPERTY(Config, meta = (ClampMin = "1", Units = "s"))
+    float MapTravelTimeoutSeconds = 45.f;
+    TOptional<double> MapTravelStartedAt;
     FGuid Attempt;
     FString Pending;
     double VisibleSeconds = 0;
