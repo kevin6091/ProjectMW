@@ -68,6 +68,7 @@ void UMWRaceHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
     const bool bShowSpeed = bDriving && IsValid(PC) && PC->IsLocalController() && IsValid(Vehicle);
 
     Panel_Speed->SetVisibility(bShowSpeed ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    // 개발 맵에서는 아이템 슬롯만 미리 보는 경우에도 실제 경기 단계 배지를 숨긴다.
     UpdatePhase(Preview.IsEnabled() ? TOptional<EMWRoomPhase>() : Phase);
     SampleSpeed(bShowSpeed ? Vehicle : nullptr, World ? World->GetTimeSeconds() : 0.0);
 

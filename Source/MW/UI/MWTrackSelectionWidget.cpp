@@ -318,6 +318,7 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
 		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen)
 		{
+			// 각 창의 해상도와 카메라가 달라도 같은 트랙 위치에 포인터를 표시하도록 배치 평면의 월드 좌표를 보낸다.
 			FVector Point = FVector::ZeroVector;
 			const bool bVisible = MWCursorProjection::SampleWorldPlane(*PC, Session.BuildOrigin, FVector::UpVector, Point);
 			Own->GetCursorComponent()->SubmitLocalCursor(MWCursorContexts::TrackPlacement, bVisible, Point);
@@ -339,6 +340,7 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 		}
 		else
 		{
+			// 복제된 포인터가 늦게 도착해도 이전 후보 배치 위의 위치를 현재 선택판에 표시하지 않는다.
 			const auto Sample = PS->GetPlayerConstructionComponent()->GetCursor();
 			if (!Sample.bIsVisible || Sample.SelectionSessionId != DisplayedSession.SelectionSessionId ||
 				Sample.OffersRevision != DisplayedSession.OffersRevision) continue;

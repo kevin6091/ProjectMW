@@ -346,6 +346,7 @@ bool UMWArrivalScreen::Tick(float Delta)
 
     if (Pending.IsEmpty()) CollectEnvironment.Broadcast(*World, Materials, Pending);
     if (Pending.IsEmpty()) MaterialsReady(*World, Materials, Pending);
+    // 준비가 풀리거나 카메라·단계·리비전이 바뀌면 이전 장면의 렌더 완료를 재사용할 수 없다.
     if (!Pending.IsEmpty()) Frame.Reset();
     else if (!Frame || !Frame->Matches(Client->Viewport, *Camera, Phase, Session, Revision))
     {

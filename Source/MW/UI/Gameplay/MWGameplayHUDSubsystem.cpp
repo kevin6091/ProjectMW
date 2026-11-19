@@ -534,6 +534,7 @@ bool UMWGameplayHUDSubsystem::DoesSupportWorldType(EWorldType::Type Type) const
 
 bool UMWGameplayHUDSubsystem::HasWaitingBoard(const APlayerController& PC) const
 {
+    // 첫 화면 가림은 이 창의 대기판에 참가자 목록이 만들어진 뒤에 해제할 수 있다.
     if (!MatchPanels || MatchPanels->GetOwningPlayer() != &PC || RoomPhase != EMWRoomPhase::PreparingRace)
         return false;
     return Overlay && StaticCastSharedPtr<SMWGameplayHUD>(Overlay)->IsWaitingBoardReady();
