@@ -100,10 +100,6 @@ public:
     void InstallFrontendCursor();
     
 private:
-    // 설정 파일에서 지정한 커서 클래스다. 설치 시 필요한 에셋을 불러온다.
-    UPROPERTY(Config) 
-    TSoftClassPtr<UMWVehiclePlayerMarkerWidget> PointerWidgetClass;
-    
     // 맵 이동 중에도 유지할 커서 위젯을 UE가 추적하는 참조로 보관한다.
     UPROPERTY(Transient) 
     TObjectPtr<UMWVehiclePlayerMarkerWidget> FrontendCursor;

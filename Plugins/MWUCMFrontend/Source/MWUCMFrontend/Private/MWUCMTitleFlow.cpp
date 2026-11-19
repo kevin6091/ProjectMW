@@ -39,6 +39,7 @@
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "UI/Cursor/MWPointerCursor.h"
+#include "UI/Cursor/MWRemoteCursorOverlay.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "UI/VehicleSelection/MWVehicleSelectionPreviewActor.h"
 #include "System/MWGameInstance.h"
@@ -239,7 +240,7 @@ void UMWUCMIntroSession::InstallFrontendCursor()
     if (FrontendCursorSlate.IsValid())
         return;
     auto* Viewport = GetGameInstance()->GetGameViewportClient();
-    auto* Class = PointerWidgetClass.LoadSynchronous();
+    auto* Class = GetDefault<UMWRemoteCursorOverlay>()->PointerWidgetClass.LoadSynchronous();
     if (!Viewport || !Class)
         return;
     FrontendCursor = CreateWidget<UMWVehiclePlayerMarkerWidget>(GetGameInstance(), Class);
@@ -258,7 +259,7 @@ void UMWUCMIntroSession::InstallFrontendCursor()
         TAttribute<FVector2D>::CreateLambda(
             [WeakThis]()
             {
-                return FVector2D(154.834854f) *
+                return FVector2D(GetDefault<UMWRemoteCursorOverlay>()->PointerDisplaySize) *
                        (WeakThis.IsValid() ? UWidgetLayoutLibrary::GetViewportScale(WeakThis.Get()) : 1.f);
             }));
     CursorViewport = Viewport;

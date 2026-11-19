@@ -5,6 +5,8 @@
 #include "Gameplay/Construction/MWTrackSelectionTypes.h"
 #include "MWTrackSelectionWidget.generated.h"
 
+class UMWRemoteCursorOverlay;
+class UMWVehiclePlayerMarkerWidget;
 class UBorder;
 class UTextBlock;
 class UCanvasPanel;
@@ -63,6 +65,6 @@ private:
 	bool bRequestPending = false;
 	bool bShowingPlacement = false;
 	int32 AcknowledgedOffer = INDEX_NONE;
-	UPROPERTY(Transient) TMap<int32, TObjectPtr<UTextBlock>> RemoteCursorLabels;
-	TMap<int32, FVector> SmoothedCursorPositions;
+	UPROPERTY(Transient) TObjectPtr<UMWRemoteCursorOverlay> RemoteCursors;
+	UPROPERTY(Transient) TSubclassOf<UMWVehiclePlayerMarkerWidget> PointerClass;
 };
