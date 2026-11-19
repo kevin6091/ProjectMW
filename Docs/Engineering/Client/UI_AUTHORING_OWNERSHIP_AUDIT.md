@@ -16,3 +16,4 @@
 | 아이템 슬롯 | ItemSlotLayout, 아이콘·재질, 룰렛 시각·사용 시간은 DefaultGame.ini. 유리 외형은 Content/UI/Common/Slate/ItemSlotGlass.svg | HUD가 보유 변경을 구독하고 룰렛·사용 연출과 최소 화면 크기를 계산한다. SVG 폴더는 DirectoriesToAlwaysStageAsUFS 대상이다. |
 | 계기판·주행 닉네임 | RaceHUDWidgetClass가 선택한 WBP_RaceHUD의 Designer, 닉네임은 HUD의 Slate | 계기판은 차량 표시값을 받고 외부 FitDesignCanvas가 표시 영역을 정한다. 닉네임 위치는 투영된 픽셀에서 위젯 로컬 좌표로 변환한다. |
 
+변경 후 편집 위치와 실행 결과는 [화면별 검증 기록](UI_AUTHORING_VERIFICATION_20261119.md)에서 확인할 수 있다.
