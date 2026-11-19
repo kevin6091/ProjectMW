@@ -9,9 +9,9 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 
-void UMWRaceHUDWidget::SetItemPickupTest(bool bEnabled)
+void UMWRaceHUDWidget::SetSpeedometerOnly(bool bEnabled)
 {
-    bItemPickupTest = bEnabled;
+    bSpeedometerOnly = bEnabled;
 }
 
 void UMWRaceHUDWidget::NativePreConstruct()
@@ -68,11 +68,11 @@ void UMWRaceHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
     const auto* HUD = World ? World->GetSubsystem<UMWGameplayHUDSubsystem>() : nullptr;
     const TOptional<EMWRoomPhase> Phase = HUD ? HUD->GetObservedRoomPhase() : TOptional<EMWRoomPhase>();
     const AMWVehiclePawn* Vehicle = IsValid(PC) ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
-    const bool bDriving = bItemPickupTest || (Phase.IsSet() && Phase.GetValue() == EMWRoomPhase::Racing);
+    const bool bDriving = bSpeedometerOnly || (Phase.IsSet() && Phase.GetValue() == EMWRoomPhase::Racing);
     const bool bShowSpeed = bDriving && IsValid(PC) && PC->IsLocalController() && IsValid(Vehicle);
 
     Panel_Speed->SetVisibility(bShowSpeed ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-    UpdatePhase(bItemPickupTest ? TOptional<EMWRoomPhase>() : Phase);
+    UpdatePhase(bSpeedometerOnly ? TOptional<EMWRoomPhase>() : Phase);
     SampleSpeed(bShowSpeed ? Vehicle : nullptr, World ? World->GetTimeSeconds() : 0.0);
 
     if (!bShowSpeed)

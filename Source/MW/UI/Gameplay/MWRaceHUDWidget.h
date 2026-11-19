@@ -18,8 +18,8 @@ class MW_API UMWRaceHUDWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    // 기존 아이템 단독 검증 맵 여부는 HUD 연결부에서 한 번 전달한다.
-    void SetItemPickupTest(bool bEnabled);
+    // 개발 맵에서는 경기 단계 없이 계기판을 표시한다.
+    void SetSpeedometerOnly(bool bEnabled);
 
 protected:
     virtual void NativePreConstruct() override;
@@ -93,5 +93,5 @@ private:
 
     double NextSpeedSampleTime = 0.0;
 
-    bool bItemPickupTest = false;
+    bool bSpeedometerOnly = false;
 };
