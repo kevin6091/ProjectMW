@@ -375,8 +375,11 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry)
     bFailed = true;
     Frame.Reset();
     UE_LOG(LogTemp, Warning, TEXT("MWArrival failed attempt=%s pending=%s"), *Attempt.ToString(), *Pending);
-    auto Retry = SNew(SButton).Text(NSLOCTEXT("MWArrival","Retry","첫 화면 다시 준비"))
-        .OnClicked_Lambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
+    TSharedPtr<SButton> InitialFocus;
+    Cover->SetHAlign(HAlign_Fill);
+    Cover->SetVAlign(VAlign_Fill);
+    Cover->SetContent(MWGameplayUI::RecoveryPanel(NSLOCTEXT("MWArrival","Failed","첫 화면을 준비할 수 없습니다."),
+        NSLOCTEXT("MWArrival","Retry","첫 화면 다시 준비"), FOnClicked::CreateLambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
         {
             if (auto* Self = Weak.Get())
             {
@@ -394,9 +397,8 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry)
                 Self->Cover->SetContent(Self->CreateLoadingContent());
             }
             return FReply::Handled();
-        });
-    auto Button = SNew(SButton).Text(NSLOCTEXT("MWArrival","Leave","방 나가기"))
-        .OnClicked_Lambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
+        }),
+        NSLOCTEXT("MWArrival","Leave","방 나가기"), FOnClicked::CreateLambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
         {
             if (auto* Self = Weak.Get())
                 if (auto* Game = Cast<UMWGameInstance>(Self->GetGameInstance()))
@@ -404,17 +406,11 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry)
                     Game->RequestLeaveRoom();
                 }
             return FReply::Handled();
-        });
-    Retry->SetVisibility(bCanRetry ? EVisibility::Visible : EVisibility::Collapsed);
-    Cover->SetContent(SNew(SVerticalBox) + SVerticalBox::Slot().AutoHeight()
-        [SNew(STextBlock).Text(NSLOCTEXT("MWArrival","Failed","첫 화면을 준비할 수 없습니다."))]
-        + SVerticalBox::Slot().AutoHeight()[Retry] + SVerticalBox::Slot().AutoHeight()[Button]);
-    Cover->SetHAlign(HAlign_Center);
-    Cover->SetVAlign(VAlign_Center);
+        }), bCanRetry, InitialFocus));
     if (APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController())
     {
         FInputModeUIOnly Mode;
-        Mode.SetWidgetToFocus(bCanRetry ? Retry : Button);
+        Mode.SetWidgetToFocus(InitialFocus);
         PC->SetInputMode(Mode);
         PC->bShowMouseCursor = true;
     }

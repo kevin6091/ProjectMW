@@ -5,6 +5,7 @@
 #include "Fonts/SlateFontInfo.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Input/SButton.h"
 
 class UFont;
 class UTexture2D;
@@ -20,6 +21,14 @@ namespace MWGameplayUI
     MW_API TSharedRef<SWidget> FitDesignCanvas(TSharedRef<SWidget> Content,
                                                EHorizontalAlignment Horizontal = HAlign_Center,
                                                EVerticalAlignment Vertical = VAlign_Center);
+}
+
+// 이동 경로별 문구와 동작만 받아 로비와 경기 복구 안내에 같은 판면을 사용한다.
+namespace MWGameplayUI
+{
+    MW_API TSharedRef<SWidget> RecoveryPanel(const FText& Message,
+        const FText& RetryLabel, FOnClicked Retry, const FText& LeaveLabel, FOnClicked Leave,
+        bool bCanRetry, TSharedPtr<SButton>& InitialFocus);
 }
 
 // 공통 폰트·로고·볼트 자원의 수명을 유지해 Slate 표시 중 참조가 사라지지 않게 한다.

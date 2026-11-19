@@ -450,32 +450,17 @@ void UMWUCMIntroSession::ShowReturnStatus(const FText& Message, bool bRetry)
     if (!ReturnCover)
         return;
     ReturnCover->SetVisibility(EVisibility::Visible);
-    TSharedPtr<SButton> ExitButton;
-    const FSlateFontInfo MessageFont = FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 26);
-    const FSlateFontInfo ButtonFont = FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), 22);
-    ReturnCover->SetHAlign(HAlign_Center);
-    ReturnCover->SetVAlign(VAlign_Center);
-    ReturnCover->SetContent(
-        SNew(SVerticalBox) +
-        SVerticalBox::Slot().AutoHeight().Padding(12.f)
-            [SNew(STextBlock).Font(MessageFont).Text(Message).WrapTextAt(480.f).Justification(ETextJustify::Center)] +
-        SVerticalBox::Slot().AutoHeight().Padding(12.f)
-            [SNew(SButton)
-                 .HAlign(HAlign_Center)
-                 .ContentPadding(FMargin(16.f, 8.f))
-                 .Visibility(bRetry ? EVisibility::Visible : EVisibility::Collapsed)
-                 .OnClicked_UObject(this, &ThisClass::RetryReturn)
-                     [SNew(STextBlock).Font(ButtonFont).Text(NSLOCTEXT("MWReturn", "Retry", "세션 정리 다시 시도"))]] +
-        SVerticalBox::Slot().AutoHeight().Padding(
-            12.f)[SAssignNew(ExitButton, SButton)
-                      .HAlign(HAlign_Center)
-                      .ContentPadding(FMargin(16.f, 8.f))
-                      .OnClicked_UObject(this, &ThisClass::ExitAfterReturnFailure)
-                          [SNew(STextBlock).Font(ButtonFont).Text(NSLOCTEXT("MWReturn", "Exit", "게임 종료"))]]);
+    TSharedPtr<SButton> InitialFocus;
+    ReturnCover->SetHAlign(HAlign_Fill);
+    ReturnCover->SetVAlign(VAlign_Fill);
+    ReturnCover->SetContent(MWGameplayUI::RecoveryPanel(Message,
+        NSLOCTEXT("MWReturn", "Retry", "세션 정리 다시 시도"), FOnClicked::CreateUObject(this, &ThisClass::RetryReturn),
+        NSLOCTEXT("MWReturn", "Exit", "게임 종료"), FOnClicked::CreateUObject(this, &ThisClass::ExitAfterReturnFailure),
+        bRetry, InitialFocus));
     if (FrontendCursor)
         FrontendCursor->SetRenderOpacity(1.f);
     if (FSlateApplication::IsInitialized())
-        FSlateApplication::Get().SetKeyboardFocus(ExitButton);
+        FSlateApplication::Get().SetKeyboardFocus(InitialFocus);
 }
 
 // 기존 안내 내용을 지우고 필요하지 않은 상태 패널을 숨긴다.

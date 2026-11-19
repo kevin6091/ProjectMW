@@ -15,6 +15,9 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SScrollBox.h"
 
 // 기준 1920×1080 구도를 실제 Viewport의 안전 영역 안에 비율대로 맞춘다.
 TSharedRef<SWidget> MWGameplayUI::FitDesignCanvas(TSharedRef<SWidget> Content, EHorizontalAlignment Horizontal,
@@ -77,6 +80,36 @@ void SMWGameplayPanel::Construct(const FArguments& Args)
                                   .VAlign(VAlign_Bottom)
                                   .Padding(18.f)[SNew(SBox).WidthOverride(22.f).HeightOverride(
                                       22.f)[SNew(SImage).Image(Art.BoltBrush())]]]];
+}
+
+TSharedRef<SWidget> MWGameplayUI::RecoveryPanel(const FText& Message, const FText& RetryLabel, FOnClicked Retry,
+    const FText& LeaveLabel, FOnClicked Leave, bool bCanRetry, TSharedPtr<SButton>& InitialFocus)
+{
+    FMWGameplayUIArt Art;
+    const auto Action = [&Art](const FText& Label, FOnClicked Callback)
+    {
+        return SNew(SButton)
+            .HAlign(HAlign_Center).VAlign(VAlign_Center)
+            .ContentPadding(FMargin(32.f, 10.f)).ButtonColorAndOpacity(FLinearColor::FromSRGBColor(FColor(20, 65, 98)))
+            .OnClicked(Callback)
+            [SNew(STextBlock).Font(Art.Font(31.f)).ColorAndOpacity(FLinearColor::White).Text(Label)];
+    };
+    auto RetryButton = Action(RetryLabel, Retry);
+    auto LeaveButton = Action(LeaveLabel, Leave);
+    InitialFocus = bCanRetry ? RetryButton : LeaveButton;
+    RetryButton->SetVisibility(bCanRetry ? EVisibility::Visible : EVisibility::Collapsed);
+    return FitDesignCanvas(SNew(SOverlay) + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+        [SNew(SMWGameplayPanel).Size(FVector2D(1040.f, 410.f))
+            .Fill(FLinearColor::FromSRGBColor(FColor(16, 162, 220)))
+            .Border(FLinearColor::FromSRGBColor(FColor(9, 46, 68))).BorderWidth(6.f)
+            [SNew(SVerticalBox)
+                + SVerticalBox::Slot().FillHeight(1.f).Padding(74.f, 55.f, 74.f, 18.f).VAlign(VAlign_Center)
+                [SNew(SScrollBox) + SScrollBox::Slot()
+                    [SNew(STextBlock).Font(Art.Font(40.f)).ColorAndOpacity(FLinearColor::White)
+                        .Justification(ETextJustify::Center).AutoWrapText(true).Text(Message)]]
+                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(32.f, 0.f, 32.f, 64.f)
+                [SNew(SHorizontalBox) + SHorizontalBox::Slot().AutoWidth()[RetryButton]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(bCanRetry ? 20.f : 0.f, 0.f, 0.f, 0.f)[LeaveButton]]]]);
 }
 
 // 표지판 문구와 로딩 애니메이션 상태를 준비한다. 게임 진행 단계를 자체 승인하지 않는다.
