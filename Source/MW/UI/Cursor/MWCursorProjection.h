@@ -9,6 +9,7 @@ class UWidgetComponent;
 
 namespace MWCursorProjection
 {
+	MW_API bool SampleWorldPlane(const APlayerController& PC, const FVector& Point, const FVector& Normal, FVector& OutPosition);
 	MW_API bool SampleNormalized(const UUserWidget& Widget, const UWidget& ReferenceLayer,
 		const UWidgetComponent* Surface, APlayerController& PC, FVector2D& OutPosition);
 	// 평면 WidgetComponent의 DrawSize/Pivot/Transform 규약. 임의 카메라 하드코딩 없음.

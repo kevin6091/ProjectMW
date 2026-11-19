@@ -8,6 +8,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Gameplay/Construction/MWTrackSelectionExposure.h"
 #include "UI/MWTrackSelectionWidget.h"
+#include "UI/Cursor/MWCursorProjection.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
@@ -193,23 +194,7 @@ void AMWTrackSelectionBoard::ClearOffers()
 
 bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 {
-	if (!Viewer.IsValid()) return false;
-	const auto* LP = Viewer->GetLocalPlayer();
-	const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
-	if (!Viewport || !Viewport->IsForegroundWindow()) return false;
-	float X, Y;
-	int32 Width, Height;
-	Viewer->GetViewportSize(Width, Height);
-	if (!Viewer->GetMousePosition(X, Y) || X < 0 || Y < 0 || X >= Width || Y >= Height) return false;
-	FVector Origin, Direction;
-	if (!Viewer->DeprojectMousePositionToWorld(Origin, Direction)) return false;
-	const FVector Normal = GetActorUpVector();
-	const double Dot = FVector::DotProduct(Direction, Normal);
-	if (FMath::Abs(Dot) < KINDA_SMALL_NUMBER) return false;
-	const double Distance = FVector::DotProduct(Anchors[1]->GetComponentLocation() - Origin, Normal) / Dot;
-	if (Distance < 0 || Distance > 100000) return false;
-	OutPosition = Origin + Direction * Distance;
-	return !OutPosition.ContainsNaN() && OutPosition.GetAbsMax() < 1000000;
+	return Viewer.IsValid() && MWCursorProjection::SampleWorldPlane(*Viewer, GetBuildOrigin(), GetActorUpVector(), OutPosition);
 }
 
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const

@@ -132,10 +132,9 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 	else if (!Session.bIsOpen) Status = TEXT("트랙 배치가 끝났습니다.");
 	else if (!bOwnReady) Status = TEXT("참가 정보를 준비 중입니다.");
 	else if (bOwnPlaced) Status = TEXT("설치했습니다. 다른 플레이어를 기다립니다.");
-	else if (bWaitingForReply) Status = TEXT("서버에서 설치 위치를 확인하고 있습니다.");
 	else if (LastResult == EMWTrackPlacementResult::CourseChanged) Status = TEXT("코스가 바뀌었습니다. 끝점을 다시 확인하세요.");
 	else if (LastResult == EMWTrackPlacementResult::Unavailable) Status = TEXT("설치할 수 없습니다. 위치를 다시 확인하세요.");
-	else if (bCanPlace) Status = TEXT("스냅되었습니다. 좌클릭 또는 Space로 설치하세요.");
+	else if (bWaitingForReply || bCanPlace) Status = TEXT("스냅되었습니다. 좌클릭 또는 Space로 설치하세요.");
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{

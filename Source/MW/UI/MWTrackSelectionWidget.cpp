@@ -16,6 +16,8 @@
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UI/Cursor/MWPointerCursor.h"
+#include "UI/Cursor/MWCursorProjection.h"
+#include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
 #include "UI/Common/MWParticipantPalette.h"
 
@@ -74,7 +76,7 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 			PlacementStatusSpace->SetVisibility(ESlateVisibility::Hidden);
 		}
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
-		Canvas_Cursors->SetVisibility(ESlateVisibility::Collapsed);
+		for (const auto& Pair : OfferPlates) Pair.Value->SetVisibility(ESlateVisibility::Collapsed);
 		if (Text_Title)
 		{
 			Text_Title->SetText(FText::FromString(TEXT("트랙 배치")));
@@ -307,21 +309,44 @@ void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
 void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
-	if (bShowingPlacement) return;
 	auto* PC = GetOwningPlayer();
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	if (!PC || !GS || !Canvas_Cursors) return;
 	if (!RemoteCursors || !PointerClass) return;
+	if (bShowingPlacement)
+	{
+		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen)
+		{
+			FVector Point = FVector::ZeroVector;
+			const bool bVisible = MWCursorProjection::SampleWorldPlane(*PC, Session.BuildOrigin, FVector::UpVector, Point);
+			Own->GetCursorComponent()->SubmitLocalCursor(MWCursorContexts::TrackPlacement, bVisible, Point);
+		}
+	}
 	RemoteCursors->BeginCursorFrame();
 	for (APlayerState* State : GS->PlayerArray)
 	{
 		const auto* PS = Cast<AMWPlayerState>(State);
 		if (!PS || PS->IsInactive() || PS == PC->PlayerState || PS->GetLobbyMemberId() <= 0) continue;
-		const auto ParticipantCursor = PS->GetPlayerConstructionComponent()->GetCursor();
+		FVector WorldPosition;
+		int32 StreamId;
+		if (bShowingPlacement)
+		{
+			const auto Sample = PS->GetCursorComponent()->GetCursorState();
+			if (!Sample.bVisible || Sample.Context != MWCursorContexts::TrackPlacement || Sample.Space != EMWCursorSpace::World) continue;
+			WorldPosition = Sample.Position;
+			StreamId = Sample.StreamId;
+		}
+		else
+		{
+			const auto Sample = PS->GetPlayerConstructionComponent()->GetCursor();
+			if (!Sample.bIsVisible || Sample.SelectionSessionId != DisplayedSession.SelectionSessionId ||
+				Sample.OffersRevision != DisplayedSession.OffersRevision) continue;
+			WorldPosition = Sample.WorldPosition;
+			StreamId = Sample.SelectionSessionId;
+		}
 		FVector2D Position;
-		if (!ParticipantCursor.bIsVisible || ParticipantCursor.SelectionSessionId != DisplayedSession.SelectionSessionId ||
-			ParticipantCursor.OffersRevision != DisplayedSession.OffersRevision ||
-			!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, ParticipantCursor.WorldPosition, Position, true)) continue;
+		if (!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, WorldPosition, Position, true)) continue;
 
 		const int32 Member = PS->GetLobbyMemberId();
 		auto* Marker = Cast<UMWVehiclePlayerMarkerWidget>(RemoteCursors->FindCursorVisual(Member));
@@ -335,11 +360,11 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 		View.PlayerName = FText::FromString(PS->GetPlayerName());
 		View.MarkerText = FText::Format(NSLOCTEXT("MWTrack", "Member", "P{0}"), FText::AsNumber(Member));
 		View.PlayerTint = GetDefault<UMWParticipantPalette>()->GetColorForMember(Member);
-		View.bConfirmed = PS->GetPlayerConstructionComponent()->GetSelection().bConfirmed;
+		View.bConfirmed = !bShowingPlacement && PS->GetPlayerConstructionComponent()->GetSelection().bConfirmed;
 		Marker->SetPresentation(View, true);
 		const FMWCursorVisualLayout Layout{FVector2D(MWPointerDesignSize),
 			FVector2D(RemoteCursors->PointerDisplaySize), MWGetPointerHotspot(Marker)};
-		RemoteCursors->PresentCursor(Member, ParticipantCursor.SelectionSessionId, Position, Marker, Layout, DeltaSeconds);
+		RemoteCursors->PresentCursor(Member, StreamId, Position, Marker, Layout, DeltaSeconds);
 	}
 	RemoteCursors->EndCursorFrame();
 }

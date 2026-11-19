@@ -9,6 +9,26 @@
 #include "Framework/Application/SlateApplication.h"
 #include "UnrealClient.h"
 
+bool MWCursorProjection::SampleWorldPlane(const APlayerController& PC, const FVector& Point, const FVector& Normal, FVector& OutPosition)
+{
+	if (!PC.bShowMouseCursor) return false;
+	const auto* LP = PC.GetLocalPlayer();
+	const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
+	if (!Viewport || !Viewport->IsForegroundWindow()) return false;
+	float X, Y;
+	int32 Width, Height;
+	PC.GetViewportSize(Width, Height);
+	if (!PC.GetMousePosition(X, Y) || X < 0 || Y < 0 || X >= Width || Y >= Height) return false;
+	FVector Origin, Direction;
+	if (!PC.DeprojectMousePositionToWorld(Origin, Direction)) return false;
+	const double Dot = FVector::DotProduct(Direction, Normal);
+	if (FMath::Abs(Dot) < KINDA_SMALL_NUMBER) return false;
+	const double Distance = FVector::DotProduct(Point - Origin, Normal) / Dot;
+	if (Distance < 0 || Distance > 100000) return false;
+	OutPosition = Origin + Direction * Distance;
+	return !OutPosition.ContainsNaN() && OutPosition.GetAbsMax() < 1000000;
+}
+
 bool MWCursorProjection::SampleNormalized(const UUserWidget& Widget, const UWidget& ReferenceLayer,
 	const UWidgetComponent* Surface, APlayerController& PC, FVector2D& OutPosition)
 {
