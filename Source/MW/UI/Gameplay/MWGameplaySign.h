@@ -30,27 +30,13 @@ struct MW_API FMWGameplayUIArt
     // 프로젝트의 공통 글꼴을 사용하고 자원이 없을 때만 기존 대체 글꼴로 표시한다.
     FSlateFontInfo Font(float Size) const;
 
-    // 공통 로고 자원이 준비됐으면 그 브러시를 반환하고 없으면 표시할 로고가 없음을 알린다.
-    const FSlateBrush* LogoBrush() const;
-
-    // 로고와 분리된 원본 기둥을 한 번만 그린다. 자원이 없으면 기둥을 생략한다.
-    const FSlateBrush* PoleBrush() const;
-
     // 공통 볼트 자원을 우선 사용하고 누락된 경우에만 기존 벡터 대체 표시를 반환한다.
     const FSlateBrush* BoltBrush() const;
 
 private:
     TStrongObjectPtr<UObject> DisplayFont;
 
-    TStrongObjectPtr<UObject> Logo;
-
-    TStrongObjectPtr<UObject> Pole;
-
     TStrongObjectPtr<UObject> Bolt;
-
-    FSlateBrush LogoImage;
-
-    FSlateBrush PoleImage;
 
     FSlateBrush BoltImage;
     FSlateRoundedBoxBrush FallbackBolt{FLinearColor(.34f, .39f, .44f), 12.f};

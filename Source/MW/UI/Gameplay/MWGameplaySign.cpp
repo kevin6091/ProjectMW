@@ -30,20 +30,8 @@ FMWGameplayUIArt::FMWGameplayUIArt()
 {
     const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
     DisplayFont.Reset(Settings->DisplayFont.LoadSynchronous());
-    Logo.Reset(Settings->BoardLogo.LoadSynchronous());
-    Pole.Reset(Settings->BoardPole.LoadSynchronous());
     Bolt.Reset(Settings->BoardBolt.LoadSynchronous());
-    LogoImage.SetResourceObject(Logo.Get());
-    PoleImage.SetResourceObject(Pole.Get());
     BoltImage.SetResourceObject(Bolt.Get());
-    LogoImage.DrawAs = ESlateBrushDrawType::Image;
-    PoleImage.DrawAs = ESlateBrushDrawType::Image;
-
-    // 브러시 기본 크기 대신 실제 텍스처 비율을 사용해 로고가 가로로 늘어나지 않게 한다.
-    if (const UTexture2D* Texture = Cast<UTexture2D>(Logo.Get()))
-    {
-        LogoImage.SetImageSize(FVector2f(Texture->GetSizeX(), Texture->GetSizeY()));
-    }
     BoltImage.DrawAs = ESlateBrushDrawType::Image;
 }
 
@@ -51,18 +39,6 @@ FMWGameplayUIArt::FMWGameplayUIArt()
 FSlateFontInfo FMWGameplayUIArt::Font(float Size) const
 {
     return DisplayFont ? FSlateFontInfo(DisplayFont.Get(), Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), Size);
-}
-
-// 공통 로고 자원이 준비됐으면 그 브러시를 반환하고 없으면 표시할 로고가 없음을 알린다.
-const FSlateBrush* FMWGameplayUIArt::LogoBrush() const
-{
-    return Logo ? &LogoImage : FCoreStyle::Get().GetBrush(TEXT("NoBrush"));
-}
-
-// 로고에 포함된 기둥과 별도의 기둥을 겹쳐 그리지 않도록 분리 자원만 사용한다.
-const FSlateBrush* FMWGameplayUIArt::PoleBrush() const
-{
-    return Pole ? &PoleImage : FCoreStyle::Get().GetBrush(TEXT("NoBrush"));
 }
 
 // 공통 볼트 자원을 우선 사용하고 누락된 경우에만 기존 벡터 대체 표시를 반환한다.

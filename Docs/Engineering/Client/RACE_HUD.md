@@ -4,7 +4,13 @@
 
 속도 계기판과 왼쪽 위 경기 단계 표시는 `/Game/UI/Race/WBP_RaceHUD`에서 만든다.
 이전 C++ Slate 계기판 `MWRaceHUD.*`, `MWRaceSpeedometer.*` 네 파일은 제거했다.
-기존 아이템 슬롯·중앙 표지판·대기판은 이번 전환 대상이 아니며 기존 구현을 유지한다.
+대기판·중앙 단계 표지판·아이템 슬롯은 `/Game/UI/Race/WBP_MatchPanels`에서 편집한다. `DefaultGame.ini`의 `MatchPanelsClass`가 이 WBP를 지정한다.
+
+| 화면 | Designer 편집 위치 | 실행 시 상태와 입력 |
+|---|---|---|
+| 경기 대기판 | `WaitingBoard` 아래 `LogoAspect/Logo`와 `Pole`의 브러시·슬롯, `RosterPanel`의 배경·테두리·크기, 제목과 네 모서리 볼트 | `PreparingRace`에서 소유 Pawn이 없을 때 표시한다. `RosterHost`의 네 열은 GameState 참가자를 0.25초 간격으로 비교하고 내용이 바뀌면 갱신한다. 열 폭·셀 패딩·행 높이·폰트는 `WaitingBoardLayout`에 있다. |
+| 단계 안내 | 중앙 앵커의 `SelectSign`, `BuildSign`에서 실제 문구, 색, 테두리 두께와 크기 | 기존 경기 단계가 선택·배치인지 판단한다. 로딩이 끝난 뒤 `ConstructionPromptSeconds`만큼 보인다. |
+| 아이템 슬롯 | `ItemSlot` 좌하단 앵커와 여백, `Glass`의 색·그림자 높이 비율·재질, `ItemIconHost`의 안쪽 여백 | 경기 중 소유자의 아이템 변경으로 룰렛과 사용 페이드가 갱신된다. 작은 화면의 최소 픽셀과 최대 높이 비율은 `ItemSlotLayout`에서 편집한다. |
 작은 왼쪽 위 단계판은 이 브랜치에서 추가한 안내로 원본 게임의 복구 UI가 아니다.
 
 ## 디자인을 바꾸는 순서

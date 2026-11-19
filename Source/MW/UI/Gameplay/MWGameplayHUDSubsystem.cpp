@@ -3,6 +3,10 @@
 #include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 
 #include "Brushes/SlateImageBrush.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
+#include "Components/NativeWidgetHost.h"
+#include "Components/SizeBox.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/SceneComponent.h"
 #include "Data/MWVehicleDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -39,40 +43,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogMWInGameUI, Log, All);
 
 namespace
 {
-    class SMWItemSlotFrame : public SCompoundWidget
-    {
-    public:
-        SLATE_BEGIN_ARGS(SMWItemSlotFrame)
-        {
-        }
-        SLATE_ARGUMENT(float, Inset)
-        SLATE_DEFAULT_SLOT(FArguments, Content)
-        SLATE_END_ARGS()
-
-        // 아이템 내부 콘텐츠와 벡터 유리 외곽을 같은 슬롯 크기에 연결한다.
-        void Construct(const FArguments& Args)
-        {
-            ChildSlot.Padding(Args._Inset)[Args._Content.Widget];
-        }
-
-        // SVG 테두리와 그림자를 현재 Geometry로 그려 확대 시 외곽이 깨지는 것을 줄인다.
-        virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
-                              FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style,
-                              bool bParentEnabled) const override
-        {
-            const FVector2f Size(Geometry.GetLocalSize());
-            // 벡터 유리 면 아래의 그림자까지 그려 크기가 달라져도 하단이 잘리지 않게 한다.
-            const FVector2f ArtSize(Size.X, Size.Y * 176.f / 168.f);
-            FSlateDrawElement::MakeBox(Elements, Layer, Geometry.ToPaintGeometry(ArtSize, FSlateLayoutTransform()),
-                                       &GlassBrush, ESlateDrawEffect::NoPixelSnapping, Style.GetColorAndOpacityTint());
-            return SCompoundWidget::OnPaint(Args, Geometry, CullingRect, Elements, Layer + 1, Style, bParentEnabled);
-        }
-
-    private:
-        FSlateVectorImageBrush GlassBrush{FPaths::ProjectContentDir() / TEXT("UI/Common/Slate/ItemSlotGlass.svg"),
-                                          FVector2D(168.f, 176.f)};
-    };
-
     class SMWGameplayHUD : public SCompoundWidget
     {
     public:
@@ -83,6 +53,7 @@ namespace
         SLATE_ARGUMENT(FMWPIEHUDPreview, PIEPreview)
         SLATE_ATTRIBUTE(EMWItemId, HeldItem)
         SLATE_ARGUMENT(TSharedPtr<SWidget>, RaceHUD)
+        SLATE_ARGUMENT(UUserWidget*, Panels)
         SLATE_END_ARGS()
 
         // 기존 경기 상태를 읽는 표지판·대기판·아이템 슬롯의 Slate 구조와 설정 자원을 준비한다.
@@ -93,6 +64,19 @@ namespace
             HeldItem = Args._HeldItem;
             const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
             InitializeLayout(*Settings);
+            UUserWidget* Panels = Args._Panels;
+            UNativeWidgetHost* IconHost = nullptr;
+            if (Panels)
+            {
+                WaitingBoard = Panels->GetWidgetFromName(TEXT("WaitingBoard"));
+                SelectSign = Panels->GetWidgetFromName(TEXT("SelectSign"));
+                BuildSign = Panels->GetWidgetFromName(TEXT("BuildSign"));
+                ItemSlot = Cast<USizeBox>(Panels->GetWidgetFromName(TEXT("ItemSlot")));
+                auto* RosterHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("RosterHost")));
+                if (RosterHost) RosterHost->SetContent(SAssignNew(Roster, SGridPanel));
+                IconHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("ItemIconHost")));
+                if (ItemSlot.IsValid()) ItemDesignSize = ItemSlot->GetWidthOverride();
+            }
             // 안내 시간은 화면 생성 때 한 번 읽고, 경기 단계가 바뀔 때 기존 시계를 다시 시작한다.
             ConstructionPromptSeconds = FMath::IsFinite(Settings->ConstructionPromptSeconds)
                                             ? FMath::Max(0.f, Settings->ConstructionPromptSeconds) : 0.f;
@@ -126,144 +110,28 @@ namespace
                 }
             }
             ForceVolatile(true);
-            const auto* Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
-
-            const TSharedRef<SWidget> CenteredHUD = MWGameplayUI::FitDesignCanvas(
-                SNew(SOverlay) +
-                SOverlay::Slot()
-                    [SAssignNew(WaitingBoard, SOverlay).Visibility(EVisibility::Collapsed) +
-                     SOverlay::Slot().HAlign(HAlign_Center)[SNew(SBox).WidthOverride(
-                         BoardLayout.PoleWidth)[SNew(SImage).Image(Art.PoleBrush())]] +
-                     SOverlay::Slot()
-                         .HAlign(HAlign_Center)
-                         .VAlign(VAlign_Top)
-                         .Padding(BoardLayout.LogoMargin)[SNew(SBox).WidthOverride(BoardLayout.LogoSize.X).HeightOverride(
-                             BoardLayout.LogoSize.Y)
-                             [SNew(SScaleBox)
-                                  .Stretch(EStretch::ScaleToFit)
-                                  .HAlign(HAlign_Center)
-                                  .VAlign(VAlign_Center)[SNew(SImage).Image(Art.LogoBrush())]]] +
-                     SOverlay::Slot()
-                         .HAlign(HAlign_Center)
-                         .VAlign(VAlign_Center)
-                         .Padding(BoardLayout.PanelMargin)
-                             [SNew(SMWGameplayPanel)
-                                  .Size(BoardLayout.PanelSize)
-                                  .Fill(FLinearColor::FromSRGBColor(FColor(92, 145, 211)))
-                                  .Border(FLinearColor::FromSRGBColor(FColor(126, 174, 227)))
-                                  .BorderWidth(BoardLayout.BorderWidth)[SNew(SVerticalBox) +
-                                                    SVerticalBox::Slot().AutoHeight()
-                                                        [SNew(SBox)
-                                                             .HeightOverride(BoardLayout.TitleHeight)
-                                                             .HAlign(HAlign_Center)
-                                                             .VAlign(VAlign_Center)
-                                                                 [SNew(STextBlock)
-                                                                      .Text(NSLOCTEXT("MWGameplayUI",
-                                                                                      "RaceWaitingTitle", "경기 준비"))
-                                                                      .Font(Art.Font(BoardLayout.TitleFontSize))
-                                                                      .ColorAndOpacity(FLinearColor::White)]] +
-                                                    SVerticalBox::Slot().AutoHeight()[SNew(SBox).HeightOverride(
-                                                        BoardLayout.DividerHeight)[SNew(SBorder).BorderImage(Brush).BorderBackgroundColor(
-                                                        FLinearColor(.11f, .19f, .32f))]] +
-                                                    SVerticalBox::Slot().AutoHeight().Padding(
-                                                        BoardLayout.RosterPadding)[SAssignNew(Roster, SGridPanel)]]]] +
-                SOverlay::Slot()
-                    .HAlign(HAlign_Center)
-                    .VAlign(VAlign_Center)[SAssignNew(SelectSign, SMWGameplaySign)
-                                               .Visibility(EVisibility::Collapsed)
-                                               .Label(NSLOCTEXT("MWGameplayUI", "SelectTrack",
-                                                                "트랙을\n선택하세요"))] +
-                SOverlay::Slot()
-                    .HAlign(HAlign_Center)
-                    .VAlign(VAlign_Center)[SAssignNew(BuildSign, SMWGameplaySign)
-                                               .Visibility(EVisibility::Collapsed)
-                                               .Label(NSLOCTEXT("MWGameplayUI", "BuildTrack", "트랙을\n만드세요"))]);
-
-            ChildSlot
-                [SNew(SOverlay) + SOverlay::Slot()[CenteredHUD] +
-                 SOverlay::Slot()
-                 [
-                     MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)
-                 ] +
-                 SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
-                     SNew(SOverlay) +
-                         SOverlay::Slot()
-                             .HAlign(HAlign_Left)
-                             .VAlign(VAlign_Bottom)
-                             .Padding(ItemLayout.Margin)
-                                 [SAssignNew(ItemSlot, SBox)
-                                      .WidthOverride(ItemLayout.Size)
-                                      .HeightOverride(ItemLayout.Size)
-                                      .Visibility(EVisibility::Collapsed)
-                                          [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
-                                               [SNew(SBox)
-                                                    .WidthOverride(ItemLayout.Size)
-                                                    .HeightOverride(ItemLayout.Size)
-                                                        [SNew(SMWItemSlotFrame)
-                                                             .Inset(ItemLayout.FrameInset)
-                                                             [SNew(SOverlay) +
-                                                              SOverlay::Slot()
-                                                                  .HAlign(HAlign_Center)
-                                                                  .VAlign(VAlign_Center)
-                                                                      [SNew(SImage)
-                                                                           .Image_Lambda(
-                                                                               [this]
-                                                                               {
-                                                                                   return GetItemSlotBrush();
-                                                                               })
-                                                                           .RenderTransformPivot(FVector2D(.5, .5))
-                                                                           .RenderTransform_Lambda(
-                                                                               [this]()
-                                                                                   -> TOptional<FSlateRenderTransform>
-                                                                               {
-                                                                                   const FVector2D Offset =
-                                                                                       RouletteStep == INDEX_NONE
-                                                                                           ? BoosterIconOffset
-                                                                                           : FVector2D::ZeroVector;
-                                                                                   return FSlateRenderTransform(
-                                                                                       ItemIconScale,
-                                                                                       Offset * ItemIconScale);
-                                                                               })
-                                                                           .ColorAndOpacity_Lambda(
-                                                                               [this]
-                                                                               {
-                                                                                   return FSlateColor(FLinearColor(
-                                                                                       1.f, 1.f, 1.f, ItemIconOpacity));
-                                                                               })
-                                                                           .Visibility_Lambda(
-                                                                               [this]
-                                                                               {
-                                                                                   return GetItemSlotBrush()
-                                                                                              ? EVisibility::
-                                                                                                    HitTestInvisible
-                                                                                              : EVisibility::Collapsed;
-                                                                               })] +
-                                                              SOverlay::Slot()
-                                                                  .HAlign(HAlign_Center)
-                                                                  .VAlign(VAlign_Center)
-                                                                      [SNew(STextBlock)
-                                                                           .Font(Art.Font(24.f))
-                                                                           .ColorAndOpacity_Lambda(
-                                                                               [this]
-                                                                               {
-                                                                                   return FSlateColor(
-                                                                                       FLinearColor(.72f, .75f, .80f,
-                                                                                                    ItemIconOpacity));
-                                                                               })
-                                                                           .Visibility_Lambda(
-                                                                               [this]
-                                                                               {
-                                                                                   return !GetItemSlotBrush() &&
-                                                                                                  DisplayedItem ==
-                                                                                                      EMWItemId::Booster
-                                                                                              ? EVisibility::
-                                                                                                    HitTestInvisible
-                                                                                              : EVisibility::Collapsed;
-                                                                               })
-                                                                           .Text(NSLOCTEXT("MWGameplayUI",
-                                                                                           "BoosterItem",
-                                                                                           "부스터"))]]]]]],
-                     HAlign_Left, VAlign_Bottom)]];
+            if (IconHost)
+            {
+                IconHost->SetContent(SNew(SOverlay)
+                    + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+                    [SNew(SImage).Image_Lambda([this] { return GetItemSlotBrush(); })
+                        .RenderTransformPivot(FVector2D(.5,.5))
+                        .RenderTransform_Lambda([this]() -> TOptional<FSlateRenderTransform>
+                        {
+                            const FVector2D Offset = RouletteStep == INDEX_NONE ? BoosterIconOffset : FVector2D::ZeroVector;
+                            return FSlateRenderTransform(ItemIconScale, Offset * ItemIconScale);
+                        })
+                        .ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(1,1,1,ItemIconOpacity)); })
+                        .Visibility_Lambda([this] { return GetItemSlotBrush() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
+                    + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+                    [SNew(STextBlock).Text(NSLOCTEXT("MWGameplayUI","BoosterItem","부스터")).Font(Art.Font(24.f))
+                        .ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(.72f,.75f,.80f,ItemIconOpacity)); })
+                        .Visibility_Lambda([this] { return !GetItemSlotBrush() && DisplayedItem == EMWItemId::Booster
+                            ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]);
+            }
+            ChildSlot[SNew(SOverlay)
+                + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
+                + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]];
         }
 
         // 표시 단계·룰렛 시간·차량 닉네임 정보를 갱신한다. 서버 경기 단계를 자체 변경하지 않는다.
@@ -274,7 +142,8 @@ namespace
             const auto* Vehicle = PC ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
             const bool bItemPhase = PIEPreview.bItemSlot || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
             const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
-            ItemSlot->SetVisibility(bShowItemSlot ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+            if (!ItemSlot.IsValid() || !WaitingBoard.IsValid() || !Roster || !SelectSign.IsValid() || !BuildSign.IsValid()) return;
+            ItemSlot->SetVisibility(bShowItemSlot ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
             if (bShowItemSlot)
             {
                 const FVector2f ViewportSize(Geometry.GetLocalSize());
@@ -283,8 +152,8 @@ namespace
                                           Geometry.GetAccumulatedLayoutTransform().GetScale();
                 if (CanvasScale > UE_SMALL_NUMBER)
                 {
-                    const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemLayout.Size,
-                                                       MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction);
+                    const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemDesignSize,
+                                                       FMath::Max(ItemDesignSize, MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction));
                     ItemSlot->SetWidthOverride(SlotSize);
                     ItemSlot->SetHeightOverride(SlotSize);
                 }
@@ -295,14 +164,15 @@ namespace
 
             const bool bHasRoom = GS->GetRoomSettings().MapThemeId.IsValid();
             const EMWRoomPhase Phase = GS->GetRoomPhase();
-            if (!LastPhase.IsSet() || Phase != LastPhase.GetValue())
+            const bool bCovered = PC->GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered();
+            if (bCovered || !LastPhase.IsSet() || Phase != LastPhase.GetValue())
             {
                 LastPhase = Phase;
                 PhaseStarted = CurrentTime;
             }
 
             const bool bShowWaiting = bHasRoom && Phase == EMWRoomPhase::PreparingRace && !PC->GetPawn();
-            WaitingBoard->SetVisibility(bShowWaiting ? EVisibility::HitTestInvisible : EVisibility::Collapsed);
+            WaitingBoard->SetVisibility(bShowWaiting ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
             if (bShowWaiting && CurrentTime >= NextRosterRefresh)
             {
                 RefreshRoster(*GS);
@@ -311,12 +181,12 @@ namespace
 
             SelectSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::PreparingConstruction &&
                                               CurrentTime - PhaseStarted < ConstructionPromptSeconds
-                                          ? EVisibility::HitTestInvisible
-                                          : EVisibility::Collapsed);
+                                          ? ESlateVisibility::HitTestInvisible
+                                          : ESlateVisibility::Collapsed);
             BuildSign->SetVisibility(bHasRoom && Phase == EMWRoomPhase::TrackPlacement &&
                                              CurrentTime - PhaseStarted < ConstructionPromptSeconds
-                                         ? EVisibility::HitTestInvisible
-                                         : EVisibility::Collapsed);
+                                         ? ESlateVisibility::HitTestInvisible
+                                         : ESlateVisibility::Collapsed);
         }
 
         // 현재 카메라에 투영한 차량 이름과 선택 커서를 표시하고 화면 밖 대상은 제외한다.
@@ -394,29 +264,15 @@ namespace
                 return FMath::IsFinite(Margin.Left) && FMath::IsFinite(Margin.Top) &&
                        FMath::IsFinite(Margin.Right) && FMath::IsFinite(Margin.Bottom);
             };
-            if (!Positive(ItemLayout.Size) || !Positive(ItemLayout.MinimumPixels) ||
-                !Positive(ItemLayout.IconSize) || !Positive(ItemLayout.MaximumHeightFraction) ||
-                ItemLayout.MaximumHeightFraction > 1.f ||
-                ItemLayout.Size > MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction ||
-                !FMath::IsFinite(ItemLayout.FrameInset) || ItemLayout.FrameInset < 0.f ||
-                ItemLayout.FrameInset * 2.f >= ItemLayout.Size || !ValidMargin(ItemLayout.Margin))
-            {
-                UE_LOG(LogMWInGameUI, Warning, TEXT("아이템 슬롯 치수가 잘못되어 기존 기본 배치로 복구합니다."));
+            if (!Positive(ItemLayout.MinimumPixels) || !Positive(ItemLayout.IconSize) ||
+                !Positive(ItemLayout.MaximumHeightFraction) || ItemLayout.MaximumHeightFraction > 1.f)
                 ItemLayout = FMWItemSlotLayout();
-            }
-            bool bValidBoard = ValidMargin(BoardLayout.PanelMargin) && ValidMargin(BoardLayout.LogoMargin) &&
-                               ValidMargin(BoardLayout.RosterPadding) && ValidMargin(BoardLayout.CellPadding);
-            for (const double Value : {BoardLayout.PanelSize.X, BoardLayout.PanelSize.Y,
-                                      BoardLayout.LogoSize.X, BoardLayout.LogoSize.Y,
-                                      double(BoardLayout.BorderWidth), double(BoardLayout.PoleWidth),
-                                      double(BoardLayout.TitleHeight), double(BoardLayout.TitleFontSize),
-                                      double(BoardLayout.DividerHeight), double(BoardLayout.HeaderHeight),
-                                      double(BoardLayout.RowHeight), double(BoardLayout.HeaderFontSize),
-                                      double(BoardLayout.RowFontSize), BoardLayout.ColumnWidths.X,
-                                      BoardLayout.ColumnWidths.Y, BoardLayout.ColumnWidths.Z, BoardLayout.ColumnWidths.W})
-            {
+            bool bValidBoard = ValidMargin(BoardLayout.CellPadding);
+            for (double Value : {double(BoardLayout.HeaderHeight), double(BoardLayout.RowHeight),
+                                 double(BoardLayout.HeaderFontSize), double(BoardLayout.RowFontSize),
+                                 BoardLayout.ColumnWidths.X, BoardLayout.ColumnWidths.Y,
+                                 BoardLayout.ColumnWidths.Z, BoardLayout.ColumnWidths.W})
                 bValidBoard &= Positive(Value);
-            }
             if (!bValidBoard)
             {
                 UE_LOG(LogMWInGameUI, Warning, TEXT("대기판 치수가 잘못되어 기존 기본 배치로 복구합니다."));
@@ -629,11 +485,12 @@ namespace
         FMWItemSlotLayout ItemLayout;
         FMWWaitingBoardLayout BoardLayout;
         TWeakObjectPtr<APlayerController> Controller;
-        TSharedPtr<SOverlay> WaitingBoard;
+        TWeakObjectPtr<UWidget> WaitingBoard;
         TSharedPtr<SGridPanel> Roster;
-        TSharedPtr<SMWGameplaySign> SelectSign;
-        TSharedPtr<SMWGameplaySign> BuildSign;
-        TSharedPtr<SBox> ItemSlot;
+        TWeakObjectPtr<UWidget> SelectSign;
+        TWeakObjectPtr<UWidget> BuildSign;
+        TWeakObjectPtr<USizeBox> ItemSlot;
+        float ItemDesignSize = 0.f;
         TAttribute<EMWItemId> HeldItem;
         TWeakObjectPtr<const AMWVehiclePawn> ItemSlotVehicle;
         EMWItemId DisplayedItem = EMWItemId::None;
@@ -667,6 +524,15 @@ namespace
 bool UMWGameplayHUDSubsystem::DoesSupportWorldType(EWorldType::Type Type) const
 {
     return Type == EWorldType::Game || Type == EWorldType::PIE;
+}
+
+bool UMWGameplayHUDSubsystem::HasWaitingBoard(const APlayerController& PC) const
+{
+    if (!MatchPanels || MatchPanels->GetOwningPlayer() != &PC || RoomPhase != EMWRoomPhase::PreparingRace)
+        return false;
+    const auto* Board = MatchPanels->GetWidgetFromName(TEXT("WaitingBoard"));
+    const auto* Host = Cast<UNativeWidgetHost>(MatchPanels->GetWidgetFromName(TEXT("RosterHost")));
+    return Board && Board->IsVisible() && Host && Host->GetCachedGeometry().GetLocalSize().GetMin() > 0.f;
 }
 
 void UMWGameplayHUDSubsystem::OnWorldBeginPlay(UWorld& InWorld)
@@ -740,7 +606,10 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     }
 
     const TWeakObjectPtr<UMWGameplayHUDSubsystem> WeakThis(this);
-    Overlay = SNew(SMWGameplayHUD)
+    UClass* PanelsClass = Settings->MatchPanelsClass.LoadSynchronous();
+    MatchPanels = PanelsClass ? CreateWidget<UUserWidget>(PC, PanelsClass) : nullptr;
+    if (!MatchPanels) UE_LOG(LogMWInGameUI, Error, TEXT("경기 화면 WBP를 로드할 수 없습니다."));
+    Overlay = SNew(SMWGameplayHUD).Panels(MatchPanels)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
                   .PIEPreview(PIEPreview)
@@ -864,6 +733,13 @@ void UMWGameplayHUDSubsystem::RemoveOverlay()
     HandlePossessedPawnChanged(nullptr, nullptr);
     if (Overlay && Viewport.IsValid())
         Viewport->RemoveViewportWidgetContent(Overlay.ToSharedRef());
+    // Slate 속성은 HUD 모델을 참조하므로 UMG 호스트가 보관하는 콘텐츠를 먼저 분리한다.
+    if (MatchPanels)
+    {
+        for (FName Name : {FName(TEXT("RosterHost")), FName(TEXT("ItemIconHost"))})
+            if (auto* Host = Cast<UNativeWidgetHost>(MatchPanels->GetWidgetFromName(Name))) Host->SetContent(SNullWidget::NullWidget);
+    }
+    MatchPanels = nullptr;
     Overlay.Reset();
     RaceHUDWidget = nullptr;
     Viewport.Reset();
