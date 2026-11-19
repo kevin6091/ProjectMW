@@ -13,6 +13,8 @@
 | 아이템 슬롯 | `ItemSlot` 좌하단 앵커와 여백, `Glass`의 색·그림자 높이 비율·재질, `ItemIconHost`의 안쪽 여백 | 경기 중 소유자의 아이템 변경으로 룰렛과 사용 페이드가 갱신된다. 작은 화면의 최소 픽셀과 최대 높이 비율은 `ItemSlotLayout`에서 편집한다. |
 작은 왼쪽 위 단계판은 이 브랜치에서 추가한 안내로 원본 게임의 복구 UI가 아니다.
 
+대기판 로고의 `LogoAspect`는 ScaleToFit을 사용한다. `Logo` 이미지 브러시의 Image Size는 원본 크기 **1005×1005**다. 이 값이 0×0이면 텍스처가 지정돼 있어도 ScaleBox 안에서 그림이 사라진다. 그림을 교체할 때 새 원본의 가로·세로 비율을 브러시에 저장하고 위쪽 슬롯 안에서 확인한다. 3인 PIE에서 긴 한글 이름이 있는 명단과 제목 위 로고를 확인했다. 대응 WBP는 `Content/UI/Race/WBP_MatchPanels.uasset`, SHA-256은 `f78cdef4f07e456de3c7d9b447125badc9e0c3bb49a93c7c30f111c93f3e88c2`다.
+
 ## 디자인을 바꾸는 순서
 
 1. Content Browser에서 `UI/Race/WBP_RaceHUD`를 연다.
