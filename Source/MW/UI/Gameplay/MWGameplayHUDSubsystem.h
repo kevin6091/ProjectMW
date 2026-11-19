@@ -180,6 +180,11 @@ public:
     // 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
     virtual bool IsTickable() const override;
 
+    bool HasWaitingBoard(const APlayerController& PC) const
+    {
+        return Overlay.IsValid() && ItemController.Get() == &PC && RoomPhase == EMWRoomPhase::PreparingRace;
+    }
+
     virtual TStatId GetStatId() const override;
 
     // HUD 소비자는 관찰 중인 서버 단계만 읽는다. 준비된 GameState가 없으면 값이 없다.

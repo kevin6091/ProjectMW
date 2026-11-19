@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Gameplay/Construction/MWTrackSelectionExposure.h"
 #include "UI/MWTrackSelectionWidget.h"
 #include "Data/MWTrackDefinitionData.h"
@@ -159,6 +160,38 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		Preload->ReleaseCandidates();
 	}
 	return true;
+}
+
+void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSession& Session,
+    TArray<UMaterialInterface*>& Materials, FString& Pending) const
+{
+    if (!Session.bIsOpen || Session.SelectionSessionId <= 0 || Session.Offers.IsEmpty() ||
+        SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision)
+    {
+        Pending = TEXT("selection session/revision");
+        return;
+    }
+    for (const auto& Offer : Session.Offers)
+    {
+        const AActor* Track = Offers.FindRef(Offer.OfferId);
+        bool bDrawable = false;
+        if (IsValid(Track))
+        {
+            TInlineComponentArray<UStaticMeshComponent*> Meshes(Track);
+            for (auto* Mesh : Meshes)
+            {
+                if (!Mesh->IsVisible() || !Mesh->GetStaticMesh()) continue;
+                bDrawable = Mesh->IsRegistered() && Mesh->IsRenderStateCreated() && Mesh->GetNumMaterials() > 0;
+                if (!bDrawable) break;
+                for (auto* Material : Mesh->GetMaterials()) Materials.AddUnique(Material);
+            }
+        }
+        if (!bDrawable || Materials.Contains(nullptr))
+        {
+            Pending = FString::Printf(TEXT("offer %d (%s) mesh/material"), Offer.OfferId, *Offer.DefinitionAssetId.ToString());
+            return;
+        }
+    }
 }
 
 void AMWTrackSelectionBoard::ClearOffers()

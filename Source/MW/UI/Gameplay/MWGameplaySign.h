@@ -83,12 +83,16 @@ class MW_API SMWGameplaySign : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SMWGameplaySign)
-        : _AnimateLoading(false)
+        : _AnimateLoading(false), _FaceColor(255,162,22), _EdgeColor(50,43,31), _EdgeThickness(.042f), _FontSize(0.f)
     {
     }
     SLATE_ARGUMENT(FText, Label)
     // 로딩 화면에서만 명시적으로 켠다. 일반 안내판은 회전·확대 모드를 사용하지 않는다.
     SLATE_ARGUMENT(bool, AnimateLoading)
+    SLATE_ARGUMENT(FColor, FaceColor)
+    SLATE_ARGUMENT(FColor, EdgeColor)
+    SLATE_ARGUMENT(float, EdgeThickness)
+    SLATE_ARGUMENT(float, FontSize)
     SLATE_END_ARGS()
 
     // 표지판 문구와 로딩 애니메이션 상태를 준비한다. 게임 진행 단계를 자체 승인하지 않는다.
@@ -106,6 +110,8 @@ private:
     FMWGameplayUIArt Art;
 
     FText Label;
+    FColor FaceColor, EdgeColor;
+    float FaceInset = .872f;
 
     FSlateFontInfo SignFont;
 

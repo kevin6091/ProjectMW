@@ -19,6 +19,9 @@ struct FMWEnvironmentBinding
 
     UPROPERTY(EditAnywhere)
     TSoftObjectPtr<UMWEnvironmentTheme> Environment;
+
+    UPROPERTY(EditAnywhere)
+    TArray<TSoftObjectPtr<UMaterialInterface>> FirstViewMaterials;
 };
 
 // 프로젝트 연결 계층이다. 기존 복제 상태를 읽어 배경만 표시하며 경기 규칙은 바꾸지 않는다.
@@ -73,6 +76,8 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<AMWEnvironmentGenerator> Generator;
 
+    TSharedPtr<struct FStreamableHandle> FirstViewMaterialHandle;
+
     UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;
 
@@ -81,6 +86,7 @@ private:
 
     UFUNCTION()
     void RefreshLobbyTheme();
+    void CollectFirstView(UWorld& World, TArray<UMaterialInterface*>& Materials, FString& Pending);
 
     FTimerHandle ReadinessTimer;
 

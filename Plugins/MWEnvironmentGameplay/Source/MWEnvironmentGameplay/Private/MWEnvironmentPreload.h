@@ -13,7 +13,7 @@ class UMWEnvironmentPreload : public UGameInstanceSubsystem
     GENERATED_BODY()
 
 public:
-    void SelectTheme(FName ThemeId, FName DestinationPackage, TSoftObjectPtr<UMWEnvironmentTheme> Theme, bool bTraveling);
+    void SelectTheme(FName ThemeId, FName DestinationPackage, TSoftObjectPtr<UMWEnvironmentTheme> Theme, const TArray<TSoftObjectPtr<UMaterialInterface>>& Materials, bool bTraveling);
     FName FindLoadedArrivalTheme(const UWorld& World) const;
     void ClearSelection();
     virtual void Deinitialize() override;
@@ -24,6 +24,7 @@ private:
     float EntryTextureSeconds = 8.f;
 
     TSoftObjectPtr<UMWEnvironmentTheme> SelectedTheme;
+    TArray<TSoftObjectPtr<UMaterialInterface>> EntryMaterials;
     FName SelectedThemeId;
     FName SelectedDestinationPackage;
     TSharedPtr<FStreamableHandle> LoadHandle;

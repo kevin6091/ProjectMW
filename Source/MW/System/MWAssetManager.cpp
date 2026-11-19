@@ -1,4 +1,15 @@
 #include "System/MWAssetManager.h"
+#if WITH_EDITOR
+#include "UI/Gameplay/MWArrivalScreen.h"
+
+void UMWAssetManager::ModifyCook(TConstArrayView<const ITargetPlatform*> TargetPlatforms,
+    TArray<FName>& PackagesToCook, TArray<FName>& PackagesToNeverCook)
+{
+    Super::ModifyCook(TargetPlatforms, PackagesToCook, PackagesToNeverCook);
+    const FName Package = GetDefault<UMWArrivalScreen>()->GetLoadingPackage();
+    if (!Package.IsNone()) PackagesToCook.AddUnique(Package);
+}
+#endif
 
 #include "Data/MWAssetData.h"
 #include "Engine/Engine.h"

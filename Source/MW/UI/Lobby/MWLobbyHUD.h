@@ -51,6 +51,8 @@ private:
 	// 현재 화면의 출발 연출을 한 번만 시작하고 완료 뒤 기존 소유자 보고 경로를 사용한다.
 	void BeginVehicleDeparture();
 	bool bVehicleDepartureStarted = false;
+    bool bDepartureReported = false;
+    uint32 DepartureAttempt = 0;
 	UFUNCTION()
 	void HandleVehicleSelectionRequested(FGameplayTag VehicleAssetID);
 

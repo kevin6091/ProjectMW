@@ -1,6 +1,7 @@
 // 복구한 테마·배치 자료로 로컬 배경을 구성한다. 경기 규칙과 서버 차량 상태는 바꾸지 않는다.
 
 #include "MWEnvironmentRestore.h"
+#include "Algo/AllOf.h"
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
@@ -245,6 +246,7 @@ void AMWEnvironmentGenerator::ClearEnvironment()
     PreparedFloorCount = 0;
     Tiles.Reset();
     Footprints.Reset();
+    PreparedView.Reset();
     ActiveTiles.Reset();
     InactiveRenderers.Reset();
     Timings = {};
@@ -678,6 +680,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     }
     // 현재 시야를 먼저 구성한다. 미리 준비한 렌더러는 켜 둬서 시점 회전 시
     // 엔진의 절두체 컬링에 따라 바로 드러날 수 있게 한다.
+    const int32 VisibleTileCount = Wanted.Num();
     Wanted.Append(Prewarm);
     const TSet<FIntPoint> Desired(Wanted);
     for (auto It = ActiveTiles.CreateIterator(); It; ++It)
@@ -757,6 +760,14 @@ void AMWEnvironmentGenerator::UpdateVisibility()
         ActiveTiles.Add(Key);
     }
 
+    PreparedView.Reset();
+    const bool bVisibleTilesActive = VisibleTileCount > 0 && Algo::AllOf(
+        MakeArrayView(Wanted.GetData(), VisibleTileCount), [this](FIntPoint Key) { return ActiveTiles.Contains(Key); });
+    if (bVisibleTilesActive)
+    {
+        APlayerController* Viewer = ViewPlayerController.IsValid() ? ViewPlayerController.Get() : GetWorld()->GetFirstPlayerController();
+        PreparedView = ViewCamera ? static_cast<AActor*>(ViewCamera.Get()) : (Viewer ? Viewer->GetViewTarget() : nullptr);
+    }
     // 폐기 대기가 과도하지 않으면 재구성하는 갱신과 캐시 제거 작업을 같은 차례에 몰지 않는다.
     const int32 WarmLimit = RendererReuseMode == 2 ? 16 : 0;
     const bool bRetirementPressure = InactiveRenderers.Num() > WarmLimit + 16;

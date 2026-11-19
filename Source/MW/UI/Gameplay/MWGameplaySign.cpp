@@ -108,7 +108,10 @@ void SMWGameplaySign::Construct(const FArguments& Args)
 {
     Label = Args._Label;
     bAnimateLoading = Args._AnimateLoading;
-    SignFont = Art.Font(bAnimateLoading ? 74.f : 54.f);
+    FaceColor = Args._FaceColor;
+    EdgeColor = Args._EdgeColor;
+    FaceInset = .914f - FMath::Clamp(Args._EdgeThickness, 0.f, .4f);
+    SignFont = Art.Font(Args._FontSize > 0.f ? Args._FontSize : (bAnimateLoading ? 74.f : 54.f));
     const float Size = bAnimateLoading ? 568.f : 385.f;
     ChildSlot[SNew(SBox).WidthOverride(Size).HeightOverride(Size)];
 
@@ -140,7 +143,6 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
     const FVector2f Center(Geometry.GetLocalSize() * .5);
     const float BaseRadius = FMath::Min(Center.X, Center.Y);
     const float Radius = BaseRadius * LoadingScale;
-    constexpr float FaceInset = .872f;
     constexpr float TextEdgePadding = .025f;
     const float Face = FMath::Cos(LoadingAngle);
     const float Depth = FMath::Sin(LoadingAngle);
@@ -170,8 +172,8 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
                                  {.027f, .986f},   {-.027f, .986f}, {-.986f, .027f}, {-.986f, -.027f}};
     Polygon(Outline, FColor(127, 105, 68), 1.f, .034f);
     Polygon(Outline, FColor(255, 187, 49));
-    Polygon(Outline, FColor(50, 43, 31), .914f);
-    Polygon(Outline, FColor(255, 162, 22), FaceInset);
+    Polygon(Outline, EdgeColor, .914f);
+    Polygon(Outline, FaceColor, FaceInset);
 
     if (bAnimateLoading)
     {

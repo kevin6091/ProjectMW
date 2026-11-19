@@ -8,16 +8,19 @@
 #include "MWEnvironmentRestore.h"
 
 void UMWEnvironmentPreload::SelectTheme(FName ThemeId, FName DestinationPackage,
-                                       TSoftObjectPtr<UMWEnvironmentTheme> Theme, bool bTraveling)
+                                       TSoftObjectPtr<UMWEnvironmentTheme> Theme, const TArray<TSoftObjectPtr<UMaterialInterface>>& Materials, bool bTraveling)
 {
-    if (SelectedTheme != Theme)
+    if (SelectedTheme != Theme || SelectedThemeId != ThemeId || SelectedDestinationPackage != DestinationPackage)
     {
         ClearSelection();
         SelectedTheme = Theme;
         if (!Theme.IsNull())
         {
+            EntryMaterials = Materials;
+            TArray<FSoftObjectPath> Paths{Theme.ToSoftObjectPath()};
+            for (const auto& Material : Materials) Paths.AddUnique(Material.ToSoftObjectPath());
             LoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-                Theme.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ThisClass::WarmEntryTextures, Theme));
+                Paths, FStreamableDelegate::CreateUObject(this, &ThisClass::WarmEntryTextures, Theme));
         }
     }
     else if (bTraveling && !bDepartureStarted && Theme.IsValid())
@@ -62,6 +65,7 @@ void UMWEnvironmentPreload::WarmEntryTextures(TSoftObjectPtr<UMWEnvironmentTheme
             }
         }
     };
+    for (const auto& Material : EntryMaterials) RequestMaterialMips(Material.Get());
     RequestMaterialMips(Loaded->Sky);
     for (const UMaterialInterface* Floor : Loaded->Floors)
     {
@@ -77,6 +81,7 @@ void UMWEnvironmentPreload::ClearSelection()
         LoadHandle.Reset();
     }
     SelectedTheme.Reset();
+    EntryMaterials.Reset();
     SelectedThemeId = NAME_None;
     SelectedDestinationPackage = NAME_None;
     bDepartureStarted = false;

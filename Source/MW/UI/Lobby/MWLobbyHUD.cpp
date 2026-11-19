@@ -1,5 +1,6 @@
 #include "UI/Lobby/MWLobbyHUD.h"
 
+#include "UI/Gameplay/MWArrivalScreen.h"
 #include "Player/MWLobbyPlayerController.h"
 #include "System/GameState/MWLobbyGameState.h"
 #include "System/MWGameInstance.h"
@@ -83,6 +84,11 @@ void AMWLobbyHUD::RefreshLobbyScreen()
 		BeginVehicleDeparture();
 		return;
 	}
+	if (bVehicleDepartureStarted && GS)
+    {
+        bVehicleDepartureStarted = false;
+        GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->Cancel();
+    }
 	if (!RoomLobbyWidget) return;
 	if (GS && GS->GetRoomPhase() == EMWRoomPhase::VehicleSelection)
 	{
@@ -108,15 +114,31 @@ void AMWLobbyHUD::BeginVehicleDeparture()
 	}
 
     bVehicleDepartureStarted = true;
+    bDepartureReported = false;
     SetActorTickEnabled(false);
     if (CursorOverlay)
         CursorOverlay->RemoveFromParent();
     CursorOverlay = nullptr;
 
+    const uint32 Attempt = ++DepartureAttempt;
+    const auto OnCovered = FSimpleDelegate::CreateWeakLambda(this, [this, PC, Attempt]
+    {
+        if (!bVehicleDepartureStarted || Attempt != DepartureAttempt || bDepartureReported ||
+            !BoundGameState.IsValid() || BoundGameState->GetRoomPhase() != EMWRoomPhase::Traveling) return;
+        bDepartureReported = true;
+        FString Error;
+        auto* Game = GetGameInstance<UMWGameInstance>();
+        if (Game && BoundGameState.IsValid())
+        {
+            const FName Map = Game->ResolveMapTheme(BoundGameState->GetRoomSettings().MapThemeId, Error);
+            Game->GetSubsystem<UMWArrivalScreen>()->Begin(*PC, Map);
+        }
+        PC->ReportVehicleDepartureReady();
+    });
     if (auto* Presentation = LobbyPresentation.Get())
     {
         if (Presentation->BeginVehicleDeparture(
-                FSimpleDelegate::CreateUObject(PC, &AMWLobbyPlayerController::ReportVehicleDepartureReady)))
+                OnCovered))
         {
             return;
         }
@@ -124,7 +146,7 @@ void AMWLobbyHUD::BeginVehicleDeparture()
 
     // 출발 카메라를 제공하지 않는 로비는 기존처럼 바로 이동할 수 있습니다.
     CloseVehicleSelection();
-    PC->ReportVehicleDepartureReady();
+    OnCovered.ExecuteIfBound();
 }
 
 void AMWLobbyHUD::OpenVehicleSelection()

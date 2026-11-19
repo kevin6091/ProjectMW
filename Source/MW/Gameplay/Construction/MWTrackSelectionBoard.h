@@ -19,6 +19,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	void RetryArrivalOffers() { ClearOffers(); }
+	void CollectArrivalMaterials(const FMWTrackSelectionSession& Session, TArray<UMaterialInterface*>& Materials, FString& Pending) const;
 	int32 FindHoveredOffer() const;
 	bool GetCursorPosition(FVector& OutPosition) const;
 	FVector GetBuildOrigin() const;

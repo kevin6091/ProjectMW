@@ -9,6 +9,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
 #include "Engine/GameViewportClient.h"
 #include "Containers/Ticker.h"
 #include "Widgets/Layout/SBorder.h"
@@ -301,14 +302,16 @@ void UMWUCMIntroSession::EnsureReturnCover()
         CoverViewport->RemoveViewportWidgetContent(ReturnCover.ToSharedRef());
     ReturnCover = SNew(SBorder)
         .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-        .BorderBackgroundColor(FLinearColor(0, 0, 0, .85f));
+        .BorderBackgroundColor(FLinearColor::Black);
     CoverViewport = Viewport;
     Viewport->AddViewportWidgetContent(ReturnCover.ToSharedRef(), 10000);
 }
 
 void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
 {
-    if (!World || World != RoomPresentationWorld.Get() || !GetGameInstance()->GetGameViewportClient()) return;
+    auto* Arrival = GetGameInstance()->GetSubsystem<UMWArrivalScreen>();
+    if (!World || (World != RoomPresentationWorld.Get() && !Arrival->IsCovered()) ||
+        !GetGameInstance()->GetGameViewportClient()) return;
     if (ReturnCoverPhase != EReturnCoverPhase::Hidden && ReturnCoverPhase != EReturnCoverPhase::Failed) return;
     if (ReturnCoverPhase == EReturnCoverPhase::Failed && World != ReturnSourceWorld.Get()) return;
     if (ReturnCoverPhase == EReturnCoverPhase::Hidden) bReturnToRoomBrowser = bWasParticipant;
@@ -318,6 +321,16 @@ void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
     PreparationFailure.Reset();
     ExpectedReturnMap = NAME_None;
     ClearReturnStatus();
+    if (Arrival->IsCovered())
+    {
+        EnsureReturnCover();
+        if (ReturnCover)
+        {
+            ReturnCover->SetContent(Arrival->CreateLoadingContent());
+            ReturnCover->SetVisibility(EVisibility::Visible);
+            Arrival->Cancel();
+        }
+    }
     SetReturnPhase(EReturnCoverPhase::WaitingForSession);
 }
 
@@ -363,7 +376,13 @@ void UMWUCMIntroSession::CoverMapBoundary(const FWorldContext& Context, const FS
                 }
             }
         }
-        ClearReturnStatus();
+        EnsureReturnCover();
+        if (ReturnCover)
+        {
+            ReturnCover->SetPadding(FMargin(0));
+            ReturnCover->SetContent(GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->CreateLoadingContent());
+            ReturnCover->SetVisibility(EVisibility::Visible);
+        }
         SetReturnPhase(EReturnCoverPhase::Traveling);
         RecordRoomReturn(TEXT("MAP_LOAD_START"));
     }
@@ -1310,13 +1329,7 @@ bool AMWUCMTitleFlow::BeginVehicleDeparture(FSimpleDelegate OnCovered)
         SNew(SBorder)
             .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
             .BorderBackgroundColor(FLinearColor::Transparent)
-            .Padding(0.f)[MWGameplayUI::FitDesignCanvas(
-                SNew(SOverlay) +
-                SOverlay::Slot()
-                    .HAlign(HAlign_Center)
-                    .VAlign(VAlign_Center)[SNew(SMWGameplaySign)
-                                               .Label(NSLOCTEXT("MWGameplayUI", "Loading", "불러오는 중"))
-                                               .AnimateLoading(true)])];
+            .Padding(0.f)[GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->CreateLoadingContent()];
     VehicleDepartureCover->GetContent()->SetVisibility(EVisibility::Collapsed);
     VehicleDepartureViewport = Viewport;
     Viewport->AddViewportWidgetContent(VehicleDepartureCover.ToSharedRef(), 9999);

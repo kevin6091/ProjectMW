@@ -20,11 +20,14 @@ public class MW : ModuleRules
 		});
 
 		// 이 모듈 내부에서만 사용할 추가 모듈을 등록하는 자리입니다.
+		if (Target.bBuildEditor)
+            PrivateDependencyModuleNames.AddRange(new[] { "MovieSceneCapture", "ImageCore" });
+
 		PrivateDependencyModuleNames.AddRange(new string[] 
 		{
             "Slate", 
 			"SlateCore",
-			"AssetRegistry",
+			"AssetRegistry", "Renderer", "RenderCore", "RHI", "ApplicationCore",
 			"LevelSequence", "MovieScene",
             "EngineSettings",
             "MWConnection"

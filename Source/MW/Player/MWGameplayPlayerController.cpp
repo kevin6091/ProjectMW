@@ -1,6 +1,7 @@
 
 
 #include "Player/MWGameplayPlayerController.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Algo/AllOf.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
@@ -142,16 +143,39 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 		if (IsValid(TrackSelectionWidget))
 		{
+            if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+            {
+                SetInputMode(FInputModeUIOnly());
+                bShowMouseCursor = false;
+            }
 			return;
 		}
 	}
 
-	SetInputMode(FInputModeGameOnly());
+	if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+        SetInputMode(FInputModeUIOnly());
+    else
+        SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 	if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()))
 	{
 		SetViewTarget(Vehicle);
 	}
+}
+
+void AMWGameplayPlayerController::RestoreArrivalInput()
+{
+    ApplyGameplayInputMode();
+    if (IsValid(TrackSelectionWidget) && TrackSelectionWidget->IsInViewport())
+    {
+        FInputModeGameAndUI Mode;
+        TrackSelectionWidget->SetIsFocusable(true);
+        Mode.SetWidgetToFocus(TrackSelectionWidget->TakeWidget());
+        Mode.SetHideCursorDuringCapture(false);
+        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        SetInputMode(Mode);
+        bShowMouseCursor = true;
+    }
 }
 
 void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)

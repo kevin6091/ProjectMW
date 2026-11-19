@@ -1,6 +1,10 @@
 // 기존 경기 테마·단계를 완료된 Environment 생성기에 연결하고 월드 종료 때 정리한다.
 
 #include "MWEnvironmentGameplay.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
+#include "Materials/MaterialInterface.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "MWEnvironmentPreload.h"
 #include "MWEnvironmentRestore.h"
 #include "System/GameState/MWGameplayGameState.h"
@@ -34,6 +38,7 @@ void UMWEnvironmentGameplay::OnWorldBeginPlay(UWorld& World)
     Super::OnWorldBeginPlay(World);
     if (!Enabled || World.GetNetMode() == NM_DedicatedServer)
         return;
+    World.GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->CollectEnvironment.AddUObject(this, &ThisClass::CollectFirstView);
     RefreshState();
     // 늦은 GameState 복제와 로컬 컨트롤러 교체를 주기적으로 확인한다. 매 프레임 액터를 검색하지 않는다.
     World.GetTimerManager().SetTimer(ReadinessTimer, this, &ThisClass::RefreshState, 0.25f, true);
@@ -65,7 +70,7 @@ void UMWEnvironmentGameplay::RefreshLobbyTheme()
         return;
     }
     const FSoftObjectPath MapPath = UMWAssetManager::Get().FindAssetPath(ThemeId);
-    Preload->SelectTheme(ThemeId.GetTagName(), MapPath.GetLongPackageFName(), Binding->Environment,
+    Preload->SelectTheme(ThemeId.GetTagName(), MapPath.GetLongPackageFName(), Binding->Environment, Binding->FirstViewMaterials,
                          Phase == EMWRoomPhase::Traveling);
 }
 
@@ -164,6 +169,10 @@ void UMWEnvironmentGameplay::RefreshState()
         return;
     }
     Generator->Theme = Theme;
+    TArray<FSoftObjectPath> EntryPaths;
+    for (const auto& Material : Binding->FirstViewMaterials) EntryPaths.AddUnique(Material.ToSoftObjectPath());
+    if (!EntryPaths.IsEmpty())
+        FirstViewMaterialHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(EntryPaths);
     // 생성기가 테마를 참조한 뒤 로비에서 보관한 로드 핸들을 놓는다.
     if (Preload && !MatchTheme.IsNone())
     {
@@ -205,6 +214,34 @@ void UMWEnvironmentGameplay::RefreshState()
 }
 
 // 현재 생성기를 정리하고 잠시 숨겼던 레벨 배경·조명의 표시 상태를 복원한다.
+void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInterface*>& Materials, FString& Pending)
+{
+    if (GetWorld() != &World) return;
+    const auto* Current = World.GetGameState<AMWGameplayGameState>();
+    if (!Current) { Pending = TEXT("environment world"); return; }
+    const FName Theme = Current->GetRoomSettings().MapThemeId.GetTagName();
+    const auto* Binding = FindBinding(Theme);
+    if (!Binding) return;
+    if (ActiveTheme != Theme || !IsValid(Generator) || !Generator->Theme)
+    {
+        Pending = Theme.ToString();
+        return;
+    }
+    const auto* Viewer = World.GetGameInstance()->GetFirstLocalPlayerController(&World);
+    if (!Viewer || !Generator->IsViewPrepared(Viewer->GetViewTarget()))
+    {
+        Pending = TEXT("environment visible tiles");
+        return;
+    }
+    if (Generator->Theme->Sky) Materials.AddUnique(Generator->Theme->Sky);
+    for (UMaterialInterface* Floor : Generator->Theme->Floors) Materials.AddUnique(Floor);
+    for (const auto& Material : Binding->FirstViewMaterials)
+    {
+        if (!Material.IsValid()) { Pending = Material.ToString(); return; }
+        Materials.AddUnique(Material.Get());
+    }
+}
+
 void UMWEnvironmentGameplay::StopEnvironment()
 {
     if (IsValid(Generator))
@@ -212,6 +249,7 @@ void UMWEnvironmentGameplay::StopEnvironment()
         Generator->ClearEnvironment();
         Generator->Destroy();
     }
+    FirstViewMaterialHandle.Reset();
     Generator = nullptr;
     ActiveTheme = NAME_None;
     for (const auto& Entry : LevelLightingVisibility)
@@ -227,6 +265,8 @@ void UMWEnvironmentGameplay::StopEnvironment()
 // 준비 점검 타이머와 실제 구독 상태를 해제한 뒤 배경 수명을 닫는다.
 void UMWEnvironmentGameplay::Deinitialize()
 {
+    if (auto* Screen = UGameInstance::GetSubsystem<UMWArrivalScreen>(GetWorld()->GetGameInstance()))
+        Screen->CollectEnvironment.RemoveAll(this);
     if (auto* Lobby = LobbyState.Get())
     {
         Lobby->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshLobbyTheme);
