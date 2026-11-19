@@ -27,3 +27,25 @@ UE 5.8 Win64 Development Editor, PID 13364. 로컬 리슨 서버와 두 원격 �
 세 창의 카드 호버와 확정 후 대기 화면에서 ‘프리뷰’ 글씨나 그 사각 툴팁이 나타나지 않았다. 현재 운영 인스턴스의 자식 텍스트와 툴팁에서도 ‘프리뷰’·‘미리보기’ 검색 결과는 0건이었다. 비어 있던 하단 사각 칸은 참가자별 차량 선택 슬롯이며, 확정하면 해당 차량 썸네일을 표시했다. 기존 제거 커밋 `8bd1999`이 이 실행에서도 적용되어 차량 위젯을 추가 수정할 필요가 없었다.
 
 ![카드 위에 포인터를 둔 화면과 세 참가자의 차량 확정](Images/vehicle-hover-confirm.jpg)
+
+## 차량 선택 커서 크기와 화살표 끝 · 3인 PIE
+
+### 수정 위치
+
+`Config/DefaultGame.ini`의 `[/Script/MW.MWVehicleSelectionWidget]`에서 `RemoteCursorScale`을 **0.70 → 1.0**으로 변경했다. 실제 운영 위젯이 읽는 기존 설정이다. 본인과 원격 마커의 기준 치수는 `WBP_VehicleSelection_Dev` Designer의 `LocalPlayerCursor` 캔버스 슬롯이 소유한다. 화살표 끝은 `WBP_VehiclePlayerMarker_Dev`의 정규화된 `PointerHotspot=(0,0)`으로 지정돼 있다.
+
+`UMWVehicleSelectionWidget::GetSoftwareCursorSize`는 슬롯 크기와 해당 뷰포트의 DPI로 본인 커서를 그린다. `ConfigureSharedCursorVisual`은 같은 슬롯 크기에 원격 배율을 적용해 수신 창 오버레이에 전달한다. 수신 창은 복제된 게시판 좌표를 자기 화면에 투영하고 `UMWRemoteCursorOverlay::PresentCursor`가 핫스폿을 그 위치에 맞춘다. 기존 경로에서 원격 배율만 1.0으로 설정하면 두 표시가 동일한 기준 치수를 사용한다.
+
+### 실행과 측정
+
+UE 5.8 Development Editor, 로컬 리슨 서버와 원격 클라이언트 두 개, PID 29508. 실제 로비에서 차량 선택에 진입해 Cua Driver로 Client 1의 참가자 257(Member 2) 포인터를 DOUG 카드 오른쪽 경계 가까이에 놓았다. 세 창의 원본 PNG를 한 묶음으로 다섯 차례 캡처했다. 수정 전 수치는 동일 참가자의 이전 3인 PIE 원본(PID 13364)에 같은 측정법을 적용한 값이다.
+
+| 관찰한 창 | 게임 뷰포트 | 수정 전 테두리 폭 | 수정 후 테두리 폭 | 수정 후 화살표 끝 (x, y) | 가리킨 카드 |
+|---|---|---:|---:|---:|---|
+| 호스트 · 수신 | 1280×720 | 61 px | 87 px | (980, 275) | DOUG |
+| Client 1 · 입력 | 1280×722 | 87 px | 87 px | (980, 276) | DOUG |
+| Client 2 · 수신 | 1280×722 | 61 px | 87 px | (980, 276) | DOUG |
+
+폭은 닉네임을 제외한 **원형 배지의 밝은 테두리가 차지하는 가로 픽셀 수**다. 끝 위치는 제목 표시줄을 포함한 각 창의 원본 이미지 좌상단을 기준으로 파란 화살촉의 단색 면이 시작되는 픽셀에서 읽었다. 다섯 묶음에서 같은 값이 나왔다. 배지가 옆 FRED 칸에 걸쳤지만, 세 창 모두 화살촉은 DOUG 칸 안에 있었다. 이어서 같은 카드 안을 좌클릭해 서버 로그의 `ID=2 차량 확정: Asset.Vehicle.DOUG`와 세 창에 복제된 선택 ID까지 확인했다.
+
+![차량 선택에서 본인과 두 수신 창의 원본 화면 및 동일 배율 세부 비교](Images/vehicle-cursor-size.jpg)
