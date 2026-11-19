@@ -201,7 +201,7 @@ int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 	if (!GS) return INDEX_NONE;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
 	const auto* Offer = Session.Offers.FindByPredicate([Slot](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == Slot; });
-	return Offer ? Offer->OfferId : INDEX_NONE;
+	return Offer && Offer->ClaimedByMemberId == INDEX_NONE ? Offer->OfferId : INDEX_NONE;
 }
 
 void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
@@ -277,6 +277,27 @@ void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Sess
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	for (const auto& Pair : Offers)
 	{
+		const auto* Offer = Session.Offers.FindByPredicate([&Pair](const FMWTrackOffer& Item)
+		{
+			return Item.OfferId == Pair.Key;
+		});
+		const bool bAvailable = Offer && Offer->ClaimedByMemberId == INDEX_NONE;
+		// 전시 Actor는 각 화면의 로컬 객체다. 복제된 소유 상태로 외형과 클릭 영역을 함께 숨긴다.
+		if (IsValid(Pair.Value))
+		{
+			Pair.Value->SetActorHiddenInGame(!bAvailable);
+		}
+		if (Offer && HitAreas.IsValidIndex(Offer->BoardSlotIndex))
+		{
+			HitAreas[Offer->BoardSlotIndex]->SetCollisionEnabled(
+				bAvailable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+		}
+		if (UTextRenderComponent* Label = Labels.FindRef(Pair.Key))
+		{
+			Label->SetVisibility(bAvailable);
+		}
+		if (!bAvailable) continue;
+
 		FString Text = FString::Printf(TEXT("TRACK %d"), Pair.Key);
 		bool bSelected = false;
 		for (APlayerState* State : GS->PlayerArray)

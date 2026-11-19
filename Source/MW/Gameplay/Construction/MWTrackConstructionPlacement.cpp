@@ -152,7 +152,8 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 			return Item.OfferId == Selection.SelectedOfferId;
 		});
 		if (!Selection.bConfirmed || Selection.SelectionSessionId != SelectionSession.SelectionSessionId
-			|| Selection.OffersRevision != SelectionSession.OffersRevision || !Offer)
+			|| Selection.OffersRevision != SelectionSession.OffersRevision || !Offer
+			|| Offer->ClaimedByMemberId != PS->GetLobbyMemberId())
 		{
 			DiscardPrepared();
 			OutError = FText::FromString(TEXT("아직 확정하지 않은 트랙이 있습니다."));

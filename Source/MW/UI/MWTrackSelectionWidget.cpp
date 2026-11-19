@@ -14,8 +14,8 @@
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
-#include "UI/MWPointerCursor.h"
-#include "UI/MWVehiclePlayerMarkerWidget.h"
+#include "UI/Cursor/MWPointerCursor.h"
+#include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "UObject/ConstructorHelpers.h"
 
 UMWTrackSelectionWidget::UMWTrackSelectionWidget(const FObjectInitializer& ObjectInitializer)

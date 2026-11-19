@@ -51,7 +51,7 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	}
 	
 	// 최초 예제는 공유 후보 세 개로 고정한다.
-	if (DefinitionIds.Num() != 3 || NextSelectionSessionId == MAX_int32)
+	if (DefinitionIds.Num() != 3 || DefinitionIds.Num() < SelectionPlayers.Num() || NextSelectionSessionId == MAX_int32)
 	{
 		OutError = FText::FromString(TEXT("후보 설정을 확인해 주세요."));
 		return false;
@@ -259,6 +259,16 @@ void UMWTrackConstructionComponent::UpdateHover(APlayerController* Requester,
 	
     if (!ValidateRequest(Requester, SessionId, Revision, OfferId, true, Player, Reason))
         return;
+
+    // 지연된 Hover 요청이 이미 가져간 조각을 다시 가리키지 않게 한다.
+    const auto* Offer = SelectionSession.Offers.FindByPredicate([OfferId](const FMWTrackOffer& Item)
+    {
+        return Item.OfferId == OfferId;
+    });
+    if (Offer && Offer->ClaimedByMemberId != INDEX_NONE)
+    {
+        OfferId = INDEX_NONE;
+    }
 	
     FMWPlayerTrackSelection Current = Player->GetSelection();
 	
@@ -332,10 +342,20 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 
 	FMWPlayerTrackSelection Next = Player->GetSelection();
 	const bool bApplySelection = !Next.bConfirmed;
+	auto* Offer = SelectionSession.Offers.FindByPredicate([OfferId](const FMWTrackOffer& Item)
+	{
+		return Item.OfferId == OfferId;
+	});
+	check(Offer);
 	
 	if (Next.bConfirmed && Next.SelectedOfferId != OfferId)
 	{
 		Reply.Reason = EMWTrackSelectionRejectReason::AlreadyConfirmed;
+	}
+	else if (!Next.bConfirmed && Offer->ClaimedByMemberId != INDEX_NONE)
+	{
+		// 화면에서 아직 사라지지 않았어도 서버에서 먼저 승인한 참가자만 가져간다.
+		Reply.Reason = EMWTrackSelectionRejectReason::OfferTaken;
 	}
 	else
 	{
@@ -355,7 +375,12 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 	
 	if (Reply.bAccepted && bApplySelection)
 	{
+		// 개인 상태 알림보다 먼저 소유자를 기록해 재진입한 요청도 중복 선택을 거절한다.
+		Offer->ClaimedByMemberId = Requester->GetPlayerState<AMWPlayerState>()->GetLobbyMemberId();
 		Player->ApplySelectionForServer(Next);
+		// 후보 구성은 그대로다. 리비전을 유지하면서 소유 상태만 각 선택판에 전달한다.
+		GetOwner()->ForceNetUpdate();
+		OnSelectionSessionChanged.Broadcast();
 		if (AreAllSelectionsConfirmed())
 		{
 			OnAllSelectionsConfirmed.Broadcast();
