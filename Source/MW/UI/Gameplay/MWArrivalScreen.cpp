@@ -15,6 +15,7 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/Texture2D.h"
+#include "Streaming/StreamableRenderResourceState.h"
 #include "Engine/World.h"
 #include "Components/MeshComponent.h"
 #include "Materials/MaterialInterface.h"
@@ -210,6 +211,7 @@ void UMWArrivalScreen::Begin(APlayerController& Controller, FName Destination)
     Viewport = Client;
     Attempt = FGuid::NewGuid();
     VisibleSeconds = 0;
+    QualityWaitStartedAt.Reset();
     bFailed = false;
     Cover = SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
         .BorderBackgroundColor(FLinearColor::FromSRGBColor(FColor(92,218,243))).Padding(0)[CreateLoadingContent()];
@@ -228,35 +230,61 @@ void UMWArrivalScreen::Begin(APlayerController& Controller, FName Destination)
         *Attempt.ToString(), *Source->GetName(), *ExpectedMap.ToString(), FPlatformTime::Seconds());
 }
 
-bool UMWArrivalScreen::MaterialsReady(UWorld& World, const TArray<UMaterialInterface*>& Materials, FString& Pending)
+void UMWArrivalScreen::CheckMaterials(UWorld& World, const TArray<UMaterialInterface*>& Materials,
+    FString& Pending, FString& QualityPending)
 {
-    if (!World.Scene) { Pending = TEXT("destination scene"); return false; }
+    if (!World.Scene)
+    {
+        Pending = TEXT("destination scene");
+        return;
+    }
+
+    TSet<const UTexture2D*> CheckedTextures;
+    TArray<UTexture*> Textures;
     for (UMaterialInterface* Material : Materials)
     {
         const FMaterialResource* Resource = Material ? Material->GetMaterialResource(World.Scene->GetShaderPlatform()) : nullptr;
         if (!Resource || !Resource->GetGameThreadShaderMap() || !Resource->GetGameThreadShaderMap()->IsValidForRendering())
         {
             Pending = FString::Printf(TEXT("shader %s resource=%d map=%d"), *GetPathNameSafe(Material), Resource != nullptr, Resource && Resource->GetGameThreadShaderMap());
-            return false;
+            return;
         }
-        TArray<UTexture*> Textures;
+
+        Textures.Reset();
         Material->GetUsedTextures(Textures, GetCurrentMaterialQualityLevelChecked());
         for (UTexture* Texture : Textures)
         {
-            UTexture2D* Surface = Cast<UTexture2D>(Texture);
-            if (!Surface) continue;
-            // 공개 직후까지 높은 밉을 잠시 유지해 텍스처가 낮은 해상도로 바뀌는 순간을 줄인다.
-            if (Surface->IsStreamable())
-                Surface->SetForceMipLevelsToBeResident(3.f);
-            if (!Surface->GetResource() || Surface->HasPendingInitOrStreaming() ||
-                (Surface->IsStreamable() && !Surface->IsFullyStreamedIn()))
+            const UTexture2D* Surface = Cast<UTexture2D>(Texture);
+            if (!Surface || CheckedTextures.Contains(Surface)) continue;
+            CheckedTextures.Add(Surface);
+            if (!Surface->GetResource() || Surface->HasPendingRenderResourceInitialization()
+#if WITH_EDITOR
+                || Surface->IsDefaultTexture()
+#endif
+            )
             {
-                Pending = FString::Printf(TEXT("texture %s resident=%d"), *Surface->GetPathName(), Surface->GetNumResidentMips());
-                return false;
+                Pending = FString::Printf(TEXT("texture resource %s"), *Surface->GetPathName());
+                return;
+            }
+
+            // 가상 텍스처의 타일 상주 상태는 일반 텍스처의 밉 개수와 다르다. 실제 장면 프레임에서 확인한다.
+            const auto& State = Surface->GetStreamableResourceState();
+            if (Surface->IsCurrentlyVirtualTextured() || !State.IsValid() || !State.bSupportsStreaming) continue;
+            if (State.NumResidentLODs < State.NumNonStreamingLODs)
+            {
+                Pending = FString::Printf(TEXT("texture base %s resident=%d required=%d"), *Surface->GetPathName(),
+                    State.NumResidentLODs, State.NumNonStreamingLODs);
+                return;
+            }
+
+            // 선택 밉은 설치되지 않을 수 있다. 설치된 밉을 기다리는 동안에도 엔진의 스트리밍 예산을 따른다.
+            if (QualityPending.IsEmpty() && State.NumResidentLODs < State.NumNonOptionalLODs)
+            {
+                QualityPending = FString::Printf(TEXT("texture quality %s resident=%d installed=%d"), *Surface->GetPathName(),
+                    State.NumResidentLODs, State.NumNonOptionalLODs);
             }
         }
     }
-    return true;
 }
 
 bool UMWArrivalScreen::Tick(float Delta)
@@ -348,7 +376,22 @@ bool UMWArrivalScreen::Tick(float Delta)
     else Pending = TEXT("gameplay phase");
 
     if (Pending.IsEmpty()) CollectEnvironment.Broadcast(*World, Materials, Pending);
-    if (Pending.IsEmpty()) MaterialsReady(*World, Materials, Pending);
+    FString QualityPending;
+    if (Pending.IsEmpty()) CheckMaterials(*World, Materials, Pending, QualityPending);
+    if (!Pending.IsEmpty())
+    {
+        QualityWaitStartedAt.Reset();
+    }
+    else if (!Frame && !QualityPending.IsEmpty())
+    {
+        if (!QualityWaitStartedAt) QualityWaitStartedAt = VisibleSeconds;
+        const double QualityWait = VisibleSeconds - QualityWaitStartedAt.GetValue();
+        if (QualityWait < FMath::Max(0.f, FirstViewQualityWaitSeconds))
+            Pending = QualityPending;
+        else
+            UE_LOG(LogTemp, Display, TEXT("MWArrival quality fallback attempt=%s wait=%.2fs %s"),
+                *Attempt.ToString(), QualityWait, *QualityPending);
+    }
     // 준비가 풀리거나 카메라·단계·리비전이 바뀌면 이전 장면의 렌더 완료를 재사용할 수 없다.
     if (!Pending.IsEmpty()) Frame.Reset();
     else if (!Frame || !Frame->Matches(Client->Viewport, *Camera, Phase, Session, Revision))
@@ -403,6 +446,7 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
                 }
                 Self->Frame.Reset();
                 Self->VisibleSeconds = 0;
+                Self->QualityWaitStartedAt.Reset();
                 Self->bFailed = false;
                 Self->Cover->SetHAlign(HAlign_Fill);
                 Self->Cover->SetVAlign(VAlign_Fill);

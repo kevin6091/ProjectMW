@@ -25,10 +25,15 @@ public:
 
     DECLARE_MULTICAST_DELEGATE_ThreeParams(FCollectEnvironment, UWorld&, TArray<UMaterialInterface*>&, FString&);
     FCollectEnvironment CollectEnvironment;
-    static bool MaterialsReady(UWorld& World, const TArray<UMaterialInterface*>& Materials, FString& Pending);
-
 private:
     UPROPERTY(Config) TSoftClassPtr<class UUserWidget> LoadingWidgetClass;
+
+    // 설치된 추가 밉을 잠시 기다린다. 기본 리소스와 실제 첫 프레임 확인은 별도로 유지한다.
+    UPROPERTY(Config, meta = (ClampMin = "0", Units = "s"))
+    float FirstViewQualityWaitSeconds = 2.f;
+
+    static void CheckMaterials(UWorld& World, const TArray<UMaterialInterface*>& Materials,
+        FString& Pending, FString& QualityPending);
     bool Tick(float Delta);
     void HandleConnectionFailure(UWorld* World, const FString& Reason);
     void ShowFailure(bool bCanRetry = true, const FText& Message = FText::GetEmpty());
@@ -41,6 +46,7 @@ private:
     FGuid Attempt;
     FString Pending;
     double VisibleSeconds = 0;
+    TOptional<double> QualityWaitStartedAt;
     bool bFailed = false;
     FTSTicker::FDelegateHandle Ticker;
     TSharedPtr<FMWArrivalFrame, ESPMode::ThreadSafe> Frame;
