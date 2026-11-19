@@ -798,7 +798,17 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 		? -static_cast<double>(DriveConfig.GroundSupportTolerance)
 		: 0.0;
 
-	if (NormalLoad < MinimumAllowedLoad)
+	// 고속으로 언덕 정상을 넘을 때, 이미 접지한 차량이 같은 트랙을 따라가는 경우에만 보조한다.
+	// 하중 판정에만 적용하며 접촉 후보, 착지 조건, 타이어 하중은 기존 계산을 사용한다.
+	const bool bCanAssistCrest = NormalLoad < MinimumAllowedLoad
+		&& bWasGrounded
+		&& Diagnostics.RequiredAcceleration < 0.0
+		&& Diagnostics.bSameTrackAhead
+		&& CandidateNormal.Z > 0.0
+		&& Diagnostics.AheadNormal.Z > 0.0
+		&& Diagnostics.TangentSpeed >= DriveConfig.DownforceReferenceSpeed;
+	Diagnostics.CrestSupportAcceleration = bCanAssistCrest ? DriveConfig.MaxCrestSupportAcceleration : 0.0;
+	if (NormalLoad + Diagnostics.CrestSupportAcceleration < MinimumAllowedLoad)
 	{
 		LogGroundSupport(TEXT("InsufficientLoad"), bWasGrounded, &Candidate, Diagnostics);
 		// 아직 Velocity를 투영한 값으로 덮어쓰지 않았으므로,
@@ -813,7 +823,8 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 	GroundDistance = Candidate.Distance;
 	
 	GroundNormalLoadAcceleration = FMath::Max(NormalLoad, 0.0);
-	LogGroundSupport(TEXT("Accepted"), bWasGrounded, &Candidate, Diagnostics);
+	LogGroundSupport(Diagnostics.CrestSupportAcceleration > 0.0 ? TEXT("AcceptedCrestSupport") : TEXT("Accepted"),
+		bWasGrounded, &Candidate, Diagnostics);
 	
 	if (OutAcceptedHit)
 	{
@@ -1495,6 +1506,8 @@ double UMWVehicleMovementComponent::EstimateRequiredNormalAcceleration(const FHi
 	// 오목한 루프 안쪽은 양수, 볼록한 언덕 정상은 음수가 된다.
 	const double SignedCurvature = -FVector::DotProduct(AheadNormal - Normal, TravelDirection) / SampleDistance;
 	Diagnostics.CurvatureResult = TEXT("Sampled");
+	// 한 트랙의 노면이 여러 메시로 구성되어 있어도, 다음 트랙까지 보조를 이어가지는 않는다.
+	Diagnostics.bSameTrackAhead = Contact.GetActor() && Contact.GetActor() == AheadHit.GetActor();
 
 	// 원형 경로에서는 v²/R에 해당한다.
 	return SpeedSquared * SignedCurvature;
@@ -1534,7 +1547,7 @@ void UMWVehicleMovementComponent::LogGroundSupport(const TCHAR* Decision, bool b
 	const UWorld* World = GetWorld();
 	const FVector Position = UpdatedComponent ? UpdatedComponent->GetComponentLocation() : FVector::ZeroVector;
 	const FVector Normal = Candidate ? FVector(Candidate->ImpactNormal) : GroundNormal;
-	const double Limit = bWasGrounded ? -DriveConfig.GroundSupportTolerance : 0.0;
+	const double Limit = bWasGrounded ? -DriveConfig.GroundSupportTolerance - Diagnostics.CrestSupportAcceleration : 0.0;
 	UE_LOG(LogMWVehicleSupport, Log,
 		TEXT("VehicleSupport Seq=%llu Time=%.6f Frame=%llu NetMode=%d Role=%d Actor=%s Decision=%s ")
 		TEXT("WasGrounded=%d Grounded=%d Evaluated=%d Curvature=%s Speed=%.6f Required=%.6f ")

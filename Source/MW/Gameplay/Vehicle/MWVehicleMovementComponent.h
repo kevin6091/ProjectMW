@@ -155,12 +155,14 @@ private:
 	struct FGroundSupportDiagnostics
 	{
 		bool bEvaluated = false;
+		bool bSameTrackAhead = false;
 		const TCHAR* CurvatureResult = TEXT("NotEvaluated");
 		double TangentSpeed = 0.0;
 		double RequiredAcceleration = 0.0;
 		double GravityNormalAcceleration = 0.0;
 		double DownforceAcceleration = 0.0;
 		double NormalLoadAcceleration = 0.0;
+		double CrestSupportAcceleration = 0.0;
 		double SampleDistance = 0.0;
 		FVector AheadNormal = FVector::ZeroVector;
 	};

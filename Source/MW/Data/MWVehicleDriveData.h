@@ -16,7 +16,7 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 전진 최고속도. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Speed", meta = (ClampMin = "0.0", Units = "cm/s"))
-	float MaxForwardSpeed = 1800.f;
+	float MaxForwardSpeed = 3600.f;
 
 	// 추진 가속도. 단위: cm/s²
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Acceleration", meta = (ClampMin = "0.0"))
@@ -44,7 +44,7 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 회전 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (AllowPrivateAccess = "true"))
-	float TurnRateDegPerSecond = 100.f;
+	float TurnRateDegPerSecond = 90.f;
 
 	// 최대 조향 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (AllowPrivateAccess = "true"))
@@ -64,11 +64,11 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 드리프트 마찰 계수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drift", meta = (AllowPrivateAccess = "true"))
-	float DriftFrictionMultiplier = 0.2f;
+	float DriftFrictionMultiplier = 0.85f;
 
-	// 드리프트 회전 속도
+	// 일반 회전 속도가 90도/s일 때 드리프트는 125도/s를 사용한다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drift", meta = (AllowPrivateAccess = "true"))
-	float DriftTurnRateMultiplier = 1.25f;
+	float DriftTurnRateMultiplier = 125.f / 90.f;
 
 	// 현재 충돌체 위치에서 아래 방향으로 Sweep할 거리. 단위: cm
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0", Units = "cm"))
@@ -148,6 +148,11 @@ struct MW_API FMWVehicleDriveConfig
 	// 단위: cm/s²
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
 	float GroundSupportTolerance = 20.f;
+
+	// 고속에서 연속된 볼록 노면의 접지를 유지할 때만 보완할 수 있는 하중 부족량. 단위: cm/s²
+	// 0이면 보조를 사용하지 않으며, 이 값은 타이어 하중을 높이지 않는다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float MaxCrestSupportAcceleration = 3000.f;
 
 	// 타이어가 전달할 수 있는 힘의 한계를 결정하는 계수.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))

@@ -138,20 +138,24 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveControlsTest, "MW.Vehicle.LocalControls
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMWDriveControlsTest::RunTest(const FString& Parameters)
 {
-	MWVehicleTests::FScene Scene;
+	const FMWVehicleDriveConfig DriveConfig;
+	MWVehicleTests::FScene Scene(DriveConfig);
 	Scene.Input(0, 0, 1);
 	Scene.Step(0.5f);
 	TestTrue(TEXT("Stationary steering does not rotate"), Scene.Vehicle->GetActorRotation().IsNearlyZero());
 	TestTrue(TEXT("Floor detected"), Scene.Movement->IsGrounded());
 	TestTrue(TEXT("Ground clearance maintained"), FMath::IsNearlyEqual(Scene.Vehicle->GetActorLocation().Z, 31.f, 0.3f));
 	Scene.Input(1);
-	Scene.Step(2.f);
-	TestTrue(TEXT("Forward speed limit"), Scene.Movement->Velocity.X > 1750 && Scene.Movement->Velocity.X <= 1801);
+	// 최고속도에 도달하고도 추진을 계속해 한계가 적용되는지 확인한다.
+	Scene.Step(DriveConfig.MaxForwardSpeed / DriveConfig.DriveAcceleration + 0.25f);
+	TestTrue(TEXT("Forward speed limit"), FMath::IsNearlyEqual(Scene.Movement->Velocity.X, DriveConfig.MaxForwardSpeed, 1.f));
 	Scene.Input(0);
-	Scene.Step(0.5f);
-	TestTrue(TEXT("Coasting retains momentum and slows down"), Scene.Movement->Velocity.X > 1500 && Scene.Movement->Velocity.X < 1790);
+	constexpr float CoastDuration = 0.5f;
+	Scene.Step(CoastDuration);
+	const float ExpectedCoastSpeed = DriveConfig.MaxForwardSpeed - DriveConfig.CoastDeceleration * CoastDuration;
+	TestTrue(TEXT("Coasting retains momentum and slows down"), FMath::IsNearlyEqual(Scene.Movement->Velocity.X, ExpectedCoastSpeed, 1.f));
 	Scene.Input(1, 1);
-	Scene.Step(1.f);
+	Scene.Step(DriveConfig.MaxForwardSpeed / DriveConfig.FullBrakeDeceleration + 0.25f);
 	TestTrue(TEXT("Simultaneous throttle and reverse brakes to rest"), Scene.Movement->Velocity.IsNearlyZero(0.1f));
 	Scene.Input(0, 1);
 	Scene.Step(1.f);
@@ -440,15 +444,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWOverspeedRecoveryTest, "MW.Vehicle.Overspeed
 // 추진 입력을 유지해도 제한을 넘긴 속도가 기존 감속량으로 줄어드는지 검사한다.
 bool FMWOverspeedRecoveryTest::RunTest(const FString& Parameters)
 {
+    const FMWVehicleDriveConfig DriveConfig;
+    const float ForwardOverspeed = DriveConfig.MaxForwardSpeed + 450.f;
     // 가속키 유지·후진·공중 관성을 30/120프레임 간격으로 검사한다. 실제 키보드나 다중 PC 주행 검사는 아니다.
     for (const float FrameTime : {1.f / 30.f, 1.f / 120.f})
     {
-        MWVehicleTests::FScene Scene;
+        MWVehicleTests::FScene Scene(DriveConfig);
         Scene.Input(1.f);
-        Scene.Movement->Velocity = FVector(2250.f, 0.f, 0.f);
+        Scene.Movement->Velocity = FVector(ForwardOverspeed, 0.f, 0.f);
         Scene.Step(0.1f, FrameTime);
         TestTrue(TEXT("Overspeed decays without snapping to normal limit"),
-                 Scene.Movement->Velocity.X > 2200.f && Scene.Movement->Velocity.X < 2250.f);
+                 Scene.Movement->Velocity.X > DriveConfig.MaxForwardSpeed && Scene.Movement->Velocity.X < ForwardOverspeed);
         Scene.Step(4.f, FrameTime);
         TestTrue(TEXT("Held throttle returns to the normal limit"),
                  FMath::IsNearlyEqual(Scene.Movement->Velocity.X, Scene.Movement->GetMaxSpeed(), 0.1f));
@@ -462,10 +468,10 @@ bool FMWOverspeedRecoveryTest::RunTest(const FString& Parameters)
 
         Scene.Reset(FVector(0, 0, 1000));
         Scene.Input(1.f);
-        Scene.Movement->Velocity = FVector(2250.f, 0.f, 300.f);
+        Scene.Movement->Velocity = FVector(ForwardOverspeed, 0.f, 300.f);
         Scene.Step(0.1f, FrameTime);
         TestTrue(TEXT("Ground overspeed recovery does not clamp air momentum"),
-                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, 2250.f, 0.1f));
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, ForwardOverspeed, 0.1f));
     }
     return true;
 }
