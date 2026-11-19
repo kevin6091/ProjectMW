@@ -109,8 +109,6 @@ private:
 	float GroundDistance = 0.f;
 	// 접지 검사에서 다시 계산하는 값. 단위: cm/s²
 	double GroundNormalLoadAcceleration = 0.0;
-	// 노면 법선 주위의 차체 회전율. 타이어 접점 속도 계산에 사용한다.
-	double YawRateRadiansPerSecond = 0.0;
 	
 	// 기준 회전에 노면 법선 축의 조향을 더한다.
 	// 실제 충돌체나 TargetRotation은 변경하지 않는다.

@@ -194,50 +194,6 @@ struct MW_API FMWVehicleDriveConfig
 	// 단위: cm
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.01", Units = "cm"))
 	float GroundProbeSafetyMargin = 1.f;
-	
-	// 차량 힘 작용점
-	// CollisionRoot 로컬 X 기준. 앞쪽은 양수, 뒤쪽은 음수다.
-	UPROPERTY(EditDefaultsOnly, Category = "MW|Drive|Geometry", meta = (Units = "cm"))
-	float FrontForceOffsetCm = 50.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "MW|Drive|Geometry", meta = (Units = "cm"))
-	float RearForceOffsetCm = -50.f;
-	
-	// 저속에서 조향 입력이 최대일 때 허용하는 앞바퀴 각도다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (ClampMin = "0.0", ClampMax = "89.0", Units = "deg"))
-	float LowSpeedMaxSteerAngleDegrees = 30.f;
-
-	// 고속에서는 같은 입력에 앞바퀴가 덜 꺾이도록 최대 각도를 낮춘다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (ClampMin = "0.0", ClampMax = "89.0", Units = "deg"))
-	float HighSpeedMaxSteerAngleDegrees = 12.f;
-
-	// 이 노면 접선 속력까지는 저속 최대 조향각을 사용한다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (ClampMin = "0.0", Units = "cm/s"))
-	float SteerAngleBlendStartSpeed = 500.f;
-
-	// 이 속력부터는 고속 최대 조향각을 사용한다. 두 속력 사이에서는 각도를 보간한다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (ClampMin = "0.0", Units = "cm/s"))
-	float SteerAngleBlendEndSpeed = 1800.f;
-
-	// 앞쪽 미끄러짐 각도 1 rad당 요청할 횡가속도. 단위는 cm/s²/rad다.
-	// 실제 횡가속도는 앞쪽에 배정된 타이어 접지 한계 안에서 적용한다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))
-	float FrontCorneringStiffness = 4500.f;
-
-	// 뒤쪽 미끄러짐 각도 1 rad당 요청할 횡가속도. 단위는 cm/s²/rad다.
-	// 앞쪽 값과 독립적으로 조정해 코너에서 뒤가 얼마나 따라오는지 맞춘다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))
-	float RearCorneringStiffness = 4500.f;
-
-	// 미끄러짐 각도를 구할 때 타이어 종방향 속력에 적용하는 하한이다.
-	// 정지 부근에서 작은 횡속도가 큰 미끄러짐 각도로 해석되는 것을 줄인다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "1.0", Units = "cm/s"))
-	float SlipReferenceSpeed = 200.f;
-
-	// 차체의 수직축 회전 관성을 질량으로 나눈 값. 단위는 cm²다.
-	// 값이 클수록 같은 타이어 힘이 만들어 내는 차체 각가속도가 작아진다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (ClampMin = "1.0"))
-	float YawInertiaPerMass = 2500.f;
 };
 
 UCLASS()

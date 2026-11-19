@@ -239,7 +239,6 @@ void UMWVehicleMovementComponent::OnTeleported()
 	TrackBoostEndTime = -1.0;
 	TrackSurfaceEndTime = -1.0;
 	ResetDriveInput();
-	YawRateRadiansPerSecond = 0.0;
 	bGrounded = false;
 	GroundNormal = FVector::UpVector;
 	GroundDistance = 0.f;
@@ -613,146 +612,98 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 	const FVector TangentialGravity = FVector::VectorPlaneProject(Gravity, GroundNormal);
 	
 	GroundVelocity += TangentialGravity * DeltaTime;
+
+	// 이후 엔진·브레이크·횡방향 그립이 요청하는 속도 변화를
+	// 분리해서 계산하기 위한 기준값이다.
+	const FVector VelocityBeforeTireForces = GroundVelocity;
+
+	float EffectiveThrottle = 0.f;
+	float EffectiveBrake = 0.f;
+
+	ResolveDriveControl(EffectiveThrottle, EffectiveBrake);
+
+	const bool bBraking = EffectiveBrake > KINDA_SMALL_NUMBER;
+	const bool bAccelerating = !FMath::IsNearlyZero(EffectiveThrottle);
 	
-	const double GroundSpeed = GroundVelocity.Size();
+	const double TravelSign = EffectiveThrottle < 0.f ? -1.0 : 1.0;
+	const FVector DriveDirection = Forward * TravelSign;
+	double DriveSpeedLimit = 0.0;
+	double RequestedDriveSpeedIncrease = 0.0;
+
+	if (bBraking || !bAccelerating)
+	{
+		// 추진을 놓으면 자연 감속, 브레이크를 누르면 강한 감속
+		const float Deceleration = FMath::Lerp(
+			DriveConfig.CoastDeceleration,
+			DriveConfig.FullBrakeDeceleration,
+			EffectiveBrake);
+
+		const float CurrentSpeed = GroundVelocity.Size();
+
+		if (CurrentSpeed > KINDA_SMALL_NUMBER)
+		{
+			const float NewSpeed = FMath::Max(CurrentSpeed - Deceleration * DeltaTime, 0.f);
+
+			GroundVelocity *= NewSpeed / CurrentSpeed;
+		}
+	}
+	else
+	{
+		const double SpeedInRequestedDirection = FVector::DotProduct(GroundVelocity, DriveDirection);
+		DriveSpeedLimit = GetMaxSpeed();
+
+		const UMWItemComponent* Booster = EffectiveThrottle > 0.f ? GetActiveItemBooster() : nullptr;
+		const double EngineSpeedIncrease = DriveConfig.DriveAcceleration * (Booster ? Booster->GetBoosterAccelerationMultiplier() : 1.f) * FMath::Abs(EffectiveThrottle) * DeltaTime;
+
+		const double RemainingSpeed = FMath::Max(DriveSpeedLimit - SpeedInRequestedDirection, 0.0);
+		RequestedDriveSpeedIncrease = FMath::Min(EngineSpeedIncrease, RemainingSpeed);
+		GroundVelocity += DriveDirection * RequestedDriveSpeedIncrease;
+
+		// 부스터 종료 등으로 종방향 상한을 초과하면 기존 감속량으로 복귀한다.
+		const double ExcessSpeed = FMath::Max(SpeedInRequestedDirection - DriveSpeedLimit, 0.0);
+		const double SpeedReduction = FMath::Min(ExcessSpeed, static_cast<double>(DriveConfig.CoastDeceleration) * DeltaTime);
+		GroundVelocity -= DriveDirection * SpeedReduction;
+	}
+
+	// 드리프트 중에는 횡방향 그립을 낮춘다.
+	const float GripMultiplier = IsDriftControlActive()
+		? FMath::Clamp(DriveConfig.DriftFrictionMultiplier, 0.f, 1.f)
+		: 1.f;
+
+	const float Grip = FMath::Max(DriveConfig.LateralGrip * GripMultiplier, 0.f);
+	const float LateralSpeed = FVector::DotProduct(GroundVelocity, Right);
+	const float GripAlpha = 1.f - FMath::Exp(-Grip * DeltaTime);
+
+	GroundVelocity -= Right * LateralSpeed * GripAlpha;
+
+	const FVector RequestedTireDeltaVelocity = GroundVelocity - VelocityBeforeTireForces;
+
+	const double MaxTireAcceleration = DriveConfig.TireFrictionCoefficient * GroundNormalLoadAcceleration;
+	const double MaxTireDeltaSpeed = MaxTireAcceleration * DeltaTime;
+
+	// 종방향과 횡방향 힘이 하나의 접지 한계를 공유하도록 한다.
+	const FVector AppliedTireDeltaVelocity = RequestedTireDeltaVelocity.GetClampedToMaxSize(MaxTireDeltaSpeed);
+
+	Velocity = VelocityBeforeTireForces + AppliedTireDeltaVelocity;
 	
-	// 실제 노면 속력에 따라 앞바퀴의 최대 조향각을 선택한다.
-	const double SteerAlpha = FMath::Clamp(
-		(GroundSpeed - DriveConfig.SteerAngleBlendStartSpeed) /
-		(DriveConfig.SteerAngleBlendEndSpeed - DriveConfig.SteerAngleBlendStartSpeed),
-		0.0, 1.0);
-	const double MaxSteerAngle = FMath::Lerp(
-		static_cast<double>(DriveConfig.LowSpeedMaxSteerAngleDegrees),
-		static_cast<double>(DriveConfig.HighSpeedMaxSteerAngleDegrees),
-		SteerAlpha);
-	
-	const FQuat FrontSteerRotation(GroundNormal, FMath::DegreesToRadians(MaxSteerAngle * DriveInput.Steering));
-	
-	// 설정의 로컬 거리를 월드 거리로 바꿔 회전 모멘트에 사용한다.
-	const double RootScaleX = FMath::Abs(UpdatedComponent->GetComponentTransform().GetScale3D().X);
-	const double FrontX = DriveConfig.FrontForceOffsetCm * RootScaleX;
-	const double RearX = DriveConfig.RearForceOffsetCm * RootScaleX;
-	const double Wheelbase = FrontX - RearX;
-	
-	if (!FMath::IsFinite(Wheelbase) || Wheelbase <= KINDA_SMALL_NUMBER || FrontX <= 0.0 || RearX >= 0.0)
+	const double SpeedLimitSquared = FMath::Square(DriveSpeedLimit);
+	if (RequestedDriveSpeedIncrease <= 0.0 || Velocity.SizeSquared() <= SpeedLimitSquared)
 	{
 		return;
 	}
-	
-	float EffectiveThrottle = 0.f;
-	float EffectiveBrake = 0.f;
-	ResolveDriveControl(EffectiveThrottle, EffectiveBrake);
-	
-	const bool bDriving = EffectiveBrake <= KINDA_SMALL_NUMBER && !FMath::IsNearlyZero(EffectiveThrottle);
-	const double SpeedLimit = bDriving ? GetMaxSpeed() : 0.0;
-	const bool bRecoveringOverSpeed = bDriving && GroundSpeed > SpeedLimit + KINDA_SMALL_NUMBER;
-	
-	double RequestedDeceleration = 0.0;
-	
-	if (bRecoveringOverSpeed)
-	{
-		// 부스터 종료나 외부 힘으로 초과한 속력은 기존 자연 감속량으로 줄인다.
-		RequestedDeceleration = FMath::Min(
-			(GroundSpeed - SpeedLimit) / DeltaTime,
-			static_cast<double>(DriveConfig.CoastDeceleration));
-	}
-	else if (!bDriving)
-	{
-		RequestedDeceleration = FMath::Lerp(
-			static_cast<double>(DriveConfig.CoastDeceleration),
-			static_cast<double>(DriveConfig.FullBrakeDeceleration),
-			static_cast<double>(EffectiveBrake));
-	}
-	
-	const UMWItemComponent* Booster = bDriving && EffectiveThrottle > 0.f ? GetActiveItemBooster() : nullptr;
-	const double RequestedDriveAcceleration = 
-		bDriving && !bRecoveringOverSpeed
-		? DriveConfig.DriveAcceleration * EffectiveThrottle * (Booster ? Booster->GetBoosterAccelerationMultiplier() : 1.f)
-		: 0.0;
-	
-	struct FAxle
-	{
-		FVector Offset;
-		FVector WheelForward;
-		FVector WheelRight;
-		double LoadShare;
-		double CorneringStiffness;
-		FVector AppliedAcceleration = FVector::ZeroVector;
-		FVector AppliedDriveAcceleration = FVector::ZeroVector;
-	};
 
-	const double FrontShare = -RearX / Wheelbase;
-	FAxle Axles[] =
-	{
-		{ Forward * FrontX, FrontSteerRotation.RotateVector(Forward),
-			FrontSteerRotation.RotateVector(Right), FrontShare, DriveConfig.FrontCorneringStiffness },
-		{ Forward * RearX, Forward, Right, 1.0 - FrontShare, DriveConfig.RearCorneringStiffness },
-	};
-	
-	const FVector AngularVelocity = GroundNormal * YawRateRadiansPerSecond;
-	const double MaxTireAcceleration = FMath::Max(DriveConfig.TireFrictionCoefficient * GroundNormalLoadAcceleration, 0.0);
-	const double BrakeBlendSpeed = FMath::Max(RequestedDeceleration * DeltaTime, 1.0);
-	
-	FVector VelocityWithoutDrive = GroundVelocity;
-	FVector DriveDelta = FVector::ZeroVector;
-	
-	for (FAxle& Axle : Axles)
-	{
-		// 차체가 회전 중이면 앞뒤 작용점의 실제 이동 방향이 다르다.
-		const FVector ContactVelocity = GroundVelocity + FVector::CrossProduct(AngularVelocity, Axle.Offset);
-		const double AlongSpeed = FVector::DotProduct(ContactVelocity, Axle.WheelForward);
-		const double SideSpeed = FVector::DotProduct(ContactVelocity, Axle.WheelRight);
-		const double SlipAngle = FMath::Atan2(
-			SideSpeed,
-			FMath::Max(FMath::Abs(AlongSpeed), static_cast<double>(DriveConfig.SlipReferenceSpeed)));
+	// 접지 한계를 통과한 종방향 추진만 분리해 중력과 횡그립의 결과를 보존한다.
+	const double AppliedDriveSpeedIncrease = FMath::Max(FVector::DotProduct(AppliedTireDeltaVelocity, DriveDirection), 0.0);
+	const FVector VelocityWithoutDrive = Velocity - DriveDirection * AppliedDriveSpeedIncrease;
 
-		const double SideAcceleration = -Axle.CorneringStiffness * SlipAngle;
-		const double BrakeAcceleration = -RequestedDeceleration * Axle.LoadShare * FMath::Clamp(AlongSpeed / BrakeBlendSpeed, -1.0, 1.0);
-		const FVector RequestedDrive = Axle.WheelForward * (RequestedDriveAcceleration * Axle.LoadShare);
-		const FVector RequestedAcceleration = RequestedDrive + Axle.WheelForward * BrakeAcceleration + Axle.WheelRight * SideAcceleration;
+	const double SpeedAlongDrive = FVector::DotProduct(VelocityWithoutDrive, DriveDirection);
+	const double SideSpeed = FVector::DotProduct(VelocityWithoutDrive, Right);
 
-		// 각 축에서 추진·제동·횡력이 하나의 접지 한계를 공유한다.
-		const double AxleLimit = MaxTireAcceleration * Axle.LoadShare;
-		const double RequestedMagnitude = RequestedAcceleration.Size();
-		const double GripScale = RequestedMagnitude > AxleLimit
-			? AxleLimit / RequestedMagnitude
-			: 1.0;
+	// 횡속도가 사용한 몫을 빼고, 상한 안에서 허용되는 종방향 속도를 계산한다.
+	const double MaxSpeedAlongDrive = FMath::Sqrt(FMath::Max(SpeedLimitSquared - FMath::Square(SideSpeed), 0.0));
+	const double AllowedDriveSpeedIncrease = FMath::Max(MaxSpeedAlongDrive - SpeedAlongDrive, 0.0);
 
-		Axle.AppliedAcceleration = RequestedAcceleration * GripScale;
-		Axle.AppliedDriveAcceleration = RequestedDrive * GripScale;
-
-		VelocityWithoutDrive += (Axle.AppliedAcceleration - Axle.AppliedDriveAcceleration) * DeltaTime;
-		DriveDelta += Axle.AppliedDriveAcceleration * DeltaTime;
-	}
-	
-	// 중력과 타이어가 만든 기준 속도에 엔진이 얼마나 더할 수 있는지 계산한다.
-	const double BaseSpeedSquared = VelocityWithoutDrive.SizeSquared();
-	const double AllowedSpeedSquared = FMath::Max(FMath::Square(SpeedLimit), BaseSpeedSquared);
-	const double DriveDeltaSquared = DriveDelta.SizeSquared();
-	double DriveScale = 1.0;
-	
-	if (DriveDeltaSquared > UE_SMALL_NUMBER && (VelocityWithoutDrive + DriveDelta).SizeSquared() > AllowedSpeedSquared)
-	{
-		// |VelocityWithoutDrive + DriveScale * DriveDelta|가 허용 속력에 닿는 비율이다.
-		const double Dot = FVector::DotProduct(VelocityWithoutDrive, DriveDelta);
-		const double Discriminant = FMath::Max(FMath::Square(Dot) + DriveDeltaSquared * (AllowedSpeedSquared - BaseSpeedSquared), 0.0);
-
-		DriveScale = FMath::Clamp((FMath::Sqrt(Discriminant) - Dot) / DriveDeltaSquared, 0.0, 1.0);
-	}
-	
-	Velocity = VelocityWithoutDrive + DriveDelta * DriveScale;
-	
-	// 속도 제한으로 줄인 추진량을 회전 모멘트에도 동일하게 반영한다.
-	FVector MomentPerMass = FVector::ZeroVector;
-
-	for (const FAxle& Axle : Axles)
-	{
-		const FVector FinalAcceleration = Axle.AppliedAcceleration - Axle.AppliedDriveAcceleration * (1.0 - DriveScale);
-		MomentPerMass += FVector::CrossProduct(Axle.Offset, FinalAcceleration);
-	}
-
-	const double YawAcceleration = FVector::DotProduct(MomentPerMass, GroundNormal) / DriveConfig.YawInertiaPerMass;
-	YawRateRadiansPerSecond += YawAcceleration * DeltaTime;
+	Velocity = VelocityWithoutDrive + DriveDirection * FMath::Min(AppliedDriveSpeedIncrease, AllowedDriveSpeedIncrease);
 }
 
 void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
@@ -1100,13 +1051,7 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
 	// 공중이거나 자세 변경이 실패해도 실제 회전과 일치시킨다.
 	TargetRotation = UpdatedComponent->GetComponentQuat();
 	
-	if (!bGrounded)
-	{
-		YawRateRadiansPerSecond = 0.0;
-		return;
-	}
-	
-	if (!bDriveConfigReady || !PawnOwner || !UpdatedPrimitive || DeltaTime <= 0.f)
+	if (!bDriveConfigReady || !PawnOwner || !UpdatedPrimitive || !bGrounded || DeltaTime <= 0.f)
 	{
 		return;
 	}
@@ -1126,11 +1071,10 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
 	}
 	
 	const FQuat StartRotation = TargetRotation;
+
 	const FQuat AlignedRotation = CalculateGroundAlignRotation(StartRotation, DeltaTime);
 
-	// 직전 스텝의 타이어 힘으로 구한 회전율을 접촉면 법선 주위에 적용한다.
-	const FQuat YawRotation(Normal, YawRateRadiansPerSecond * DeltaTime);
-	const FQuat DesiredRotation = (YawRotation * AlignedRotation).GetNormalized();
+	const FQuat DesiredRotation = CalculateSteeringRotation(AlignedRotation, DeltaTime);
 
 	const double AngleDegrees = FMath::RadiansToDegrees(StartRotation.AngularDistance(DesiredRotation));
 	
@@ -1224,9 +1168,6 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
             ScopedMove.RevertMove();
 
             TargetRotation = UpdatedComponent->GetComponentQuat();
-        	
-        	// 차체에 적용하지 못한 회전율이 다음 스텝에 누적되지 않게 한다.
-        	YawRateRadiansPerSecond = 0.0;
         	
             return;
         }
