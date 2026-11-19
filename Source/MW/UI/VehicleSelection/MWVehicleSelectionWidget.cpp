@@ -987,13 +987,14 @@ void UMWVehicleSelectionWidget::RefreshControls()
 	Button_Refresh->SetIsEnabled(!IsRequestPending());
 	for (UMWVehicleCardWidget* Card : Cards) if (IsValid(Card)) Card->SetInteractionLocked(bLocked || !bLocalPreview);
 	const bool bAllPreviewComplete = AreAllPreviewParticipantsConfirmed();
-	// Preview의 완료는 표시용이며 서버 선택 승인으로 간주하지 않는다.
-	Text_Status->SetText(IsRequestPending() ? RequestPendingText : bAllPreviewComplete ? PreviewLockedText :
-		IsSelectionLocked() ? SelectionCompleteText : Cards.IsEmpty() ? EmptyCatalogText :
-		bSelected && !bPreviewOnly ? ConfirmVehicleText : ChooseVehicleText);
+	// 입력 대기는 버튼에서 처리하고 안내 문구는 실제 확정 상태가 바뀔 때 교체한다.
+	const AMWPlayerState* OwnState = GetOwningPlayerState<AMWPlayerState>();
+	const bool bConfirmed = bPreviewOnly ? IsPreviewLocked() : OwnState && OwnState->GetVehicleAssetID().IsValid();
+	Text_Status->SetText(bAllPreviewComplete ? PreviewLockedText : bConfirmed ? SelectionCompleteText :
+		Cards.IsEmpty() ? EmptyCatalogText : ChooseVehicleText);
 	if (IsValid(Text_SelectionDetail))
 	{
-		Text_SelectionDetail->SetText(IsSelectionLocked() && !bAllPreviewComplete ? WaitingForPlayersText : FText());
+		Text_SelectionDetail->SetText(bConfirmed && !bAllPreviewComplete ? WaitingForPlayersText : FText());
 		Text_SelectionDetail->SetVisibility(Text_SelectionDetail->GetText().IsEmpty()
 			? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	}
@@ -1002,7 +1003,7 @@ void UMWVehicleSelectionWidget::RefreshControls()
 		const bool bCanCancel = bPreviewOnly ? bSelected && !bAllPreviewComplete : GetCancelableVehicleId().IsValid();
 		Legend_Cancel->SetVisibility((bPreviewOnly ? !bAllPreviewComplete : bCanCancel)
 			? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
-		Legend_Cancel->SetIsEnabled(bCanCancel && !IsRequestPending());
+		Legend_Cancel->SetIsEnabled(!bPreviewOnly || bCanCancel);
 	}
 	if (IsValid(Text_Error)) Text_Error->SetVisibility(Text_Error->GetText().IsEmpty()
 		? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);

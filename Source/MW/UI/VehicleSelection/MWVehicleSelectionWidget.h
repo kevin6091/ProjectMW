@@ -246,16 +246,10 @@ UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
 FText WaitingForPlayersText;
 
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
-FText ConfirmVehicleText;
-
-UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
 FText MissingServerContractText;
 
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
 FText ChooseVehicleText;
-
-UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
-FText RequestPendingText;
 
 UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Text")
 FText InvalidVehicleText;
