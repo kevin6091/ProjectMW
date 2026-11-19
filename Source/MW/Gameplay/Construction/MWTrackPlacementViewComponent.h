@@ -18,6 +18,7 @@ class UMWTrackPlacementViewComponent : public UActorComponent
 public:
 	void Update(float DeltaSeconds, UEnhancedInputComponent* Input);
 	void ResetView();
+    AActor* GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const;
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:

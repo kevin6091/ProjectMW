@@ -565,7 +565,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
     else if (APlayerController* PC =
                  ViewPlayerController.IsValid() ? ViewPlayerController.Get() : GetWorld()->GetFirstPlayerController())
     {
-        if (!PC->IsLocalController() || (PrewarmEnabled && InitialViewPending && PC->GetViewTarget() == PC))
+        if (!PC->IsLocalController() || (PrewarmEnabled && InitialViewPending && !bAllowInitialControllerView && PC->GetViewTarget() == PC))
             return;
         PC->GetPlayerViewPoint(Eye, Angle);
         if (PC->PlayerCameraManager)

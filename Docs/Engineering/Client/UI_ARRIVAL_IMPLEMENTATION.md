@@ -14,6 +14,12 @@
 | `Plugins/MWUCMFrontend/Source/MWUCMFrontend/Private/MWUCMTitleFlow.cpp` | 출발·타이틀 복귀에 공통 로딩 내용을 사용한다. 복귀 시 맵 경계에서 불투명 가림을 붙이고 기존 목적지 월드·소유 컨트롤러·타이틀 카메라·루트 메뉴 검사가 끝나면 제거한다. |
 | 중단과 복구 | 최소화된 뷰포트의 프레임 신호는 폐기한다. 보이는 목적지에서 45초 동안 준비가 끝나지 않으면 실패 대상과 시도 ID를 기록하고 복구 버튼에 포커스를 준다. 통신·이동 오류와 로컬 후보 재시도를 구별한다. |
 
+## 가림 중 단계가 바뀌는 경우
+
+`MWTrackPreview::CollectVisibleMaterials`는 실제 선택 후보, 설치된 트랙, 배치 고스트의 표시 메시와 슬롯 재질을 검사한다. `MWTrackPlacementViewComponent::GetArrivalGhost`가 현재 배치 세션과 멤버 ID에 속한 고스트를 찾아 준다. `MWArrivalScreen`은 로컬 선택 UI와 새 세션의 준비상태를 다시 확인한다. 3인 PIE에서 가림을 유지한 채 세 명의 트랙을 확정해 첫 공개가 배치 단계로 넘어가는 경우를 검사했다.
+
+소유 Pawn이 늦는 경기 준비 경로에서는 `SMWGameplayHUD::IsWaitingBoardReady`가 표시 중인 대기판에 실제 참가자 셀이 구성됐는지 확인한다. NativeWidgetHost가 이전 프레임의 기하 정보를 보관하는지에 의존하지 않는다. 이 단계에서는 준비용 로컬 컨트롤러 카메라로도 환경 타일을 준비할 수 있다.
+
 ## 실제 실행
 
 Snow, 로컬 IP 연결, DX12. `-MWCaptureArrival`를 사용한 에디터 검증은 해당 뷰포트의 첫 공개 백버퍼와 2초 뒤 백버퍼를 저장한다. 아래 구간은 각 프로세스의 단조 시계에서 가림 완료부터 공개까지다.

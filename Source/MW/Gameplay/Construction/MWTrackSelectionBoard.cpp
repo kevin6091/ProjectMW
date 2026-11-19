@@ -174,19 +174,7 @@ void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSess
     for (const auto& Offer : Session.Offers)
     {
         const AActor* Track = Offers.FindRef(Offer.OfferId);
-        bool bDrawable = false;
-        if (IsValid(Track))
-        {
-            TInlineComponentArray<UStaticMeshComponent*> Meshes(Track);
-            for (auto* Mesh : Meshes)
-            {
-                if (!Mesh->IsVisible() || !Mesh->GetStaticMesh()) continue;
-                bDrawable = Mesh->IsRegistered() && Mesh->IsRenderStateCreated() && Mesh->GetNumMaterials() > 0;
-                if (!bDrawable) break;
-                for (auto* Material : Mesh->GetMaterials()) Materials.AddUnique(Material);
-            }
-        }
-        if (!bDrawable || Materials.Contains(nullptr))
+        if (!MWTrackPreview::CollectVisibleMaterials(Track, Materials))
         {
             Pending = FString::Printf(TEXT("offer %d (%s) mesh/material"), Offer.OfferId, *Offer.DefinitionAssetId.ToString());
             return;

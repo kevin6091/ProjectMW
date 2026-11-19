@@ -189,6 +189,12 @@ namespace
                                          : ESlateVisibility::Collapsed);
         }
 
+        bool IsWaitingBoardReady() const
+        {
+            return WaitingBoard.IsValid() && WaitingBoard->IsVisible() && Roster &&
+                bRosterBuilt && !DisplayedCells.IsEmpty();
+        }
+
         // 현재 카메라에 투영한 차량 이름과 선택 커서를 표시하고 화면 밖 대상은 제외한다.
         virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
                               FSlateWindowElementList& DrawElements, int32 LayerId, const FWidgetStyle& Style,
@@ -530,9 +536,7 @@ bool UMWGameplayHUDSubsystem::HasWaitingBoard(const APlayerController& PC) const
 {
     if (!MatchPanels || MatchPanels->GetOwningPlayer() != &PC || RoomPhase != EMWRoomPhase::PreparingRace)
         return false;
-    const auto* Board = MatchPanels->GetWidgetFromName(TEXT("WaitingBoard"));
-    const auto* Host = Cast<UNativeWidgetHost>(MatchPanels->GetWidgetFromName(TEXT("RosterHost")));
-    return Board && Board->IsVisible() && Host && Host->GetCachedGeometry().GetLocalSize().GetMin() > 0.f;
+    return Overlay && StaticCastSharedPtr<SMWGameplayHUD>(Overlay)->IsWaitingBoardReady();
 }
 
 void UMWGameplayHUDSubsystem::OnWorldBeginPlay(UWorld& InWorld)

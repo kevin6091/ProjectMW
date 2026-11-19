@@ -27,6 +27,25 @@ namespace
 	}
 }
 
+bool MWTrackPreview::CollectVisibleMaterials(const AActor* Track, TArray<UMaterialInterface*>& OutMaterials)
+{
+    if (!IsValid(Track) || Track->IsHidden()) return false;
+    bool bHasSurface = false;
+    TInlineComponentArray<UStaticMeshComponent*> Meshes(Track);
+    for (const UStaticMeshComponent* Mesh : Meshes)
+    {
+        if (!Mesh->IsVisible() || !Mesh->GetStaticMesh()) continue;
+        if (!Mesh->IsRegistered() || !Mesh->IsRenderStateCreated() || Mesh->GetNumMaterials() == 0) return false;
+        for (UMaterialInterface* Material : Mesh->GetMaterials())
+        {
+            if (!Material) return false;
+            OutMaterials.AddUnique(Material);
+        }
+        bHasSurface = true;
+    }
+    return bHasSurface;
+}
+
 void MWTrackPreview::CollectWireframeMaterials(UClass* TrackClass, TSet<UMaterialInterface*>& OutMaterials)
 {
 	auto* GeneratedClass = Cast<UBlueprintGeneratedClass>(TrackClass);

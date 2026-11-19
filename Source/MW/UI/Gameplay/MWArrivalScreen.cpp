@@ -2,6 +2,10 @@
 #include "UI/Gameplay/MWGameplaySign.h"
 #include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
+#include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
+#include "Gameplay/Construction/MWPlayerConstructionComponent.h"
+#include "System/MWPlayerState.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Player/MWGameplayPlayerController.h"
@@ -300,10 +304,21 @@ bool UMWArrivalScreen::Tick(float Delta)
         const auto& Placement = State->GetConstructionComponent()->GetPlacementSession();
         Session = Placement.SessionId;
         Revision = Placement.CourseRevision;
-        if (!Cast<AMWTrackSelectionBoard>(Camera) || !Session || !PC->TrackSelectionWidget)
+        const auto* PS = PC->GetPlayerState<AMWPlayerState>();
+        if (!Cast<AMWTrackSelectionBoard>(Camera) || !Session || !PC->TrackSelectionWidget ||
+            !PC->TrackSelectionWidget->IsInViewport() || !PS)
             Pending = TEXT("placement camera/session");
-        for (const auto& Placed : Placement.PlacedTracks)
-            if (!IsValid(Placed.Actor)) Pending = TEXT("placement track");
+        else
+        {
+            const auto Local = PS->GetPlayerConstructionComponent()->GetPlacement();
+            const auto* View = PC->FindComponentByClass<UMWTrackPlacementViewComponent>();
+            if (Local.SessionId != Session || (Placement.bIsOpen && !Local.bPlaced &&
+                (!View || !MWTrackPreview::CollectVisibleMaterials(View->GetArrivalGhost(Session, PS->GetLobbyMemberId()), Materials))))
+                Pending = FString::Printf(TEXT("placement preview %s"), *Local.DefinitionAssetId.ToString());
+            for (const auto& Placed : Placement.PlacedTracks)
+                if (!MWTrackPreview::CollectVisibleMaterials(Placed.Actor, Materials))
+                    Pending = FString::Printf(TEXT("placed track %d"), Placed.PieceId);
+        }
     }
     else if (Phase == EMWRoomPhase::PreparingRace && !PC->GetPawn())
     {

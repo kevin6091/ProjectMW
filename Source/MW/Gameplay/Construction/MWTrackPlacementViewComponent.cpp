@@ -30,6 +30,12 @@ namespace
 	};
 }
 
+AActor* UMWTrackPlacementViewComponent::GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const
+{
+    const FGhost* Ghost = SessionId == ExpectedSession ? Ghosts.Find(MemberId) : nullptr;
+    return Ghost ? Ghost->Actor.Get() : nullptr;
+}
+
 void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputComponent* Input)
 {
 	auto* PC = Cast<AMWGameplayPlayerController>(GetOwner());

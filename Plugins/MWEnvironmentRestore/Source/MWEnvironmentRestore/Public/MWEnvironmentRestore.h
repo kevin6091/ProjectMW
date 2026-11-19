@@ -220,6 +220,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Environment")
     FString GetEnvironmentDebug() const;
 
+    void AllowInitialControllerView() { bAllowInitialControllerView = true; }
     bool IsViewPrepared(const AActor* Target) const { return Target && PreparedView.Get() == Target; }
 
 protected:
@@ -312,6 +313,7 @@ private:
 
     TWeakObjectPtr<AActor> PreparedView;
     bool InitialViewPending = true;
+    bool bAllowInitialControllerView = false;
 
     float LastCameraFov = 90;
 

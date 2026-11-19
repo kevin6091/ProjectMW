@@ -228,6 +228,8 @@ void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInt
         return;
     }
     const auto* Viewer = World.GetGameInstance()->GetFirstLocalPlayerController(&World);
+    if (Viewer && Current->GetRoomPhase() == EMWRoomPhase::PreparingRace && !Viewer->GetPawn())
+        Generator->AllowInitialControllerView();
     if (!Viewer || !Generator->IsViewPrepared(Viewer->GetViewTarget()))
     {
         Pending = TEXT("environment visible tiles");
