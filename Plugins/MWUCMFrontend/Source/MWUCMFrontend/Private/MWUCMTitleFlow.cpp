@@ -40,6 +40,7 @@
 #include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "UI/Cursor/MWPointerCursor.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
+#include "UI/Common/MWParticipantPalette.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "UI/VehicleSelection/MWVehicleSelectionPreviewActor.h"
 #include "System/MWGameInstance.h"
@@ -247,11 +248,7 @@ void UMWUCMIntroSession::InstallFrontendCursor()
     if (!FrontendCursor)
         return;
     FrontendCursor->TakeWidget();
-    FMWVehiclePlayerPresentation Player;
-    Player.bLocal = true;
-    Player.PlayerTint = FLinearColor(.8f, .05f, .08f, 1.f);
-    FrontendCursor->SetPresentation(Player);
-    FrontendCursor->SetRenderOpacity(1.f);
+    RefreshFrontendCursorColor();
     FrontendCursor->SetVisibility(ESlateVisibility::HitTestInvisible);
     const TWeakObjectPtr<UMWUCMIntroSession> WeakThis(this);
     FrontendCursorSlate = MWMakePointerCursor(
@@ -271,6 +268,24 @@ void UMWUCMIntroSession::InstallFrontendCursor()
     }
     Viewport->SetUseSoftwareCursorWidgets(true);
     UE_LOG(LogTemp, Display, TEXT("MW_UCM FRONTEND_CURSOR_INSTALLED VEHICLE_ART_ARROW_TIP_HOTSPOT"));
+}
+
+// 맵 이동·재입장으로 로컬 PlayerState가 늦게 복제될 수 있어 현재 방의 MemberId가 바뀔 때만 갱신한다.
+void UMWUCMIntroSession::RefreshFrontendCursorColor()
+{
+    if (!FrontendCursor) return;
+    const auto* PC = GetGameInstance()->GetFirstLocalPlayerController();
+    const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+    const int32 MemberId = PS ? PS->GetLobbyMemberId() : INDEX_NONE;
+    if (CursorMemberId.IsSet() && CursorMemberId.GetValue() == MemberId) return;
+    CursorMemberId = MemberId;
+
+    FMWVehiclePlayerPresentation Player;
+    Player.bLocal = true;
+    Player.PlayerTint = MemberId > 0 ? GetDefault<UMWParticipantPalette>()->GetColorForMember(MemberId)
+                                    : FLinearColor(.8f, .05f, .08f, 1.f);
+    FrontendCursor->SetPresentation(Player);
+    FrontendCursor->SetRenderOpacity(1.f);
 }
 
 // 복귀를 시작할 수 있는 실제 로비 월드를 기록한다. 같은 게임 인스턴스인지 확인한다.
@@ -526,6 +541,7 @@ void UMWUCMIntroSession::RemoveReturnCover()
 // 엔진 틱에서 응답·이동·표시 준비 지연을 확인한다. 게임 스레드 정지를 대신 처리하는 기능은 아니다.
 bool UMWUCMIntroSession::TickReturnCover(float DeltaTime)
 {
+    RefreshFrontendCursorColor();
     if (!IsRoomReturnPending()) return true;
     const double Elapsed = FPlatformTime::Seconds() - CoverChangedAt;
     if (ReturnCoverPhase == EReturnCoverPhase::WaitingForSession)
