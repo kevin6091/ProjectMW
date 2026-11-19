@@ -72,6 +72,7 @@ namespace
                 SelectSign = Panels->GetWidgetFromName(TEXT("SelectSign"));
                 BuildSign = Panels->GetWidgetFromName(TEXT("BuildSign"));
                 ItemSlot = Cast<USizeBox>(Panels->GetWidgetFromName(TEXT("ItemSlot")));
+                // WBP가 배치하고, 기존 Slate 모델이 갱신하는 명단 그리드와 아이콘은 호스트에 연결한다.
                 auto* RosterHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("RosterHost")));
                 if (RosterHost) RosterHost->SetContent(SAssignNew(Roster, SGridPanel));
                 IconHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("ItemIconHost")));
@@ -152,6 +153,7 @@ namespace
                                           Geometry.GetAccumulatedLayoutTransform().GetScale();
                 if (CanvasScale > UE_SMALL_NUMBER)
                 {
+                    // 화면이 작으면 슬롯을 최소 픽셀 크기까지 키우되 WBP의 기본 크기보다 작게 줄이지 않는다.
                     const float SlotSize = FMath::Clamp(ItemLayout.MinimumPixels / CanvasScale, ItemDesignSize,
                                                        FMath::Max(ItemDesignSize, MWGameplayUI::DesignHeight * ItemLayout.MaximumHeightFraction));
                     ItemSlot->SetWidthOverride(SlotSize);
@@ -165,6 +167,7 @@ namespace
             const bool bHasRoom = GS->GetRoomSettings().MapThemeId.IsValid();
             const EMWRoomPhase Phase = GS->GetRoomPhase();
             const bool bCovered = PC->GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered();
+            // 가림막 뒤에서 안내의 표시 시간이 소진되지 않도록 화면을 공개할 때부터 시간을 잰다.
             if (bCovered || !LastPhase.IsSet() || Phase != LastPhase.GetValue())
             {
                 LastPhase = Phase;

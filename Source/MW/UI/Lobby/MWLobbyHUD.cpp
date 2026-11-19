@@ -120,6 +120,7 @@ void AMWLobbyHUD::BeginVehicleDeparture()
         CursorOverlay->RemoveFromParent();
     CursorOverlay = nullptr;
 
+    // 로비 연출 콜백과 즉시 출발 경로를 한 곳으로 모아 현재 출발 시도에서 한 번만 서버에 보고한다.
     const uint32 Attempt = ++DepartureAttempt;
     const auto OnCovered = FSimpleDelegate::CreateWeakLambda(this, [this, PC, Attempt]
     {
@@ -133,6 +134,7 @@ void AMWLobbyHUD::BeginVehicleDeparture()
             const FName Map = Game->ResolveMapTheme(BoundGameState->GetRoomSettings().MapThemeId, Error);
             Game->GetSubsystem<UMWArrivalScreen>()->Begin(*PC, Map);
         }
+        // 월드가 바뀌기 전에 로컬 가림막을 설치하고 기존 서버 출발 준비 보고를 보낸다.
         PC->ReportVehicleDepartureReady();
     });
     if (auto* Presentation = LobbyPresentation.Get())

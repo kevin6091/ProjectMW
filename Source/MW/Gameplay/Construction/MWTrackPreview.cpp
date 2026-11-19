@@ -69,6 +69,7 @@ void MWTrackPreview::CollectWireframeMaterials(UClass* TrackClass, TSet<UMateria
 		{
 			USCS_Node* Node = Pending.Pop(EAllowShrinking::No);
 			Pending.Append(Node->GetChildNodes());
+			// 상속한 노드라도 선택한 트랙 BP의 재정의가 반영된 템플릿에서 재질을 읽는다.
 			const auto* Mesh = Cast<UStaticMeshComponent>(Node->GetActualComponentTemplate(GeneratedClass));
 			if (!Mesh || !Mesh->GetStaticMesh())
 			{

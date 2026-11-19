@@ -180,6 +180,7 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 void AMWGameplayPlayerController::RestoreArrivalInput()
 {
+    // 가림 해제 시 현재 경기 단계의 입력 모드를 먼저 복구하고 건설 화면이 있으면 포커스를 되돌린다.
     ApplyGameplayInputMode();
     if (IsValid(TrackSelectionWidget) && TrackSelectionWidget->IsInViewport())
     {

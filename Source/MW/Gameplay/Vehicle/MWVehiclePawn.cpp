@@ -331,6 +331,7 @@ bool AMWVehiclePawn::RespawnAtCheckpoint(const FVector& Location, const FRotator
 		return false;
 	}
 
+	// 텔레포트 성공 콜백에서만 이 요청을 체크포인트 복귀로 구분하고 호출이 끝나면 플래그를 복원한다.
 	TGuardValue<bool> RespawnGuard(bRespawningAtCheckpoint, true);
 	return TeleportTo(Location, Rotation);
 }

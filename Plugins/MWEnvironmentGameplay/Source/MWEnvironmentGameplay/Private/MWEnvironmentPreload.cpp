@@ -43,6 +43,7 @@ FName UMWEnvironmentPreload::FindLoadedArrivalTheme(const UWorld& World) const
 void UMWEnvironmentPreload::WarmEntryTextures(TSoftObjectPtr<UMWEnvironmentTheme> Theme)
 {
     const UMWEnvironmentTheme* Loaded = Theme.Get();
+    // 테마를 바꾼 뒤 이전 비동기 요청이 끝나도 이전 테마의 밉을 다시 고정하지 않는다.
     if (!Loaded || Theme != SelectedTheme || EntryTextureSeconds <= 0.f)
     {
         return;

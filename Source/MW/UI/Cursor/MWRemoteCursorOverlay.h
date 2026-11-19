@@ -26,6 +26,7 @@ public:
 	UPROPERTY(Config)
 	TSoftClassPtr<UMWVehiclePlayerMarkerWidget> PointerWidgetClass;
 
+	// 공통 크기는 DPI 적용 전 논리 단위다. 소프트웨어 커서만 픽셀로 바꿔 넘긴다.
 	UPROPERTY(Config)
 	float PointerDisplaySize = 154.834854f;
 

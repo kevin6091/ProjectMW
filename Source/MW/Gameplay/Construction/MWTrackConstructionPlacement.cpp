@@ -219,6 +219,7 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 			Intent.CursorLocation = BuildOrigin + BuildFrame.GetUnitAxis(EAxis::Y) * (600.0 * LayoutScale * ++OffsetIndex);
 			Entry.Value.PreviewTransform = MWTrackSnap::MakeRawTransform(PendingTracks.FindChecked(Entry.Key).Ports, PlacementSession, Intent);
 			PS->GetPlayerConstructionComponent()->SetPlacementForServer(Entry.Value);
+			// 서버가 설치할 조각을 받은 참가자에게만 배치 포인터 전송을 허용한다.
 			PS->GetCursorComponent()->OpenStreamForServer(MWCursorContexts::TrackPlacement, EMWCursorSpace::World);
 		}
 	}
@@ -310,6 +311,7 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 	PublishTrack(*Prepared, Transform, Intent.Target, Intent.SourcePort);
 	PlacementSession.OpenEnds[0] = NextEnd;
 	PendingTracks.Remove(TWeakObjectPtr<AMWPlayerState>(PS));
+	// 설치가 끝난 참가자의 포인터는 남은 참가자의 배치 화면에서 제거한다.
 	PS->GetCursorComponent()->CloseStreamForServer();
 	Player.bPlaced = true;
 	Player.PreviewTransform = Transform;

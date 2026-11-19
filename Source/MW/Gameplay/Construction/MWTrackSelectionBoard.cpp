@@ -166,6 +166,7 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSession& Session,
     TArray<UMaterialInterface*>& Materials, FString& Pending) const
 {
+    // 전시가 먼저 생겨도 서버가 보낸 후보 버전과 같아야 이번 선택 화면이 준비된 것으로 본다.
     if (!Session.bIsOpen || Session.SelectionSessionId <= 0 || Session.Offers.IsEmpty() ||
         SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision)
     {

@@ -220,6 +220,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "Environment")
     FString GetEnvironmentDebug() const;
 
+    // 차량을 아직 소유하지 않은 대기판 진입에서는 컨트롤러 시점도 첫 화면이 될 수 있다.
     void AllowInitialControllerView() { bAllowInitialControllerView = true; }
     bool IsViewPrepared(const AActor* Target) const { return Target && PreparedView.Get() == Target; }
 

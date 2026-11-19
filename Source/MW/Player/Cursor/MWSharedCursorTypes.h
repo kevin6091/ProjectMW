@@ -14,6 +14,7 @@ enum class EMWCursorSpace : uint8
 namespace MWCursorContexts
 {
 	inline const FName VehicleSelection(TEXT("VehicleSelection"));
+	// 이전 선택 화면의 포인터와 월드 좌표를 쓰는 배치 스트림을 구분한다.
 	inline const FName TrackPlacement(TEXT("TrackPlacement"));
 }
 

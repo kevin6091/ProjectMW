@@ -256,6 +256,7 @@ void UMWUCMIntroSession::InstallFrontendCursor()
         TAttribute<FVector2D>::CreateLambda(
             [WeakThis]()
             {
+                // 소프트웨어 커서는 픽셀 크기를 받으므로 공통 논리 크기에 이 창의 DPI를 곱한다.
                 return FVector2D(GetDefault<UMWRemoteCursorOverlay>()->PointerDisplaySize) *
                        (WeakThis.IsValid() ? UWidgetLayoutLibrary::GetViewportScale(WeakThis.Get()) : 1.f);
             }));
@@ -337,6 +338,7 @@ void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
     PreparationFailure.Reset();
     ExpectedReturnMap = NAME_None;
     ClearReturnStatus();
+    // 복귀 가림막을 먼저 표시해 도착 화면 가림을 제거하는 순간에도 월드가 노출되지 않게 한다.
     if (Arrival->IsCovered())
     {
         EnsureReturnCover();

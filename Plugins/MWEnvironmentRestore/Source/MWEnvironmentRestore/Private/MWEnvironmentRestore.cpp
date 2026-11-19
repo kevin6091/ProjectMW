@@ -760,6 +760,7 @@ void AMWEnvironmentGenerator::UpdateVisibility()
         ActiveTiles.Add(Key);
     }
 
+    // 카메라에 보이는 타일만 준비를 확인한다. 화면 밖 선로딩 타일 때문에 가림을 연장하지 않는다.
     PreparedView.Reset();
     const bool bVisibleTilesActive = VisibleTileCount > 0 && Algo::AllOf(
         MakeArrayView(Wanted.GetData(), VisibleTileCount), [this](FIntPoint Key) { return ActiveTiles.Contains(Key); });

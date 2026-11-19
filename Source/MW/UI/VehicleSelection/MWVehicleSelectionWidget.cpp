@@ -371,6 +371,7 @@ void UMWVehicleSelectionWidget::SetWorldPresentationLayout(bool bEnabled, float 
         {
             if (UCanvasPanelSlot* CanvasSlot = Pair.Key.Get())
             {
+                // 월드 배치가 바꾼 앵커·정렬·자동 크기까지 되돌려 화면 배치가 밀리지 않게 한다.
                 CanvasSlot->SetLayout(Pair.Value.Layout);
                 CanvasSlot->SetAutoSize(Pair.Value.bAutoSize);
             }

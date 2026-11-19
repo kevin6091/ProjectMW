@@ -16,6 +16,7 @@ void UMWItemGlassWidget::SynchronizeProperties()
     MaterialBrush.SetResourceObject(Material);
     Image->SetImage(Material ? &MaterialBrush : VectorBrush.Get());
     Image->SetColorAndOpacity(Tint);
+    // 그림자가 슬롯 하단으로만 늘어나도록 위쪽을 기준점으로 둔다.
     Image->SetRenderTransformPivot(FVector2D::ZeroVector);
     Image->SetRenderTransform(FSlateRenderTransform(FScale2D(1.f, ShadowHeightRatio)));
 }

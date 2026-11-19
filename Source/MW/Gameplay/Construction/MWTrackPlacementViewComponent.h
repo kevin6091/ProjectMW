@@ -18,6 +18,7 @@ class UMWTrackPlacementViewComponent : public UActorComponent
 public:
 	void Update(float DeltaSeconds, UEnhancedInputComponent* Input);
 	void ResetView();
+    // 첫 화면 준비 검사에는 현재 배치 세션에서 그리는 해당 참가자의 고스트만 제공한다.
     AActor* GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const;
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 

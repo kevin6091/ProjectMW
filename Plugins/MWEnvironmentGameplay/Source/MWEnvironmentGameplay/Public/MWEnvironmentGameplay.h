@@ -20,6 +20,7 @@ struct FMWEnvironmentBinding
     UPROPERTY(EditAnywhere)
     TSoftObjectPtr<UMWEnvironmentTheme> Environment;
 
+    // 하늘·바닥 외에 해당 테마의 첫 화면에서 준비를 기다릴 재질을 지정한다.
     UPROPERTY(EditAnywhere)
     TArray<TSoftObjectPtr<UMaterialInterface>> FirstViewMaterials;
 };

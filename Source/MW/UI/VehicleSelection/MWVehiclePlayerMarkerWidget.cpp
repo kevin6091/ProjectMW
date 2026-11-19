@@ -15,6 +15,7 @@ void UMWVehiclePlayerMarkerWidget::SetPresentation(const FMWVehiclePlayerPresent
     if (IsValid(Image_PointerArrow))
         Image_PointerArrow->SetColorAndOpacity(Player.PlayerTint);
     Text_Player->SetText(Player.MarkerText);
+    // 이름은 커서 옆에 직접 표시한다. 움직이는 마커 위에 별도 툴팁을 띄우지 않는다.
     Text_State->SetText(Player.bConfirmed ? ConfirmedText : Player.bHoverPreview ? HoverText : SelectingText);
     if (IsValid(CursorPlayerName))
     {

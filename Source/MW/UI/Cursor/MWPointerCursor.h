@@ -12,6 +12,7 @@ inline constexpr float MWPointerDesignSize = 176.f;
 
 inline FVector2D MWGetPointerHotspot(UUserWidget* Marker)
 {
+    // WBP에 끝점을 지정한 경우 그 값을 쓰고, 기존 에셋은 아래의 화살표 슬롯 계산을 사용한다.
     const auto* PlayerMarker = Cast<UMWVehiclePlayerMarkerWidget>(Marker);
     if (PlayerMarker && PlayerMarker->bUseAuthoredHotspot)
         return PlayerMarker->PointerHotspot.ClampAxes(0.0,1.0);

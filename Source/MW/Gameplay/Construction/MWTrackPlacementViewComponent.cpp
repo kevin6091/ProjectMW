@@ -134,6 +134,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 	else if (bOwnPlaced) Status = TEXT("설치했습니다. 다른 플레이어를 기다립니다.");
 	else if (LastResult == EMWTrackPlacementResult::CourseChanged) Status = TEXT("코스가 바뀌었습니다. 끝점을 다시 확인하세요.");
 	else if (LastResult == EMWTrackPlacementResult::Unavailable) Status = TEXT("설치할 수 없습니다. 위치를 다시 확인하세요.");
+	// 승인 대기에는 스냅 안내를 유지해 요청 순간 문구가 잠깐 교체되는 현상을 막는다.
 	else if (bWaitingForReply || bCanPlace) Status = TEXT("스냅되었습니다. 좌클릭 또는 Space로 설치하세요.");
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
@@ -187,6 +188,7 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 	}
 
 	const double Now = GetWorld()->GetTimeSeconds();
+	// 로컬 고스트는 매 프레임 갱신하되 원격 표시용 위치 전송은 초당 20회로 제한한다.
 	if (Now >= NextPreviewTime)
 	{
 		PC.ServerUpdateTrackPlacementPreview(SessionId, ++PreviewSequence, Intent);

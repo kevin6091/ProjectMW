@@ -213,7 +213,7 @@ void UMWEnvironmentGameplay::RefreshState()
            *ThemeId.ToString(), *Theme->GetPathName(), LocalEnvironmentSeed, *World->GetName(), *GetNameSafe(Local));
 }
 
-// 현재 생성기를 정리하고 잠시 숨겼던 레벨 배경·조명의 표시 상태를 복원한다.
+// 이번 월드와 테마가 실제 카메라에서 보일 준비가 됐는지 로딩 화면에 전달한다.
 void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInterface*>& Materials, FString& Pending)
 {
     if (GetWorld() != &World) return;
@@ -228,6 +228,7 @@ void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInt
         return;
     }
     const auto* Viewer = World.GetGameInstance()->GetFirstLocalPlayerController(&World);
+    // 차량이 스폰되기 전 대기판부터 보여 주는 경로는 컨트롤러 시점을 첫 장면으로 준비한다.
     if (Viewer && Current->GetRoomPhase() == EMWRoomPhase::PreparingRace && !Viewer->GetPawn())
         Generator->AllowInitialControllerView();
     if (!Viewer || !Generator->IsViewPrepared(Viewer->GetViewTarget()))
@@ -244,6 +245,7 @@ void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInt
     }
 }
 
+// 현재 생성기를 정리하고 잠시 숨겼던 레벨 배경·조명의 표시 상태를 복원한다.
 void UMWEnvironmentGameplay::StopEnvironment()
 {
     if (IsValid(Generator))
@@ -272,6 +274,7 @@ void UMWEnvironmentGameplay::Deinitialize()
     if (auto* Lobby = LobbyState.Get())
     {
         Lobby->OnLobbyChanged.RemoveDynamic(this, &ThisClass::RefreshLobbyTheme);
+        // 실제 출발 중에는 목적지 월드가 사용할 선로딩 핸들을 게임 인스턴스에 남긴다.
         if (Lobby->GetRoomPhase() != EMWRoomPhase::Traveling)
         {
             if (auto* Preload = UGameInstance::GetSubsystem<UMWEnvironmentPreload>(GetWorld()->GetGameInstance()))

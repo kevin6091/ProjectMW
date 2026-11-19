@@ -96,6 +96,7 @@ TSharedRef<SWidget> MWGameplayUI::RecoveryPanel(const FText& Message, const FTex
     };
     auto RetryButton = Action(RetryLabel, Retry);
     auto LeaveButton = Action(LeaveLabel, Leave);
+    // 재시도할 수 없는 오류에서도 키보드로 보이는 버튼에 바로 접근할 수 있게 한다.
     InitialFocus = bCanRetry ? RetryButton : LeaveButton;
     RetryButton->SetVisibility(bCanRetry ? EVisibility::Visible : EVisibility::Collapsed);
     return FitDesignCanvas(SNew(SOverlay) + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)

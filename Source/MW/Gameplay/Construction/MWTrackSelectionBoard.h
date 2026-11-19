@@ -19,6 +19,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	// 복구 요청은 전시 액터만 비워 같은 후보를 다시 만들게 한다. 서버의 선택 세션은 유지한다.
 	void RetryArrivalOffers() { ClearOffers(); }
 	void CollectArrivalMaterials(const FMWTrackSelectionSession& Session, TArray<UMaterialInterface*>& Materials, FString& Pending) const;
 	int32 FindHoveredOffer() const;

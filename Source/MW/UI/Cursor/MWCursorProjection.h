@@ -9,6 +9,7 @@ class UWidgetComponent;
 
 namespace MWCursorProjection
 {
+	// 화면 포인터의 광선과 주어진 평면이 만나는 월드 위치를 구한다. 실패하면 표시를 숨길 수 있다.
 	MW_API bool SampleWorldPlane(const APlayerController& PC, const FVector& Point, const FVector& Normal, FVector& OutPosition);
 	MW_API bool SampleNormalized(const UUserWidget& Widget, const UWidget& ReferenceLayer,
 		const UWidgetComponent* Surface, APlayerController& PC, FVector2D& OutPosition);

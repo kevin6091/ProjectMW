@@ -13,6 +13,7 @@ void UMWVehiclePlayerEntryWidget::SetPresentation(const FMWVehiclePlayerPresenta
         return;
     Text_PlayerName->SetText(Player.PlayerName);
     Text_VehicleName->SetText(Player.VehicleName);
+    // 상태는 참가자 행에서 바로 읽을 수 있으므로 별도 호버 안내가 행을 덮지 않게 한다.
     Text_SelectionState->SetText(Player.StatusText);
     if (IsValid(Text_PlayerMarker))
         Text_PlayerMarker->SetText(Player.MarkerText);

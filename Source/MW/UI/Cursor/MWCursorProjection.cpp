@@ -11,6 +11,7 @@
 
 bool MWCursorProjection::SampleWorldPlane(const APlayerController& PC, const FVector& Point, const FVector& Normal, FVector& OutPosition)
 {
+	// 숨겨진 커서나 비활성 PIE 창의 마우스 위치를 현재 플레이어의 포인터로 공유하지 않는다.
 	if (!PC.bShowMouseCursor) return false;
 	const auto* LP = PC.GetLocalPlayer();
 	const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
@@ -21,6 +22,7 @@ bool MWCursorProjection::SampleWorldPlane(const APlayerController& PC, const FVe
 	if (!PC.GetMousePosition(X, Y) || X < 0 || Y < 0 || X >= Width || Y >= Height) return false;
 	FVector Origin, Direction;
 	if (!PC.DeprojectMousePositionToWorld(Origin, Direction)) return false;
+	// 광선이 평면과 거의 평행하면 교점 계산 오차가 커지므로 표시할 좌표를 만들지 않는다.
 	const double Dot = FVector::DotProduct(Direction, Normal);
 	if (FMath::Abs(Dot) < KINDA_SMALL_NUMBER) return false;
 	const double Distance = FVector::DotProduct(Point - Origin, Normal) / Dot;

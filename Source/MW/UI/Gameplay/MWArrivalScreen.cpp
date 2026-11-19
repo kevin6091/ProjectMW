@@ -222,6 +222,7 @@ void UMWArrivalScreen::Begin(APlayerController& Controller, FName Destination)
         NetworkFailure = GEngine->OnNetworkFailure().AddWeakLambda(this,
             [this](UWorld* World, UNetDriver*, ENetworkFailure::Type, const FString& Reason) { HandleConnectionFailure(World, Reason); });
     }
+    // 월드를 바꾸는 사이에도 가림을 유지할 수 있도록 월드 틱 대신 코어 틱에서 검사한다.
     Ticker = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &ThisClass::Tick));
     UE_LOG(LogTemp, Display, TEXT("MWArrival covered attempt=%s world=%s map=%s t=%.6f"),
         *Attempt.ToString(), *Source->GetName(), *ExpectedMap.ToString(), FPlatformTime::Seconds());
@@ -244,6 +245,7 @@ bool UMWArrivalScreen::MaterialsReady(UWorld& World, const TArray<UMaterialInter
         {
             UTexture2D* Surface = Cast<UTexture2D>(Texture);
             if (!Surface) continue;
+            // 공개 직후까지 높은 밉을 잠시 유지해 텍스처가 낮은 해상도로 바뀌는 순간을 줄인다.
             if (Surface->IsStreamable())
                 Surface->SetForceMipLevelsToBeResident(3.f);
             if (!Surface->GetResource() || Surface->HasPendingInitOrStreaming() ||
@@ -264,6 +266,7 @@ bool UMWArrivalScreen::Tick(float Delta)
     if (!Client || !Cover) return false;
     auto* PC = Cast<AMWGameplayPlayerController>(GetGameInstance()->GetFirstLocalPlayerController(World));
     const auto Window = Client->GetWindow();
+    // 그릴 수 없는 동안의 시간은 준비 실패 제한에 포함하지 않는다. 창이 돌아오면 새 프레임을 기다린다.
     if (!Window || !Window->IsVisible() || (Window->GetNativeWindow() && Window->GetNativeWindow()->IsMinimized()))
     {
         Frame.Reset();
@@ -391,6 +394,7 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
         {
             if (auto* Self = Weak.Get())
             {
+                // 재시도는 현재 경기에서 전시와 첫 프레임만 다시 준비한다. 로비 출발을 다시 보고하지 않는다.
                 if (auto* PC = Self->GetGameInstance()->GetFirstLocalPlayerController())
                 {
                     if (auto* Board = Cast<AMWTrackSelectionBoard>(PC->GetViewTarget())) Board->RetryArrivalOffers();

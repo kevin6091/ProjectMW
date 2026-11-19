@@ -50,8 +50,8 @@ private:
 	UPROPERTY(Transient)
 	TMap<int32, TObjectPtr<UBorder>> OfferPlates;
 
-	// Actor마다 복제 도착 순서가 달라 초기 준비 중에만 상태를 재조회한다.
 	UBorder* CreateOfferPlate();
+	// Actor마다 복제 도착 순서가 달라 초기 준비 중에만 상태를 재조회한다.
 	void TryBindState();
 	void Refresh();
 	FText GetOfferName(int32 OfferId) const;

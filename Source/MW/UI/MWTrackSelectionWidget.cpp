@@ -76,6 +76,7 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 			PlacementStatusSpace->SetVisibility(ESlateVisibility::Hidden);
 		}
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
+		// 선택 후보 이름표만 감춘다. 같은 캔버스의 참가자 포인터는 배치 단계에도 필요하다.
 		for (const auto& Pair : OfferPlates) Pair.Value->SetVisibility(ESlateVisibility::Collapsed);
 		if (Text_Title)
 		{
