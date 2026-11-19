@@ -14,10 +14,8 @@ void UMWVehiclePlayerEntryWidget::SetPresentation(const FMWVehiclePlayerPresenta
     Text_PlayerName->SetText(Player.PlayerName);
     Text_VehicleName->SetText(Player.VehicleName);
     Text_SelectionState->SetText(Player.StatusText);
-    Text_SelectionState->SetToolTipText(Player.StatusText);
     if (IsValid(Text_PlayerMarker))
         Text_PlayerMarker->SetText(Player.MarkerText);
-    SetToolTipText(Player.PlayerName);
     if (IsValid(Image_DisplayBackground))
         Image_DisplayBackground->SetColorAndOpacity(
             Player.bConfirmed && !Player.Thumbnail.IsNull() ? ConfirmedDisplayTint : NeutralDisplayTint);

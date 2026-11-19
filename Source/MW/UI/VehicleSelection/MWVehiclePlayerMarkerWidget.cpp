@@ -16,7 +16,6 @@ void UMWVehiclePlayerMarkerWidget::SetPresentation(const FMWVehiclePlayerPresent
         Image_PointerArrow->SetColorAndOpacity(Player.PlayerTint);
     Text_Player->SetText(Player.MarkerText);
     Text_State->SetText(Player.bConfirmed ? ConfirmedText : Player.bHoverPreview ? HoverText : SelectingText);
-    SetToolTipText(Player.PlayerName);
     if (IsValid(CursorPlayerName))
     {
         const bool bShowName = bShowCursorName && !Player.PlayerName.IsEmpty();

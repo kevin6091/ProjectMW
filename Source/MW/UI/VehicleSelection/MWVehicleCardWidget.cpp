@@ -131,8 +131,6 @@ void UMWVehicleCardWidget::Refresh()
     // 선택 입력이 잠겨도 확정한 Preview의 내용은 읽을 수 있게 유지한다.
     Button_Vehicle->SetVisibility(bInteractionLocked ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Visible);
     Text_Name->SetText(DisplayName);
-    Text_Name->SetToolTipText(DisplayName);
-    Button_Vehicle->SetToolTipText(DisplayName);
     Text_Unavailable->SetText(UnavailableReason);
     Text_Unavailable->SetVisibility(bAvailable ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
     Image_Vehicle->SetBrushFromSoftTexture(Thumbnail, true);

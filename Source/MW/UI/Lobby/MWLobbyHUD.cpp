@@ -164,17 +164,6 @@ void AMWLobbyHUD::OpenVehicleSelection()
 	SetActorTickEnabled(true);
 	VehicleSelectionWidget->OnSelectionRequested.AddUniqueDynamic(this, &ThisClass::HandleVehicleSelectionRequested);
 	VehicleSelectionWidget->OnSelectionCancelRequested.AddUniqueDynamic(this, &ThisClass::HandleVehicleSelectionCancelRequested);
-	const auto AddThumbnail = [this](FGameplayTag Id, const TCHAR* Name)
-	{
-		const FString Path = FString::Printf(
-			TEXT("/Game/UI/Lobby/VehicleSelection/T_MW_VehiclePreview_%s.T_MW_VehiclePreview_%s"), Name, Name);
-		VehicleSelectionWidget->VehicleThumbnails.Add(Id, TSoftObjectPtr<UTexture2D>(FSoftObjectPath(Path)));
-	};
-	AddThumbnail(MWGameplayTags::Asset_Vehicle_SMIET, TEXT("Smiet"));
-	AddThumbnail(MWGameplayTags::Asset_Vehicle_MAMMOTH, TEXT("Mammoth"));
-	AddThumbnail(MWGameplayTags::Asset_Vehicle_UFOLOGY, TEXT("Ufology"));
-	AddThumbnail(MWGameplayTags::Asset_Vehicle_DOUG, TEXT("Doug"));
-	AddThumbnail(MWGameplayTags::Asset_Vehicle_FRED, TEXT("Fred"));
 
 	RoomLobbyWidget->SetVisibility(ESlateVisibility::Collapsed);
 	if (auto* Presentation = LobbyPresentation.Get())

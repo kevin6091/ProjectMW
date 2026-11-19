@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/CanvasPanelSlot.h"
 #include "GameplayTagContainer.h"
 #include "Types/SlateEnums.h"
 #include "Layout/Margin.h"
@@ -344,9 +345,6 @@ TObjectPtr<UTextBlock> Text_Error;
 UPROPERTY(meta = (BindWidget))
 TObjectPtr<UTextBlock> Text_RegisteredCount;
 
-UPROPERTY(meta = (BindWidget))
-TObjectPtr<UWidget> PreviewNotice;
-
 UPROPERTY(meta = (BindWidgetOptional))
 TObjectPtr<UButton> Button_NextPreviewScenario;
 
@@ -478,8 +476,8 @@ float CardMarkerScale = 1.f;
 // 배치 변경 대상은 약한 참조로만 보관해 위젯 교체·파괴 뒤 이전 객체를 붙잡지 않는다.
 struct FWorldCanvasSlotState
 {
-    FVector2D Position;
-    FVector2D Size;
+    FAnchorData Layout;
+    bool bAutoSize;
 };
 TMap<TWeakObjectPtr<UCanvasPanelSlot>, FWorldCanvasSlotState> SavedWorldCanvasSlots;
 TMap<TWeakObjectPtr<UWidget>, FVector2D> SavedWorldRenderScales;
