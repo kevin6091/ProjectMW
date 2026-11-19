@@ -40,7 +40,7 @@
 | [MWCursorProjection.cpp](../../../Source/MW/UI/Cursor/MWCursorProjection.cpp) | 보완 | 백그라운드 창의 좌표를 공유하지 않는 이유와 평면에 거의 평행한 광선을 거절하는 이유를 설명했다. |
 | [MWCursorProjection.h](../../../Source/MW/UI/Cursor/MWCursorProjection.h) | 보완 | 광선과 주어진 평면을 이용하는 좌표 변환 계약을 공개 함수에 붙였다. |
 | [MWPointerCursor.h](../../../Source/MW/UI/Cursor/MWPointerCursor.h) | 보완 | WBP에 끝점 값이 있는 경우와 기존 에셋의 슬롯 계산 경로를 설명했다. |
-| [MWRemoteCursorOverlay.h](../../../Source/MW/UI/Cursor/MWRemoteCursorOverlay.h) | 보완 | Track·로컬 포인터 공통 크기가 DPI 적용 전 논리 단위라는 점을 설명했다. |
+| [MWRemoteCursorOverlay.h](../../../Source/MW/UI/Cursor/MWRemoteCursorOverlay.h) | 보완 | 트랙 원격 포인터와 로컬 포인터의 공통 크기가 DPI 적용 전 논리 단위라는 점을 설명했다. |
 | [MWArrivalScreen.cpp](../../../Source/MW/UI/Gameplay/MWArrivalScreen.cpp) | 보완 | 월드를 넘는 가림의 틱 수명, 공개 직후 밉 유지, 최소화한 창의 제한 시간, 재시도 범위를 설명했다. |
 | [MWArrivalScreen.h](../../../Source/MW/UI/Gameplay/MWArrivalScreen.h) | 확인 | 게임 인스턴스가 가림을 유지하는 이유가 클래스에 있다. 틱과 재시도 세부 사항은 구현에 보완했다. |
 | [MWGameplayHUDSubsystem.cpp](../../../Source/MW/UI/Gameplay/MWGameplayHUDSubsystem.cpp) | 보완 | WBP와 Slate의 역할 분담, 슬롯 크기의 하한, 가림이 걷히기 전 단계 안내 시간을 소진하지 않는 이유를 설명했다. |
@@ -55,9 +55,9 @@
 | [MWRaceHUDWidget.h](../../../Source/MW/UI/Gameplay/MWRaceHUDWidget.h) | 확인 | 개별 계기판 모드의 setter와 상태 변수가 제거됐다. 맵 설정의 소유권 설명은 서브시스템 및 위젯 구현에 있다. |
 | [MWLobbyHUD.cpp](../../../Source/MW/UI/Lobby/MWLobbyHUD.cpp) | 보완 | 연출 유무와 관계없이 한 번만 출발을 보고하고, 보고 전에 로컬 가림을 설치하는 이유를 설명했다. |
 | [MWLobbyHUD.h](../../../Source/MW/UI/Lobby/MWLobbyHUD.h) | 확인 | 출발 보고 플래그와 시도 번호가 중복 및 지연 콜백을 거르는 이유는 사용 지점에 설명했다. |
-| [MWTrackSelectionWidget.cpp](../../../Source/MW/UI/MWTrackSelectionWidget.cpp) | 보완 | 차량 이름을 별도 툴팁으로 또 띄우면 카드에 겹치는 문제를 설명했다. |
-| [MWTrackSelectionWidget.h](../../../Source/MW/UI/MWTrackSelectionWidget.h) | 보완 | 선택 단계 이름표만 접어 배치 포인터가 같은 캔버스에 남게 하는 이유를 설명했다. |
-| [MWVehicleCardWidget.cpp](../../../Source/MW/UI/VehicleSelection/MWVehicleCardWidget.cpp) | 보완 | 복제 상태 재조회에 관한 기존 주석을 후보 이름표 생성 함수 위에서 실제 상태 바인딩 함수 위로 옮겼다. |
+| [MWTrackSelectionWidget.cpp](../../../Source/MW/UI/MWTrackSelectionWidget.cpp) | 보완 | 선택 단계 이름표만 접어 배치 포인터가 같은 캔버스에 남게 하는 이유를 설명했다. |
+| [MWTrackSelectionWidget.h](../../../Source/MW/UI/MWTrackSelectionWidget.h) | 보완 | 복제 상태 재조회에 관한 기존 주석을 후보 이름표 생성 함수 위에서 실제 상태 바인딩 함수 위로 옮겼다. |
+| [MWVehicleCardWidget.cpp](../../../Source/MW/UI/VehicleSelection/MWVehicleCardWidget.cpp) | 보완 | 차량 이름을 별도 툴팁으로 또 띄우면 카드에 겹치는 문제를 설명했다. |
 | [MWVehiclePlayerEntryWidget.cpp](../../../Source/MW/UI/VehicleSelection/MWVehiclePlayerEntryWidget.cpp) | 보완 | 별도 호버 안내가 참가자 행의 상태를 덮지 않도록 하는 이유를 설명했다. |
 | [MWVehiclePlayerMarkerWidget.cpp](../../../Source/MW/UI/VehicleSelection/MWVehiclePlayerMarkerWidget.cpp) | 보완 | 움직이는 포인터에 별도 이름 툴팁을 띄우지 않는 이유를 설명했다. |
 | [MWVehiclePlayerMarkerWidget.h](../../../Source/MW/UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h) | 확인 | 디자이너 끝점 값과 기존 화살표 계산 방식의 호환성이 기존 주석에 있다. |
