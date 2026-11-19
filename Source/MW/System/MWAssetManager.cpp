@@ -3,6 +3,7 @@
 #include "Data/MWAssetData.h"
 #include "Engine/Engine.h"
 #include "Engine/StreamableManager.h"
+#include "Misc/PackageName.h"
 #include "MWGameplayTags.h"
 #include "UObject/StrongObjectPtr.h"
 
@@ -20,20 +21,37 @@ UMWAssetManager& UMWAssetManager::Get()
 void UMWAssetManager::StartInitialLoading()
 {
 	Super::StartInitialLoading();
-	// 아직 실제 에셋을 제작하지 않은 초기 상태도 허용합니다. 이때는 사용할 목록이 없는 상태로 둡니다.
-	if (StartupAssetData.IsNull())
+	UMWAssetData* Catalog = nullptr;
+	TArray<FText> Errors;
+	if (!StartupAssetDataOverride.IsNull())
 	{
-		UE_LOG(LogMWAssets, Display, TEXT("MW AssetManager ready; StartupAssetData is not configured yet."));
-		return;
+		const FSoftObjectPath OverridePath = StartupAssetDataOverride.ToSoftObjectPath();
+		if (FPackageName::DoesPackageExist(OverridePath.GetLongPackageName()))
+		{
+			Catalog = StartupAssetDataOverride.LoadSynchronous();
+		}
+		if (!InitializeCatalog(Catalog, Errors))
+		{
+			UE_LOG(LogMWAssets, Warning, TEXT("Optional catalog '%s' is unavailable; using StartupAssetData."), *OverridePath.ToString());
+			for (const FText& Error : Errors) UE_LOG(LogMWAssets, Warning, TEXT("%s"), *Error.ToString());
+			Catalog = nullptr;
+			Errors.Reset();
+		}
 	}
 
-	// 원본 목록부터 불러와 검사한 뒤에만, 미리 불러올 에셋을 준비합니다.
-	UMWAssetData* Catalog = StartupAssetData.LoadSynchronous();
-	TArray<FText> Errors;
-	if (!InitializeCatalog(Catalog, Errors))
+	if (!Catalog)
 	{
-		for (const FText& Error : Errors) UE_LOG(LogMWAssets, Error, TEXT("%s"), *Error.ToString());
-		return;
+		if (StartupAssetData.IsNull())
+		{
+			UE_LOG(LogMWAssets, Display, TEXT("MW AssetManager ready; StartupAssetData is not configured yet."));
+			return;
+		}
+		Catalog = StartupAssetData.LoadSynchronous();
+		if (!InitializeCatalog(Catalog, Errors))
+		{
+			for (const FText& Error : Errors) UE_LOG(LogMWAssets, Error, TEXT("%s"), *Error.ToString());
+			return;
+		}
 	}
 	if (!LoadAssetsByLabelSynchronous(MWGameplayTags::AssetLabel_Preload))
 	{
@@ -177,9 +195,11 @@ TArray<FGameplayTag> UMWAssetManager::GetAssetIdsUnderRoot(FGameplayTag Root) co
 		return Result;
 	}
 
+	const bool bUsingOverride = AssetData == StartupAssetDataOverride.Get();
 	for (const auto& Pair : AssetPaths)
 	{
-		if (Pair.Key != Root && Pair.Key.MatchesTag(Root))
+		if (Pair.Key != Root && Pair.Key.MatchesTag(Root) &&
+			(!bUsingOverride || !UnlistedOverrideAssetIds.Contains(Pair.Key.GetTagName())))
 		{
 			Result.Add(Pair.Key);
 		}

@@ -43,4 +43,8 @@ struct FMWVehicleDriveSnapshot
 
 	UPROPERTY()
 	bool bGrounded = false;
+	
+	// 다음 이동 단계에서 이전 접지면으로 사용할 법선.
+	UPROPERTY()
+	FVector_NetQuantizeNormal GroundNormal = FVector::UpVector;
 };
