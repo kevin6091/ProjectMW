@@ -325,6 +325,20 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 		return;
 	}
 
+#if WITH_EDITOR
+	if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+	{
+		const FTransform Pose = Ghost->Actor->GetActorTransform();
+		const FVector P = Pose.GetLocation(), Scale = Pose.GetScale3D();
+		const FQuat Q = Pose.GetRotation();
+		float X = 0.f, Y = 0.f;
+		PC->GetMousePosition(X, Y);
+		UE_LOG(LogTemp, Display, TEXT("MWPlacement accept world=%s member=%d session=%d revision=%d target=%d:%d source=%d pointer=(%.1f,%.1f) ghost=(%.9f,%.9f,%.9f) quat=(%.9f,%.9f,%.9f,%.9f) scale=(%.9f,%.9f,%.9f)"),
+			*GetWorld()->GetName(), PS->GetLobbyMemberId(), SessionId, Session.CourseRevision,
+			Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort, X, Y,
+			P.X, P.Y, P.Z, Q.X, Q.Y, Q.Z, Q.W, Scale.X, Scale.Y, Scale.Z);
+	}
+#endif
 	bWaitingForReply = true;
 	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Intent);
 }
