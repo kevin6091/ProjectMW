@@ -1,0 +1,24 @@
+PR #17 기본 45초 맵 이동 제한 · 2026-11-19 · UE 5.8 3인 PIE
+빌드 구성 기본값 MapTravelTimeoutSeconds=45.f. 실행 인자에 이동 제한 덮어쓰기 없음.
+실제 게임 입력으로 복구 확인은 Cua Driver. 출발 월드 유지용으로 P3 출발 연출 .001, 서버 월드 .05, P2 로컬 월드 1.0.
+가림 로그부터 복구 로그까지 UTC 시각 차이(초): 2E6DDE78472EFF6D7A991FA1C09DEB21=44.967, 90C9B0EF4042CCC0E13C0EA74F0532FA=44.939
+복구 안내까지 ServerTravel, 서버 시작 실패, 서버 종료·연결 실패 로그 없음.
+
+LogInit: Command Line: -MWConnectionLocal -NetDriverOverrides=/Script/OnlineSubsystemUtils.IpNetDriver -unattended -nosound -nosplash -nop4 -DisablePlugins=PlasticSourceControl -NoLiveCoding -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:PlayNetMode=PIE_ListenServer -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:PlayNumberOfClients=3 -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:RunUnderOneProcess=True -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:ClientWindowWidth=1280 -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:ClientWindowHeight=720 -ExecutePythonScript=C:/Users/user/Documents/Codex/2026-11-19/projectmw-ui-handoff/work/review_default45/pie.py -abslog=C:/Users/user/Documents/Codex/2026-11-19/projectmw-ui-handoff/work/review_default45/pie.log -ini:EditorPerProjectUserSettings:[/Script/UnrealEd.LevelEditorPlaySettings]:LastExecutedPlayModeType=PlayMode_InEditorFloating -forcelogflush
+
+[가림과 복구 전 서버·클라이언트 로그]
+[2026.11.19-08.21.32:708][346]LogTemp: Display: MWArrival covered attempt=2E6DDE78472EFF6D7A991FA1C09DEB21 world=L_Title map=/Game/Levels/L_Dev_Drive t=16805813.433360
+[2026.11.19-08.21.32:720][346]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.19-08.21.32:767][346]LogTemp: Display: MWArrival covered attempt=90C9B0EF4042CCC0E13C0EA74F0532FA world=L_Title map=/Game/Levels/L_Dev_Drive t=16805813.435169
+[2026.11.19-08.21.32:813][347]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.19-08.21.32:903][347]LogPython: DEFAULT45_HOLD: server world dilation=.05; P3 local departure=.001; P2 local world=1.0; arrival settings default
+[2026.11.19-08.22.17:675][340]LogTemp: Warning: MWArrival failed attempt=2E6DDE78472EFF6D7A991FA1C09DEB21 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-08.22.17:706][341]LogTemp: Warning: MWArrival failed attempt=90C9B0EF4042CCC0E13C0EA74F0532FA pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+
+[P2 방 나가기 Cua 입력 뒤 로그]
+[2026.11.19-08.24.03:603][827]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Levels/L_Title"
+[2026.11.19-08.24.03:931][828]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Levels/UEDPIE_1_L_Title
+[2026.11.19-08.24.04:201][828]LogMWServer: Warning: Start failed: 출발 중 참가자가 방을 나갔습니다.
+[2026.11.19-08.24.04:639][828]LogNet:  - Result=HostClosedConnection, ErrorContext="HostClosedConnection"
+
+P2의 타이틀 월드 로드 완료 이후 검증 스크립트가 종료된 월드를 참조해 PIE가 끝났다. 이 재현에서 메뉴 정착 화면 캡처는 없다.

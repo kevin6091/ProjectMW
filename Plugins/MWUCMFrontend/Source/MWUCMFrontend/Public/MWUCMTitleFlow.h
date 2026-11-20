@@ -100,15 +100,13 @@ public:
     void InstallFrontendCursor();
     
 private:
-    // 설정 파일에서 지정한 커서 클래스다. 설치 시 필요한 에셋을 불러온다.
-    UPROPERTY(Config) 
-    TSoftClassPtr<UMWVehiclePlayerMarkerWidget> PointerWidgetClass;
-    
     // 맵 이동 중에도 유지할 커서 위젯을 UE가 추적하는 참조로 보관한다.
     UPROPERTY(Transient) 
     TObjectPtr<UMWVehiclePlayerMarkerWidget> FrontendCursor;
     
     TSharedPtr<SWidget> FrontendCursorSlate;
+    TOptional<int32> CursorMemberId;
+    void RefreshFrontendCursorColor();
     
     // 기존 소프트웨어 커서를 보관해 다른 화면의 설정을 영구히 덮어쓰지 않게 한다.
     TArray<TSharedPtr<SWidget>> PreviousCursors;

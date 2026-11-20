@@ -1,0 +1,152 @@
+PR #17 · 3인 PIE 맵 이동 시간 초과 뒤 실제 목적지 도착 검증
+UE 5.8 Win64 Development · LocalIP Listen Server · 설원 · 2026-11-20 KST
+수정 전 Git 43a649e / 수정 후 같은 브랜치의 MWArrivalScreen 변경 빌드
+PIE 시작·캡처·게임 입력=Cua Driver / 지연 시험의 로비 준비·시간 배율=Editor Python
+서버 이동은 실제 P3 출발 콜백 이후 기존 경로로 실행됐다. 운영 제한 45초와 서버 제한 12초는 그대로다.
+정상 시험은 Cua Driver로 로비 준비·시작과 차량/트랙 선택·설치를 모두 조작했다.
+에디터 빌드: Result: Succeeded
+Total execution time: 39.23 seconds
+
+[시도별 시간(초)]
+{
+  "before": {
+    "timeout_utc_log_seconds": {
+      "1": 44.976,
+      "2": 44.923
+    },
+    "covered_to_resume_monotonic_seconds": {},
+    "resume_to_reveal_monotonic_seconds": {},
+    "covered_to_reveal_monotonic_seconds": {
+      "3": 3.911
+    }
+  },
+  "after": {
+    "timeout_utc_log_seconds": {
+      "1": 44.975,
+      "2": 44.927
+    },
+    "covered_to_resume_monotonic_seconds": {
+      "1": 66.671,
+      "2": 67.28
+    },
+    "resume_to_reveal_monotonic_seconds": {
+      "1": 3.459,
+      "2": 2.66
+    },
+    "covered_to_reveal_monotonic_seconds": {
+      "2": 69.94,
+      "3": 3.866,
+      "1": 70.13
+    }
+  },
+  "normal": {
+    "timeout_utc_log_seconds": {},
+    "covered_to_resume_monotonic_seconds": {},
+    "resume_to_reveal_monotonic_seconds": {},
+    "covered_to_reveal_monotonic_seconds": {
+      "2": 3.976,
+      "3": 4.003,
+      "1": 4.189
+    }
+  }
+}
+
+[수정 전 · 시간 초과 후 실제 이동 · 원본 줄 번호 / 로그 UTC]
+2325: [2026.11.20-01.55.17:855][206]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=3 Destination=/Game/Levels/L_Dev_Drive
+2356: [2026.11.20-01.55.19:867][258]LogTemp: Display: MWArrival covered attempt=6756AF3F46235D67E0E5FF8AD29ECD90 world=L_Title map=/Game/Levels/L_Dev_Drive t=16869038.343653
+2357: [2026.11.20-01.55.19:879][258]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+2361: [2026.11.20-01.55.19:927][258]LogTemp: Display: MWArrival covered attempt=5EBE539949627EEF2AF92FB3C5DA4E96 world=L_Title map=/Game/Levels/L_Dev_Drive t=16869038.346726
+2362: [2026.11.20-01.55.20:057][259]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+2363: [2026.11.20-01.55.20:143][259]LogPython: LATE_TRAVEL_FIXTURE_HOLD: server world dilation=.05; P3 local departure=.001; P2 local world=1.0; arrival settings default
+2385: [2026.11.20-01.56.04:843][604]LogTemp: Warning: MWArrival failed attempt=6756AF3F46235D67E0E5FF8AD29ECD90 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+2386: [2026.11.20-01.56.04:850][605]LogTemp: Warning: MWArrival failed attempt=5EBE539949627EEF2AF92FB3C5DA4E96 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+2397: [2026.11.20-01.56.53:516][744]LogPython: LATE_TRAVEL_FIXTURE_RELEASE: server and P3 clocks restored; no ServerTravel or departure RPC injected
+2403: [2026.11.20-01.56.55:961][852]LogTemp: Display: MWArrival covered attempt=27D7D31341D4ACEA01D861866F2B543C world=L_Title map=/Game/Levels/L_Dev_Drive t=16869134.439255
+2404: [2026.11.20-01.56.55:973][852]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+2405: [2026.11.20-01.56.55:985][853]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2406: [2026.11.20-01.56.55:997][853]LogGameMode: ProcessServerTravel: /Game/Levels/L_Dev_Drive
+2444: [2026.11.20-01.56.56:425][854]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2554: [2026.11.20-01.56.57:708][861]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2559: [2026.11.20-01.56.57:768][861]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2560: [2026.11.20-01.56.57:780][861]LogPython: LATE_TRAVEL_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(573, 306) mouse=False
+2561: [2026.11.20-01.56.57:792][861]LogPython: LATE_TRAVEL_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(573, 306) mouse=False
+2562: [2026.11.20-01.56.57:804][861]LogPython: LATE_TRAVEL_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(573, 306) mouse=False
+2570: [2026.11.20-01.56.57:926][862]LogTemp: Display: MWArrival ready attempt=27D7D31341D4ACEA01D861866F2B543C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16869136.433643
+2573: [2026.11.20-01.56.59:843][912]LogTemp: Display: MWArrival reveal attempt=27D7D31341D4ACEA01D861866F2B543C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16869138.350590
+
+[수정 후 · 시간 초과 후 실제 이동 · 원본 줄 번호 / 로그 UTC]
+2327: [2026.11.20-02.03.04:483][703]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=3 Destination=/Game/Levels/L_Dev_Drive
+2365: [2026.11.20-02.03.06:482][741]LogTemp: Display: MWArrival covered attempt=AEF7B718480184EC1F091790D731BBF5 world=L_Title map=/Game/Levels/L_Dev_Drive t=16869504.956840
+2366: [2026.11.20-02.03.06:493][741]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+2370: [2026.11.20-02.03.06:541][741]LogTemp: Display: MWArrival covered attempt=DF301CE64725FC921572DDAC17CE974A world=L_Title map=/Game/Levels/L_Dev_Drive t=16869504.959145
+2371: [2026.11.20-02.03.06:648][742]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+2372: [2026.11.20-02.03.06:737][742]LogPython: LATE_TRAVEL_FIXTURE_HOLD: server world dilation=.05; P3 local departure=.001; P2 local world=1.0; arrival settings default
+2388: [2026.11.20-02.03.51:457][720]LogTemp: Warning: MWArrival failed attempt=AEF7B718480184EC1F091790D731BBF5 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+2389: [2026.11.20-02.03.51:468][721]LogTemp: Warning: MWArrival failed attempt=DF301CE64725FC921572DDAC17CE974A pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+2396: [2026.11.20-02.04.10:107][586]LogPython: LATE_TRAVEL_FIXTURE_RELEASE: server and P3 clocks restored; no ServerTravel or departure RPC injected
+2402: [2026.11.20-02.04.12:583][697]LogTemp: Display: MWArrival covered attempt=D379A8644D095DB144FA8FAAA6A5FAD4 world=L_Title map=/Game/Levels/L_Dev_Drive t=16869571.062979
+2403: [2026.11.20-02.04.12:595][697]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+2404: [2026.11.20-02.04.12:607][697]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2405: [2026.11.20-02.04.12:619][698]LogGameMode: ProcessServerTravel: /Game/Levels/L_Dev_Drive
+2444: [2026.11.20-02.04.13:062][699]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2493: [2026.11.20-02.04.13:529][703]LogTemp: Display: MWArrival resumed late travel attempt=AEF7B718480184EC1F091790D731BBF5 world=/Game/Levels/L_Dev_Drive t=16869571.627947
+2557: [2026.11.20-02.04.14:270][705]LogTemp: Display: MWArrival resumed late travel attempt=DF301CE64725FC921572DDAC17CE974A world=/Game/Levels/L_Dev_Drive t=16869572.239238
+2564: [2026.11.20-02.04.14:352][705]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2569: [2026.11.20-02.04.14:411][705]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2570: [2026.11.20-02.04.14:422][705]LogPython: LATE_TRAVEL_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(924, 472) mouse=False
+2571: [2026.11.20-02.04.14:434][705]LogPython: LATE_TRAVEL_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(924, 472) mouse=False
+2572: [2026.11.20-02.04.14:446][705]LogPython: LATE_TRAVEL_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=(924, 472) mouse=False
+2581: [2026.11.20-02.04.14:513][706]LogTemp: Display: MWArrival ready attempt=AEF7B718480184EC1F091790D731BBF5 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16869573.012078
+2582: [2026.11.20-02.04.14:627][706]LogTemp: Display: MWArrival ready attempt=DF301CE64725FC921572DDAC17CE974A world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16869573.133963
+2583: [2026.11.20-02.04.14:638][707]LogTemp: Display: MWArrival ready attempt=D379A8644D095DB144FA8FAAA6A5FAD4 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16869573.134044
+2587: [2026.11.20-02.04.16:415][759]LogTemp: Display: MWArrival reveal attempt=DF301CE64725FC921572DDAC17CE974A world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16869574.899400
+2590: [2026.11.20-02.04.16:450][760]LogTemp: Display: MWArrival reveal attempt=D379A8644D095DB144FA8FAAA6A5FAD4 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16869574.929068
+2593: [2026.11.20-02.04.16:581][765]LogTemp: Display: MWArrival reveal attempt=AEF7B718480184EC1F091790D731BBF5 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16869575.087152
+2612: [2026.11.20-02.05.51:180][776]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2613: [2026.11.20-02.05.51:184][776]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+2615: [2026.11.20-02.05.51:207][776]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2616: [2026.11.20-02.05.51:219][776]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+
+[수정 후 · 지연 없는 정상 진행 · 원본 줄 번호 / 로그 UTC]
+2369: [2026.11.20-02.12.22:691][830]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=3 Destination=/Game/Levels/L_Dev_Drive
+2398: [2026.11.20-02.12.25:207][923]LogTemp: Display: MWArrival covered attempt=B8EAB0EC4CED3E552DDB3EA0B2ECCCBC world=L_Title map=/Game/Levels/L_Dev_Drive t=16870063.685133
+2399: [2026.11.20-02.12.25:219][923]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+2403: [2026.11.20-02.12.25:268][924]LogTemp: Display: MWArrival covered attempt=8BE006D046D2EAB998D3B69D73A38C9D world=L_Title map=/Game/Levels/L_Dev_Drive t=16870063.687096
+2407: [2026.11.20-02.12.25:316][924]LogTemp: Display: MWArrival covered attempt=786ECBB64AB14BB0ACDA37BF13653F8C world=L_Title map=/Game/Levels/L_Dev_Drive t=16870063.688724
+2408: [2026.11.20-02.12.25:328][924]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+2409: [2026.11.20-02.12.25:340][924]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+2410: [2026.11.20-02.12.25:352][924]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2411: [2026.11.20-02.12.25:364][924]LogGameMode: ProcessServerTravel: /Game/Levels/L_Dev_Drive
+2450: [2026.11.20-02.12.25:806][927]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2492: [2026.11.20-02.12.26:295][929]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2562: [2026.11.20-02.12.27:110][931]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2567: [2026.11.20-02.12.27:170][931]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2576: [2026.11.20-02.12.27:230][931]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2577: [2026.11.20-02.12.27:242][931]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2578: [2026.11.20-02.12.27:357][932]LogTemp: Display: MWArrival ready attempt=B8EAB0EC4CED3E552DDB3EA0B2ECCCBC world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16870065.864089
+2579: [2026.11.20-02.12.27:469][932]LogTemp: Display: MWArrival ready attempt=8BE006D046D2EAB998D3B69D73A38C9D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16870065.976648
+2580: [2026.11.20-02.12.27:478][933]LogTemp: Display: MWArrival ready attempt=786ECBB64AB14BB0ACDA37BF13653F8C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16870065.976719
+2581: [2026.11.20-02.12.29:156][984]LogTemp: Display: MWArrival reveal attempt=8BE006D046D2EAB998D3B69D73A38C9D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16870067.663267
+2584: [2026.11.20-02.12.29:185][986]LogTemp: Display: MWArrival reveal attempt=786ECBB64AB14BB0ACDA37BF13653F8C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16870067.692073
+2587: [2026.11.20-02.12.29:367][991]LogTemp: Display: MWArrival reveal attempt=B8EAB0EC4CED3E552DDB3EA0B2ECCCBC world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16870067.874197
+2598: [2026.11.20-02.13.22:584][688]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2599: [2026.11.20-02.13.22:595][688]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+2601: [2026.11.20-02.13.22:619][688]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2602: [2026.11.20-02.13.22:631][688]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2605: [2026.11.20-02.13.22:961][694]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2606: [2026.11.20-02.13.23:064][699]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2607: [2026.11.20-02.13.23:076][699]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2612: [2026.11.20-02.14.06:357][963]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+2613: [2026.11.20-02.14.38:561][633]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+2624: [2026.11.20-02.15.01:327][799]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+2630: [2026.11.20-02.15.01:421][800]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2635: [2026.11.20-02.15.01:483][802]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2639: [2026.11.20-02.15.01:531][802]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2642: [2026.11.20-02.15.01:567][803]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+2643: [2026.11.20-02.15.01:579][804]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0
+2644: [2026.11.20-02.15.01:591][804]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_Smiet_C_0
+
+[정상 실행 · 실제 출발선에서의 소유 차량과 위치(cm)]
+{"member": 1, "world": "/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.FRED\")", "pawn": "BP_MWVehiclePawn_FRED_C_0", "possessed": true, "location": [-2620.0, 375.0, 6069.2], "time_dilation": 1.0}
+{"member": 2, "world": "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.DOUG\")", "pawn": "BP_MWVehiclePawn_DOUG_C_0", "possessed": true, "location": [-2620.0, 525.0, 6046.2], "time_dilation": 1.0}
+{"member": 3, "world": "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.SMIET\")", "pawn": "BP_MWVehiclePawn_Smiet_C_0", "possessed": true, "location": [-2870.0, 375.0, 6051.2], "time_dilation": 1.0}

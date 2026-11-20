@@ -1,8 +1,14 @@
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
+#include "Gameplay/Construction/MWTrackPreviewPreload.h"
+#include "Engine/LocalPlayer.h"
 
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/BoxComponent.h"
-#include "Components/TextRenderComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Gameplay/Construction/MWTrackSelectionExposure.h"
+#include "UI/MWTrackSelectionWidget.h"
+#include "UI/Cursor/MWCursorProjection.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
@@ -145,26 +151,43 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - VisualBounds.GetCenter());
 		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20 * LayoutScale));
 		HitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		auto* Label = NewObject<UTextRenderComponent>(this);
-		Label->SetupAttachment(Anchors[Offer.BoardSlotIndex]);
-		Label->SetRelativeLocation(FVector(0, 0, Extent.Z + 130 * LayoutScale));
-		Label->SetHorizontalAlignment(EHTA_Center);
-		Label->SetWorldSize(45 * LayoutScale);
-		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Label->RegisterComponent();
-		Labels.Add(Offer.OfferId, Label);
+
 	}
 	SessionId = Session.SelectionSessionId;
 	Revision = Session.OffersRevision;
+	// 이제 각 전시 액터가 메시와 재질을 보관하므로 로비의 선로딩 핸들을 놓는다.
+	if (auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer()))
+	{
+		Preload->ReleaseCandidates();
+	}
 	return true;
+}
+
+void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSession& Session,
+    TArray<UMaterialInterface*>& Materials, FString& Pending) const
+{
+    // 전시가 먼저 생겨도 서버가 보낸 후보 버전과 같아야 이번 선택 화면이 준비된 것으로 본다.
+    if (!Session.bIsOpen || Session.SelectionSessionId <= 0 || Session.Offers.IsEmpty() ||
+        SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision)
+    {
+        Pending = TEXT("selection session/revision");
+        return;
+    }
+    for (const auto& Offer : Session.Offers)
+    {
+        const AActor* Track = Offers.FindRef(Offer.OfferId);
+        if (!MWTrackPreview::CollectVisibleMaterials(Track, Materials))
+        {
+            Pending = FString::Printf(TEXT("offer %d (%s) mesh/material"), Offer.OfferId, *Offer.DefinitionAssetId.ToString());
+            return;
+        }
+    }
 }
 
 void AMWTrackSelectionBoard::ClearOffers()
 {
 	for (const auto& Pair : Offers) if (IsValid(Pair.Value)) Pair.Value->Destroy();
-	for (const auto& Pair : Labels) if (IsValid(Pair.Value)) Pair.Value->DestroyComponent();
 	Offers.Reset();
-	Labels.Reset();
 	for (const auto& Hit : HitAreas) Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SessionId = Revision = 0;
 	LocalHover = SentHover = INDEX_NONE;
@@ -172,23 +195,7 @@ void AMWTrackSelectionBoard::ClearOffers()
 
 bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 {
-	if (!Viewer.IsValid()) return false;
-	const auto* LP = Viewer->GetLocalPlayer();
-	const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
-	if (!Viewport || !Viewport->IsForegroundWindow()) return false;
-	float X, Y;
-	int32 Width, Height;
-	Viewer->GetViewportSize(Width, Height);
-	if (!Viewer->GetMousePosition(X, Y) || X < 0 || Y < 0 || X >= Width || Y >= Height) return false;
-	FVector Origin, Direction;
-	if (!Viewer->DeprojectMousePositionToWorld(Origin, Direction)) return false;
-	const FVector Normal = GetActorUpVector();
-	const double Dot = FVector::DotProduct(Direction, Normal);
-	if (FMath::Abs(Dot) < KINDA_SMALL_NUMBER) return false;
-	const double Distance = FVector::DotProduct(Anchors[1]->GetComponentLocation() - Origin, Normal) / Dot;
-	if (Distance < 0 || Distance > 100000) return false;
-	OutPosition = Origin + Direction * Distance;
-	return !OutPosition.ContainsNaN() && OutPosition.GetAbsMax() < 1000000;
+	return Viewer.IsValid() && MWCursorProjection::SampleWorldPlane(*Viewer, GetBuildOrigin(), GetActorUpVector(), OutPosition);
 }
 
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const
@@ -235,6 +242,11 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 			{
 				Viewer = PC;
 				PC->SetTrackSelectionBoard(this);
+				if (APlayerCameraManager* Manager = PC->PlayerCameraManager;
+					Manager && !Manager->FindCameraModifierByClass(UMWTrackSelectionExposure::StaticClass()))
+				{
+					Manager->AddNewCameraModifier(UMWTrackSelectionExposure::StaticClass());
+				}
 				PC->SetViewTarget(this);
 				break;
 			}
@@ -274,28 +286,22 @@ FVector AMWTrackSelectionBoard::GetBuildOrigin() const
 
 void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Session)
 {
-	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	for (const auto& Pair : Offers)
+	auto* Widget = Cast<UMWTrackSelectionWidget>(Viewer->TrackSelectionWidget);
+	if (!Widget)
 	{
-		FString Text = FString::Printf(TEXT("TRACK %d"), Pair.Key);
-		bool bSelected = false;
-		for (APlayerState* State : GS->PlayerArray)
+		return;
+	}
+
+	// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
+	for (const FMWTrackOffer& Offer : Session.Offers)
+	{
+		const AActor* Track = Offers.FindRef(Offer.OfferId);
+		// 액터 생성과 첫 렌더는 다른 프레임일 수 있다. 조각을 한 번 그린 뒤 이름표를 연다.
+		if (Track && Track->GetLastRenderTime() > 0.f && HitAreas.IsValidIndex(Offer.BoardSlotIndex))
 		{
-			const auto* PS = Cast<AMWPlayerState>(State);
-			if (!PS) continue;
-			const auto Selection = PS->GetPlayerConstructionComponent()->GetSelection();
-			if (Selection.SelectionSessionId != Session.SelectionSessionId || Selection.OffersRevision != Session.OffersRevision) continue;
-			const int32 Id = Selection.bConfirmed ? Selection.SelectedOfferId
-				: (PS == Viewer->GetPlayerState<AMWPlayerState>() ? LocalHover : Selection.HoveredOfferId);
-			if (Id != Pair.Key) continue;
-			bSelected |= Selection.bConfirmed;
-			Text += FString::Printf(TEXT("\nP%d %s"), PS->GetLobbyMemberId(), Selection.bConfirmed ? TEXT("SELECTED") : TEXT("HOVER"));
-		}
-		if (UTextRenderComponent* Label = Labels.FindRef(Pair.Key))
-		{
-			Label->SetText(FText::FromString(Text));
-			Label->SetTextRenderColor(bSelected ? FColor::Yellow : LocalHover == Pair.Key ? FColor::Cyan : FColor::White);
-			Label->SetWorldRotation((Camera->GetComponentLocation() - Label->GetComponentLocation()).Rotation());
+			const UBoxComponent* Hit = HitAreas[Offer.BoardSlotIndex];
+			const FVector Top = Hit->GetComponentLocation() + Hit->GetUpVector() * Hit->GetScaledBoxExtent().Z;
+			Widget->PositionOfferLabel(Offer.OfferId, Top, Offer.OfferId == LocalHover);
 		}
 	}
 }

@@ -220,6 +220,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "Environment")
     FString GetEnvironmentDebug() const;
 
+    // 차량을 아직 소유하지 않은 대기판 진입에서는 컨트롤러 시점도 첫 화면이 될 수 있다.
+    void AllowInitialControllerView() { bAllowInitialControllerView = true; }
+    bool IsViewPrepared(const AActor* Target) const { return Target && PreparedView.Get() == Target; }
+
 protected:
     // 지정된 테마 입력이 준비된 뒤 배경을 초기화하고 설정된 가시성 갱신을 시작한다.
     virtual void BeginPlay() override;
@@ -308,7 +312,9 @@ private:
 
     bool UsingPlayerProjection = false;
 
+    TWeakObjectPtr<AActor> PreparedView;
     bool InitialViewPending = true;
+    bool bAllowInitialControllerView = false;
 
     float LastCameraFov = 90;
 

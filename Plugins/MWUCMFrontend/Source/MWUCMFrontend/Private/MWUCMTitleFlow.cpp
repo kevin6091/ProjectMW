@@ -9,6 +9,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
 #include "Engine/GameViewportClient.h"
 #include "Containers/Ticker.h"
 #include "Widgets/Layout/SBorder.h"
@@ -38,6 +39,8 @@
 #include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "UI/Cursor/MWPointerCursor.h"
+#include "UI/Cursor/MWRemoteCursorOverlay.h"
+#include "UI/Common/MWParticipantPalette.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "UI/VehicleSelection/MWVehicleSelectionPreviewActor.h"
 #include "System/MWGameInstance.h"
@@ -238,18 +241,14 @@ void UMWUCMIntroSession::InstallFrontendCursor()
     if (FrontendCursorSlate.IsValid())
         return;
     auto* Viewport = GetGameInstance()->GetGameViewportClient();
-    auto* Class = PointerWidgetClass.LoadSynchronous();
+    auto* Class = GetDefault<UMWRemoteCursorOverlay>()->PointerWidgetClass.LoadSynchronous();
     if (!Viewport || !Class)
         return;
     FrontendCursor = CreateWidget<UMWVehiclePlayerMarkerWidget>(GetGameInstance(), Class);
     if (!FrontendCursor)
         return;
     FrontendCursor->TakeWidget();
-    FMWVehiclePlayerPresentation Player;
-    Player.bLocal = true;
-    Player.PlayerTint = FLinearColor(.8f, .05f, .08f, 1.f);
-    FrontendCursor->SetPresentation(Player);
-    FrontendCursor->SetRenderOpacity(1.f);
+    RefreshFrontendCursorColor();
     FrontendCursor->SetVisibility(ESlateVisibility::HitTestInvisible);
     const TWeakObjectPtr<UMWUCMIntroSession> WeakThis(this);
     FrontendCursorSlate = MWMakePointerCursor(
@@ -257,7 +256,8 @@ void UMWUCMIntroSession::InstallFrontendCursor()
         TAttribute<FVector2D>::CreateLambda(
             [WeakThis]()
             {
-                return FVector2D(154.834854f) *
+                // 소프트웨어 커서는 픽셀 크기를 받으므로 공통 논리 크기에 이 창의 DPI를 곱한다.
+                return FVector2D(GetDefault<UMWRemoteCursorOverlay>()->PointerDisplaySize) *
                        (WeakThis.IsValid() ? UWidgetLayoutLibrary::GetViewportScale(WeakThis.Get()) : 1.f);
             }));
     CursorViewport = Viewport;
@@ -269,6 +269,24 @@ void UMWUCMIntroSession::InstallFrontendCursor()
     }
     Viewport->SetUseSoftwareCursorWidgets(true);
     UE_LOG(LogTemp, Display, TEXT("MW_UCM FRONTEND_CURSOR_INSTALLED VEHICLE_ART_ARROW_TIP_HOTSPOT"));
+}
+
+// 맵 이동·재입장으로 로컬 PlayerState가 늦게 복제될 수 있어 현재 방의 MemberId가 바뀔 때만 갱신한다.
+void UMWUCMIntroSession::RefreshFrontendCursorColor()
+{
+    if (!FrontendCursor) return;
+    const auto* PC = GetGameInstance()->GetFirstLocalPlayerController();
+    const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+    const int32 MemberId = PS ? PS->GetLobbyMemberId() : INDEX_NONE;
+    if (CursorMemberId.IsSet() && CursorMemberId.GetValue() == MemberId) return;
+    CursorMemberId = MemberId;
+
+    FMWVehiclePlayerPresentation Player;
+    Player.bLocal = true;
+    Player.PlayerTint = MemberId > 0 ? GetDefault<UMWParticipantPalette>()->GetColorForMember(MemberId)
+                                    : FLinearColor(.8f, .05f, .08f, 1.f);
+    FrontendCursor->SetPresentation(Player);
+    FrontendCursor->SetRenderOpacity(1.f);
 }
 
 // 복귀를 시작할 수 있는 실제 로비 월드를 기록한다. 같은 게임 인스턴스인지 확인한다.
@@ -301,14 +319,16 @@ void UMWUCMIntroSession::EnsureReturnCover()
         CoverViewport->RemoveViewportWidgetContent(ReturnCover.ToSharedRef());
     ReturnCover = SNew(SBorder)
         .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-        .BorderBackgroundColor(FLinearColor(0, 0, 0, .85f));
+        .BorderBackgroundColor(FLinearColor::Black);
     CoverViewport = Viewport;
     Viewport->AddViewportWidgetContent(ReturnCover.ToSharedRef(), 10000);
 }
 
 void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
 {
-    if (!World || World != RoomPresentationWorld.Get() || !GetGameInstance()->GetGameViewportClient()) return;
+    auto* Arrival = GetGameInstance()->GetSubsystem<UMWArrivalScreen>();
+    if (!World || (World != RoomPresentationWorld.Get() && !Arrival->IsCovered()) ||
+        !GetGameInstance()->GetGameViewportClient()) return;
     if (ReturnCoverPhase != EReturnCoverPhase::Hidden && ReturnCoverPhase != EReturnCoverPhase::Failed) return;
     if (ReturnCoverPhase == EReturnCoverPhase::Failed && World != ReturnSourceWorld.Get()) return;
     if (ReturnCoverPhase == EReturnCoverPhase::Hidden) bReturnToRoomBrowser = bWasParticipant;
@@ -318,6 +338,17 @@ void UMWUCMIntroSession::BeginRoomReturn(UWorld* World, bool bWasParticipant)
     PreparationFailure.Reset();
     ExpectedReturnMap = NAME_None;
     ClearReturnStatus();
+    // 복귀 가림막을 먼저 표시해 도착 화면 가림을 제거하는 순간에도 월드가 노출되지 않게 한다.
+    if (Arrival->IsCovered())
+    {
+        EnsureReturnCover();
+        if (ReturnCover)
+        {
+            ReturnCover->SetContent(Arrival->CreateLoadingContent());
+            ReturnCover->SetVisibility(EVisibility::Visible);
+            Arrival->Cancel();
+        }
+    }
     SetReturnPhase(EReturnCoverPhase::WaitingForSession);
 }
 
@@ -363,7 +394,13 @@ void UMWUCMIntroSession::CoverMapBoundary(const FWorldContext& Context, const FS
                 }
             }
         }
-        ClearReturnStatus();
+        EnsureReturnCover();
+        if (ReturnCover)
+        {
+            ReturnCover->SetPadding(FMargin(0));
+            ReturnCover->SetContent(GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->CreateLoadingContent());
+            ReturnCover->SetVisibility(EVisibility::Visible);
+        }
         SetReturnPhase(EReturnCoverPhase::Traveling);
         RecordRoomReturn(TEXT("MAP_LOAD_START"));
     }
@@ -430,32 +467,17 @@ void UMWUCMIntroSession::ShowReturnStatus(const FText& Message, bool bRetry)
     if (!ReturnCover)
         return;
     ReturnCover->SetVisibility(EVisibility::Visible);
-    TSharedPtr<SButton> ExitButton;
-    const FSlateFontInfo MessageFont = FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 26);
-    const FSlateFontInfo ButtonFont = FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), 22);
-    ReturnCover->SetHAlign(HAlign_Center);
-    ReturnCover->SetVAlign(VAlign_Center);
-    ReturnCover->SetContent(
-        SNew(SVerticalBox) +
-        SVerticalBox::Slot().AutoHeight().Padding(12.f)
-            [SNew(STextBlock).Font(MessageFont).Text(Message).WrapTextAt(480.f).Justification(ETextJustify::Center)] +
-        SVerticalBox::Slot().AutoHeight().Padding(12.f)
-            [SNew(SButton)
-                 .HAlign(HAlign_Center)
-                 .ContentPadding(FMargin(16.f, 8.f))
-                 .Visibility(bRetry ? EVisibility::Visible : EVisibility::Collapsed)
-                 .OnClicked_UObject(this, &ThisClass::RetryReturn)
-                     [SNew(STextBlock).Font(ButtonFont).Text(NSLOCTEXT("MWReturn", "Retry", "세션 정리 다시 시도"))]] +
-        SVerticalBox::Slot().AutoHeight().Padding(
-            12.f)[SAssignNew(ExitButton, SButton)
-                      .HAlign(HAlign_Center)
-                      .ContentPadding(FMargin(16.f, 8.f))
-                      .OnClicked_UObject(this, &ThisClass::ExitAfterReturnFailure)
-                          [SNew(STextBlock).Font(ButtonFont).Text(NSLOCTEXT("MWReturn", "Exit", "게임 종료"))]]);
+    TSharedPtr<SButton> InitialFocus;
+    ReturnCover->SetHAlign(HAlign_Fill);
+    ReturnCover->SetVAlign(VAlign_Fill);
+    ReturnCover->SetContent(MWGameplayUI::RecoveryPanel(Message,
+        NSLOCTEXT("MWReturn", "Retry", "세션 정리 다시 시도"), FOnClicked::CreateUObject(this, &ThisClass::RetryReturn),
+        NSLOCTEXT("MWReturn", "Exit", "게임 종료"), FOnClicked::CreateUObject(this, &ThisClass::ExitAfterReturnFailure),
+        bRetry, InitialFocus));
     if (FrontendCursor)
         FrontendCursor->SetRenderOpacity(1.f);
     if (FSlateApplication::IsInitialized())
-        FSlateApplication::Get().SetKeyboardFocus(ExitButton);
+        FSlateApplication::Get().SetKeyboardFocus(InitialFocus);
 }
 
 // 기존 안내 내용을 지우고 필요하지 않은 상태 패널을 숨긴다.
@@ -521,6 +543,7 @@ void UMWUCMIntroSession::RemoveReturnCover()
 // 엔진 틱에서 응답·이동·표시 준비 지연을 확인한다. 게임 스레드 정지를 대신 처리하는 기능은 아니다.
 bool UMWUCMIntroSession::TickReturnCover(float DeltaTime)
 {
+    RefreshFrontendCursorColor();
     if (!IsRoomReturnPending()) return true;
     const double Elapsed = FPlatformTime::Seconds() - CoverChangedAt;
     if (ReturnCoverPhase == EReturnCoverPhase::WaitingForSession)
@@ -1310,13 +1333,7 @@ bool AMWUCMTitleFlow::BeginVehicleDeparture(FSimpleDelegate OnCovered)
         SNew(SBorder)
             .BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
             .BorderBackgroundColor(FLinearColor::Transparent)
-            .Padding(0.f)[MWGameplayUI::FitDesignCanvas(
-                SNew(SOverlay) +
-                SOverlay::Slot()
-                    .HAlign(HAlign_Center)
-                    .VAlign(VAlign_Center)[SNew(SMWGameplaySign)
-                                               .Label(NSLOCTEXT("MWGameplayUI", "Loading", "불러오는 중"))
-                                               .AnimateLoading(true)])];
+            .Padding(0.f)[GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->CreateLoadingContent()];
     VehicleDepartureCover->GetContent()->SetVisibility(EVisibility::Collapsed);
     VehicleDepartureViewport = Viewport;
     Viewport->AddViewportWidgetContent(VehicleDepartureCover.ToSharedRef(), 9999);

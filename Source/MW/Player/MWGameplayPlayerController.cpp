@@ -1,6 +1,7 @@
 
 
 #include "Player/MWGameplayPlayerController.h"
+#include "UI/Gameplay/MWArrivalScreen.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Algo/AllOf.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
@@ -112,15 +113,30 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	// 실패 단계의 안내는 경기 HUD가 소유한다. 종료된 건설판이 오류 배지를 덮지 않게 한다.
 	const bool bShowConstruction = TrackSelectionWidgetClass &&
-		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement || Phase == EMWRoomPhase::Failed);
+		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement);
 	const bool bResetConstructionWidget = PresentedPhase == EMWRoomPhase::TrackPlacement
-		&& (Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::Failed);
+		&& Phase == EMWRoomPhase::PreparingConstruction;
 	PresentedPhase = Phase;
 	if ((!bShowConstruction || bResetConstructionWidget) && IsValid(TrackSelectionWidget))
 	{
 		TrackSelectionWidget->RemoveFromParent();
 		TrackSelectionWidget = nullptr;
+	}
+
+	if (Phase == EMWRoomPhase::Failed)
+	{
+		// 가림 중인 복구창은 자체 포커스를 유지하고, 공개된 화면에서는 기존 게임·UI 입력을 유지한다.
+		if (!GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+		{
+			FInputModeGameAndUI Mode;
+			Mode.SetHideCursorDuringCapture(false);
+			Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(Mode);
+			bShowMouseCursor = true;
+		}
+		return;
 	}
 
 	if (bShowConstruction)
@@ -142,16 +158,40 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 
 		if (IsValid(TrackSelectionWidget))
 		{
+            if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+            {
+                SetInputMode(FInputModeUIOnly());
+                bShowMouseCursor = false;
+            }
 			return;
 		}
 	}
 
-	SetInputMode(FInputModeGameOnly());
+	if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+        SetInputMode(FInputModeUIOnly());
+    else
+        SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 	if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()))
 	{
 		SetViewTarget(Vehicle);
 	}
+}
+
+void AMWGameplayPlayerController::RestoreArrivalInput()
+{
+    // 가림 해제 시 현재 경기 단계의 입력 모드를 먼저 복구하고 건설 화면이 있으면 포커스를 되돌린다.
+    ApplyGameplayInputMode();
+    if (IsValid(TrackSelectionWidget) && TrackSelectionWidget->IsInViewport())
+    {
+        FInputModeGameAndUI Mode;
+        TrackSelectionWidget->SetIsFocusable(true);
+        Mode.SetWidgetToFocus(TrackSelectionWidget->TakeWidget());
+        Mode.SetHideCursorDuringCapture(false);
+        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        SetInputMode(Mode);
+        bShowMouseCursor = true;
+    }
 }
 
 void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)

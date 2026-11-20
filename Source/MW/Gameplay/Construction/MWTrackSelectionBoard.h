@@ -7,7 +7,6 @@
 
 class UCameraComponent;
 class UBoxComponent;
-class UTextRenderComponent;
 class AMWGameplayPlayerController;
 
 // 실제 트랙 BP를 로컬 월드에 전시한다. 설치된 코스 Actor와는 별도 수명이다.
@@ -20,6 +19,9 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+	// 복구 요청은 전시 액터만 비워 같은 후보를 다시 만들게 한다. 서버의 선택 세션은 유지한다.
+	void RetryArrivalOffers() { ClearOffers(); }
+	void CollectArrivalMaterials(const FMWTrackSelectionSession& Session, TArray<UMaterialInterface*>& Materials, FString& Pending) const;
 	int32 FindHoveredOffer() const;
 	bool GetCursorPosition(FVector& OutPosition) const;
 	FVector GetBuildOrigin() const;
@@ -43,7 +45,6 @@ private:
 	void ClearOffers();
 	void RefreshMarkers(const FMWTrackSelectionSession& Session);
 	UPROPERTY(Transient) TMap<int32, TObjectPtr<AActor>> Offers;
-	UPROPERTY(Transient) TMap<int32, TObjectPtr<UTextRenderComponent>> Labels;
 	TWeakObjectPtr<AMWGameplayPlayerController> Viewer;
 	int32 SessionId = 0;
 	int32 Revision = 0;
