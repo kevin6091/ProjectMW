@@ -213,7 +213,7 @@ void UMWArrivalScreen::Begin(APlayerController& Controller, FName Destination)
     Attempt = FGuid::NewGuid();
     VisibleSeconds = 0;
     QualityWaitStartedAt.Reset();
-    bFailed = false;
+    Failure = EFailureState::None;
     Cover = SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
         .BorderBackgroundColor(FLinearColor::FromSRGBColor(FColor(92,218,243))).Padding(0)[CreateLoadingContent()];
     Client->AddViewportWidgetContent(Cover.ToSharedRef(), 9999);
@@ -307,7 +307,7 @@ bool UMWArrivalScreen::Tick(float Delta)
         Cancel();
         return false;
     }
-    if (bFailed) return true;
+    if (Failure == EFailureState::NeedsUserAction) return true;
 
     const FName WorldPackage = World ? FName(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) : NAME_None;
     if (MapTravelStartedAt.IsSet())
@@ -315,15 +315,24 @@ bool UMWArrivalScreen::Tick(float Delta)
         if (World && World != Source.Get() && !ExpectedMap.IsNone() && WorldPackage == ExpectedMap)
         {
             MapTravelStartedAt.Reset();
+            // 로컬 시간 초과 뒤에도 같은 목적지가 열리면 기존 첫 화면 준비 경로를 다시 시작한다.
+            if (Failure == EFailureState::MapTravelTimeout)
+            {
+                UE_LOG(LogTemp, Display, TEXT("MWArrival resumed late travel attempt=%s world=%s t=%.6f"),
+                    *Attempt.ToString(), *WorldPackage.ToString(), FPlatformTime::Seconds());
+                RestartPreparation(GetGameInstance()->GetFirstLocalPlayerController(World));
+            }
         }
         else
         {
             // 서버의 출발 준비 보고 제한 이후에도 클라이언트가 출발 월드에 남을 수 있다.
-            if (FPlatformTime::Seconds() - MapTravelStartedAt.GetValue() >= FMath::Max(1.f, MapTravelTimeoutSeconds))
+            if (Failure == EFailureState::None &&
+                FPlatformTime::Seconds() - MapTravelStartedAt.GetValue() >= FMath::Max(1.f, MapTravelTimeoutSeconds))
             {
                 Pending = FString::Printf(TEXT("map travel timeout source=%s current=%s destination=%s"),
                     *GetNameSafe(Source.Get()), *WorldPackage.ToString(), *ExpectedMap.ToString());
-                ShowFailure(false, NSLOCTEXT("MWArrival", "MapTravelTimeout", "경기 맵으로 이동하지 못했습니다. 방을 나가 주세요."));
+                ShowFailure(false, NSLOCTEXT("MWArrival", "MapTravelTimeout",
+                    "경기 맵으로 이동하지 못했습니다. 방을 나가 주세요."), EFailureState::MapTravelTimeout);
             }
             return true;
         }
@@ -452,9 +461,24 @@ void UMWArrivalScreen::HandleConnectionFailure(UWorld* World, const FString& Rea
     ShowFailure(false);
 }
 
-void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
+void UMWArrivalScreen::RestartPreparation(APlayerController* Controller)
 {
-    bFailed = true;
+    // 가림막은 유지하고 목적지의 재질과 실제 프레임을 확인한 뒤에만 입력을 복구한다.
+    Frame.Reset();
+    VisibleSeconds = 0;
+    QualityWaitStartedAt.Reset();
+    Failure = EFailureState::None;
+    Cover->SetContent(CreateLoadingContent());
+    if (Controller)
+    {
+        Controller->bShowMouseCursor = false;
+        Controller->SetInputMode(FInputModeUIOnly());
+    }
+}
+
+void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message, EFailureState NewFailure)
+{
+    Failure = NewFailure;
     Frame.Reset();
     UE_LOG(LogTemp, Warning, TEXT("MWArrival failed attempt=%s pending=%s"), *Attempt.ToString(), *Pending);
     TSharedPtr<SButton> InitialFocus;
@@ -464,22 +488,13 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
         ? NSLOCTEXT("MWArrival","Failed","첫 화면을 준비할 수 없습니다.") : Message,
         NSLOCTEXT("MWArrival","Retry","첫 화면 다시 준비"), FOnClicked::CreateLambda([Weak = TWeakObjectPtr<UMWArrivalScreen>(this)]()
         {
-            if (auto* Self = Weak.Get())
+            if (auto* Self = Weak.Get(); Self && Self->Cover)
             {
                 // 재시도는 현재 경기에서 전시와 첫 프레임만 다시 준비한다. 로비 출발을 다시 보고하지 않는다.
-                if (auto* PC = Self->GetGameInstance()->GetFirstLocalPlayerController())
-                {
+                auto* PC = Self->GetGameInstance()->GetFirstLocalPlayerController();
+                if (PC)
                     if (auto* Board = Cast<AMWTrackSelectionBoard>(PC->GetViewTarget())) Board->RetryArrivalOffers();
-                    PC->bShowMouseCursor = false;
-                    PC->SetInputMode(FInputModeUIOnly());
-                }
-                Self->Frame.Reset();
-                Self->VisibleSeconds = 0;
-                Self->QualityWaitStartedAt.Reset();
-                Self->bFailed = false;
-                Self->Cover->SetHAlign(HAlign_Fill);
-                Self->Cover->SetVAlign(VAlign_Fill);
-                Self->Cover->SetContent(Self->CreateLoadingContent());
+                Self->RestartPreparation(PC);
             }
             return FReply::Handled();
         }),
@@ -488,6 +503,8 @@ void UMWArrivalScreen::ShowFailure(bool bCanRetry, const FText& Message)
             if (auto* Self = Weak.Get())
                 if (auto* Game = Cast<UMWGameInstance>(Self->GetGameInstance()))
                 {
+                    // 방을 나가기로 했으면 늦게 들어온 맵이 세션 정리 화면을 덮지 않게 한다.
+                    Self->Failure = EFailureState::NeedsUserAction;
                     Game->RequestLeaveRoom();
                 }
             return FReply::Handled();

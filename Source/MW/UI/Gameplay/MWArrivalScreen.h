@@ -34,9 +34,18 @@ private:
 
     static void CheckMaterials(UWorld& World, const TArray<UMaterialInterface*>& Materials,
         FString& Pending, FString& QualityPending);
+    enum class EFailureState : uint8
+    {
+        None,
+        MapTravelTimeout,
+        NeedsUserAction
+    };
+
     bool Tick(float Delta);
     void HandleConnectionFailure(UWorld* World, const FString& Reason);
-    void ShowFailure(bool bCanRetry = true, const FText& Message = FText::GetEmpty());
+    void RestartPreparation(APlayerController* Controller);
+    void ShowFailure(bool bCanRetry = true, const FText& Message = FText::GetEmpty(),
+                     EFailureState NewFailure = EFailureState::NeedsUserAction);
     FDelegateHandle TravelFailure;
     FDelegateHandle NetworkFailure;
     TSharedPtr<SBorder> Cover;
@@ -52,7 +61,7 @@ private:
     FString Pending;
     double VisibleSeconds = 0;
     TOptional<double> QualityWaitStartedAt;
-    bool bFailed = false;
+    EFailureState Failure = EFailureState::None;
     FTSTicker::FDelegateHandle Ticker;
     TSharedPtr<FMWArrivalFrame, ESPMode::ThreadSafe> Frame;
 };
