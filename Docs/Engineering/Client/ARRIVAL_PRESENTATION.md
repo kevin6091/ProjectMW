@@ -55,3 +55,43 @@ UE 5.8 Win64 Development · 설원 `L_Dev_Drive` · LocalIP 리슨 서버와 참
 - 수정 전 `cs:60` SHA-256 `c760335644a94389bcbb98b60f0f6b928c44ad3a793eee3ddc5ab231b271a422`
 - 수정 후 `cs:63` SHA-256 `ca5bc07eb791d1457dd6b7e10f6f8fc106cf07e5d0d044dfb91dc7266c4854ea`, 74,275바이트
 - `cs:63`에는 위 WBP 한 파일이 올라갔다. 서버에서 내려받은 파일의 해시가 3인 PIE 검증본과 같다. [팀원 인계와 해시 확인](PR17_ARRIVAL_RECOVERY_VERIFICATION.md#팀원-수신-검증)
+
+## 중앙 트랙 선택 안내의 마름모 복원 · 2026-11-20
+
+11월 17일 `821596c`의 중앙 선택 안내는 공통 마름모에 ‘트랙을 / 선택하세요’를 두 줄로 표시했다. 11월 19일 `16ea3b4`에서 선택·배치 안내가 함께 로비 직사각형으로 바뀌었고, UVCS `cs:63`에서는 배치 안내 `BuildSign`을 복원했다. 이번에는 그 `cs:63` 파일을 기준으로 선택 안내만 복원했다.
+
+### 수정 위치와 파일 버전
+
+| Designer 위치 | 적용값 |
+|---|---|
+| `Content/UI/Race/WBP_MatchPanels.uasset` → `SelectSign` | `Border`와 자식 `SelectSignLabel`을 기존 `MWGameplaySignWidget`으로 교체했다. 이름 `SelectSign`을 유지해 HUD의 기존 바인딩을 사용한다. |
+| `SelectSign` → Canvas Slot | 중앙 앵커·정렬 각각 (0.5, 0.5), 오프셋 (0, 0), 크기 385×385, Z Order 0, Size To Content 꺼짐. |
+| `SelectSign` → Appearance | ‘트랙을’과 ‘선택하세요’를 줄바꿈으로 구분한다. 글자 크기 54, 노란 판면 RGB (255, 162, 22), 짙은 테두리 RGB (50, 43, 31), 두께 비율 0.042, 로딩 회전 꺼짐. 같은 WBP의 `BuildSign`이 사용하던 표지판 속성을 적용했다. |
+| `BuildSign`, 대기판, 아이템 슬롯 | 저장 전후 위젯 구조와 슬롯을 비교했다. `BuildSign`은 기존 문구, 색, 글자 크기와 회전 여부까지 일치했다. |
+
+`MWGameplayHUDSubsystem`이 로딩 공개 뒤 선택·배치 단계에 맞춰 기존 `ConstructionPromptSeconds=2.0`으로 표시한다. 문구와 외형은 WBP의 Designer 값이다. [단계별 표시 코드](../../../Source/MW/UI/Gameplay/MWGameplayHUDSubsystem.cpp#L204) · [공통 판면 위젯](../../../Source/MW/UI/Gameplay/MWGameplaySignWidget.cpp#L10)
+
+| 구분 | `WBP_MatchPanels.uasset` SHA-256 |
+|---|---|
+| 복원 전 UVCS `cs:63` | `ca5bc07eb791d1457dd6b7e10f6f8fc106cf07e5d0d044dfb91dc7266c4854ea` |
+| 복원 후 UVCS `cs:64` 서버 원본 · 71,242바이트 | `6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89` |
+
+`Content/`의 WBP 수정본은 UVCS `cs:64` 한 파일로 인계했다. 서버에서 다시 내려받은 원본은 초기 3인 PIE 검증 기록 `a8ea589`의 로컬 파일과 SHA-256이 같다. Git에는 문서·캡처·로그를 기록한다. 팀원은 PR #17의 Git 브랜치와 `cs:64`를 사용한다. 로컬에서 되돌릴 경우 에디터를 닫고 `cs:63`의 위 해시를 확인해 원본 파일을 복원한다. [팀원 수신과 해시 확인](PR17_ARRIVAL_RECOVERY_VERIFICATION.md#팀원-수신-검증)
+
+### Cua Driver 3인 PIE
+
+UE 5.8 Win64 Development Editor에서 빌드했다. 저장한 WBP를 새 에디터 프로세스로 열어 컴파일 성공과 SHA-256을 확인했다. 같은 인계 목록의 나머지 9개 파일은 `cs:63` 해시와 일치했다.
+
+설원 `L_Dev_Drive` 로컬 리슨 서버의 호스트와 클라이언트 두 명으로 진행했다. Cua Driver로 로비 준비·게임 시작·차량 선택을 수행하고, 마지막 차량 확정부터 세 창을 연속 캡처했다. 관측 스크립트는 경기 단계와 선택 상태를 읽었다. 세 창의 PIE 뷰포트는 462×222, UMG DPI는 약 0.444였다.
+
+| 참가자 | 첫 공개 로그부터 선택 마름모 첫 캡처까지 | 첫 줄·둘째 줄 가로 중심 오차 | 글자 전체 세로 중심 오차 | 기존 배치 안내 재확인 |
+|---|---:|---:|---:|---|
+| P1 호스트 | 0.127초 | 0px / 0px | 아래로 1px | 같은 중앙 마름모 |
+| P2 참가자 | 0.193초 | 0px / 0px | 아래로 1px | 같은 중앙 마름모 |
+| P3 참가자 | 0.262초 | 0px / 0px | 아래로 1px | 같은 중앙 마름모 |
+
+공개 시간의 기준은 이번 실행에서 기록된 첫 `MWArrival reveal` 행이다. 세 창의 캡처 파일 작성 시각과 대조했다. 가로·세로 오차는 각 창 원본 캡처에서 노란 판면의 중심과 글자 픽셀 영역의 중심 차이다.
+
+세 창의 후속 캡처에서 중앙 안내가 사라진 뒤에도 후보 세 개와 좌상단 선택 목록이 보였다. 세 명이 목재 직선 트랙을 확정하자 `TrackPlacement`에서 기존 ‘트랙을 / 배치하세요’ 마름모가 중앙에 표시됐다. 배치 캡처의 ‘Preparing Shaders’ 문구는 에디터 표시다.
+
+[세 창의 선택 첫 화면·안내 종료·배치 안내 비교](Images/TrackSelectionDiamondThreePlayers.jpg) · [에셋 대조와 PIE 로그](TRACK_SELECTION_DIAMOND_PIE_LOG.txt)
