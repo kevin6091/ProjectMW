@@ -205,7 +205,9 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 		}
 		return false;
 	}
-	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0));
+	const bool bLocalTurn = Ghost.bLastLocalReversed != Intent.bReversed;
+	Ghost.bLastLocalReversed = Intent.bReversed;
+	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0, bLocalTurn));
 	SetGhostSnapColor(Ghost, bSnapped);
 
 	const double Now = GetWorld()->GetTimeSeconds();
@@ -240,17 +242,18 @@ bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPl
 }
 
 FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped,
-	float DeltaSeconds, double FreeMoveAlpha) const
+	float DeltaSeconds, double FreeMoveAlpha, bool bLocalTurn) const
 {
 	const AActor& Actor = *Ghost.Actor.Get();
 	const FTransform& Current = Actor.GetActorTransform();
 	const bool bWasSnapped = Ghost.PreviousSnapTarget.IsSet();
 	const bool bChangedTarget = bWasSnapped && bSnapped && !Ghost.PreviousSnapTarget->Equals(Target);
-	const bool bStartBlend = bWasSnapped != bSnapped || bChangedTarget;
+	const bool bStartTurn = bLocalTurn && !bWasSnapped && !bSnapped;
+	const bool bStartBlend = bWasSnapped != bSnapped || bChangedTarget || bStartTurn;
 	if (bStartBlend)
 	{
-		// 스냅이 풀리거나 연결점이 바뀌면 화면에 그린 마지막 자세부터 이어 간다.
-		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target});
+		// 스냅 전 Q/E와 연결 자세 전환은 화면에 그린 마지막 자세부터 이어 간다.
+		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target, 0.0, bStartTurn});
 	}
 	if (bSnapped)
 	{
@@ -263,6 +266,7 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 
 	const FTransform* Start = &Current;
 	double Alpha = bSnapped ? 1.0 : FreeMoveAlpha;
+	bool bRotateAroundCenter = false;
 	if (Ghost.SnapBlend.IsSet())
 	{
 		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
@@ -274,7 +278,8 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		{
 			UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s %s mode=%s elapsed=%.4f alpha=%.4f gap_cm=%.3f"),
 				*GetWorld()->GetName(), *Actor.GetName(), bStartBlend ? TEXT("begin") : TEXT("end"),
-				bChangedTarget ? TEXT("retarget") : bSnapped ? TEXT("snap") : TEXT("release"), Blend.ElapsedSeconds,
+				Blend.bRotateAroundCenter ? TEXT("turn") : bChangedTarget ? TEXT("retarget")
+					: bSnapped ? TEXT("snap") : TEXT("release"), Blend.ElapsedSeconds,
 				FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0), FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()));
 		}
 #endif
@@ -284,14 +289,23 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 			return Target;
 		}
 		Start = &Blend.Start;
+		bRotateAroundCenter = Blend.bRotateAroundCenter;
 		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
 	}
 	if (Alpha >= 1.0)
 	{
 		return Target;
 	}
-	return FTransform(FQuat::Slerp(Start->GetRotation(), Target.GetRotation(), Alpha),
-		FMath::Lerp(Start->GetLocation(), Target.GetLocation(), Alpha), Target.GetScale3D());
+	const FQuat Rotation = FQuat::Slerp(Start->GetRotation(), Target.GetRotation(), Alpha);
+	FVector Location = FMath::Lerp(Start->GetLocation(), Target.GetLocation(), Alpha);
+	if (bRotateAroundCenter)
+	{
+		// BP 피벗이 도로 밖에 있어도 양쪽 포트의 중앙이 커서에서 벗어나지 않게 회전한다.
+		const FVector PortCenter = (Ghost.Ports[0].GetLocation() + Ghost.Ports[1].GetLocation()) * 0.5;
+		const FVector Center = FMath::Lerp(Start->TransformPosition(PortCenter), Target.TransformPosition(PortCenter), Alpha);
+		Location = Center - Rotation.RotateVector(Target.GetScale3D() * PortCenter);
+	}
+	return FTransform(Rotation, Location, Target.GetScale3D());
 }
 
 void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const

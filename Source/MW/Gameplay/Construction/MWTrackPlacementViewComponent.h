@@ -28,6 +28,7 @@ private:
 		FTransform Start;
 		FTransform Target;
 		double ElapsedSeconds = 0.0;
+		bool bRotateAroundCenter = false;
 	};
 
 	struct FGhost
@@ -37,6 +38,7 @@ private:
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
 		bool bSnapped = false;
+		bool bLastLocalReversed = false;
 	};
 
 	FGhost* GetOrCreateGhost(int32 PlayerId, const FMWPlayerTrackPlacement& Player, bool bLocal);
@@ -47,7 +49,8 @@ private:
 	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds);
 	bool ResolveGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session,
 		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped);
-	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds, double FreeMoveAlpha) const;
+	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds,
+		double FreeMoveAlpha, bool bLocalTurn = false) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
