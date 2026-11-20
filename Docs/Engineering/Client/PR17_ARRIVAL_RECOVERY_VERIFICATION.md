@@ -184,7 +184,20 @@ PR 인계 목록 57개를 현재 로컬 파일과 UVCS `/main`에서 대조했�
 - `cs:61` 스냅샷의 기존 `cs:41` 개정으로도 세 명 모두 트랙을 확정·설치하고 실제 출발선에서 `Racing`에 진입했다. 선택·스냅·설치 안내와 표본의 원격 커서도 동작했다.
 - 기존 개정에서는 어두운 안내판이 표시됐고 후보 이름표가 빈 흰 사각형으로 보였다. 배치 안내와 명단의 여백도 빠졌다. `cs:62`에 등록한 파일의 해시는 노란 안내판, 읽을 수 있는 후보 이름표와 배치 여백을 확인한 로컬 검증본과 같다. [트랙 선택 검증](TRACK_SELECTION_MIXED_DPI.md) · [배치 커서·문구 검증](TRACK_PLACEMENT_CURSOR_VERIFICATION.md)
 
-팀원은 `cs:62`를 받으면 앞선 `cs:60`·`cs:61`의 인계 에셋도 함께 받는다. `cs:62`를 받은 팀원 PC의 패키지 검증 결과는 아래 절에 기록한다.
+팀원은 `cs:62`를 받으면 앞선 `cs:60`·`cs:61`의 인계 에셋도 함께 받는다.
+
+## 트랙 UI 변경 세트 조합 검증
+
+2026-11-20 KST · Git `0ae39e8` · UE 5.8 · 설원 `L_Dev_Drive` · LocalIP 2인
+
+같은 버전은 호스트와 참가자가 같은 에디터 프로세스의 2인 PIE에서 실행했다. 혼합 버전은 리슨 호스트를 PIE로 실행하고 별도 `UnrealEditor.exe -game` 참가자를 붙였다. 별도 참가자는 공용 콘텐츠·게임 모듈·설정을 호스트와 공유하고, 임시 실행 경로에서 `WBP_TrackSelectionTest.uasset`만 UVCS `cs:61` 스냅샷의 원본을 읽었다. 실행 전에 두 경로의 SHA-256을 확인했다. 두 조합 모두 Cua Driver로 차량 선택, 트랙 확정, 좌클릭 설치까지 진행했다.
+
+| 조합 | 트랙 이름표 | 배치 안내 | 설치와 출발선 |
+|---|---|---|---|
+| 호스트 `cs:62` · 참가자 `cs:62` | 두 창 모두 목재 경사 트랙, 목재 45도 커브, 목재 직선 트랙 이름표를 표시했다. [호스트](Images/PR17Cs62Pie/matched-host-track-selection.png) · [참가자](Images/PR17Cs62Pie/matched-client-track-selection.png) | 노란 안내판과 안내·명단 사이 여백이 두 창에 표시됐다. [호스트](Images/PR17Cs62Pie/matched-host-placement.png) · [참가자](Images/PR17Cs62Pie/matched-client-placement.png) · [설치 후 대기](Images/PR17Cs62Pie/matched-host-placement-installed.png) | 서버에서 P1의 조각 2와 P2의 조각 3을 확인했다. 양쪽 모두 체크무늬 출발선에서 `Racing`에 진입했다. [호스트](Images/PR17Cs62Pie/matched-host-start-line.png) · [참가자](Images/PR17Cs62Pie/matched-client-start-line.png) |
+| 호스트 `cs:62` · 별도 참가자 `cs:61` | 호스트는 후보 이름표 3개를 표시했다. 참가자 창에서만 이름표가 글자 없는 흰 사각형으로 보였다. [호스트](Images/PR17Cs62Pie/mixed-host-track-selection.png) · [참가자](Images/PR17Cs62Pie/mixed-client-track-selection.png) | 호스트는 노란 판과 여백을 유지했다. 참가자는 기존 어두운 판에서 명단 아래에 안내를 표시했고, 설치 완료·대기 안내는 갱신됐다. [호스트](Images/PR17Cs62Pie/mixed-host-placement.png) · [참가자](Images/PR17Cs62Pie/mixed-client-placement.png) · [설치 후 대기](Images/PR17Cs62Pie/mixed-client-placement-installed.png) | 서버에서 P2의 조각 2와 P1의 조각 3을 확인했다. 호스트와 별도 참가자 모두 FRED·DOUG가 실제 출발선에 있는 화면과 `Racing` 로그를 남겼다. [호스트](Images/PR17Cs62Pie/mixed-host-start-line.png) · [참가자](Images/PR17Cs62Pie/mixed-client-start-line.png) |
+
+**판정** · 이 혼합 조합에서는 `cs:61` 참가자의 접속·트랙 확정·설치·주행 진입이 모두 동작했다. 수정된 이름표, 노란 안내판과 배치 여백이 필요한 각 팀원은 `cs:62`를 받아야 한다. [서버·참가자 실행 로그와 에셋 SHA-256](PR17_CS62_PIE_LOG.txt)
 
 ## 팀원 수신 검증
 
@@ -233,7 +246,7 @@ if ($assets.Count -ne 10 -or $matched -ne 10) {
 }
 ```
 
-통과 기준은 **`10/10 SHA-256 일치`**다. `MISSING`은 파일 경로, `MISMATCH`는 출력된 기준·실제 해시와 UVCS 개정 및 로컬 수정 여부를 확인한다. 차이가 해결되면 해시를 다시 확인하고 패키징으로 넘어간다.
+통과 기준은 **`10/10 SHA-256 일치`**다. `MISSING`은 파일 경로, `MISMATCH`는 출력된 기준·실제 해시와 UVCS 개정 및 로컬 수정 여부를 확인한다. 차이가 해결되면 해시를 다시 확인한다. 팀원은 2인 PIE에서 후보 이름표, 노란 배치 안내판과 여백, 트랙 확정·설치 및 실제 출발선의 `Racing` 진입을 확인할 수 있다. 아래 패키지 체크리스트는 배포본을 직접 확인할 때 사용한다.
 
 ### 3. Win64 Development 패키지 진입 체크리스트
 
@@ -265,7 +278,7 @@ if ($assets.Count -ne 10 -or $matched -ne 10) {
 | 주행 | 출발선 캡처, `Racing` 진입, 관찰 시간과 로비 복귀 여부, 대기판·아이템 슬롯 관찰 여부 |
 | 실패 시 | 재현 순서, 해당 창, 마지막 정상 단계, 관련 로그나 캡처 |
 
-팀원 PC의 수신과 패키지 실행 결과는 팀원이 이 절차를 완료한 뒤 채운다.
+팀원 PC의 수신과 PIE 실행 결과는 팀원이 이 절차를 완료한 뒤 채운다. 배포본을 직접 실행한 경우 패키지 결과도 함께 남긴다.
 
 ### UVCS에서 별도 체크인하지 않은 파일
 
