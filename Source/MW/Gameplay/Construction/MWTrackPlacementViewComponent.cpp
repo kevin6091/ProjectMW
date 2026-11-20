@@ -181,10 +181,28 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
 	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds)
 {
+	if (bWaitingForReply)
+	{
+		return false;
+	}
+
 	FTransform Target;
 	bool bSnapped;
-	if (bWaitingForReply || !ResolveGhostFromPointer(PC, Session, Ghost, Target, bSnapped))
+	if (!ResolveGhostFromPointer(PC, Session, Ghost, Target, bSnapped))
 	{
+		if (Ghost.SnapBlend.IsSet())
+		{
+			// 포인터를 읽을 수 없을 때는 마지막 표시 목표까지 보간만 마치고 입력을 전송하지 않는다.
+			const FTransform LastTarget = Ghost.SnapBlend->Target;
+			Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, LastTarget, Ghost.bSnapped, DeltaSeconds, 1.0));
+#if WITH_EDITOR
+			if (!Ghost.SnapBlend.IsSet() && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+			{
+				UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s completed_without_pointer"),
+					*GetWorld()->GetName(), *Ghost.Actor->GetName());
+			}
+#endif
+		}
 		return false;
 	}
 	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0));
@@ -232,7 +250,7 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 	if (bStartBlend)
 	{
 		// 스냅이 풀리거나 연결점이 바뀌면 화면에 그린 마지막 자세부터 이어 간다.
-		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current});
+		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target});
 	}
 	if (bSnapped)
 	{
@@ -248,6 +266,7 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 	if (Ghost.SnapBlend.IsSet())
 	{
 		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
+		Blend.Target = Target;
 		Blend.ElapsedSeconds += DeltaSeconds;
 		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / GhostSnapBlendSeconds, 0.0, 1.0);
 #if WITH_EDITOR

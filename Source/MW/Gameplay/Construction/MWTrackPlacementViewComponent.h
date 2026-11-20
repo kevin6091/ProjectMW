@@ -26,6 +26,7 @@ private:
 	struct FGhostSnapBlend
 	{
 		FTransform Start;
+		FTransform Target;
 		double ElapsedSeconds = 0.0;
 	};
 

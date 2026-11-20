@@ -267,3 +267,40 @@
 {"file": "diamond_0_p1.png", "elapsed_seconds": 0.13452, "center": [232.5, 144.5], "line_x_delta": [0.0, 0.0], "ink_y_delta": 1.0}
 {"file": "diamond_0_p2.png", "elapsed_seconds": 0.197274, "center": [232.5, 144.5], "line_x_delta": [0.0, 0.0], "ink_y_delta": 1.0}
 {"file": "diamond_0_p3.png", "elapsed_seconds": 0.264516, "center": [232.5, 144.5], "line_x_delta": [0.0, 0.0], "ink_y_delta": 1.0}
+
+=== 포커스 이탈 후 스냅 보간 검증 ===
+UE 5.8.4 · LocalIP 3인 PIE · Cua Driver 입력
+[2026.11.20-06.53.57:472][  2]LogPython: CS64_SERVER_ORIGINALS_READY files=10 SelectSign=MWGameplaySignWidget BuildSign=MWGameplaySignWidget
+[2026.11.20-06.57.14:132][680]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_4 begin mode=snap elapsed=0.0388 alpha=0.5426 gap_cm=1907.936
+[2026.11.20-06.57.14:160][681]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 begin mode=snap elapsed=0.0278 alpha=0.4102 gap_cm=3096.681
+[2026.11.20-06.57.14:163][681]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 begin mode=snap elapsed=0.0278 alpha=0.4102 gap_cm=3096.681
+[2026.11.20-06.57.14:253][684]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_4 end mode=snap elapsed=0.1594 alpha=1.0000 gap_cm=1907.936
+[2026.11.20-06.57.14:261][684]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_4 completed_without_pointer
+[2026.11.20-06.57.14:277][684]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 end mode=snap elapsed=0.1206 alpha=1.0000 gap_cm=3096.681
+[2026.11.20-06.57.14:285][685]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 end mode=snap elapsed=0.1206 alpha=1.0000 gap_cm=3096.681
+[2026.11.20-06.57.34:812][221]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(159.0,123.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000
+[2026.11.20-06.57.34:819][221]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.20-06.57.53:140][ 52]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 begin mode=snap elapsed=0.0208 alpha=0.3171 gap_cm=12806.346
+[2026.11.20-06.57.53:174][ 53]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_5 begin mode=snap elapsed=0.0404 alpha=0.5600 gap_cm=12806.346
+[2026.11.20-06.57.53:183][ 53]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(136.0,117.0) resolved=(5260.390000000,450.000437114,6000.000000000) quat=(0.000000000,0.000000000,0.707106719,-0.707106843) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=8745.645 visual_gap_deg=0.000
+[2026.11.20-06.57.53:193][ 53]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 begin mode=snap elapsed=0.0404 alpha=0.5600 gap_cm=12806.346
+[2026.11.20-06.57.53:207][ 54]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.20-06.58.08:735][773]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_3 begin mode=snap elapsed=0.0210 alpha=0.3197 gap_cm=3565.535
+[2026.11.20-06.58.08:770][774]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_6 begin mode=snap elapsed=0.0196 alpha=0.2997 gap_cm=8788.700
+[2026.11.20-06.58.08:782][775]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_3 begin mode=snap elapsed=0.0196 alpha=0.2997 gap_cm=8788.700
+[2026.11.20-06.58.08:872][777]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_3 end mode=snap elapsed=0.1410 alpha=1.0000 gap_cm=3565.535
+[2026.11.20-06.58.08:876][777]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_3 completed_without_pointer
+[2026.11.20-06.58.08:915][778]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_6 end mode=snap elapsed=0.1574 alpha=1.0000 gap_cm=8788.700
+[2026.11.20-06.58.08:938][778]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_3 end mode=snap elapsed=0.1574 alpha=1.0000 gap_cm=8788.700
+[2026.11.20-06.58.22:273][404]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=0 pointer=(161.0,127.0) resolved=(10260.390000000,450.001311342,6000.000000000) quat=(0.000000000,0.000000000,0.707106688,-0.707106874) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000
+[2026.11.20-06.58.22:301][405]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.20-06.58.22:622][411]LogPython: TRACK_SNAP_FOCUS_PIE_PHASE member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.20-06.58.22:634][411]LogPython: TRACK_SNAP_FOCUS_PIE_PHASE member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.20-06.58.22:645][411]LogPython: TRACK_SNAP_FOCUS_PIE_PHASE member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_Smiet_C_0
+
+=== 리슨 서버 PlacementSession.PlacedTracks ===
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_2'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_3'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=10260.390000,Y=450.001311,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=15260.390000,Y=450.002623,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)
