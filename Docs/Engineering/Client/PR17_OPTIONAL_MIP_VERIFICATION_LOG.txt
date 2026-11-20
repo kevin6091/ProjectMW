@@ -1,0 +1,140 @@
+PR #17 선택 고해상도 밉 제외 검증
+2026-11-19 · UE 5.8 Win64 Development · 로그 발췌
+
+[IoStore 청크 목록과 해시]
+remaining_optional_files=0
+remaining_loose_uptnl_files=0
+omitted=MWoptional-Windows.pak bytes=339 SHA256=597F572670E7D4FFE3BF8B6612D2D8AFD3555425C6453536D9114701F3E3D370
+omitted=MWoptional-Windows.ucas bytes=30261904 SHA256=D6EDCE442DDA7642363B6F63EC158569D409489FEE6F18A45D8C1A581013358D
+omitted=MWoptional-Windows.utoc bytes=61831 SHA256=2450FB210F7FA836F9C79327E84FF150F02F403861FF1E1EFB264E70F1E58A4B
+optional_chunk_count=116
+required_optional_chunk_count=0
+OrderInContainer, ChunkId, PackageId, PackageName, Filename, ContainerName, Offset, OffsetOnDisk, Size, CompressedSize, Hash, ChunkType, ClassType, PakChunk, Platform, InstallType, DeliveryType, PartitionIndex, OffsetInPartition
+optional-io.csv: 111, 483e5ff7ef71d05b00000003, 0x5BD071EFF75F3E48, , ../../../MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.uptnl, MWoptional-Windows, 253755392, 29769728, 2097152, 273764, 0x5278c1ca642b668783595baa7114b9b376ce06f8, OptionalBulkData, , MWoptional, Windows, Optional, Installed, 0, 29769728
+required-io.csv: 2497, 483e5ff7ef71d05b00000001, 0x5BD071EFF75F3E48, , ../../../MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.uasset, MW-Windows, 359202816, 159506432, 3810, 2191, 0x7f4e68d7e24884bd64c2c9bd37178442847474ab, ExportBundleData, , MW, Windows, Base, Installed, 0, 159506432
+required-io.csv: 2541, e68b11c1cb7ed65300000001, 0x53D67ECBC1118BE6, , ../../../MW/Content/Levels/L_Dev_Drive.umap, MW-Windows, 363921408, 160415744, 8105, 3006, 0xd114e3350f61d096c370fff85564bbc4bbb64bf8, ExportBundleData, , MW, Windows, Base, Installed, 0, 160415744
+required-io.csv: 4012, 483e5ff7ef71d05b00000002, 0x5BD071EFF75F3E48, , ../../../MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.ubulk, MW-Windows, 917045248, 347928576, 696320, 150400, 0x7fba6eaa1750be8eb5dea876efc83e96ca04ce30, BulkData, , MW, Windows, Base, Installed, 0, 347928576
+identical=MW/Binaries/Win64/MW.exe SHA256=72BCF83680C6672299092A44100243E1FEAC70CB31240170C0AA6FAA0646F43B
+identical=MW/Content/Paks/global.ucas SHA256=1837AA8C9A6BAFEE4246F94DFED3E7A0F9EBC7D317967BB33768BE3F590549C4
+identical=MW/Content/Paks/global.utoc SHA256=A9B504DBD935EBEAC3545DC94722CD1A3873C861015CB15D337DFC37CB90A714
+identical=MW/Content/Paks/MW-Windows.pak SHA256=02A6B32A0670D2BFF5963449769ABD3C4DB74AED9016704F91FA45820624501D
+identical=MW/Content/Paks/MW-Windows.ucas SHA256=84AFFA9F0689FABFE3CD1BCE0E78AB0914528BB24FB0FD8437AAD763507A0D68
+identical=MW/Content/Paks/MW-Windows.utoc SHA256=CDD669E69B5124BCDA812A8D65E9A3E9358897B2A637E5A4B50D31F2F851DF6D
+
+[Pak 원본 및 제외 복사본]
+full_optional
+MWoptional-Windows.pak
+C136A7196C3F7F20D2376D1F4D4759A30433223989F6BD73CF6685F6C51AE13E
+30335153
+reduced_optional_file_exists=False
+reduced_loose_uptnl_count=0
+reduced_file=MW-Windows.pak bytes=482825299
+[2026.11.19-07.36.08:896][  0]LogPakFile: Display: "EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.uptnl" offset: 0, size: 273764 bytes, sha1: 077C020DCFF5FF064F635C7253C12A726FC6C7DD, compression: Oodle.
+identical=MW/Binaries/Win64/MW.exe SHA256=72BCF83680C6672299092A44100243E1FEAC70CB31240170C0AA6FAA0646F43B
+identical=MW/Content/Paks/MW-Windows.pak SHA256=9DDFE0F0D278153510D484B02C27426CECDA45F9006FCAD48B9AC781116DC435
+[2026.11.19-07.36.12:068][  0]LogPakFile: Display: "MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.uasset" offset: 139379548, size: 515 bytes, sha1: C4FF9731B7C527A45CA7F68A8CE62A7C28AF0D1B, compression: Oodle.
+[2026.11.19-07.36.12:068][  0]LogPakFile: Display: "MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.ubulk" offset: 139380736, size: 150400 bytes, sha1: 80B3F4BBE6A6E94F1C3B008447F99DC1CA8F1A3D, compression: Oodle.
+[2026.11.19-07.36.12:068][  0]LogPakFile: Display: "MW/Content/EnvironmentRestore/Textures/T_T_snowFloor_6db453bbd5f8.uexp" offset: 139532288, size: 1862 bytes, sha1: 586BA8D9675BD945F92475DD38DA17D814C51E63, compression: Oodle.
+[2026.11.19-07.36.12:089][  0]LogPakFile: Display: "MW/Content/Levels/L_Dev_Drive.umap" offset: 189614080, size: 2229 bytes, sha1: 9CAC4475FF9A5666AE782DEB3F616A46B9D83E4E, compression: Oodle.
+reduced_main_pak_uptnl_count=0
+
+[UAT 빌드 결과]
+cook-full.log
+BuildCookRun time: 115.32 s
+BUILD SUCCESSFUL
+AutomationTool exiting with ExitCode=0 (Success)
+iostore-stage.log
+LogIoStore: Display:     OptionalBulkData           116
+LogIoStore: Display:     OptionalBulkData           116 / 116
+LogIoStore: Display:         OptionalBulkData        264,241,152 bytes over 116 reads
+BuildCookRun time: 13.99 s
+BUILD SUCCESSFUL
+AutomationTool exiting with ExitCode=0 (Success)
+
+[io_full_host]
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MWoptional-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MWoptional-Windows.pak.
+LogFilePackageStore: Mounting container: Id=2d36769a48758115, Order=3, NumPackages=0
+LogPakFile: Display: Mounted IoStore container "../../../MW/Content/Paks/MWoptional-Windows.utoc"
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MW-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MW-Windows.pak.
+LogFilePackageStore: Mounting container: Id=a7c02761995e91d8, Order=4, NumPackages=1665
+LogPakFile: Display: Mounted IoStore container "../../../MW/Content/Paks/MW-Windows.utoc"
+[2026.11.19-07.51.59:979][744]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=2 Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.52.02:485][880]LogTemp: Display: MWArrival covered attempt=3F9D50C24DB6884D960F41BCC44BD28D world=L_Title map=/Game/Levels/L_Dev_Drive t=16804043.187773
+[2026.11.19-07.52.02:500][881]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=1
+[2026.11.19-07.52.02:518][881]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=0
+[2026.11.19-07.52.02:534][881]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.52.03:372][927]LogTemp: Display: MWArrival ready attempt=3F9D50C24DB6884D960F41BCC44BD28D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16804043.967267
+[2026.11.19-07.52.04:279][984]LogTemp: Display: MWArrival reveal attempt=3F9D50C24DB6884D960F41BCC44BD28D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16804045.037717
+
+[io_absent_guest]
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MW-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MW-Windows.pak.
+LogFilePackageStore: Mounting container: Id=a7c02761995e91d8, Order=4, NumPackages=1665
+LogPakFile: Display: Mounted IoStore container "../../../MW/Content/Paks/MW-Windows.utoc"
+[2026.11.19-07.52.02:500][407]LogTemp: Display: MWArrival covered attempt=67A51E6C4BE1B4D7218E2896C05110E2 world=L_Title map=/Game/Levels/L_Dev_Drive t=16804043.224062
+[2026.11.19-07.52.03:451][455]LogTemp: Display: MWArrival ready attempt=67A51E6C4BE1B4D7218E2896C05110E2 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16804044.123435
+[2026.11.19-07.52.04:428][516]LogTemp: Display: MWArrival reveal attempt=67A51E6C4BE1B4D7218E2896C05110E2 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16804045.186659
+
+[opt_full_host]
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MWoptional-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MWoptional-Windows.pak.
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MW-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MW-Windows.pak.
+[2026.11.19-07.39.24:208][643]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=2 Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.39.26:696][702]LogTemp: Display: MWArrival covered attempt=27219F6440592008319A1D9C200F394F world=L_Title map=/Game/Levels/L_Dev_Drive t=16803287.417787
+[2026.11.19-07.39.26:709][702]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=1
+[2026.11.19-07.39.26:727][703]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=0
+[2026.11.19-07.39.26:736][703]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.39.27:578][719]LogTemp: Display: MWArrival ready attempt=27219F6440592008319A1D9C200F394F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16803288.336598
+[2026.11.19-07.39.30:456][764]LogTemp: Display: MWArrival reveal attempt=27219F6440592008319A1D9C200F394F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16803291.215632
+
+[opt_absent_guest]
+LogPakFile: Display: Found Pak file ../../../MW/Content/Paks/MW-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../MW/Content/Paks/MW-Windows.pak.
+[2026.11.19-07.39.26:720][888]LogTemp: Display: MWArrival covered attempt=4EC238ED407CD219DA506E932E3CA2B3 world=L_Title map=/Game/Levels/L_Dev_Drive t=16803287.440523
+[2026.11.19-07.39.27:549][965]LogTemp: Display: MWArrival ready attempt=4EC238ED407CD219DA506E932E3CA2B3 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16803288.307307
+[2026.11.19-07.39.28:282][ 62]LogTemp: Display: MWArrival reveal attempt=4EC238ED407CD219DA506E932E3CA2B3 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16803289.041125
+
+[이전 3인 PIE 출발 보고 지연 재현]
+[2026.11.19-07.05.24:028][735]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.19-07.05.24:074][736]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.19-07.05.26:069][775]LogTemp: Warning: MWArrival failed attempt=8FC25D64462BFA3F86B5C089FCC96965 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.05.26:069][775]LogTemp: Warning: MWArrival failed attempt=0F81549C45A59C6118CADCB8E9835582 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-07.05.33:482][ 50]LogMWServer: Warning: [MWTravel] Vehicle departure timed out. Remaining=1
+[2026.11.19-07.05.33:485][ 50]LogMWServer: Warning: Start failed: 일부 참가자의 출발 연출이 끝나지 않았습니다.
+[2026.11.19-07.05.33:818][ 52]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Levels/UEDPIE_0_L_Title
+[2026.11.19-07.05.34:203][ 53]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Levels/UEDPIE_1_L_Title
+[2026.11.19-07.05.34:480][ 53]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Levels/UEDPIE_2_L_Title
+
+[이전 정상 3인 PIE 코스 배치와 스폰]
+[2026.11.19-06.54.13:295][314]LogTemp: Display: MWArrival reveal attempt=CAAD17174196E24D9110FFB1C6529555 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16800574.054210
+[2026.11.19-06.54.13:315][315]LogTemp: Display: MWArrival reveal attempt=CFC8B4224CA2269B26066F8222336AEA world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16800574.073752
+[2026.11.19-06.54.13:459][322]LogTemp: Display: MWArrival reveal attempt=8DC2AE8A43F7A97CA44EC9AA5CE3C5B3 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16800574.218244
+[2026.11.19-06.54.56:390][200]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.19-06.55.21:101][313]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.19-06.55.54:506][793]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.19-06.55.54:584][795]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.19-06.55.54:586][795]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.19-06.55.54:587][795]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_Smiet_C_0
+
+[이전 경기 준비 직행 패키지 참가자]
+[2026.11.19-07.21.30:645][947]LogTemp: Display: MWArrival reveal attempt=9F7DA1EB42256191D4FE71B8DFCF96C8 world=L_Dev_Drive camera=BP_MWVehiclePawn_DOUG_C_2147481961 phase=9 session=0 revision=0 t=16802211.403487
+
+[현재 프로젝트 맵 읽기 전용 검사]
+construction_track_definition_ids_count=3
+/Game/Levels/L_Dev_Drive
+Plane (StaticMeshActor_1) / StaticMeshActor / 위치=[0.0, 0.0, 0.0] / AABB 반크기=[50000.0, 50000.0, 0.0]
+Cube (StaticMeshActor_2) / StaticMeshActor / 위치=[-220.0, -4890.0, 120.0] / AABB 반크기=[5000.0, 50.0, 1000.0]
+Cube2 (StaticMeshActor_3) / StaticMeshActor / 위치=[-5230.0, 130.0, 120.0] / AABB 반크기=[50.0, 5000.0, 1000.0]
+Cube3 (StaticMeshActor_4) / StaticMeshActor / 위치=[-200.0, 5080.0, 120.0] / AABB 반크기=[5000.0, 50.0, 1000.0]
+Cube4 (StaticMeshActor_5) / StaticMeshActor / 위치=[4780.0, 100.0, 120.0] / AABB 반크기=[50.0, 5000.0, 1000.0]
+Track Selection Board (MWTrackSelectionBoard_0) / MWTrackSelectionBoard / 위치=[-2620.0, 450.0, 6000.0] / AABB 반크기=[32.0, 1132.0, 32.0]
+BP_MWPlayerStartManager (BP_MWPlayerStartManager_C_1) / BP_MWPlayerStartManager_C / 위치=[-2620.0, 450.0, 6000.0] / AABB 반크기=[245.0, 155.0, 80.0]
+  FrontLeft=[-2620.0, 375.0, 6035.0]
+  FrontRight=[-2620.0, 525.0, 6035.0]
+  RearLeft=[-2870.0, 375.0, 6035.0]
+  RearRight=[-2870.0, 525.0, 6035.0]
+/Game/Developers/user/L_VehicleMovement_Test
+PlayerStart_Default_Hill_Repro (PlayerStart_1) / PlayerStart / 위치=[50000.22, 495.69, 10083.83] / AABB 반크기=[80.39, 146.71, 97.68]

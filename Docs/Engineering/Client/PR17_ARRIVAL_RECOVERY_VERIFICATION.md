@@ -33,8 +33,138 @@
 | 필수 대기판 에셋을 로드할 수 없음 | 로컬 HUD 설정의 `MatchPanelsClass`에 존재하지 않는 경로 지정. 대기 상태를 보기 위해 트랙 후보를 비우고 호스트 패킷 지연 650ms를 적용했다. Pawn 없이 도착한 두 창은 `waiting board asset/binding` 복구로 진입했다. 차량을 소유할 때 도착한 나머지 창은 주행 화면을 공개했다. | 경기 준비 직행 데이터만 담은 검증용 패키지와 존재하지 않는 `MatchPanelsClass`를 사용했다. 참가자의 1800ms 패킷 지연으로, Pawn보다 먼저 진입한 호스트가 맵 로드 뒤 약 0.18초 만에 필수 대기판 실패를 보고했다. Cua Driver로 방 나가기를 눌러 타이틀 복귀까지 확인했다. |
 | 선택 바인딩 `BuildSign`만 누락 | 대기판과 아이템 슬롯을 가진 임시 WBP에서 `BuildSign` 조회 이름만 제거했다. 세 창에서 바인딩 경고를 확인했으며, 호스트는 `PreparingRace`(`phase=7`)의 관전자 카메라에서 공개했다. 이후 세 창의 주행 HUD에서 아이템 슬롯과 계기판 표시를 확인했다. | 바인딩 하나만 누락한 케이스는 PIE에서 재현했다. |
 
-패키지에서 실제로 측정한 고화질 미준비 조건은 **설치된 밉 중 하나가 상주하지 않은 상태**다. 선택 고해상도 청크를 의도적으로 빼고 설치한 경우는 실행하지 않았다. 일반 실행에서 사용한 대기판은 이 PC에 인계된 `/Game/UI/Race/WBP_MatchPanels`이며 SHA-256은 `C760335644A94389BCBB98B60F0F6B928C44AD3A793EEE3DDC5AB231B271A422`이다. 이 에셋은 Git 추적 밖의 기존 인계 대상이다. 팀원 PC 수신 상태는 별도로 확인해야 한다.
+패키지에서 실제로 측정한 고화질 미준비 조건은 **설치된 밉 중 하나가 상주하지 않은 상태**다. 선택 고해상도 청크를 실제로 뺀 후속 검증은 문서 아래에 기록했다. 일반 실행에서 사용한 대기판은 이 PC에 인계된 `/Game/UI/Race/WBP_MatchPanels`이며 SHA-256은 `C760335644A94389BCBB98B60F0F6B928C44AD3A793EEE3DDC5AB231B271A422`이다. 이 에셋은 Git 추적 밖의 기존 인계 대상이다. 팀원 PC 수신 상태는 별도로 확인해야 한다.
 
 필수 대기판 패키지 검증은 일반 패키지와 SHA-256이 동일한 C++ 실행 파일에 `BP_MWGameplayGameMode`의 건설 후보 배열만 비워 별도 쿠킹했다. 원래 `BP_MWGameplayGameMode.uasset`은 복원 전 백업과 복원 뒤 파일의 SHA-256이 `DC4C06640563F99B7EC4D36C3B21B8E8589CCCFCCAEF93A2A0B5D5249A4888EC`로 일치했다. PIE용 임시 위젯도 디스크에 저장하지 않았다. 구성 파일과 운영 WBP는 커밋에 포함하지 않았다.
 
 패키지 두 창이 열린 상태에서 별도의 실패 검증용 3인 PIE를 함께 시작했을 때 GPU 메모리 부족으로 한 차례 에디터가 종료됐다. 두 종류의 실행을 순서대로 다시 진행해 위 결과를 얻었다.
+
+## 추가 검증 · 선택 고해상도 밉을 실제로 제외한 패키지
+
+[대조군·제외 패키지·선택 입력 캡처](Images/PR17OptionalMipVerification.jpg) · [컨테이너 목록과 실행 로그](PR17_OPTIONAL_MIP_VERIFICATION_LOG.txt)
+
+같은 실행 파일을 사용해 Win64 Development의 설원 방을 호스트와 별도 참가자에서 실행했다. 복사한 프로젝트에서만 Windows의 `TEXTUREGROUP_World`에 `OptionalMaxLODSize=1024`를 적용해 2048×2048 설원 바닥 텍스처 `T_T_snowFloor_6db453bbd5f8`의 고해상도 데이터를 선택 밉으로 만들었다. `-GenerateOptionalPakForNonChunkedBuild`로 분리하고 대조군은 모두 포함했다. 검증용 참가자 복사본에는 선택 파일만 포함시키지 않았다. 운영 프로젝트의 에셋·설정·코드는 그대로다.
+
+| 패키지 | 실제로 제외한 파일과 확인 방법 | 결과 |
+|---|---|---|
+| IoStore | `MWoptional-Windows.utoc`, `.ucas`, `.pak` 제외. `UnrealPak -ListContainer`에서 제외된 컨테이너에 `OptionalBulkData` 116개와 설원 바닥 청크 `483e5ff7ef71d05b00000003`가 있었다. 실행용 복사본의 기본 컨테이너에는 선택 청크가 0개였다. 기본 컨테이너에 설원 바닥의 필수 데이터와 `L_Dev_Drive`가 남아 있고, 대조군과 필수 파일·실행 파일 해시가 같다. | 트랙 선택이 열렸고 Cua Driver로 목재 직선 트랙을 확정했다. `MWArrival reveal`의 카메라는 `MWTrackSelectionBoard_0`, 단계는 4, 선택 세션/후보 버전은 1/1이었다. 가림에서 공개까지 참가자 1.96초, 대조군 호스트 1.85초였다. 두 창 모두 `MWArrival failed`가 없었다. |
+| Pak | `MWoptional-Windows.pak` 제외. 제외 파일 목록에서 설원 바닥 `.uptnl`을 확인했다. 참가자 복사본의 메인 Pak과 느슨한 파일에는 `.uptnl`이 없고, 메인 Pak의 설원 바닥 `.uasset/.ubulk/.uexp`와 맵은 유지했다. | 트랙 선택이 열렸고 Cua Driver로 목재 직선 트랙을 확정했다. 가림에서 공개까지 참가자 1.60초, 대조군 호스트 3.80초였다. |
+
+트랙 선택 입력, UI와 멀티플레이 단계 전환은 PIE에서 확인할 수 있다. 이번 가설은 쿠킹에서 분리된 선택 밉이 **설치 파일에 실제로 없을 때**의 동작을 묻는다. 일반 PIE는 에디터의 에셋을 읽으므로 컨테이너 누락과 동일한 조건을 만들기 어렵다. 앞선 스트리밍 풀 제한 실험은 설치된 밉이 아직 상주하지 않은 경우를 확인했고, 이번 패키지는 선택 밉이 디스크에 없는 경우를 확인했다.
+
+### 이전 검증에서 로비로 돌아간 이유
+
+이전 3인 PIE 실패 재현에서만 P3의 로컬 출발 연출 속도를 0.05로 낮췄다. 서버는 P1·P2의 완료 보고를 받았고 P3는 기한 안에 보고하지 않았다. P1·P2에서는 테스트에만 적용한 2초 이동 제한으로 `map travel timeout`이 기록됐다. 이어 서버의 기본 12초 출발 기한에 `Remaining=1`과 `Start failed: 일부 참가자의 출발 연출이 끝나지 않았습니다.`가 나왔다. 그 실행에는 `ServerTravel`이 없었다. 로비 GameMode의 `FailStart()`가 `RequestLeaveRoom()`을 호출해 방을 종료하고 세 창을 타이틀 맵 `L_Title`로 되돌렸다. 맵 파일을 생성하는 단계는 없다. 방에서 선택한 테마는 이미 존재하는 `L_Dev_Drive`를 가리킨다.
+
+일반 플레이에서 비슷하게 돌아온 사례를 구분하려면 서버의 `[MWTravel]`과 `Start failed:` 직전 로그가 필요하다. 완료 보고 뒤에도 `ServerTravel()` 호출 자체가 실패하면 서버가 같은 정리 경로를 사용한다. 월드 이동 중 엔진 오류는 연결 서브시스템의 이동 실패 처리로 이어진다. 이번 두 패키지 실행에서는 완료 보고와 실제 맵 이동을 확인했다.
+
+### 사각형 개발 구역과 출발 트랙
+
+방에서 설원을 선택하면 기본 경기 레벨은 `/Game/Levels/L_Dev_Drive`다. 이번 트랙 선택 캡처에서도 화면 아래쪽에 보이는 사각 구역은 이 레벨의 개발용 오브젝트다. 구역을 이루는 `Cube`, `Cube2`, `Cube3`, `Cube4`가 레벨에 저장돼 있다. 읽기 전용으로 맵을 열어 네 벽의 위치와 `BP_MWPlayerStartManager`의 출발 화살표를 확인했다. 출발 슬롯은 `Z=6035`cm이고 사각 구역 벽의 중심은 `Z=120`cm다. 별도 차량 이동 테스트 맵 `L_VehicleMovement_Test`는 PIE 계기판 확인 대상으로 등록돼 있다.
+
+정상 경기에서는 전원 트랙 선택 뒤 배치가 시작되면서 서버가 출발 그리드에 `WoodenCapped` 시작 트랙을 놓는다. 이후 설치한 코스를 모든 참가자가 받으면 차량을 출발 슬롯에 생성한다. 정상 3인 PIE에서는 목재 시작 트랙과 체크무늬 출발선 위에서 주행에 들어갔다. 이전 대기판 검증용 직행에서는 임시로 `ConstructionTrackDefinitionIds`를 비웠다. 이때는 코스 생성 없이 같은 높은 위치에 차량이 생성되므로 아래의 개발 구역이 보일 수 있다. 원래 GameMode 에셋에는 후보가 3개 있는 것을 재확인했다. 사용자가 본 화면이 이 직행 캡처라면 배치를 건너뛴 조건으로 설명된다.
+
+## 정상 3인 PIE · 차량 선택부터 출발선까지
+
+2026-11-19 · UE 5.8 Win64 Development Editor · 로컬 코드 `85c8603` · 설원 · LocalIP 리슨 호스트 1명과 참가자 2명. 세 게임 뷰포트는 각각 1152×650이었다. Cua Driver로 PIE 시작, 전원 준비, 호스트 시작, 차량과 트랙 선택, 세 명의 좌클릭 설치를 수행했다. 트랙 후보 3개를 그대로 사용했고 패킷 지연·시간 배율·이동 제한·스트리밍 설정에 테스트용 값을 적용하지 않았다. 관측 스크립트가 읽은 시간 배율은 세 창 모두 1.0이다.
+
+[세 창 비교 캡처](Images/PR17NormalThreePIE.jpg) · [서버 로그와 창별 상태 기록](PR17_NORMAL_THREE_PIE_LOG.txt)
+
+| 참가자 | 차량 | Cua Driver로 설치한 조각 | 주행 진입 시 차량 위치(cm) |
+|---|---|---|---|
+| P1 호스트 | FRED | 조각 2, 시작 조각 1의 포트 0에 연결 | `(-2620, 375, 6069.2)` |
+| P2 참가자 | DOUG | 조각 3, 조각 2의 포트 1에 연결 | `(-2620, 525, 6046.2)` |
+| P3 참가자 | SMIET | 조각 4, 조각 3의 포트 1에 연결 | `(-2870, 375, 6051.2)` |
+
+1. 차량 확정 뒤 서버는 P1·P2·P3의 출발 완료를 한 번씩 받아 `ServerTravel`로 이동했다. 세 창은 `L_Dev_Drive`의 트랙 선택 카메라를 공개했다. 같은 시도의 가림과 공개를 대조한 소요 시간은 4.156~4.476초였다.
+2. 세 창에서 목재 직선 트랙을 선택하고 실제 설치했다. 서버에는 목재 시작 트랙, 참가자별 설치 조각 3개, 종료 트랙이 기록됐다. P3의 마지막 설치 직후 배치 완료 안내와 완성 코스를 확인했다.
+3. 세 창이 `Racing`에 도달했고 각 참가자가 선택한 차량을 소유했다. 캡처에서 목재 시작 트랙의 체크무늬 출발선 위에 세 차량이 표시됐다. 별도 차량 테스트맵은 이 실행의 월드 목록에 들어 있지 않았고, 차량 높이도 아래쪽 개발 구역과 구분된다.
+4. 주행 진입 뒤 141.31초 시점까지 세 창이 `L_Dev_Drive`의 `Racing`을 유지했다. `ServerTravel` 이후 관찰 구간에서 로비·타이틀로의 복귀, `Start failed`, 이동 시간 초과, `MWArrival failed`는 기록되지 않았다.
+
+초기 관측 스크립트에 Unreal Python 속성명이 맞지 않는 문제가 있어 먼저 수정했다. 정상 실행 도중에도 배치 구조체를 읽는 관측 부분을 고쳐 같은 세션에 다시 연결했다. 로그와 캡처의 플레이 입력은 Cua Driver가 수행했고, 관측 스크립트는 단계·화면 크기·차량·코스를 읽었다. 후반 캡처의 빨간 영문 줄은 에디터의 GPU 메모리 예산 경고다. 세션과 차량은 관찰 종료까지 유지됐다.
+
+### PR #17 병합 보류 사유에 대한 검증 판정
+
+리뷰 기준은 PR #17의 `49261f5`다. 이번 3인 PIE는 세 수정이 들어간 로컬 코드에서 **정상 경로가 유지되는지** 검증한다. 아래의 결함 재현 결과와 함께 봐야 세 지적에 답할 수 있다.
+
+| 리뷰 사유 | 앞선 재현 결과 | 이번 정상 3인 PIE가 확인한 범위 |
+|---|---|---|
+| P1 · 선택 고해상도 밉 미준비 때문에 트랙 선택이 막힘 | 스트리밍 제한으로 밉 대기 종료를 재현했다. 선택 밉 청크를 디스크에서 실제로 제외한 Pak 및 IoStore 두 방식에서 트랙 선택이 열리고 입력이 확정됐다. | 일반 조건에서도 세 창이 준비된 트랙 선택 화면을 열고 배치로 진행했다. |
+| P2 · 맵 이동이 시작되지 않으면 로딩 제한이 동작하지 않음 | 출발 완료 보고를 지연하고 검증용 2초 제한으로 출발 월드에 남는 경로를 만들었다. PIE와 패키지에서 이동 실패 화면을 확인했고, 패키지에서 방 나가기로 타이틀에 복귀했다. | 정상 보고와 이동에 새 제한이 개입하지 않았다. 세 창의 주행 진입과 관찰 종료까지 복귀가 없었다. |
+| P2 · HUD 바인딩 하나가 다른 패널까지 막음 | `BuildSign` 누락 PIE에서 대기판과 아이템 슬롯이 각각 갱신됐다. 별도 재현에서 필수 `MatchPanels` 누락 시 PIE와 패키지가 복구 안내를 띄웠다. | 현재 PC에 인계된 WBP로 정상 주행 HUD와 아이템 슬롯이 보였다. 팀원 PC의 WBP 수신·해시·동일 실행은 별도의 확인 항목이다. |
+
+판정은 **세 리뷰 지적에 대응하는 로컬 검증을 확보했고 이번 정상 회귀도 통과**다. PR이 실제로 병합 가능한 상태인지는 수정 커밋이 반영된 PR과 인계 에셋을 받은 팀원 환경을 기준으로 판단해야 한다. 이번 작업은 문서·캡처·로그를 로컬에 남겼다.
+
+## 기본 45초 이동 제한과 UVCS 인계 대조
+
+### 서버 종료 신호가 없는 출발 월드
+
+UE 5.8 Win64 Development Editor의 LocalIP 3인 PIE에서 실행했다. `MapTravelTimeoutSeconds`는 코드 기본값 45초를 사용했다. 실행 로그와 INI 검색에서 덮어쓰기 값을 확인할 수 없었다. P3의 출발 보고만 늦추고, P1과 P2가 실제 출발 보고를 한 뒤 서버 월드 시간 배율을 0.05로 낮춰 서버의 기존 12초 타이머가 먼저 끝나지 않게 했다. P2의 로컬 월드 시간 배율은 1.0을 유지했다. PIE 밖의 코드, 설정, 맵 및 트랙 후보는 편집하지 않았다.
+
+| 창 | 가림부터 시간 초과 로그까지 | 확인 결과 |
+|---|---|---|
+| P1 리슨 호스트 | 약 45초 · UTC 로그 차 44.967초 | `source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive`. 이동 실패 문구와 방 나가기 표시. |
+| P2 참가자 | 약 45초 · UTC 로그 차 44.939초 | 같은 출발 월드와 목적지. 같은 안내를 Cua Driver로 확인. |
+
+두 안내가 표시될 때까지 서버 이동, 출발 실패, 연결 종료 로그는 없었다. 로그의 UTC 시각 차는 관측값이며 실제 제한 판정은 `FPlatformTime::Seconds()`로 수행한다. P2에서 방 나가기를 눌러 타이틀 월드 로드 완료를 로그로 확인했다. 이후 시험 스크립트가 종료된 월드를 참조해 PIE가 끝났으므로 타이틀 메뉴가 표시된 뒤의 캡처는 없다.
+
+[가림과 복구 안내 비교 캡처](Images/PR17DefaultTravelTimeout.jpg) · [기본 설정과 실행 로그](PR17_DEFAULT_TRAVEL_TIMEOUT_LOG.txt)
+
+### InvisiblePilot의 해시가 다른 이유
+
+UVCS `/main`의 `cs:59`에서 `BP_MWVehiclePawn_InvisiblePilot.uasset`를 임시 폴더로 읽어 비교했다. UVCS 파일은 34,976바이트, SHA-256 `46ebebbe6d8125add44da5ad0f57639f3d007dfb1788e6921e1475bee83f2146`로 PR 인계 목록과 일치한다. 로컬 파일은 35,429바이트, SHA-256 `b08b6359a43abd31d7c9e4db9e901c4f082d72b9e7b636db928190e8816dae42`, UVCS 상태 `CH`다.
+
+검증 복사본에서 Unreal로 Blueprint와 클래스 기본값을 각각 텍스트로 꺼내 비교했다. 로컬 `Items`의 `bOverrideBoosterMount`가 켜졌고, `BoosterMountTransform`은 위치 `(-42, 0, 4)`cm, Z축 회전 -90°, 스케일 `(0.1, 0.1, 0.1)`이다. 생성된 실행 그래프 GUID도 달랐다. 충돌 박스 치수와 후방 가상 바퀴 두 개의 위치·반지름은 일치했다. 이 diff에서 확인한 동작 차이는 투명차 부스터 장착 설정이다.
+
+### 체크인 전 UVCS cs:59 대조와 인계 계획
+
+| WBP | 팀원에게 전달할 검증본 SHA-256 | UVCS /main 상태 |
+|---|---|---|
+| `WBP_MWLoading` | `6abf86be047011e3703b792bfee9a996992067a80741b6b01abb5621f5826e97` | 로컬 전용. 신규 등록 필요. |
+| `WBP_MatchPanels` | `c760335644a94389bcbb98b60f0f6b928c44ad3a793eee3ddc5ab231b271a422` | 로컬 전용. 신규 등록 필요. |
+| `WBP_RaceHUD` | `8f239f6472de2cbf50b0a3fa353cf26269887b000d2d099b74445619ef675035` | `cs:59`와 동일. 그 버전을 받으면 된다. |
+| `WBP_VehiclePlayerMarker_Dev` | `241d7defda07884162c470b48d825687fe25a7f58668ad44b756f54bdf3f7498` | `cs:51`과 로컬 내용이 다름. |
+| `WBP_VehicleSelection_Dev` | `b85969aae71ac53a22975c0b8b6c89f970d9996d0d3691d4a3f2f1c2a01902f7` | `cs:51`과 로컬 내용이 다름. |
+
+PR 인계 목록 57개를 현재 로컬 파일과 UVCS `/main`에서 대조했다. **47개 동일, 4개 내용 다름, 6개 경로 없음**이다. 같은 데이터인지 판정할 때 UVCS의 내용 해시와 로컬 MD5를 비교했고 위 핵심 파일의 SHA-256은 UVCS 개정 파일을 직접 읽어서도 확인했다. `ItemSlotGlass.svg`는 UVCS 상태에 `CH`로 표시됐지만 `cs:57` 파일과 SHA-256이 같다.
+
+1. **로딩·경기 HUD 변경 세트.** `WBP_MWLoading`, `WBP_MatchPanels`, 대기판이 직접 참조하는 `T_Make_Way_Logo_v1_Pole_49ad24987e58`와 `T_Make_Way__Logo_Small_Sign_5909de5ef398`을 함께 인계한다. 네 파일이 모두 UVCS main에 없다. 기존 `UI_WBP_인계.zip`의 WBP 4개는 위 검증본과 일치하지만 로고 텍스처 두 개는 ZIP에 들어 있지 않다.
+2. **차량 선택 UI 변경 세트.** 이전 PR의 차량 카드·커서·월드 프리뷰도 배포할 때 `WBP_VehiclePlayerMarker_Dev`, `WBP_VehicleSelection_Dev`, `BP_VehicleSelectionPreview_Dev`의 세 수정본과 `M_VehicleSelectionBoard`, `T_MW_VehiclePreview_InvisiblePilot`의 두 신규 파일을 묶는다. `WBP_VehicleSelection_Preview` 래퍼는 `cs:31`과 동일하다.
+3. **투명차 부스터 변경 세트.** `BP_MWVehiclePawn_InvisiblePilot`의 로컬 부스터 장착 값을 팀에 적용한다면 차량·아이템 담당자 확인과 주행 부스터 검증 후 별도의 변경 세트로 처리한다. 로딩·대기판 검증에는 위 파일의 로컬 부스터 변경이 필요하지 않다.
+
+팀원은 지정된 변경 세트와 대응 Git 코드를 받아 경로·해시를 맞춘 뒤 로딩과 패키지 진입을 재검증할 수 있다. 이번 확인은 UVCS 조회와 검증 사본 다운로드까지 수행했다.
+
+[UVCS 에셋별 대조표](PR17_UVCS_ASSET_AUDIT.csv)
+
+## UVCS 로딩·경기 HUD 인계 완료 · cs:60
+
+2026-11-19 17:38 KST · `/main@ProjectMW/ProjectMW@sms1599@unity` · 변경 세트 **`cs:60`**
+
+체크인 설명은 **경기 진입 로딩·HUD 위젯과 대기판 로고 인계**이다.
+
+팀원이 받아야 할 에셋 개정은 다음 네 파일의 `cs:60`이다. 서버에서 변경 세트의 추가 파일 목록을 읽어 네 파일을 확인했고, 서버 개정을 다시 내려받아 기존 검증본과 SHA-256이 모두 일치하는 것을 확인했다.
+
+| 팀원이 받을 경로 | 개정 | 검증본 SHA-256 |
+|---|---|---|
+| `Content/UI/Common/WBP_MWLoading.uasset` | `cs:60` | `6abf86be047011e3703b792bfee9a996992067a80741b6b01abb5621f5826e97` |
+| `Content/UI/Race/WBP_MatchPanels.uasset` | `cs:60` | `c760335644a94389bcbb98b60f0f6b928c44ad3a793eee3ddc5ab231b271a422` |
+| `Content/UI/Common/T_Make_Way_Logo_v1_Pole_49ad24987e58.uasset` | `cs:60` | `f1ba6eb5e7a5de071624a5185871ece66b017ab973817b80f8f2282560644083` |
+| `Content/UI/Common/T_Make_Way__Logo_Small_Sign_5909de5ef398.uasset` | `cs:60` | `38131eb337a71b27aca3b246f08684e6fda8679a6b86ecea2b216c7e458c6275` |
+
+계기판 `Content/UI/Race/WBP_RaceHUD.uasset`은 기존 `cs:59`를 사용한다. 위 네 파일은 로컬 Git 코드 `85c8603`과 함께 검증한 에셋이다. 팀원 PC의 수신·패키지 진입은 팀원 환경에서 확인할 항목이다. 차량 선택 UI와 InvisiblePilot은 다음 변경 세트로 보류했다. 이 인계에 Git 커밋과 푸시는 수행하지 않았다.
+
+## UVCS 차량 선택 UI 인계 완료 · cs:61
+
+2026-11-19 17:43 KST · `/main@ProjectMW/ProjectMW@sms1599@unity` · 별도 변경 세트 **`cs:61`**
+
+체크인 설명은 **차량 선택 화면·참가자 커서와 프리뷰 에셋 인계**이다. 서버 변경 세트의 파일 목록에서 수정 3개와 신규 2개를 확인했다. 다섯 파일의 `cs:61` 개정을 다시 내려받아 검증본과 SHA-256을 대조했다.
+
+| 팀원이 받을 경로 | 개정 | 변경 | 검증본 SHA-256 |
+|---|---|---|---|
+| `Content/UI/Lobby/VehicleSelection/WBP_VehiclePlayerMarker_Dev.uasset` | `cs:61` | 수정 | `241d7defda07884162c470b48d825687fe25a7f58668ad44b756f54bdf3f7498` |
+| `Content/UI/Lobby/VehicleSelection/WBP_VehicleSelection_Dev.uasset` | `cs:61` | 수정 | `b85969aae71ac53a22975c0b8b6c89f970d9996d0d3691d4a3f2f1c2a01902f7` |
+| `Content/UI/Lobby/VehicleSelection/BP_VehicleSelectionPreview_Dev.uasset` | `cs:61` | 수정 | `63d4fc9928cb7c49d654e0b0505ed62d89b4b62ff3523a7f586dfb13dfc642f0` |
+| `Content/UI/Lobby/VehicleSelection/M_VehicleSelectionBoard.uasset` | `cs:61` | 신규 | `cebc5b123e7144f1c97077f159cc1c70790774ae0e6ae5ca292776cb66af8668` |
+| `Content/UI/Lobby/VehicleSelection/T_MW_VehiclePreview_InvisiblePilot.uasset` | `cs:61` | 신규 | `187b1799516495f7cf573f4575cdefe18b89393fcb931e90b6d68db56edd3e9d` |
+
+팀원은 UVCS `/main`의 `cs:61`을 기준으로 차량 선택 UI를 받으면 된다. 이 변경 세트는 로딩·경기 HUD를 인계한 `cs:60` 위에 적용된다. `WBP_VehicleSelection_Preview.uasset` 래퍼는 기존 `cs:31` 개정을 사용한다. 이 변경 세트의 InvisiblePilot 관련 파일은 차량 선택용 썸네일 텍스처이며, `BP_MWVehiclePawn_InvisiblePilot.uasset`의 부스터 변경은 보류 중이다. Git 커밋·푸시는 수행하지 않았다. 팀원 PC의 수신 확인은 별도다.
