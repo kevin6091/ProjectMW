@@ -8,6 +8,7 @@
 class AMWGameplayPlayerController;
 class UEnhancedInputComponent;
 class UMWInputData;
+class USceneComponent;
 
 // 소유 Controller에서만 입력을 받고, 현재 화면의 미리보기 Actor를 관리한다.
 UCLASS()
@@ -31,9 +32,26 @@ private:
 		bool bRotateAroundCenter = false;
 	};
 
+	struct FPointerSample
+	{
+		float X = 0.0f;
+		int32 ViewportWidth = 0;
+	};
+
+	struct FHeldSway
+	{
+		TWeakObjectPtr<USceneComponent> Wireframes;
+		FTransform RestPose;
+		FVector Center;
+		FVector Axis;
+		TOptional<FPointerSample> PreviousPointer;
+		float AngleDegrees = 0.0f;
+	};
+
 	struct FGhost
 	{
 		TOptional<FGhostSnapBlend> SnapBlend;
+		TOptional<FHeldSway> HeldSway;
 		TOptional<FTransform> PreviousSnapTarget;
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
@@ -46,11 +64,13 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds);
+	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost,
+		float DeltaSeconds, TOptional<FPointerSample>& OutPointer);
 	bool ResolveGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session,
-		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped);
+		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped, FPointerSample* OutPointer = nullptr);
 	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds,
 		double FreeMoveAlpha, bool bLocalTurn = false) const;
+	void UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
