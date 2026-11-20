@@ -4,6 +4,16 @@
 
 **Make Way**의 건설과 레이싱 흐름을 바탕으로, 플레이어별 3인칭 시점과 차량 조작, 마우스 기반 트랙 배치를 구현하고 있습니다. 한 라운드가 끝나도 코스는 남아 있으며, 다음 라운드에 새로운 조각을 이어 붙여 더 긴 코스를 완성합니다.
 
+## 시연 영상
+
+**EOS 로그인·세션·로비 연동**
+
+https://github.com/user-attachments/assets/ee0ed364-c35a-4107-8bd6-6a4e58a1065e
+
+[영상 파일 다운로드](https://github.com/kevin6091/ProjectMW/releases/download/online-demo/ProjectMW-online-demo-720p.mp4)
+
+EOS 계정 인증, 방 검색·참가, 3인 로비의 Ready 변경과 차량 선택 후 테스트 맵 이동을 담았습니다. 2026-11-06 녹화본이며, 전체 경기 루프의 최신 구현을 보여주는 영상은 아닙니다.
+
 ## 게임 흐름
 
 ```text
