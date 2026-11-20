@@ -16,7 +16,7 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 전진 최고속도. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Speed", meta = (ClampMin = "0.0", Units = "cm/s"))
-	float MaxForwardSpeed = 1800.f;
+	float MaxForwardSpeed = 3600.f;
 
 	// 추진 가속도. 단위: cm/s²
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Acceleration", meta = (ClampMin = "0.0"))
@@ -44,7 +44,7 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 회전 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (AllowPrivateAccess = "true"))
-	float TurnRateDegPerSecond = 100.f;
+	float TurnRateDegPerSecond = 90.f;
 
 	// 최대 조향 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Steering", meta = (AllowPrivateAccess = "true"))
@@ -64,11 +64,11 @@ struct MW_API FMWVehicleDriveConfig
 
 	// 드리프트 마찰 계수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drift", meta = (AllowPrivateAccess = "true"))
-	float DriftFrictionMultiplier = 0.2f;
+	float DriftFrictionMultiplier = 0.85f;
 
-	// 드리프트 회전 속도
+	// 일반 회전 속도가 90도/s일 때 드리프트는 125도/s를 사용한다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drift", meta = (AllowPrivateAccess = "true"))
-	float DriftTurnRateMultiplier = 1.25f;
+	float DriftTurnRateMultiplier = 125.f / 90.f;
 
 	// 현재 충돌체 위치에서 아래 방향으로 Sweep할 거리. 단위: cm
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0", Units = "cm"))
@@ -85,6 +85,10 @@ struct MW_API FMWVehicleDriveConfig
 	// 바닥 법선 방향으로 이 속도를 넘어서면 접지를 해제한다. 단위: cm/s
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0", Units = "cm/s"))
 	float GroundDetachSpeed = 10.f;
+	
+	// 차체가 노면 방향으로 정렬되는 최대 회전 속도. 단위: deg/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float GroundAlignSpeed = 180.f;
 
 	// 엔진에서 가져온 중력에 적용할 배율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Air", meta = (ClampMin = "0.0"))
@@ -109,6 +113,92 @@ struct MW_API FMWVehicleDriveConfig
 	// 차량끼리 부딪힌 뒤 접촉 법선 방향의 공통 운동량을 유지하는 비율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float CollisionMomentumRetention = 0.35f;
+
+	// 접지 중 벽에 접근한 속도에서 반대 방향으로 되돌릴 비율이다.
+	// 차량 간 충돌과 별도로 조정하며 차체를 띄우는 힘은 추가하지 않는다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float WallRestitution = 0.7f;
+
+	// 벽 반발을 적용할 최소 접근 속도. 저속 접촉에서는 안쪽 속도만 제거한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Collision", meta = (ClampMin = "0.0", Units = "cm/s"))
+	float MinWallBounceSpeed = 150.f;
+	
+	// 다운포스의 기준 속도. 단위: cm/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "1.0", Units = "cm/s"))
+	float DownforceReferenceSpeed = 1800.f;
+
+	// 기준 속도에서 발생하는 다운포스 가속도.
+	// 질량으로 나눈 힘을 사용한다. 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "0.0"))
+	float DownforceAtReferenceSpeed = 600.f;
+
+	// 다운포스 가속도의 상한. 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Downforce", meta = (ClampMin = "0.0"))
+	float MaxDownforceAcceleration = 1800.f;
+
+	// 진행 방향으로 노면 변화를 조사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundCurvatureProbeDistance = 500.f;
+
+	// 곡률 검사 지점에서 위아래로 조사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundCurvatureProbeHeight = 100.f;
+
+	// 접지를 유지 중일 때 허용할 작은 하중 계산 오차.
+	// 단위: cm/s²
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float GroundSupportTolerance = 20.f;
+
+	// 고속에서 연속된 볼록 노면의 접지를 유지할 때만 보완할 수 있는 하중 부족량. 단위: cm/s²
+	// 0이면 보조를 사용하지 않으며, 이 값은 타이어 하중을 높이지 않는다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
+	float MaxCrestSupportAcceleration = 3000.f;
+
+	// 타이어가 전달할 수 있는 힘의 한계를 결정하는 계수.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Grip", meta = (ClampMin = "0.0"))
+	float TireFrictionCoefficient = 2.f;
+	
+	// 충돌 Box 크기와 독립적인 자세 추정 범위. 차체 전방 기준 앞뒤 반거리다.
+	// 좁은 충돌체에서도 여러 도로 면을 함께 조사한다. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfLength = 100.f;
+
+	// 자세 추정에 사용할 좌우 반거리. 실제 접지 여부는 기존 Box Sweep으로 판단한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfWidth = 40.f;
+
+	// 각 조사 지점에서 위아래로 검사할 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "1.0", Units = "cm"))
+	float GroundPlaneProbeHalfHeight = 15.f;
+
+	// 실제 접촉 법선과 조사된 면 사이의 최대 허용 각도.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", ClampMax = "89.0"))
+	float GroundPlaneMaxNormalAngle = 15.f;
+
+	// 실제 접촉 평면과 조사점 사이의 최대 높이 차이. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundPlaneMaxHeightError = 8.f;
+
+	// 조사점들이 계산한 평면에서 벗어날 수 있는 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Orientation", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundPlaneMaxFitError = 0.5f;
+	
+	// 목표 간격 주변에서 보정을 생략할 범위. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundHeightTolerance = 0.2f;
+
+	// 일반적인 높이 보정의 최대 이동 속도. 단위: cm/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "1.0", Units = "cm/s"))
+	float GroundHeightCorrectionSpeed = 40.f;
+
+	// 유지하려는 최소 안전 간격. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.0", Units = "cm"))
+	float GroundMinClearance = 0.2f;
+
+	// 접지 검사 거리의 끝까지 간격이 벌어지지 않도록 남길 여유.
+	// 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Height", meta = (ClampMin = "0.01", Units = "cm"))
+	float GroundProbeSafetyMargin = 1.f;
 };
 
 UCLASS()

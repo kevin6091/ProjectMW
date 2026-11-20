@@ -23,8 +23,10 @@ bool FMWVehicleDriveSnapshot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool&
 	{
 		bGrounded = Grounded != 0;
 	}
+	bool bGroundNormalSuccess = false;
+	GroundNormal.NetSerialize(Ar, Map, bGroundNormalSuccess);
 	Ar << ImpactYawRate;
 	Ar << ServerTimeSeconds;
-	bOutSuccess = bLocationSuccess && bVelocitySuccess && !Ar.IsError();
+	bOutSuccess = bLocationSuccess && bVelocitySuccess && bGroundNormalSuccess && !Ar.IsError();
 	return true;
 }

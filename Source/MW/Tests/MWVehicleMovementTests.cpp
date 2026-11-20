@@ -36,7 +36,7 @@ struct FScene
 	APlayerController* Controller = nullptr;
 	UBoxComponent* Floor = nullptr;
 
-	FScene()
+	explicit FScene(const FMWVehicleDriveConfig& InConfig = FMWVehicleDriveConfig())
 	{
 		World = UWorld::CreateWorld(EWorldType::Game, false);
 		GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
@@ -47,6 +47,8 @@ struct FScene
 		Vehicle = World->SpawnActor<AMWVehiclePawn>(FVector(0, 0, 31), FRotator::ZeroRotator);
 		Movement = CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent());
 		UMWVehicleDriveData* Data = NewObject<UMWVehicleDriveData>(Vehicle);
+		// 실제 BeginPlay 검증과 설정 복사를 거치도록 생성 시점에만 설정한다.
+		Config(Data) = InConfig;
 		FObjectPropertyBase* Property = FindFProperty<FObjectPropertyBase>(Movement->GetClass(), TEXT("DriveData"));
 		check(Property);
 		Property->SetObjectPropertyValue_InContainer(Movement, Data);
@@ -101,7 +103,6 @@ struct FScene
 			Movement->TickComponent(FrameTime, LEVELTICK_All, nullptr);
 		}
 	}
-
 	AMWGameplayGameState* UseRaceRules()
 	{
 		auto* State = World->SpawnActor<AMWGameplayGameState>();
@@ -143,6 +144,15 @@ bool FMWDriveConfigTest::RunTest(const FString& Parameters)
 	Reject(TEXT("Negative detach speed"), [](auto& C) { C.GroundDetachSpeed = -1; });
 	Reject(TEXT("Zero vehicle mass"), [](auto& C) { C.VehicleMass = 0; });
 	Reject(TEXT("Momentum retention outside range"), [](auto& C) { C.CollisionMomentumRetention = 2; });
+	// 에디터 입력 제한과 별개로 저장된 벽 반발 값도 검사한다.
+	Reject(TEXT("Wall restitution outside range"), [](auto& C) { C.WallRestitution = 1.1f; });
+	Reject(TEXT("Negative wall restitution"), [](auto& C) { C.WallRestitution = -0.1f; });
+	Reject(TEXT("Non-finite wall restitution"), [](auto& C) { C.WallRestitution = std::numeric_limits<float>::quiet_NaN(); });
+	Reject(TEXT("Negative wall bounce threshold"), [](auto& C) { C.MinWallBounceSpeed = -1; });
+	Reject(TEXT("Non-finite wall bounce threshold"), [](auto& C) { C.MinWallBounceSpeed = std::numeric_limits<float>::infinity(); });
+	// 새 자세 조사 거리는 0 또는 비유한값을 허용하지 않는다.
+	Reject(TEXT("Zero ground plane length"), [](auto& C) { C.GroundPlaneProbeHalfLength = 0; });
+	Reject(TEXT("Non-finite ground plane width"), [](auto& C) { C.GroundPlaneProbeHalfWidth = std::numeric_limits<float>::infinity(); });
 	return true;
 }
 
@@ -150,20 +160,24 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveControlsTest, "MW.Vehicle.LocalControls
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMWDriveControlsTest::RunTest(const FString& Parameters)
 {
-	MWVehicleTests::FScene Scene;
+	const FMWVehicleDriveConfig DriveConfig;
+	MWVehicleTests::FScene Scene(DriveConfig);
 	Scene.Input(0, 0, 1);
 	Scene.Step(0.5f);
 	TestTrue(TEXT("Stationary steering does not rotate"), Scene.Vehicle->GetActorRotation().IsNearlyZero());
 	TestTrue(TEXT("Floor detected"), Scene.Movement->IsGrounded());
 	TestTrue(TEXT("Ground clearance maintained"), FMath::IsNearlyEqual(Scene.Vehicle->GetActorLocation().Z, 31.f, 0.3f));
 	Scene.Input(1);
-	Scene.Step(2.f);
-	TestTrue(TEXT("Forward speed limit"), Scene.Movement->Velocity.X > 1750 && Scene.Movement->Velocity.X <= 1801);
+	// 최고속도에 도달하고도 추진을 계속해 한계가 적용되는지 확인한다.
+	Scene.Step(DriveConfig.MaxForwardSpeed / DriveConfig.DriveAcceleration + 0.25f);
+	TestTrue(TEXT("Forward speed limit"), FMath::IsNearlyEqual(Scene.Movement->Velocity.X, DriveConfig.MaxForwardSpeed, 1.f));
 	Scene.Input(0);
-	Scene.Step(0.5f);
-	TestTrue(TEXT("Coasting retains momentum and slows down"), Scene.Movement->Velocity.X > 1500 && Scene.Movement->Velocity.X < 1790);
+	constexpr float CoastDuration = 0.5f;
+	Scene.Step(CoastDuration);
+	const float ExpectedCoastSpeed = DriveConfig.MaxForwardSpeed - DriveConfig.CoastDeceleration * CoastDuration;
+	TestTrue(TEXT("Coasting retains momentum and slows down"), FMath::IsNearlyEqual(Scene.Movement->Velocity.X, ExpectedCoastSpeed, 1.f));
 	Scene.Input(1, 1);
-	Scene.Step(1.f);
+	Scene.Step(DriveConfig.MaxForwardSpeed / DriveConfig.FullBrakeDeceleration + 0.25f);
 	TestTrue(TEXT("Simultaneous throttle and reverse brakes to rest"), Scene.Movement->Velocity.IsNearlyZero(0.1f));
 	Scene.Input(0, 1);
 	Scene.Step(1.f);
@@ -240,7 +254,8 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Wall = Scene.AddBox(FVector(120.5f, 0, 200), FVector(20, 1000, 200));
 	Scene.Movement->Velocity = FVector(1000, 0, 0);
 	Scene.Input(0, 0, 1);
-	Scene.Step(1.f / 60.f);
+	// 첫 스텝의 회전 거절을 확인한다. 반발로 멀어진 다음 스텝에서는 조향할 수 있다.
+	Scene.Step(1.f / 120.f, 1.f / 120.f);
 	TestTrue(TEXT("Rotation into a nearby wall is rejected"), FMath::Abs(Scene.Vehicle->GetActorRotation().Yaw) < 0.1f);
 	Wall->GetOwner()->Destroy();
 	Scene.Floor->GetOwner()->SetActorRotation(FRotator(20, 0, 0));
@@ -256,6 +271,118 @@ bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
 	Scene.Reset(FVector(0, 0, 500));
 	Scene.Step(1.f);
 	TestFalse(TEXT("Steep surface is not drivable ground"), Scene.Movement->IsGrounded());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveWallBounceTest, "MW.Vehicle.WallBounce",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWDriveWallBounceTest::RunTest(const FString& Parameters)
+{
+	constexpr float StepTime = 1.f / 120.f;
+	FMWVehicleDriveConfig Config;
+	// 접촉 자체의 결과를 측정하는 경우에만 타이어 감속을 제거한다.
+	// 기본 설정과 실제 입력을 사용하는 검증은 기존 조작 테스트와 PIE에서 수행한다.
+	Config.CoastDeceleration = 0.f;
+	Config.LateralGrip = 0.f;
+
+	for (const float Restitution : {0.f, 0.3f, 1.f})
+	{
+		Config.WallRestitution = Restitution;
+		MWVehicleTests::FScene Scene(Config);
+		Scene.Step(StepTime, StepTime);
+		Scene.AddBox(FVector(121, 0, 200), FVector(20, 1000, 200));
+		Scene.Movement->Velocity = FVector(1200, 400, 0);
+		Scene.Step(StepTime, StepTime);
+		const FVector Velocity = Scene.Movement->Velocity;
+		AddInfo(FString::Printf(TEXT("Wall restitution %.2f: location=%s velocity=%s"),
+			Restitution, *Scene.Vehicle->GetActorLocation().ToString(), *Velocity.ToString()));
+		TestTrue(TEXT("Wall reflects only the approach speed"), FMath::IsNearlyEqual(Velocity.X, -1200.0 * Restitution, 0.1));
+		TestTrue(TEXT("Wall preserves tangential speed"), FMath::IsNearlyEqual(Velocity.Y, 400.0, 0.1));
+		TestTrue(TEXT("Wall adds no vertical speed or lift"), FMath::Abs(Velocity.Z) < 0.01 && FMath::Abs(Scene.Vehicle->GetActorLocation().Z - 31.0) < 0.01);
+		TestTrue(TEXT("Wall contact keeps ground support"), Scene.Movement->IsGrounded());
+		TestTrue(TEXT("Stationary wall does not add kinetic energy"), Velocity.SizeSquared() <= FMath::Square(1200.0) + FMath::Square(400.0) + 0.1);
+		if (Restitution > 0.f)
+		{
+			// 충돌 전 이동량을 재사용하면 같은 스텝의 반대 방향 이동이 누락된다.
+			TestTrue(TEXT("Remaining time moves away from the wall in the impact step"), Scene.Vehicle->GetActorLocation().X < 0.0);
+		}
+	}
+
+	Config.WallRestitution = 0.3f;
+	{
+		MWVehicleTests::FScene Scene(Config);
+		Scene.Step(StepTime, StepTime);
+		Scene.AddBox(FVector(120.1, 0, 200), FVector(20, 1000, 200));
+		Scene.Movement->Velocity = FVector(100, 1500, 0);
+		Scene.Step(StepTime, StepTime);
+		TestTrue(TEXT("Fast grazing contact below normal threshold does not bounce"), FMath::Abs(Scene.Movement->Velocity.X) < 0.1);
+		TestTrue(TEXT("Low-speed contact still travels along the wall"), Scene.Movement->Velocity.Y > 1499);
+	}
+
+	{
+		MWVehicleTests::FScene Scene(Config);
+		Scene.Step(StepTime, StepTime);
+		Scene.AddBox(FVector(121, 0, 200), FVector(20, 1000, 200));
+		Scene.AddBox(FVector(0, 71, 200), FVector(1000, 20, 200));
+		Scene.Movement->Velocity = FVector(1200, 1200, 0);
+		Scene.Step(StepTime, StepTime);
+		TestTrue(TEXT("Both walls of a corner are resolved in one step"), Scene.Movement->Velocity.X < -350 && Scene.Movement->Velocity.Y < -350);
+		TestTrue(TEXT("Corner contact does not launch or penetrate"), Scene.Movement->IsGrounded() && Scene.Vehicle->GetActorLocation().X <= 1.1 && Scene.Vehicle->GetActorLocation().Y <= 1.1);
+	}
+
+	{
+		MWVehicleTests::FScene Scene(Config);
+		Scene.Reset(FVector(0, 0, 300));
+		Scene.AddBox(FVector(121, 0, 300), FVector(20, 1000, 300));
+		Scene.Movement->Velocity = FVector(1200, 0, 0);
+		Scene.Step(StepTime, StepTime);
+		TestTrue(TEXT("Airborne contact keeps the existing non-bouncing response"), FMath::Abs(Scene.Movement->Velocity.X) < 0.1 && Scene.Movement->Velocity.Z < 0);
+	}
+
+	FVector ReferenceLocation = FVector::ZeroVector;
+	FVector ReferenceVelocity = FVector::ZeroVector;
+	for (const float FrameTime : {1.f / 120.f, 1.f / 60.f, 1.f / 30.f, 1.f / 240.f})
+	{
+		MWVehicleTests::FScene Scene(Config);
+		Scene.Step(StepTime, StepTime);
+		Scene.AddBox(FVector(121, 0, 200), FVector(20, 1000, 200));
+		Scene.Movement->Velocity = FVector(1200, 400, 0);
+		Scene.Step(1.f / 30.f, FrameTime);
+		AddInfo(FString::Printf(TEXT("Wall frame time %.6f: location=%s velocity=%s"),
+			FrameTime, *Scene.Vehicle->GetActorLocation().ToString(), *Scene.Movement->Velocity.ToString()));
+		if (ReferenceLocation.IsNearlyZero())
+		{
+			ReferenceLocation = Scene.Vehicle->GetActorLocation();
+			ReferenceVelocity = Scene.Movement->Velocity;
+		}
+		// 엔진 Sweep은 충돌 시 최대 약 1cm를 앞당긴다. 120Hz보다 짧은 스텝은
+		// Sweep 거리도 달라지므로 그 범위의 위치 차이만 허용하고 속도는 동일하게 검사한다.
+		const double PositionTolerance = FrameTime < StepTime ? 1.0 : 0.1;
+		TestTrue(TEXT("30/60/120/240 FPS wall positions agree within sweep margin"), Scene.Vehicle->GetActorLocation().Equals(ReferenceLocation, PositionTolerance));
+		TestTrue(TEXT("30/60/120/240 FPS wall velocities agree"), Scene.Movement->Velocity.Equals(ReferenceVelocity, 0.1));
+	}
+
+	// 중력과 타이어 힘을 제외하고 반발 방향이 현재 노면을 따르는지 검증한다.
+	Config.GravityScale = 0.f;
+	for (const FRotator Rotation : {FRotator(20, 0, 0), FRotator(0, 0, 90), FRotator(0, 0, 180)})
+	{
+		MWVehicleTests::FScene Scene(Config);
+		const FVector Up = Rotation.Quaternion().GetAxisZ();
+		const FVector Forward = Rotation.Quaternion().GetAxisX();
+		const FVector Right = Rotation.Quaternion().GetAxisY();
+		Scene.Floor->GetOwner()->SetActorLocationAndRotation(-Up * 50.0, Rotation);
+		Scene.Reset(Up * 31.0, Rotation);
+		Scene.Step(StepTime, StepTime);
+		Scene.AddBox(Forward * 121.0 + Up * 200.0, FVector(20, 1000, 200), Rotation);
+		Scene.Movement->Velocity = Forward * 1200.0 + Right * 400.0;
+		Scene.Step(StepTime, StepTime);
+		const FVector Velocity = Scene.Movement->Velocity;
+		AddInfo(FString::Printf(TEXT("Oriented wall %s: velocity=%s grounded=%d"), *Rotation.ToString(), *Velocity.ToString(), Scene.Movement->IsGrounded()));
+		TestTrue(TEXT("Slope and loop wall response follows the road plane"), Velocity.Equals(-Forward * 360.0 + Right * 400.0, 0.1));
+		TestTrue(TEXT("Oriented contact adds no road-normal speed or lift"), FMath::Abs(FVector::DotProduct(Velocity, Up)) < 0.01 && FMath::Abs(FVector::DotProduct(Scene.Vehicle->GetActorLocation(), Up) - 31.0) < 0.01);
+		TestTrue(TEXT("Oriented wall does not change chassis tilt"), Scene.Vehicle->GetActorQuat().Equals(Rotation.Quaternion(), 0.0001));
+		TestTrue(TEXT("Oriented wall keeps ground support"), Scene.Movement->IsGrounded());
+	}
 	return true;
 }
 
@@ -331,6 +458,44 @@ bool FMWDriveFrameRateTest::RunTest(const FString& Parameters)
 	Scene.Step(0.2f);
 	TestTrue(TEXT("Unpossess clears stored input"), Scene.Movement->Velocity.IsNearlyZero());
 	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWOverspeedRecoveryTest, "MW.Vehicle.OverspeedRecovery",
+                                 EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+// 추진 입력을 유지해도 제한을 넘긴 속도가 기존 감속량으로 줄어드는지 검사한다.
+bool FMWOverspeedRecoveryTest::RunTest(const FString& Parameters)
+{
+    const FMWVehicleDriveConfig DriveConfig;
+    const float ForwardOverspeed = DriveConfig.MaxForwardSpeed + 450.f;
+    // 가속키 유지·후진·공중 관성을 30/120프레임 간격으로 검사한다. 실제 키보드나 다중 PC 주행 검사는 아니다.
+    for (const float FrameTime : {1.f / 30.f, 1.f / 120.f})
+    {
+        MWVehicleTests::FScene Scene(DriveConfig);
+        Scene.Input(1.f);
+        Scene.Movement->Velocity = FVector(ForwardOverspeed, 0.f, 0.f);
+        Scene.Step(0.1f, FrameTime);
+        TestTrue(TEXT("Overspeed decays without snapping to normal limit"),
+                 Scene.Movement->Velocity.X > DriveConfig.MaxForwardSpeed && Scene.Movement->Velocity.X < ForwardOverspeed);
+        Scene.Step(4.f, FrameTime);
+        TestTrue(TEXT("Held throttle returns to the normal limit"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, Scene.Movement->GetMaxSpeed(), 0.1f));
+
+        Scene.Reset();
+        Scene.Input(0.f, 1.f);
+        Scene.Movement->Velocity = FVector(-800.f, 0.f, 0.f);
+        Scene.Step(2.f, FrameTime);
+        TestTrue(TEXT("Reverse overspeed also decays to its own limit"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, -Scene.Movement->GetMaxSpeed(), 0.1f));
+
+        Scene.Reset(FVector(0, 0, 1000));
+        Scene.Input(1.f);
+        Scene.Movement->Velocity = FVector(ForwardOverspeed, 0.f, 300.f);
+        Scene.Step(0.1f, FrameTime);
+        TestTrue(TEXT("Ground overspeed recovery does not clamp air momentum"),
+                 FMath::IsNearlyEqual(Scene.Movement->Velocity.X, ForwardOverspeed, 0.1f));
+    }
+    return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWRaceDrivePermissionTest, "MW.Gameplay.DriveControl.PermissionAndHold",
@@ -527,6 +692,7 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		Sent.Location = FVector(100, 200, 300);
 		Sent.Velocity = FVector(800, 0, 0);
 		Sent.ImpactYawRate = 25.f;
+		Sent.GroundNormal = FVector(0, 0.6, 0.8);
 		Sent.bGrounded = true;
 		Sent.ServerTimeSeconds = 17.25;
 		TArray<uint8> Bytes;
@@ -545,9 +711,11 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("ACK survives serialization"), Received.LastProcessedMoveId, Sent.LastProcessedMoveId);
 		TestTrue(TEXT("Pose and motion survive serialization"), Received.Location.Equals(Sent.Location, 0.1)
 			&& Received.Velocity.Equals(Sent.Velocity, 0.1) && Received.ImpactYawRate == Sent.ImpactYawRate
-			&& Received.bGrounded && Received.ServerTimeSeconds == Sent.ServerTimeSeconds);
+			&& Received.bGrounded && Received.GroundNormal.Equals(Sent.GroundNormal, 0.001)
+			&& Received.ServerTimeSeconds == Sent.ServerTimeSeconds);
 	}
 	return true;
 }
+
 
 #endif

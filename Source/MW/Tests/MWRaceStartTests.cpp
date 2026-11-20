@@ -156,7 +156,7 @@ struct FMWRaceStartTestScene
 	{
 		State->GetConstructionComponent()->OnPlacementFinished.Broadcast(Course().SessionId, Course().CourseRevision);
 	}
-	void ConfigureLocalInput()
+	void ConfigureLocalInput(bool bWithItem = false)
 	{
 		auto* PC = Players[0];
 		auto* Data = NewObject<UMWInputData>(PC);
@@ -170,6 +170,12 @@ struct FMWRaceStartTestScene
 			auto* Action = NewObject<UInputAction>(Data);
 			Action->ValueType = Tag == MWGameplayTags::Input_Drift ? EInputActionValueType::Boolean : EInputActionValueType::Axis1D;
 			Actions.Add({Tag, Action});
+		}
+		if (bWithItem)
+		{
+			auto* Action = NewObject<UInputAction>(Data);
+			Action->ValueType = EInputActionValueType::Boolean;
+			Actions.Add({MWGameplayTags::Input_UseItem.GetTag(), Action});
 		}
 		FindFProperty<FObjectPropertyBase>(Vehicle(0)->GetClass(), TEXT("DrivingInputData"))->SetObjectPropertyValue_InContainer(Vehicle(0), Data);
 		LocalPlayer = NewObject<ULocalPlayer>(GEngine);
@@ -270,6 +276,13 @@ bool FMWRaceStartCourseTest::RunTest(const FString& Parameters)
 	Scene.Vehicle(0)->SetActorLocation(FVector(7000, 0, 31));
 	TestFalse(TEXT("Owner waits for the authoritative starting pose"), Scene.Vehicle(0)->IsReadyForRace(1));
 	Scene.Vehicle(0)->SetRole(ROLE_Authority);
+	{
+		FMWRaceStartTestScene WithItem;
+		WithItem.BuildCourse();
+		WithItem.FinishCourse();
+		WithItem.ConfigureLocalInput(true);
+		TestTrue(TEXT("Optional item binding keeps the held vehicle ready"), WithItem.Players[0]->IsLocalRaceReady());
+	}
 	return true;
 }
 

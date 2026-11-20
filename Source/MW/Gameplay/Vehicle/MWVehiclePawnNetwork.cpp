@@ -17,6 +17,7 @@ namespace
 	constexpr float DriveStep = 1.f / 120.f;
 	constexpr float MaxDriveStepTime = 12.f * DriveStep;
 	constexpr float SnapshotInterval = 1.f / 20.f;
+	constexpr float GroundNormalTolerance = 0.001f;
 	constexpr float SendInterval = 1.f / 30.f;
 	constexpr float RemoteInputTimeout = 1.f;
 	constexpr int32 MaxMovesPerPacket = 32;
@@ -52,6 +53,8 @@ namespace
 			|| !Prediction.Rotation.Equals(Server.Rotation, RotationTolerance)
 			|| !Prediction.Velocity.Equals(Server.Velocity, 5.f)
 			|| Prediction.bGrounded != Server.bGrounded
+			|| (Prediction.bGrounded && Server.bGrounded
+				&& !Prediction.GroundNormal.Equals(Server.GroundNormal, GroundNormalTolerance))
 			|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f;
 	}
 
@@ -118,7 +121,8 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
 		&& Snapshot.ImpactYawRate == ServerDriveSnapshot.ImpactYawRate
-		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded)
+		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded
+		&& (!Snapshot.bGrounded || Snapshot.GroundNormal.Equals(ServerDriveSnapshot.GroundNormal, GroundNormalTolerance)))
 	{
 		return;
 	}
@@ -636,6 +640,7 @@ void AMWVehiclePawn::ResetDrivePresentation()
 	ContactPresentationOther.Reset();
 	bContactPresentationPending = false;
 	DrivePresentation->SetRelativeLocationAndRotation(FVector::ZeroVector, FQuat::Identity);
+	ResetGroundVisual();
 	if (UMWVehicleSpringArmComponent* SpringArm = Cast<UMWVehicleSpringArmComponent>(CameraBoom))
 	{
 		SpringArm->ResetCameraLag();
@@ -926,6 +931,7 @@ FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTim
 		Presentation.Velocity = FMath::Lerp(FVector(First.Velocity), FVector(Next.Velocity), Alpha);
 		Presentation.ImpactYawRate = FMath::Lerp(First.ImpactYawRate, Next.ImpactYawRate, Alpha);
 		Presentation.bGrounded = Alpha < 0.5 ? First.bGrounded : Next.bGrounded;
+		Presentation.GroundNormal = Alpha < 0.5 ? First.GroundNormal : Next.GroundNormal;
 	}
 
 	const FMWVehicleDriveSnapshot& Latest = ProxySnapshots.Last();

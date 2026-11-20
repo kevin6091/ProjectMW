@@ -54,6 +54,10 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	bool bGrounded = false;
 
+	// 보정 재실행의 이전 접촉면도 위치·속도와 같은 스냅샷으로 복원한다.
+	UPROPERTY()
+	FVector_NetQuantizeNormal GroundNormal = FVector::UpVector;
+
 	UPROPERTY()
 	float ImpactYawRate = 0.f;
 

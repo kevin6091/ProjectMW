@@ -6,13 +6,19 @@
 #include "Engine/World.h"
 #include "GameFramework/GameSession.h"
 #include "LogChannel.h"
-#include "UI/MWLobbyHUD.h"
+#include "UI/Lobby/MWLobbyHUD.h"
 #include "GameFramework/Character.h"
 #include "Data/MWVehicleDefinitionData.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "MWGameplayTags.h"
 #include "System/MWAssetManager.h"
 #include "Player/Cursor/MWPlayerCursorComponent.h"
+#include "TimerManager.h"
+
+namespace
+{
+    constexpr float VehicleDepartureTimeoutSeconds = 12.f;
+}
 
 AMWLobbyGameMode::AMWLobbyGameMode()
 {
@@ -71,6 +77,22 @@ void AMWLobbyGameMode::PostLogin(APlayerController* Player)
     {
         PS->SetLobbyMemberIdFromServer(NextLobbyMemberId++);
         PS->SetLobbyFlagsFromServer(Host, false);
+    }
+}
+
+// 기존 참가자 이탈 처리와 함께 출발 대기가 남지 않도록 현재 시작 상태를 확인한다.
+void AMWLobbyGameMode::Logout(AController* Exiting)
+{
+    const auto* App = GetGameInstance<UMWGameInstance>();
+    const auto* Player = Exiting ? Exiting->GetPlayerState<AMWPlayerState>() : nullptr;
+    const bool bStartingPlayerLeft = !PendingThemeDestination.IsNone() && App && Player &&
+                                     App->GetStartingPlayers().Contains(Player->GetLobbyMemberId());
+
+    Super::Logout(Exiting);
+
+    if (bStartingPlayerLeft)
+    {
+        FailStart(TEXT("출발 중 참가자가 방을 나갔습니다."));
     }
 }
 
@@ -135,12 +157,12 @@ void AMWLobbyGameMode::HandleStartPrepared(bool Success, const FString& Message)
 {
     auto* GS = GetGameState<AMWLobbyGameState>();
     auto* App = GetGameInstance<UMWGameInstance>();
-    
+
     if (!GS || !App || GS->GetRoomPhase() != EMWRoomPhase::Starting)
     {
         return;
     }
-    
+
     FString Error = Message;
     TArray<int32> Players;
     // 비동기 입장 잠금 처리가 끝난 시점의 참가자 목록입니다.
@@ -151,7 +173,7 @@ void AMWLobbyGameMode::HandleStartPrepared(bool Success, const FString& Message)
             Players.Add(PS->GetLobbyMemberId());
         }
     }
-    
+
     Players.Sort();
     // 준비 성공, 참가자 유지, 전원 Ready를 다시 확인합니다.
     if (!Success || Players != App->GetStartingPlayers() || !GS->ValidateReadyPlayers(Error))
@@ -159,7 +181,7 @@ void AMWLobbyGameMode::HandleStartPrepared(bool Success, const FString& Message)
         FailStart(Error.IsEmpty() ? TEXT("시작 중 참가자 또는 준비 상태가 바뀌었습니다.") : Error);
         return;
     }
-    
+
     // 준비를 마쳤으므로 같은 L_Title에서 차량 선택을 시작합니다.
     BeginVehicleSelection();
 }
@@ -167,7 +189,7 @@ void AMWLobbyGameMode::HandleStartPrepared(bool Success, const FString& Message)
 void AMWLobbyGameMode::BeginVehicleSelection()
 {
     AMWLobbyGameState* GS = GetGameState<AMWLobbyGameState>();
-    
+
     // 시작 준비를 마친 로비에서만 차량 선택을 시작합니다.
     if (!GS || GS->GetRoomPhase() != EMWRoomPhase::Starting)
     {
@@ -175,7 +197,7 @@ void AMWLobbyGameMode::BeginVehicleSelection()
     }
 
     FString Error;
-    
+
     // 모든 클라이언트가 제출할 기본 차량이 실제로 준비돼 있는지 확인합니다.
     if (!ValidateVehicleAssetLabel(MWGameplayTags::AssetLabel_Vehicles, Error))
     {
@@ -192,7 +214,9 @@ void AMWLobbyGameMode::BeginVehicleSelection()
     // 각 로컬 HUD가 복제된 Phase를 보고 실제 선택 화면을 표시합니다.
 }
 
-bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID, FString& Error)
+// 확정·취소가 같은 단계·월드·소유권·고정 시작 참가자 검사를 공유한다.
+AMWPlayerState* AMWLobbyGameMode::ValidateVehicleSelectionRequester(AMWLobbyPlayerController* Controller,
+                                                                    FString& Error) const
 {
     Error.Reset();
 
@@ -205,7 +229,7 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
         GS->GetRoomPhase() != EMWRoomPhase::VehicleSelection)
     {
         Error = TEXT("현재는 차량 선택 요청을 처리할 수 없습니다.");
-        return false;
+        return nullptr;
     }
 
     auto* PS = IsValid(Controller) ? Controller->GetPlayerState<AMWPlayerState>() : nullptr;
@@ -218,9 +242,20 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
         !GS->PlayerArray.Contains(PS) ||
         !App->GetStartingPlayers().Contains(PS->GetLobbyMemberId()))
     {
-        Error = TEXT("시작 대상으로 확정된 참가자만 차량을 선택할 수 있습니다.");
-        return false;
+        Error = TEXT("시작 대상으로 확정된 참가자만 차량 선택을 변경할 수 있습니다.");
+        return nullptr;
     }
+
+    return PS;
+}
+
+// 공통 요청자 검사 뒤 유효한 차량 ID만 서버의 기존 확정 경로로 전달한다.
+bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controller, FGameplayTag VehicleAssetID,
+                                             FString& Error)
+{
+    auto* PS = ValidateVehicleSelectionRequester(Controller, Error);
+    if (!PS)
+        return false;
 
     const FGameplayTag PreviousID = PS->GetVehicleAssetID();
 
@@ -232,7 +267,7 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
             return true;
         }
 
-        Error = TEXT("이미 확정한 차량은 변경할 수 없습니다.");
+        Error = TEXT("다른 차량을 선택하려면 현재 선택을 먼저 취소하세요.");
         return false;
     }
 
@@ -254,6 +289,23 @@ bool AMWLobbyGameMode::RequestConfirmVehicle(AMWLobbyPlayerController* Controlle
     return true;
 }
 
+// 예상 ID와 현재 선택이 일치한 서버 승인만 기존 차량 ID 해제로 연결한다.
+bool AMWLobbyGameMode::RequestCancelVehicle(AMWLobbyPlayerController* Controller, FGameplayTag ExpectedVehicleID,
+                                            FString& Error)
+{
+    auto* PS = ValidateVehicleSelectionRequester(Controller, Error);
+    if (!PS)
+        return false;
+
+    if (!ExpectedVehicleID.IsValid() || !PS->ClearVehicleAssetIDFromServer(ExpectedVehicleID))
+    {
+        Error = TEXT("취소하려던 차량 선택이 바뀌었습니다.");
+        return false;
+    }
+
+    return true;
+}
+
 void AMWLobbyGameMode::TryCompleteVehicleSelection()
 {
     if (!IsAllVehiclesConfirmed())
@@ -262,7 +314,7 @@ void AMWLobbyGameMode::TryCompleteVehicleSelection()
     }
 
     UE_LOG(LogMWServer, Log, TEXT("[MWVehicleSelection] 시작 대상 전원의 차량 선택이 확정되었습니다."));
-    
+
     auto* GS = GetGameState<AMWLobbyGameState>();
     const auto* App = GetGameInstance<UMWGameInstance>();
 
@@ -276,18 +328,61 @@ void AMWLobbyGameMode::TryCompleteVehicleSelection()
         return;
     }
 
-    // 목적지가 유효하면 이동 단계로 바꿉니다.
-    // 이후 도착하는 차량 선택 요청은 Phase 검사에서 거절됩니다.
+    PendingThemeDestination = Destination;
+    for (int32 PlayerId : App->GetStartingPlayers())
+    {
+        PlayersAwaitingDeparture.Add(PlayerId);
+    }
+    GetWorldTimerManager().SetTimer(DepartureTimeout, this, &ThisClass::HandleVehicleDepartureTimeout,
+                                    VehicleDepartureTimeoutSeconds, false);
+
+    // Traveling 알림은 호스트 HUD에서도 즉시 실행되므로 대기 상태를 먼저 준비합니다.
+    UE_LOG(LogMWServer, Log, TEXT("[MWTravel] Waiting for vehicle departure. Players=%d Destination=%s"),
+           PlayersAwaitingDeparture.Num(), *Destination.ToString());
     SetVehicleCursorStreams(false);
     GS->SetRoomPhaseFromServer(EMWRoomPhase::Traveling);
+}
 
-    UE_LOG(LogMWServer, Log, TEXT("[MWTravel] 전원 차량 선택 확정. 이동 요청 Destination=%s"), *Destination.ToString());
+// 소유자·단계·중복을 검사해 대기자를 제거하고 전원이 끝났을 때만 서버 이동을 시작한다.
+void AMWLobbyGameMode::HandleVehicleDepartureReady(AMWLobbyPlayerController* Controller)
+{
+    const auto* GS = GetGameState<AMWLobbyGameState>();
+    const auto* Player = IsValid(Controller) ? Controller->GetPlayerState<AMWPlayerState>() : nullptr;
+    if (PendingThemeDestination.IsNone() || !GS || GS->GetRoomPhase() != EMWRoomPhase::Traveling || !IsValid(Player) ||
+        Controller->GetWorld() != GetWorld() || Player->IsInactive() || Player->GetOwner() != Controller ||
+        !GS->PlayerArray.Contains(Player))
+    {
+        return;
+    }
 
-    // 연결된 참가자들과 함께 테마 레벨로 이동하도록 엔진에 요청합니다.
-    if (!GetWorld()->ServerTravel(Destination.ToString(), true))
+    if (PlayersAwaitingDeparture.Remove(Player->GetLobbyMemberId()) == 0)
+    {
+        return;
+    }
+
+    UE_LOG(LogMWServer, Log, TEXT("[MWTravel] Vehicle departure ready. Player=%d Remaining=%d"),
+           Player->GetLobbyMemberId(), PlayersAwaitingDeparture.Num());
+    if (!PlayersAwaitingDeparture.IsEmpty())
+    {
+        return;
+    }
+
+    GetWorldTimerManager().ClearTimer(DepartureTimeout);
+    const FString Destination = PendingThemeDestination.ToString();
+    PendingThemeDestination = NAME_None;
+    UE_LOG(LogMWServer, Log, TEXT("[MWTravel] Vehicle departure complete. ServerTravel Destination=%s"), *Destination);
+    if (!GetWorld()->ServerTravel(Destination, true))
     {
         FailStart(TEXT("테마 레벨 이동을 시작하지 못했습니다."));
     }
+}
+
+// 완료 누락을 시작 실패로 처리한다. 준비 검사를 건너뛰고 강제로 이동하지 않는다.
+void AMWLobbyGameMode::HandleVehicleDepartureTimeout()
+{
+    UE_LOG(LogMWServer, Warning, TEXT("[MWTravel] Vehicle departure timed out. Remaining=%d"),
+           PlayersAwaitingDeparture.Num());
+    FailStart(TEXT("일부 참가자의 출발 연출이 끝나지 않았습니다."));
 }
 
 bool AMWLobbyGameMode::IsAllVehiclesConfirmed() const
@@ -339,7 +434,7 @@ bool AMWLobbyGameMode::ValidateVehicleAssetLabel(FGameplayTag AssetLabelVehicles
         Error = TEXT("모든 차량을 불러오지 못했습니다.");
         return false;
     }
-    
+
     return true;
 }
 
@@ -352,7 +447,7 @@ bool AMWLobbyGameMode::ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FStri
         Error = TEXT("선택할 수 없는 차량 ID입니다.");
         return false;
     }
-    
+
     // AssetData에 등록된 ID를 통해 차량 Definition을 불러옵니다.
     const UMWVehicleDefinitionData* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWVehicleDefinitionData>(VehicleAssetID);
 
@@ -376,6 +471,9 @@ bool AMWLobbyGameMode::ValidateVehicleAssetID(FGameplayTag VehicleAssetID, FStri
 // 시작 실패 시 반쯤 열린 방을 유지하지 않고 기존 종료 경로로 정리합니다.
 void AMWLobbyGameMode::FailStart(const FString& Error)
 {
+    GetWorldTimerManager().ClearTimer(DepartureTimeout);
+    PendingThemeDestination = NAME_None;
+    PlayersAwaitingDeparture.Reset();
     SetVehicleCursorStreams(false);
     bAcceptingPlayers = false;
     if (auto* GS = GetGameState<AMWLobbyGameState>()) GS->SetRoomPhaseFromServer(EMWRoomPhase::Failed);
