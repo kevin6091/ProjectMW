@@ -168,3 +168,96 @@ PR 인계 목록 57개를 현재 로컬 파일과 UVCS `/main`에서 대조했�
 | `Content/UI/Lobby/VehicleSelection/T_MW_VehiclePreview_InvisiblePilot.uasset` | `cs:61` | 신규 | `187b1799516495f7cf573f4575cdefe18b89393fcb931e90b6d68db56edd3e9d` |
 
 팀원은 UVCS `/main`의 `cs:61`을 기준으로 차량 선택 UI를 받으면 된다. 이 변경 세트는 로딩·경기 HUD를 인계한 `cs:60` 위에 적용된다. `WBP_VehicleSelection_Preview.uasset` 래퍼는 기존 `cs:31` 개정을 사용한다. 이 변경 세트의 InvisiblePilot 관련 파일은 차량 선택용 썸네일 텍스처이며, `BP_MWVehiclePawn_InvisiblePilot.uasset`의 부스터 변경은 보류 중이다. Git 커밋·푸시는 수행하지 않았다. 팀원 PC의 수신 확인은 별도다.
+
+## 팀원 수신 검증
+
+### 1. Git과 UVCS 버전 확인
+
+- Unreal Editor를 닫고 ProjectMW 루트에서 실행한다. Git은 PR #17의 `fix/track-ui-dpi-verification`을 사용한다. 기존 검증·인계 기준은 `c3784bf`이고, 절차를 추가한 문서 커밋이 포함된 브랜치를 받아도 실행 코드는 동일하다. 결과에는 실제 사용한 전체 Git SHA를 남긴다.
+- UVCS `ProjectMW/ProjectMW`의 `/main`을 `cs:61`에 맞춘다. `cs:61`에는 `cs:60`의 에셋도 포함된다. 이미 받은 경우 조회 명령만 실행한다. 다른 버전이라면 UVCS 대기 변경을 확인하고 로컬 작업을 보존한 뒤 `cm update --changeset=cs:61`로 받는다.
+
+```powershell
+git rev-parse HEAD
+cm status --header
+```
+
+### 2. 원본 에셋 9개 SHA-256 대조
+
+에디터에서 에셋을 열거나 저장하기 전에 ProjectMW 루트에서 다음 블록을 실행한다. 대상은 [에셋 인계 목록](../../Reviews/FrontendIntegration/PR_ASSET_HANDOFF.csv)의 `UVCS_CHECKED_IN` 행이다.
+
+```powershell
+$manifest = 'Docs/Reviews/FrontendIntegration/PR_ASSET_HANDOFF.csv'
+$assets = @(Import-Csv -LiteralPath $manifest -Encoding UTF8 |
+    Where-Object { $_.status -eq 'UVCS_CHECKED_IN' })
+
+$results = foreach ($asset in $assets) {
+    $actual = if (Test-Path -LiteralPath $asset.local_path -PathType Leaf) {
+        (Get-FileHash -LiteralPath $asset.local_path -Algorithm SHA256 -ErrorAction Stop).Hash
+    }
+    $result = if (!$actual) {
+        'MISSING'
+    } elseif ($actual -ine $asset.sha256) {
+        'MISMATCH'
+    } else {
+        'OK'
+    }
+    [pscustomobject]@{
+        Result   = $result
+        Path     = $asset.local_path
+        Expected = $asset.sha256
+        Actual   = $actual
+    }
+}
+$results | Format-List
+$matched = @($results | Where-Object Result -eq 'OK').Count
+"$matched/$($assets.Count) SHA-256 일치"
+if ($assets.Count -ne 9 -or $matched -ne 9) {
+    throw '인계 에셋 9개의 경로와 SHA-256을 확인하세요.'
+}
+```
+
+통과 기준은 **`9/9 SHA-256 일치`**다. `MISSING`은 파일 경로, `MISMATCH`는 출력된 기준·실제 해시와 UVCS 개정 및 로컬 수정 여부를 확인한다. 차이가 해결되면 해시를 다시 확인하고 패키징으로 넘어간다.
+
+### 3. Win64 Development 패키지 진입 체크리스트
+
+- [ ] UE 5.8에서 ProjectMW를 열고 **Platforms → Windows → Development → Package Project**로 새 출력 폴더에 패키징했다. 프로젝트의 Pak·IoStore 설정을 사용했고 UAT 로그에 `BUILD SUCCESSFUL` 또는 `ExitCode=0`이 기록됐다.
+- [ ] 새 패키지의 `Windows` 폴더에서 호스트와 참가자를 별도 `MW.exe` 프로세스로 실행했다. 호스트가 설원 방을 만든 뒤 같은 PC의 참가자가 아래 주소로 합류했다. 같은 포트를 다른 세션이 사용 중이면 호스트 포트와 참가자 주소의 포트를 함께 바꾼다.
+
+```powershell
+# 첫 번째 PowerShell 창에서 실행하고 설원 방을 만든다.
+.\MW.exe -MWConnectionLocal -windowed -port=7840 "-abslog=$PWD\PR17-host.log"
+
+# 방을 만든 뒤 두 번째 PowerShell 창에서 실행한다.
+.\MW.exe 127.0.0.1:7840 -MWConnectionLocal -windowed -port=7841 "-abslog=$PWD\PR17-client.log"
+```
+
+- [ ] 두 창에서 준비하고 서로 다른 차량을 선택·확정했다. 로딩이 표시되고, 가림이 걷힌 뒤 호스트와 참가자 모두 설원 `L_Dev_Drive`의 트랙 선택 화면에서 실제로 트랙을 확정했다. 이 단계까지가 패키지 첫 진입 통과다.
+- [ ] 각자 트랙을 실제로 설치했다. 두 차량이 체크무늬 출발선에서 `Racing`에 진입했고, 주행을 시작한 뒤 관찰한 시간 동안 로비나 타이틀로 돌아가지 않았다. 대기판이 표시된 경우 로고와 명단을, 주행 중에는 아이템 슬롯을 확인했다. 대기판이 보이지 않은 실행은 해당 항목을 미관찰로 기록한다.
+- [ ] 호스트의 `ServerTravel`과 각 창에서 `MWArrival covered`와 `MWArrival reveal`이 같은 시도 ID로 기록됐는지 확인했다. 실패 시 어느 창의 어느 단계에서 멈췄는지와 `MWArrival failed`, 이동 실패 또는 관련 에셋 로드 오류를 남겼다.
+
+이 실행은 **팀원 PC의 정상 경로 확인**이다. 기본 이동 제한 45초와 기본 트랙 후보를 사용한다. 테스트용 패킷 지연, 시간 배율 변경, 후보 비우기, 선택 밉 제거는 기존 결함 재현 기록의 조건이다.
+
+### 4. PR에 남길 결과
+
+| 항목 | 기록 |
+|---|---|
+| 환경 | Git 전체 SHA, UVCS 변경 세트, UE 버전, Win64 Development, 참가 프로세스 수 |
+| 에셋 | SHA-256 일치 개수, 불일치 시 경로·기준 및 실제 해시 |
+| 빌드 및 첫 진입 | UAT 로그, 호스트·참가자 각각의 트랙 확정 결과와 캡처, 양쪽 실행 로그 |
+| 주행 | 출발선 캡처, `Racing` 진입, 관찰 시간과 로비 복귀 여부, 대기판·아이템 슬롯 관찰 여부 |
+| 실패 시 | 재현 순서, 해당 창, 마지막 정상 단계, 관련 로그나 캡처 |
+
+팀원 PC의 수신과 패키지 실행 결과는 팀원이 이 절차를 완료한 뒤 채운다.
+
+### UVCS에서 별도 체크인하지 않은 파일
+
+체크인 전 [UVCS 대조표](PR17_UVCS_ASSET_AUDIT.csv)의 PR 인계 목록 57개 중 47개는 기존 개정과 내용이 같았다. 차이가 있거나 누락됐던 10개 중 UI 에셋 9개를 `cs:60`과 `cs:61`로 전달했다. 나머지 한 개는 의도적으로 보류한 InvisiblePilot 차량 BP다. 계기판 `WBP_RaceHUD`와 차량 선택 래퍼 `WBP_VehicleSelection_Preview`는 각각 기존 `cs:59`와 `cs:31` 개정을 사용한다.
+
+UVCS `cs:61` 워크스페이스에서 대기로 표시된 네 경로를 서버 원본과 대조했다.
+
+| 로컬 파일 | 확인 결과와 인계 범위 |
+|---|---|
+| `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset` | 서버에는 `cs:59` 차량 BP가 있다. 로컬 부스터 장착 변경은 UI 검증과 별개이므로 보류했다. 이 값을 팀에 적용할 경우 담당자 확인과 주행 중 부스터 검증을 거쳐 별도 변경 세트로 다룬다. |
+| `Content/UI/Common/Slate/ItemSlotGlass.svg` | UVCS에는 `CH`로 표시되지만 로컬과 서버의 `cs:61` 스냅샷이 SHA-256까지 같다. 이미 전달된 기존 `cs:57` 개정을 사용한다. |
+| `Content/UI/Construction/WBP_TrackSelectionTest.uasset` | 기존 `cs:41` 개정이 서버에 있고 로컬 저장본 해시는 다르다. 확인한 참조는 개발용 `BP_TrackSelectionTestPC`다. 개발맵 UI 변경은 이번 운영 UI 인계 범위 밖에 뒀다. |
+| `Content/Gameplay/Vehicles/Art/SM_MW_InvisiblePilot_DrivingCollision.uasset` | 로컬 전용 파일이며 서버의 `cs:61`에 경로가 없다. 현재 차량 이동·충돌 통합은 기존 박스 충돌체를 사용한다. 복구용 충돌 메시의 도입과 차량 검증은 별도 작업으로 남긴다. |
