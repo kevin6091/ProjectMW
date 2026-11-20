@@ -12,6 +12,7 @@ class UMWInputData;
 class UMWItemComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UNiagaraComponent;
 class UBoxComponent;
 class USceneComponent;
 class UMWVehicleMovementComponent;
@@ -159,6 +160,15 @@ protected:
 	TObjectPtr<USceneComponent> DrivePresentation;
 
 private:
+    // 차량마다 좌우 배기구의 로컬 입자 컴포넌트를 보관한다.
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UNiagaraComponent>> ExhaustEffects;
+
+    bool bExhaustEmitting = false;
+    bool bExhaustLoadFailed = false;
+    void UpdateExhaustEffect();
+    void StopExhaustEffect();
+
     bool bRespawningAtCheckpoint = false;
 
 	friend class UMWVehicleMovementComponent;

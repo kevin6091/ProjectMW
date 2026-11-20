@@ -31,7 +31,7 @@ public class MW : ModuleRules
 			"AssetRegistry", "Renderer", "RenderCore", "RHI", "ApplicationCore",
 			"LevelSequence", "MovieScene",
             "EngineSettings",
-            "MWConnection"
+            "MWConnection", "Niagara"
         });
 		
 		// 온라인 서비스 구현은 MWConnection 내부에 둡니다.
