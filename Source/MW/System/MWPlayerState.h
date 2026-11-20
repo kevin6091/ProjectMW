@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayTagContainer.h"
-#include "MWGameplayTags.h"
+#include "System/MWRoomTypes.h"
 #include "MWPlayerState.generated.h"
 
 class UMWPlayerConstructionComponent;
@@ -53,6 +53,15 @@ public:
 	UFUNCTION(BlueprintPure, Category="MW|Cursor")
 	UMWPlayerCursorComponent* GetCursorComponent() const { return CursorComponent; }
 
+	UFUNCTION(BlueprintPure, Category = "MW|Race")
+	FMWPlayerRoundState GetRoundState() const
+	{
+		return PlayerRound;
+	}
+
+	// 서버 내부에서 사용하는 일반 함수다. RPC가 아니다.
+	void ApplyRoundStateFromServer(const FMWPlayerRoundState& NewState);
+	
 private:
 	// 화면 수명이 끝나면 폐기하는 표시 상태다. CopyProperties로 맵 간 인계하지 않는다.
 	UPROPERTY(VisibleAnywhere, Category="MW|Cursor")
@@ -78,4 +87,9 @@ private:
 	
 	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
 	UMWPlayerConstructionComponent* PlayerConstructionComponent;
+	
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerRound)
+	FMWPlayerRoundState PlayerRound;
+	UFUNCTION()
+	void OnRep_PlayerRound();
 };

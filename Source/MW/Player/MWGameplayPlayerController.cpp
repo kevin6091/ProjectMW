@@ -10,13 +10,16 @@
 #include "Data/MWInputData.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/GameMode/MWGameplayGameMode.h"
+#include "System/MWPlayerState.h"
 #include "System/MWAssetManager.h"
 #include "LogChannel.h"
 #include "MWGameplayTags.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "EnhancedPlayerInput.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "Engine/LevelStreaming.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
@@ -56,6 +59,7 @@ void AMWGameplayPlayerController::SetPawn(APawn* InPawn)
 	Super::SetPawn(InPawn);
 	// 서버의 Possess와 소유 클라이언트의 Pawn 복제 수신 경로를 함께 처리한다.
 	RefreshDrivingInput();
+	ApplyGameplayInputMode();
 }
 
 void AMWGameplayPlayerController::OnRep_PlayerState()
@@ -67,6 +71,9 @@ void AMWGameplayPlayerController::OnRep_PlayerState()
 void AMWGameplayPlayerController::PostSeamlessTravel()
 {
 	Super::PostSeamlessTravel();
+	LastReadyRoundEpoch = 0;
+	LastReadyCourseSessionId = 0;
+	LastReadyCourseRevision = 0;
 	ApplyGameplayInputMode();
 	RefreshDrivingInput();
 }
@@ -159,27 +166,112 @@ void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
 	}
 	PlacementView->Update(DeltaSeconds, Cast<UEnhancedInputComponent>(InputComponent));
 
-	if (GS && GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement)
-	{
-		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
-		// 세션 상태와 설치 Actor 참조는 서로 다른 채널로 도착할 수 있다.
-		if (!Session.bIsOpen && Session.SessionId > LastReadyPlacementSessionId && !Session.PlacedTracks.IsEmpty()
-			&& Algo::AllOf(Session.PlacedTracks, [](const FMWPlacedTrack& Track)
-			{
-				return IsValid(Track.Actor) && Track.Actor->GetActorTransform().Equals(Track.WorldTransform);
-			}))
-		{
-			LastReadyPlacementSessionId = Session.SessionId;
-			ServerConfirmTrackCourseReady(Session.SessionId, Session.CourseRevision);
-		}
-	}
+	TryReportRaceReady();
 }
 
-void AMWGameplayPlayerController::ServerConfirmTrackCourseReady_Implementation(int32 SessionId, int32 CourseRevision)
+bool AMWGameplayPlayerController::IsDrivingInputReady() const
+{
+	const auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn());
+	const auto* EnhancedInput = DrivingInputComponent.Get();
+	const auto* Subsystem = DrivingInputSubsystem.Get();
+	if (!IsLocalController() || !IsValid(Vehicle) || !Vehicle->InputEnabled() || InputVehicle != Vehicle
+		|| !EnhancedInput || EnhancedInput != InputComponent || !Cast<UEnhancedPlayerInput>(PlayerInput)
+		|| !Subsystem || !BoundDrivingInputData || BoundDrivingInputData != Vehicle->GetDrivingInputData()
+		|| !DrivingMappingContext.IsValid() || !Subsystem->HasMappingContext(DrivingMappingContext.Get())
+		|| DrivingBindingHandles.Num() != 12)
+	{
+		return false;
+	}
+	// 바인딩을 외부에서 제거한 경우 저장된 핸들 수만으로 준비 완료라고 판단하지 않는다.
+	return Algo::AllOf(DrivingBindingHandles, [EnhancedInput](uint32 Handle)
+	{
+		return EnhancedInput->GetActionEventBindings().ContainsByPredicate([Handle](const auto& Binding)
+		{
+			return Binding->GetHandle() == Handle;
+		});
+	});
+}
+
+bool AMWGameplayPlayerController::IsLocalRaceReady() const
+{
+	const UWorld* World = GetWorld();
+	const auto* GS = World ? World->GetGameState<AMWGameplayGameState>() : nullptr;
+	const auto* PS = GetPlayerState<AMWPlayerState>();
+	const auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn());
+	if (!IsLocalController() || !HasActorBegunPlay() || !World || !World->AreActorsInitialized()
+		|| World->IsVisibilityRequestPending() || !GS || !PS || PS->IsInactive() || !PS->IsOwnedBy(this)
+		|| !GS->PlayerArray.Contains(PS) || !IsValid(Vehicle) || Vehicle->GetController() != this
+		|| Vehicle->GetPlayerState() != PS || GetViewTarget() != Vehicle || !IsDrivingInputReady())
+	{
+		return false;
+	}
+	for (const ULevelStreaming* Level : World->GetStreamingLevels())
+	{
+		if (Level && Level->ShouldBeVisible() && (!Level->IsLevelLoaded() || !Level->IsLevelVisible()))
+		{
+			return false;
+		}
+	}
+	const FMWGameplayProgress Progress = GS->GetProgress();
+	const FMWPlayerRoundState Round = PS->GetRoundState();
+	if (Progress.Phase != EMWRoomPhase::PreparingRace || Progress.RoundEpoch <= 0
+		|| Round.RoundEpoch != Progress.RoundEpoch || Round.RaceStatus != EMWRaceStatus::Waiting
+		|| !Vehicle->IsReadyForRace(Progress.RoundEpoch))
+	{
+		return false;
+	}
+	const auto* Construction = GS->GetConstructionComponent();
+	if (!Construction)
+	{
+		return false;
+	}
+	if (Progress.CourseSessionId == 0 && Progress.CourseRevision == 0)
+	{
+		const auto& Session = Construction->GetPlacementSession();
+		return Session.SessionId == 0 && !Session.bIsOpen && Session.PlacedTracks.IsEmpty();
+	}
+	return Construction->IsCourseReadyForRace(Progress.CourseSessionId, Progress.CourseRevision);
+}
+
+void AMWGameplayPlayerController::TryReportRaceReady()
+{
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	if (!IsLocalController() || !GS || GS->GetRoomPhase() != EMWRoomPhase::PreparingRace)
+	{
+		return;
+	}
+	if (!IsDrivingInputReady())
+	{
+		const auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn());
+		UMWInputData* Data = IsValid(Vehicle) ? Vehicle->GetDrivingInputData() : nullptr;
+		TArray<FText> Errors;
+		if (Data && Data->ValidateInputData(Errors))
+		{
+			// Pawn보다 로컬 InputComponent/Subsystem이 늦게 준비된 경우 기존 연결 함수를 재사용한다.
+			RefreshDrivingInput();
+		}
+	}
+	if (!IsLocalRaceReady())
+	{
+		return;
+	}
+	const FMWGameplayProgress Progress = GS->GetProgress();
+	if (LastReadyRoundEpoch == Progress.RoundEpoch && LastReadyCourseSessionId == Progress.CourseSessionId
+		&& LastReadyCourseRevision == Progress.CourseRevision)
+	{
+		return;
+	}
+	LastReadyRoundEpoch = Progress.RoundEpoch;
+	LastReadyCourseSessionId = Progress.CourseSessionId;
+	LastReadyCourseRevision = Progress.CourseRevision;
+	ServerReportRaceReady(Progress.RoundEpoch, Progress.CourseSessionId, Progress.CourseRevision);
+}
+
+void AMWGameplayPlayerController::ServerReportRaceReady_Implementation(int32 RoundEpoch, int32 CourseSessionId, int32 CourseRevision)
 {
 	if (auto* Mode = GetWorld()->GetAuthGameMode<AMWGameplayGameMode>())
 	{
-		Mode->ConfirmTrackCourseReady(this, SessionId, CourseRevision);
+		Mode->ReportRaceReady(this, RoundEpoch, CourseSessionId, CourseRevision);
 	}
 }
 
@@ -193,7 +285,7 @@ void AMWGameplayPlayerController::RefreshDrivingInput()
 	UMWInputData* Data = Vehicle ? Vehicle->GetDrivingInputData() : nullptr;
 	if (IsLocalController() && IsValid(Vehicle) && EnhancedInput && Subsystem && Data
 		&& InputVehicle == Vehicle && DrivingInputComponent == EnhancedInput
-		&& DrivingInputSubsystem == Subsystem && BoundDrivingInputData == Data)
+		&& DrivingInputSubsystem == Subsystem && BoundDrivingInputData == Data && IsDrivingInputReady())
 	{
 		return;
 	}
@@ -289,7 +381,7 @@ AMWVehiclePawn* AMWGameplayPlayerController::GetInputVehicle() const
 {
 	AMWVehiclePawn* Vehicle = InputVehicle.Get();
 	return IsLocalController() && Vehicle == GetPawn() && IsValid(Vehicle)
-		&& Vehicle->GetController() == this && Vehicle->InputEnabled()
+		&& Vehicle->GetController() == this && Vehicle->InputEnabled() && Vehicle->CanDrive()
 		? Vehicle : nullptr;
 }
 

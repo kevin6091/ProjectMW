@@ -23,6 +23,12 @@ public:
 	AMWVehiclePawn();
 
 	void SubmitDriveInput(const FMWVehicleDriveInput& NewInput);
+	UFUNCTION(BlueprintPure, Category="MW|Race")
+	bool CanDrive() const;
+	// 상태를 전달받지 않고 현재 서버/복제 상태에서 다시 계산한다. RPC가 아니다.
+	void RefreshDrivePermission();
+	void PrepareForRaceFromServer();
+	bool IsReadyForRace(int32 RoundEpoch) const;
 	const FMWVehicleDriveInput& GetDriveInput() const { return DriveInput; }
 	UMWInputData* GetDrivingInputData() const { return DrivingInputData; }
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
@@ -60,6 +66,7 @@ protected:
 private:
 	friend class UMWVehicleMovementComponent;
 	friend class UMWVehiclePresentationComponent;
+	friend class FMWRaceDriveNetworkTest;
 
 	// 같은 상대에게 닿아 있는 동안, 이전 스냅샷의 속도로 연속 충격을 만들지 않도록 하는 로컬 추정치.
 	struct FPredictedContactMotion
@@ -86,6 +93,7 @@ private:
 	};
 
 	FMWVehicleDriveInput DriveInput;
+	bool bDriveAllowed = false;
 
 	UPROPERTY(Replicated)
 	FMWVehicleDriveSnapshot ServerDriveSnapshot;

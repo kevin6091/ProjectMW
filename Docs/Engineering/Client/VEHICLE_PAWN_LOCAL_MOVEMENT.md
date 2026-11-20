@@ -54,7 +54,7 @@ Pawn의 UnPossessed에서도 저장 입력을 초기화한다.
 Controller의 입력 핸들러는 Pawn의 현재 입력을 읽어 한 항목씩 갱신하므로 텔레포트로 초기화된 가속 입력을 다시 적용하지 않는다.
 TeleportTo 성공 시 Pawn/Movement의 저장 입력과 접지/회전 캐시를 초기화한다.
 텔레포트 자체가 속도를 지우지는 않는다. 체크포인트 복귀에서 정지가 필요하면 StopMovementImmediately를 함께 사용한다.
-EndPlay에서도 입력과 Driving Context를 정리한다. 카운트다운/Phase 허용 조건 통합은 후속 작업이다.
+EndPlay에서도 입력과 Driving Context를 정리한다. 경기 Phase 허용 조건은 아래 2026-11-20 절에 연결했고, 실제 준비 보고·카운트다운 진행은 후속 작업이다.
 
 ## 검증
 
@@ -271,3 +271,37 @@ Movement Tick
 위 속도 상한은 **일반 표시 위치 보정**에 대한 값이다. 실제 충돌 반응과 붙은 두 차량이 공유하는 자기 차량의 서버 보정 좌표 이동은 별도 처리한다. 이 경우 월드 좌표 속력만으로 표시 오류를 판정하지 않고 실제 반응·두 차의 간격을 함께 확인한다. 장기 패킷 손실에서는 일시 정지나 더 오래 걸리는 따라잡기가 남을 수 있으며, 아직 수신하지 못한 상대의 조향·충격까지 알아내는 방식은 아니다.
 
 임시 계측 코드를 제거한 뒤 MWEditor·MW Win64 Development 빌드와 기존 `MW.Vehicle` 자동화 6개를 모두 통과했다. 측정 CSV·로그·계측 컴파일 산출물은 정리하고 조건과 결과만 이 문서에 남긴다.
+
+### 2026-11-20 경기 주행 제어 연결
+
+`AMWVehiclePawn::CanDrive()`가 현재 소유 관계, 유효한 Gameplay GameState/PlayerState, `Racing`, 양쪽의 같은 0보다 큰 RoundEpoch, 개인 `Active`를 함께 검사한다. 클라이언트는 차량 스냅샷의 `bDriveAllowed`와 RoundEpoch도 일치해야 한다. Controller의 `GetInputVehicle`, Pawn의 `SubmitDriveInput`, 서버의 기존 `ServerSubmitDriveMoves`가 같은 조회를 사용한다. 기존 입력 데이터/바인딩 준비와 `InputEnabled` 검사도 Controller에 유지한다.
+
+GameState/PlayerState의 기존 서버 알림과 RepNotify 공통 경로가 Pawn의 `RefreshDrivePermission()`을 호출한다. Pawn 생성·조종 변경에도 확인하며, Movement Tick 시작에서 재확인해 복제 도착 순서를 가정하지 않는다. 이 함수는 전달된 bool을 승인하지 않고 현재 상태에서 다시 계산한다. GameMode의 `EnterPhase` 외에 Phase를 쓰는 경로를 추가하지 않았다.
+
+허용 여부가 바뀔 때만 저장 입력, 선속도, 충돌 Yaw 속도, 미확인 예측 입력/접촉 이력과 잔여 시뮬레이션 시간을 비운다. 서버는 기존 `ResetDriveStream`으로 입력 큐/ACK를 초기화하고 새로운 StreamId를 발급한다. 대기 중 매 Tick 새 스트림을 발급하지 않는다. `StopMovementImmediately`는 이제 충돌 Yaw 속도와 목표 회전도 초기화한다.
+
+잠긴 차량은 주행/중력 계산과 예측 입력 생성을 멈추지만 Box 충돌, Movement Tick, 서버 스냅샷 처리, PresentationTick, 카메라 Tick을 유지한다. Active 차량이 잠긴 차량에 닿으면 기존 월드 충돌로 막히며 대상에 충돌 속도/회전을 부여하지 않는다. 클라이언트에서도 잠긴 상대를 동적 충격 예측에서 제외하고 일반 Box Sweep으로 처리한다. 외부 코드가 임의로 Actor를 이동시키는 것을 막는 기능은 아니다.
+
+`FMWVehicleDriveSnapshot`에 서버 허용 결과 `bDriveAllowed`와 그 경기의 RoundEpoch를 추가했다. 기존 `NetSerialize` 묶음에 포함하므로 위치/StreamId와 별도 허용 RPC를 경쟁시키지 않는다. Pawn의 비복제 `bDriveAllowed`는 전환 감지용 캐시이며 별도 경기 상태 정본이 아니다. 같은 바이너리 버전의 서버/클라이언트가 필요하다.
+
+자유 주행은 GameState의 기존 복제 `GameModeClass`가 `AMWDriveTestGameMode` 계열일 때만 명시적으로 허용한다. Gameplay 상태가 없다는 이유로 허용하지 않는다. 기존 순수 이동 테스트 월드에도 해당 시험 모드를 명시했다. 소유권 없는 시험용 차량의 기존 충돌/낙하 검사도 유지한다.
+
+추가 자동화 `MW.Gameplay.DriveControl`은 허용 조건·정지/재허용·잠긴 차량 충돌, 서버 입력 처리와 이전 스트림 거절, 소유자 예측 정리, 스냅샷 직렬화를 검사한다. 엔진 테스트 연결과 직접 호출로 네트워크 처리 함수를 검사하며 실제 패킷 전달·복수 창의 시각 검증과는 구분한다. 실제 준비 보고·3초 카운트다운, 주행 제한시간·결과 집계는 이번 단계에 포함하지 않는다.
+
+최종 UE 5.8.4 Win64 Development의 MWEditor·MW 빌드 성공. `MW.Gameplay.DriveControl` 3개, 기존 `MW.Vehicle` 6개, `MW.Gameplay.PlayerRound` 2개, `MW.Construction.PreviewMatchesSnap` 1개로 총 12/12 성공(테스트 오류·경고 0). 결과는 `Saved/Automation/DriveControlFinal/index.json`, 빌드/실행 로그는 `Saved/Logs/DriveControl*Final.log`에 있다. 이번에는 실제 다중 프로세스·3인 PIE·Enhanced Input 키보드·렌더링 화면·Cook/패키징 검증을 수행하지 않았다.
+
+### 2026-11-20 출발 준비와 카운트다운 연결
+
+현재 흐름은 트랙 확정 → `PreparingRace`의 차량 생성/정지/Possess → 소유 클라이언트 전원 준비 보고 → 기본 3초 `Countdown` → `Racing`이다. 건설을 생략하는 기존 고정 코스 경로도 같은 준비·카운트다운을 사용한다. TrackPlacement의 코스 ACK 대기와 PrepareRace 끝의 즉시 Racing 전환을 제거했다.
+
+`Progress`에 목표 `CourseSessionId/CourseRevision`을 추가하고 Phase/Epoch/종료 시각과 함께 NetSerialize한다. 0/0은 서버가 건설 생략을 승인한 고정 코스이며, 동적 코스 데이터가 아직 없다는 뜻으로 사용하지 않는다. 기존 준비 RPC를 `ServerReportRaceReady(RoundEpoch, CourseSessionId, CourseRevision)`로 바꿨다. 호스트도 같은 경로로 보고한다.
+
+Controller의 `IsLocalRaceReady`는 현재 소유 관계와 Waiting Epoch, 코스 Actor/확정 Transform/필수 충돌의 등록·물리 상태, 서버 시작 위치 적용, 입력 바인딩/Mapping Context/Enhanced PlayerInput, 차량 카메라와 표시 예정 스트리밍 레벨을 확인한다. 준비는 조작 허용과 별개이며 이 시점 `CanDrive`는 false다. 입력 준비가 늦으면 기존 연결 함수를 재사용하고 전체 키별 한 번 보고한다. `FMWPlacedTrack.bRequiresCollision`로 서버에서 실제 충돌을 가진 조각만 충돌 준비를 요구해 비충돌 종료 캡도 지원한다.
+
+Pawn의 `PrepareForRaceFromServer`는 이미 정지 중인 차량도 입력·속도를 비우고 현재 Epoch의 시작 스냅샷과 새 StreamId를 공개한다. `IsReadyForRace`는 이동 데이터/충돌/표시·카메라 구성, 시작 스냅샷과 실제 위치 일치를 조회한다. Waiting 상태에서 새 Epoch 스냅샷을 받기 전에 준비를 보고하지 않는다.
+
+GameMode는 서버 전용 준비 집합 하나, 타이머 하나와 기존 `Progress.PhaseEndServerTime`으로 진행한다. 준비 제한시간 기본 30초와 Countdown 기본 3초는 GameMode 기본 프로퍼티다. 보고의 소유권/명단/Epoch/코스/기한/서버 차량 상태를 검증하고 전원 완료면 EnterPhase(Countdown)을 호출한다. Countdown 동안 집합을 보존하며 기한 도달 시 다시 검증하고 EnterPhase(Racing)을 호출한다. 중복 보고는 시각을 다시 시작하지 않는다. 준비 시간초과·출발 전 이탈·Countdown 중 코스 변경은 Failed로 처리하며 과거 타이머는 Phase/Epoch/키/기한 불일치 시 무시한다.
+
+`GameState.GetPhaseSecondsRemaining()`은 서버 동기 시각으로 남은 시간을 계산하는 BlueprintPure 조회다. 별도의 카운트다운 숫자 위젯은 추가하지 않았다. 기존 Phase/PlayerRound와 ② 경기 제어가 준비·카운트다운 동안 잠금을 유지하고 Racing에서만 새 주행 입력을 허용한다. 주행 제한시간·결과·점수·복귀는 후속 단계다.
+
+최종 MWEditor·MW Win64 Development 빌드 성공. `MW.Gameplay.RaceStart` 4개와 기존 관련 12개로 총 16/16 성공(테스트 오류·경고 0). 새 검사는 실제 임시 월드의 Gameplay GameMode와 3명 시작 명단, 엔진 타이머·LocalPlayer·Enhanced Input 구성으로 전원 대기/3초 전환, 코스·충돌·입력·카메라·스트리밍 준비, 중복·이전 키, 시간초과·이탈·코스 변경·과거 타이머, Progress 직렬화를 확인한다. 결과는 `Saved/Automation/RaceStartCompleted/index.json`, 실행 로그는 `Saved/Logs/RaceStartAutomationCompleted.log`, 빌드 로그는 `Saved/Logs/RaceStartEditorBuildFinal.log`와 `RaceStartGameBuildFinal.log`다. 테스트 구성의 LocalPlayer Outer/월드 EndPlay/스트리밍 요청 플래그 오류를 수정한 최종 결과다. 실제 소켓 패킷·3인 PIE/독립 프로세스·키보드 입력·렌더링 화면·Cook/패키징 검증은 수행하지 않았다.

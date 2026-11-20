@@ -24,6 +24,8 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
 	FMWGameplayProgress GetProgress() const { return Progress; }
+	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
+	double GetPhaseSecondsRemaining() const;
 	void ApplyProgressFromServer(const FMWGameplayProgress& NewProgress);
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
@@ -34,7 +36,6 @@ public:
 
 	
 	void ApplyRoomSettingsFromServer(const FMWRoomSettings& Settings);
-	void SetRoomPhaseFromServer(EMWRoomPhase Phase);
 	
 	UPROPERTY(BlueprintAssignable, Category = "MW|Gameplay")
 	FMWGameplayStateChanged OnGameplayStateChanged;

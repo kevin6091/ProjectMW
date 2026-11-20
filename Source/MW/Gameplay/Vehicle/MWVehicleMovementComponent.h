@@ -30,6 +30,7 @@ public:
 
 	virtual float GetMaxSpeed() const override;
 	virtual void OnTeleported() override;
+	virtual void StopMovementImmediately() override;
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
 	bool IsGrounded() const { return bGrounded; }

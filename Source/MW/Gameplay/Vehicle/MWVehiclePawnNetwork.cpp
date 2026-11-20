@@ -10,6 +10,7 @@
 #include "Misc/ScopeExit.h"
 #include "Net/UnrealNetwork.h"
 #include "LogChannel.h"
+#include "System/GameState/MWGameplayGameState.h"
 
 namespace
 {
@@ -84,7 +85,7 @@ void AMWVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 void AMWVehiclePawn::ResetDriveStream()
 {
 	ResetDrivePresentation();
-	if (!HasAuthority() || GetNetMode() == NM_Standalone)
+	if (!HasAuthority())
 	{
 		return;
 	}
@@ -105,9 +106,14 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 {
 	FMWVehicleDriveSnapshot Snapshot = ServerDriveSnapshot;
 	VehicleMovement->CaptureDriveSnapshot(Snapshot);
+	Snapshot.bDriveAllowed = bDriveAllowed;
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	Snapshot.RoundEpoch = GS ? GS->GetProgress().RoundEpoch : 0;
 
 	if (!bNewStream
 		&& Snapshot.LastProcessedMoveId == LastProcessedMoveId
+		&& Snapshot.bDriveAllowed == ServerDriveSnapshot.bDriveAllowed
+		&& Snapshot.RoundEpoch == ServerDriveSnapshot.RoundEpoch
 		&& Snapshot.Location == ServerDriveSnapshot.Location
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
@@ -164,7 +170,8 @@ void AMWVehiclePawn::TickNetworkDrive(float DeltaTime)
 
 void AMWVehiclePawn::ServerSubmitDriveMoves_Implementation(uint32 StreamId, const TArray<FMWVehicleMoveCommand>& Moves)
 {
-	if (StreamId != ServerDriveSnapshot.StreamId || StreamId == 0 || !GetNetConnection()
+	RefreshDrivePermission();
+	if (!CanDrive() || StreamId != ServerDriveSnapshot.StreamId || StreamId == 0 || !GetNetConnection()
 		|| !IsPlayerControlled() || IsLocallyControlled() || Moves.Num() > MaxMovesPerPacket)
 	{
 		return;
@@ -186,6 +193,15 @@ void AMWVehiclePawn::ServerSubmitDriveMoves_Implementation(uint32 StreamId, cons
 
 void AMWVehiclePawn::TickAuthorityDrive(float DeltaTime)
 {
+	if (!CanDrive())
+	{
+		// Tick과 스냅샷 경로는 유지한다. 중력·관성·다른 차량의 충격만 차단한다.
+		VehicleMovement->ResetDriveInput();
+		VehicleMovement->StopMovementImmediately();
+		DriveStepTime = 0.f;
+		PublishDriveSnapshot();
+		return;
+	}
 	const bool bRemoteDriver = IsPlayerControlled() && !IsLocallyControlled();
 	if (bRemoteDriver && bHadRemoteInput)
 	{
@@ -258,7 +274,8 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 	{
 		AMWVehiclePawn* Other = *It;
 		const UBoxComponent* OtherBox = Other->CollisionRoot;
-		if (Other != this && Other->ServerDriveSnapshot.StreamId != 0 && Other->VehicleMovement->bDriveConfigReady
+		if (Other != this && Other->ServerDriveSnapshot.StreamId != 0 && Other->ServerDriveSnapshot.bDriveAllowed
+			&& Other->VehicleMovement->bDriveConfigReady
 			&& OtherBox->IsQueryCollisionEnabled() && !CollisionRoot->GetMoveIgnoreActors().Contains(Other)
 			&& CollisionRoot->GetCollisionResponseToChannel(OtherBox->GetCollisionObjectType()) == ECR_Block
 			&& OtherBox->GetCollisionResponseToChannel(CollisionRoot->GetCollisionObjectType()) == ECR_Block)
@@ -293,6 +310,14 @@ void AMWVehiclePawn::TickPredictedDrive(float DeltaTime)
 	{
 		ReconcilePredictedDrive();
 		AppliedRevision = ServerDriveSnapshot.Revision;
+	}
+	if (!CanDrive())
+	{
+		// 정지 중에도 최신 서버 위치는 받되 예측·입력 송신·과거 입력 재실행은 하지 않는다.
+		VehicleMovement->StopMovementImmediately();
+		DriveStepTime = 0.f;
+		SendTime = 0.f;
+		return;
 	}
 
 	DriveStepTime = FMath::Min(DriveStepTime + DeltaTime, MaxDriveStepTime);
@@ -574,6 +599,10 @@ void AMWVehiclePawn::SmoothDrivePresentation(float DeltaTime)
 FTransform AMWVehiclePawn::GetLocalDrivePresentation() const
 {
 	const FTransform Current = CollisionRoot->GetComponentTransform();
+	if (!CanDrive())
+	{
+		return Current;
+	}
 	// 과거 화면을 한 스텝 늦게 재생하지 않고, 계산 뒤 남은 8.33ms 미만의 시간만 현재까지 추정한다.
 	const float Remainder = FMath::Clamp(DriveStepTime, 0.f, DriveStep);
 	FRotator Rotation = Current.Rotator();
@@ -631,6 +660,11 @@ bool AMWVehiclePawn::GetContactPrediction(const AMWVehiclePawn* Other, double Se
 		return false;
 	}
 	const FMWVehicleDriveSnapshot& Snapshot = Other->ServerDriveSnapshot;
+	if (HasAuthority() ? !Other->CanDrive() : !Snapshot.bDriveAllowed)
+	{
+		// 잠긴 차량은 일반 Box Sweep의 움직이지 않는 장애물로 처리한다.
+		return false;
+	}
 	OutContact.Vehicle = FObjectKey(Other);
 	OutContact.StreamId = Snapshot.StreamId;
 	OutContact.Revision = Snapshot.Revision;

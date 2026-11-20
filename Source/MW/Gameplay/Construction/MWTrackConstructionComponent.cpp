@@ -163,7 +163,7 @@ void UMWTrackConstructionComponent::OnRep_SelectionSession()
 	OnSelectionSessionChanged.Broadcast();
 }
 
-bool UMWTrackConstructionComponent::AreAllSelectionsConfirmed() const
+bool UMWTrackConstructionComponent::IsAllSelectionsConfirmed() const
 {
 	if (!SelectionSession.bIsOpen || Participants.IsEmpty())
 	{
@@ -263,9 +263,7 @@ void UMWTrackConstructionComponent::UpdateCursor(APlayerController* Requester,
 	}
 }
 
-FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
-    APlayerController* Requester, int32 SessionId, int32 Revision,
-    int32 OfferId, int32 RequestId)
+FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId, int32 RequestId)
 {
 	FMWTrackSelectionReply Reply;
 	Reply.SelectionSessionId = SessionId;
@@ -331,9 +329,9 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 	if (Reply.bAccepted && bApplySelection)
 	{
 		Player->ApplySelectionForServer(Next);
-		if (AreAllSelectionsConfirmed())
+		if (IsAllSelectionsConfirmed())
 		{
-			OnAllSelectionsConfirmed.Broadcast();
+			OnAllSelectionsConfirmed.Broadcast(SelectionSession.SelectionSessionId);
 		}
 	}
 	return Reply;

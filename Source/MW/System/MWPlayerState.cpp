@@ -3,6 +3,7 @@
 #include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 
 AMWPlayerState::AMWPlayerState()
 {
@@ -26,10 +27,12 @@ void AMWPlayerState::CopyProperties(APlayerState* PlayerState)
 void AMWPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(AMWPlayerState, bRoomHost);
 	DOREPLIFETIME(AMWPlayerState, bReady);
-	DOREPLIFETIME(AMWPlayerState, LobbyMemberId);	
+	DOREPLIFETIME(AMWPlayerState, LobbyMemberId);
 	DOREPLIFETIME(AMWPlayerState, VehicleAssetID);
+	DOREPLIFETIME(AMWPlayerState, PlayerRound);
 }
 
 void AMWPlayerState::SetLobbyMemberIdFromServer(int32 Id)
@@ -100,5 +103,32 @@ void AMWPlayerState::OnRep_UniqueId()
 // 로비나 주행 화면을 직접 찾지 않습니다. 필요한 로컬 표시 객체가 이 알림을 구독합니다.
 void AMWPlayerState::NotifyPlayerStateChanged()
 {
+	if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()))
+	{
+		Vehicle->RefreshDrivePermission();
+	}
     OnPlayerStateChanged.Broadcast();
+}
+
+void AMWPlayerState::ApplyRoundStateFromServer(const FMWPlayerRoundState& NewState)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (PlayerRound == NewState)
+	{
+		return;
+	}
+
+	PlayerRound = NewState;
+
+	ForceNetUpdate();
+	NotifyPlayerStateChanged();
+}
+
+void AMWPlayerState::OnRep_PlayerRound()
+{
+	NotifyPlayerStateChanged();
 }

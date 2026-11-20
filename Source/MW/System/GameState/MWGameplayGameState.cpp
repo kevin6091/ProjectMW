@@ -6,6 +6,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 #include "LogChannel.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "EngineUtils.h"
 
 AMWGameplayGameState::AMWGameplayGameState()
 {
@@ -33,6 +35,12 @@ void AMWGameplayGameState::ApplyProgressFromServer(const FMWGameplayProgress& Ne
 	NotifyRoomStateChanged();
 }
 
+double AMWGameplayGameState::GetPhaseSecondsRemaining() const
+{
+	return Progress.PhaseEndServerTime > 0.0
+		? FMath::Max(0.0, Progress.PhaseEndServerTime - GetServerWorldTimeSeconds()) : 0.0;
+}
+
 void AMWGameplayGameState::OnRep_Progress()
 {
 	NotifyRoomStateChanged();
@@ -47,21 +55,6 @@ void AMWGameplayGameState::ApplyRoomSettingsFromServer(const FMWRoomSettings& Se
 	NotifyRoomStateChanged();
 }
 
-void AMWGameplayGameState::SetRoomPhaseFromServer(EMWRoomPhase Phase)
-{
-	if (!HasAuthority() || Progress.Phase == Phase)
-	{
-		return;
-	}
-	
-	FMWGameplayProgress NewProgress = Progress;
-
-	NewProgress.Phase = Phase;
-	NewProgress.PhaseEndServerTime = 0.0;
-
-	ApplyProgressFromServer(NewProgress);
-}
-
 void AMWGameplayGameState::OnRep_RoomState()
 {
 	NotifyRoomStateChanged();
@@ -69,17 +62,18 @@ void AMWGameplayGameState::OnRep_RoomState()
 
 void AMWGameplayGameState::NotifyRoomStateChanged()
 {
-	UE_LOG(
-	   LogMWServer,
-	   Log,
-	   TEXT("[MWGameplayState] World=%s Authority=%d Phase=%s Round=%d Epoch=%d End=%.2f Mode=%s"),
+	for (TActorIterator<AMWVehiclePawn> It(GetWorld()); It; ++It)
+	{
+		It->RefreshDrivePermission();
+	}
+	UE_LOG(LogMWServer, Log, TEXT("[MWGameplayState] World=%s Authority=%d Phase=%s Round=%d Epoch=%d End=%.2f Mode=%s Course=%d/%d"),
 	   *GetNameSafe(GetWorld()),
 	   HasAuthority() ? 1 : 0,
 	   *UEnum::GetValueAsString(Progress.Phase),
 	   Progress.RoundIndex,
 	   Progress.RoundEpoch,
 	   Progress.PhaseEndServerTime,
-	   *UEnum::GetValueAsString(Progress.RaceMode));
+	   *UEnum::GetValueAsString(Progress.RaceMode), Progress.CourseSessionId, Progress.CourseRevision);
 
 	OnGameplayStateChanged.Broadcast();
 }

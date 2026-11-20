@@ -12,6 +12,12 @@ class UMWPlayerConstructionComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMWTrackConstructionSessionChanged);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FMWAllSelectionsConfirmed, int32);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMWPlacementFinished, int32, int32);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMWConstructionFailed, int32, const FString&);
+
 UCLASS(BlueprintType, ClassGroup=(MW))
 class MW_API UMWTrackConstructionComponent : public UActorComponent
 {
@@ -36,8 +42,9 @@ public:
 		FText& OutError);
 	void EndSelection();
 	// Hover와 커서 갱신에는 호출되지 않는 서버 진행 이벤트다.
-	FSimpleMulticastDelegate OnAllSelectionsConfirmed;
-	FSimpleMulticastDelegate OnPlacementFinished;
+	FMWAllSelectionsConfirmed OnAllSelectionsConfirmed;
+	FMWPlacementFinished OnPlacementFinished;
+	FMWConstructionFailed OnConstructionFailed;
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
 	void UpdateHover(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId);
@@ -56,6 +63,8 @@ public:
 	EMWTrackPlacementResult PlaceTrack(APlayerController* Requester, int32 SessionId, int32 CourseRevision,
 		const FMWTrackPlacementIntent& Intent);
 	void RemovePlacementPlayer(AMWPlayerState* Player);
+	bool IsAllSelectionsConfirmed() const;
+	bool IsCourseReadyForRace(int32 SessionId, int32 CourseRevision) const;
 	
 private:
 	struct FPreparedTrack
@@ -94,7 +103,6 @@ private:
 	void OnRep_SelectionSession();
 
 	bool HasServerAuthority() const;
-	bool AreAllSelectionsConfirmed() const;
 	bool ValidateRequest(APlayerController* Requester,
 		int32 SessionId, int32 Revision, int32 OfferId, bool bAllowNone,
 		UMWPlayerConstructionComponent*& OutPlayer,

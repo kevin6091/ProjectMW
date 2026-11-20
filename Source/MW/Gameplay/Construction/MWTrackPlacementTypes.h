@@ -55,6 +55,8 @@ struct FMWPlacedTrack
 	UPROPERTY(BlueprintReadOnly) FTransform WorldTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) FMWTrackEndId ConnectedTo;
 	UPROPERTY(BlueprintReadOnly) int32 ConnectedPortIndex = INDEX_NONE;
+	// 서버에서 실제 질의 충돌을 가진 조각만 충돌 준비를 요구한다. 장식용 종료 캡도 보존한다.
+	UPROPERTY(BlueprintReadOnly) bool bRequiresCollision = true;
 };
 
 USTRUCT(BlueprintType)

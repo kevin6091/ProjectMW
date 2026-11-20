@@ -204,9 +204,15 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		return;
 	}
 
+	AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	if (Vehicle)
+	{
+		// 복제 도착 순서나 늦은 소유권 연결도 다음 이동 계산 전에 다시 확인한다.
+		Vehicle->RefreshDrivePermission();
+	}
 	if (GetNetMode() != NM_Standalone)
 	{
-		if (AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner))
+		if (Vehicle)
 		{
 			Vehicle->TickNetworkDrive(DeltaTime);
 			return;
@@ -215,6 +221,12 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 		{
 			return;
 		}
+	}
+	if (Vehicle && !Vehicle->CanDrive())
+	{
+		ResetDriveInput();
+		StopMovementImmediately();
+		return;
 	}
 
 	ConsumeInputVector();
@@ -367,6 +379,13 @@ void UMWVehicleMovementComponent::ResetDriveInput()
 {
 	DriveInput = FMWVehicleDriveInput{};
 	ConsumeInputVector();
+}
+
+void UMWVehicleMovementComponent::StopMovementImmediately()
+{
+	Super::StopMovementImmediately();
+	ImpactYawRate = 0.f;
+	TargetRotation = UpdatedComponent ? UpdatedComponent->GetComponentQuat() : FQuat::Identity;
 }
 
 void UMWVehicleMovementComponent::OnTeleported()
@@ -929,7 +948,7 @@ bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit
 
 	AMWVehiclePawn* OwnPawn = Cast<AMWVehiclePawn>(PawnOwner);
 	AMWVehiclePawn* OtherPawn = Cast<AMWVehiclePawn>(Hit.GetActor());
-	if (!OwnPawn || !IsValid(OtherPawn) || OtherPawn == OwnPawn)
+	if (!OwnPawn || !IsValid(OtherPawn) || OtherPawn == OwnPawn || !OwnPawn->CanDrive() || !OtherPawn->CanDrive())
 	{
 		return false;
 	}

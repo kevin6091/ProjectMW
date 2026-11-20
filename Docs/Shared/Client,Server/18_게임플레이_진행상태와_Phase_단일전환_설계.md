@@ -1,10 +1,12 @@
 # 게임플레이 진행 상태와 Phase 단일 전환 설계
 
-- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.0
+- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.1
 - **작성:** 2026-11-12 / Client + Server
 - **기준:** fix/Network-Prediction, HEAD 772d2e0, 조사 시작 시 작업 트리 깨끗함
 - **엔진:** 설치 UE 5.8.4 / CL 58902052, MW.uproject의 EngineAssociation은 5.8
-- **상태:** 구현 전 설계. 이번 작업은 이 문서와 문서 연결만 작성하며 Runtime 소스·에셋·설정을 수정하지 않는다.
+- **상태:** 2026-11-20 `Server/GameProgress`에서 ① 개인 상태, ② 경기 제어, ③ 출발 준비·카운트다운을 구현했다. 이후 결과·점수·복귀·매치 완성은 설계 단계다. 아래 772d2e0의 출발점·미구현 표기는 초안 작성 당시의 기록이다.
+
+현재 구현은 사용자의 작은 구조 요구에 따라 검증된 완료 콜백/RPC/타이머에서 곧바로 `EnterPhase`를 호출한다. 초안의 `RequestFlowUpdate`/`TryAdvanceGameplay` 예약 계층과 GameMode의 완료 세션 복사본은 도입하지 않았다. 이후 절에 남은 해당 이름은 초안 제안이며 현재 구현 API가 아니다.
 
 ## 1. 목적과 적용 범위
 
@@ -13,8 +15,7 @@
 ```text
 완료 이벤트 / 소유 Controller RPC / 타이머 / 참가자 이탈
  → 검증 및 서버 상태 기록
- → RequestFlowUpdate: 공통 진행 검사 한 번 예약
- → TryAdvanceGameplay: 현재 단계의 조건 판단
+ → 현재 Phase/Epoch/요청 키/기한 확인
  → EnterPhase: 단계 전환 실행
  → GameState 저장·복제 및 로컬 표시 갱신
 ```
@@ -390,9 +391,9 @@ ServerReportRaceReady(RoundEpoch, CourseSessionId, CourseRevision);
 ```
 
 - 이름은 제안이며 실제 변경 때 기존 호출자·수신자·BP 노출을 함께 갱신한다.
-- 서버가 예상 키를 고정하고 준비 집합을 비운 뒤 PreparingRace를 공개한다.
+- 서버가 `Progress.CourseSessionId/CourseRevision`에 예상 키를 고정하고 준비 집합을 비운 뒤 PreparingRace를 공개한다. 별도의 GameMode 완료 세션 복사본은 없다.
 - 클라이언트는 Progress와 자신의 PlayerRound가 같은 Epoch이고 확정 코스/개인 상태가 준비되면 한 번 보고한다.
-- 서버는 소유 Controller/참가자/Phase/키/기한을 검사하고 집합에 추가한 뒤 RequestFlowUpdate를 호출한다.
+- 서버는 소유 Controller/참가자/Phase/키/기한과 서버의 코스·차량 상태를 검사하고 집합에 추가한다. 전원 완료면 직접 `EnterPhase(Countdown)`을 호출한다.
 - 호스트도 로컬 Controller의 동일 조건과 RPC 진입 경로를 사용한다.
 - 현재 LastReadyPlacementSessionId를 Epoch·SessionId·Revision 전체 키로 바꾼다. 서든데스는 같은 코스라도 새 Epoch이므로 다시 보고해야 한다.
 - 로컬 보고 키는 Controller 객체 수명에 맞춰 관리하고 새 키의 준비 완료 전에는 완료로 기록하지 않는다.
@@ -404,13 +405,13 @@ ServerReportRaceReady(RoundEpoch, CourseSessionId, CourseRevision);
 3. 자기 Pawn을 수신했고 Controller 소유 연결이 맞다.
 4. 이동 데이터 검증·입력 바인딩·카메라 연결이 끝났다. 이때 조작 허용은 아직 false다.
 
-현재 이 조건의 완전한 조회 API는 없다. Pawn/Controller에 읽기 전용 준비 조회를 제공하는 작업이 필요하다. Widget 애니메이션 종료나 로비 bReady로 대체하지 않는다.
+현재 조회는 `Construction.IsCourseReadyForRace`, `Pawn.IsReadyForRace`, `Controller.IsLocalRaceReady`로 구현했다. `FMWPlacedTrack.bRequiresCollision`은 서버 공개 시 실제 질의 충돌 유무를 기록해 장식용 종료 캡에 충돌을 강제하지 않는다. 필요한 충돌의 등록·물리 상태, 서버 시작 위치 적용, 입력 바인딩·매핑·카메라와 표시 예정 스트리밍 레벨의 로드/표시를 확인한다. Widget 애니메이션 종료나 로비 bReady로 대체하지 않는다.
 
 코스/요소 상태는 각 기존 소유자가 원본을 유지한다. 요소의 확정 Actor 목록과 준비 식별자는 요소 배치 기능의 계약으로 추가하고 트랙 조각 수와 섞지 않는다. 입력·카메라·Actor 수신 순서를 가정하지 않고 준비 관련 변경 시 재평가한다. 현행 Controller Tick의 재평가를 먼저 보존할 수 있으며 이벤트 중심 최적화는 실제 준비 신호를 확보한 뒤 진행한다.
 
 요소 목록은 현재 Epoch의 세션이 확정됐다는 상태와 함께 확인한다. 아직 요소 정보를 받지 못한 빈 목록을 전원 스킵 완료로 해석하지 않는다. PreparingRace에서 코스/요소를 동결한 뒤에는 설치를 추가하지 않으므로 준비 키의 의미가 대기 도중 바뀌지 않는다.
 
-기존 30초 코스 수신 타이머는 출발 준비 제한시간 설정으로 이전·확장한다. 30초는 현행 값이며 최종 밸런스/UX 확정값으로 보장하지 않는다. 준비 시간초과는 새 LoadingFailed Phase 없이 Failed 사유로 처리한다.
+기존 30초 코스 수신 타이머를 출발 준비 제한시간으로 이전했다. GameMode의 `RacePreparationTimeoutSeconds=30`, `CountdownSeconds=3`을 기본값으로 사용하며 기존 BP 기본값에서 조정할 수 있다. 타이머 하나와 `Progress.PhaseEndServerTime`을 두 Phase에서 재사용한다. 준비 시간초과·출발 전 시작 참가자 이탈은 Failed로 처리한다. 카운트다운 만료 시 전원·코스·차량을 재검증하고 `EnterPhase(Racing)`으로 전환한다. 표시용 남은 시간은 `GameState.GetPhaseSecondsRemaining()`으로 조회한다.
 
 ## 8. 체크포인트·점수·복귀·결과
 

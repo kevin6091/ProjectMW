@@ -8,6 +8,13 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/GameStateBase.h"
+#include "System/MWDriveTestGameMode.h"
+#include "System/GameState/MWGameplayGameState.h"
+#include "System/MWPlayerState.h"
+#include "Engine/NetConnection.h"
+#include "Serialization/MemoryReader.h"
+#include "Serialization/MemoryWriter.h"
 #include "UObject/UnrealType.h"
 #include <limits>
 
@@ -33,6 +40,9 @@ struct FScene
 	{
 		World = UWorld::CreateWorld(EWorldType::Game, false);
 		GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
+		AGameStateBase* TestState = World->SpawnActor<AGameStateBase>();
+		TestState->GameModeClass = AMWDriveTestGameMode::StaticClass();
+		World->SetGameState(TestState);
 		Floor = AddBox(FVector(0, 0, -50), FVector(30000, 30000, 50));
 		Vehicle = World->SpawnActor<AMWVehiclePawn>(FVector(0, 0, 31), FRotator::ZeroRotator);
 		Movement = CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent());
@@ -90,6 +100,19 @@ struct FScene
 		{
 			Movement->TickComponent(FrameTime, LEVELTICK_All, nullptr);
 		}
+	}
+
+	AMWGameplayGameState* UseRaceRules()
+	{
+		auto* State = World->SpawnActor<AMWGameplayGameState>();
+		World->SetGameState(State);
+		auto* Player = World->SpawnActor<AMWPlayerState>();
+		Player->SetOwner(Controller);
+		Controller->PlayerState = Player;
+		Controller->Possess(Vehicle);
+		Vehicle->SetPlayerState(Player);
+		Vehicle->RefreshDrivePermission();
+		return State;
 	}
 };
 }
@@ -307,6 +330,223 @@ bool FMWDriveFrameRateTest::RunTest(const FString& Parameters)
 	Scene.Vehicle->UnPossessed();
 	Scene.Step(0.2f);
 	TestTrue(TEXT("Unpossess clears stored input"), Scene.Movement->Velocity.IsNearlyZero());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWRaceDrivePermissionTest, "MW.Gameplay.DriveControl.PermissionAndHold",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWRaceDrivePermissionTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	TestTrue(TEXT("Explicit DriveTest mode retains free driving"), Scene.Vehicle->CanDrive());
+	Scene.World->SetGameState(nullptr);
+	TestFalse(TEXT("Missing GameState never grants production driving"), Scene.Vehicle->CanDrive());
+	auto* State = Scene.UseRaceRules();
+	auto* Player = Scene.Vehicle->GetPlayerState<AMWPlayerState>();
+	FMWGameplayProgress Progress;
+	Progress.Phase = EMWRoomPhase::Racing;
+	State->ApplyProgressFromServer(Progress);
+	FMWPlayerRoundState Round;
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Player->ApplyRoundStateFromServer(Round);
+	TestFalse(TEXT("Default epoch zero cannot start a race"), Scene.Vehicle->CanDrive());
+	Progress.RoundIndex = 1;
+	Progress.RoundEpoch = 1;
+	State->ApplyProgressFromServer(Progress);
+	TestFalse(TEXT("An old personal epoch cannot drive"), Scene.Vehicle->CanDrive());
+	Round.RoundEpoch = 1;
+	Round.RaceStatus = EMWRaceStatus::Waiting;
+	Player->ApplyRoundStateFromServer(Round);
+	TestFalse(TEXT("Waiting cannot drive in Racing"), Scene.Vehicle->CanDrive());
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Player->ApplyRoundStateFromServer(Round);
+	TestTrue(TEXT("Matching nonzero epoch and Active enable driving"), Scene.Vehicle->CanDrive());
+	Scene.Input(1, 0, 0.5f, true);
+	Scene.Step(0.3f);
+	TestTrue(TEXT("Allowed input moves the vehicle"), Scene.Movement->Velocity.Size() > 100);
+
+	for (const EMWRoomPhase Phase : {EMWRoomPhase::PreparingRace, EMWRoomPhase::Countdown,
+		EMWRoomPhase::RoundResults, EMWRoomPhase::MatchResults, EMWRoomPhase::Failed})
+	{
+		Progress.Phase = Phase;
+		State->ApplyProgressFromServer(Progress);
+		const FTransform Held = Scene.Vehicle->GetActorTransform();
+		Scene.Movement->Velocity = FVector(500, 400, -300);
+		// Movement의 공개 입력 API를 우회해도 경기 잠금을 우회할 수 없다.
+		FMWVehicleDriveInput Input;
+		Input.Throttle = 1;
+		Input.Steering = 1;
+		Scene.Movement->SetDriveInput(Input);
+		Scene.Input(1, 0, 1, true);
+		Scene.Step(0.2f);
+		TestFalse(TEXT("Only Racing grants permission"), Scene.Vehicle->CanDrive());
+		TestTrue(TEXT("Held vehicle has no linear velocity"), Scene.Movement->Velocity.IsZero());
+		TestTrue(TEXT("Held vehicle neither translates nor rotates"), Held.Equals(Scene.Vehicle->GetActorTransform(), 0.001));
+		TestTrue(TEXT("Denied Pawn input is cleared"), Scene.Vehicle->GetDriveInput().Throttle == 0
+			&& !Scene.Vehicle->GetDriveInput().bDriftRequested);
+		Progress.Phase = EMWRoomPhase::Racing;
+		State->ApplyProgressFromServer(Progress);
+		Scene.Step(0.1f);
+		TestTrue(TEXT("Resume does not restore the old throttle"), Scene.Movement->Velocity.IsNearlyZero());
+	}
+	Scene.Input(1);
+	Scene.Step(0.2f);
+	TestTrue(TEXT("Fresh input works after resume"), Scene.Movement->Velocity.Size() > 100);
+	Scene.Vehicle->SetPlayerState(nullptr);
+	TestFalse(TEXT("Missing PlayerState blocks driving"), Scene.Vehicle->CanDrive());
+	Scene.Vehicle->SetPlayerState(Player);
+	Player->SetOwner(nullptr);
+	TestFalse(TEXT("An unrelated PlayerState blocks driving"), Scene.Vehicle->CanDrive());
+	Player->SetOwner(Scene.Controller);
+
+	// Active 차량이 Waiting 차량을 때려도 대상에 속도·회전 충격을 주지 않는다.
+	Scene.Reset();
+	auto* OtherPawn = Scene.World->SpawnActor<AMWVehiclePawn>(FVector(202, 0, 31), FRotator::ZeroRotator);
+	auto* Other = CastChecked<UMWVehicleMovementComponent>(OtherPawn->GetMovementComponent());
+	FindFProperty<FObjectPropertyBase>(Other->GetClass(), TEXT("DriveData"))->SetObjectPropertyValue_InContainer(
+		Other, NewObject<UMWVehicleDriveData>(OtherPawn));
+	auto* OtherController = Scene.World->SpawnActor<APlayerController>();
+	auto* OtherPlayer = Scene.World->SpawnActor<AMWPlayerState>();
+	OtherPlayer->SetOwner(OtherController);
+	OtherController->PlayerState = OtherPlayer;
+	OtherController->Possess(OtherPawn);
+	OtherPawn->SetPlayerState(OtherPlayer);
+	OtherPawn->DispatchBeginPlay();
+	const FTransform OtherHeld = OtherPawn->GetActorTransform();
+	Scene.Movement->Velocity = FVector(900, 0, 0);
+	Scene.Step(0.1f);
+	TestTrue(TEXT("Locked target is not given impact velocity"), Other->Velocity.IsZero());
+	TestTrue(TEXT("Locked target stays in place"), OtherHeld.Equals(OtherPawn->GetActorTransform()));
+	TestTrue(TEXT("Active vehicle is blocked by the locked Box"), Scene.Vehicle->GetActorLocation().X < 3);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWRaceDriveNetworkTest, "MW.Gameplay.DriveControl.StreamAndPrediction",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWRaceDriveNetworkTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	auto* State = Scene.UseRaceRules();
+	auto* Player = Scene.Vehicle->GetPlayerState<AMWPlayerState>();
+	auto* Pawn = Scene.Vehicle;
+	FMWGameplayProgress Progress;
+	Progress.Phase = EMWRoomPhase::Racing;
+	Progress.RoundEpoch = 1;
+	State->ApplyProgressFromServer(Progress);
+	FMWPlayerRoundState Round;
+	Round.RoundEpoch = 1;
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Player->ApplyRoundStateFromServer(Round);
+	// 엔진의 테스트 연결로 소유 연결 검사만 충족한다. 소켓/패킷 전달 시험은 아니다.
+	auto* Connection = NewObject<USimulatedClientNetConnection>(Scene.World);
+	Scene.Controller->Player = Connection;
+	Scene.Controller->NetConnection = Connection;
+	FMWVehicleMoveCommand Command;
+	Command.MoveId = 1;
+	Command.Input.Throttle = 1;
+	const TArray<FMWVehicleMoveCommand> Packet{Command};
+	const uint32 FirstStream = Pawn->ServerDriveSnapshot.StreamId;
+	Pawn->ServerSubmitDriveMoves_Implementation(FirstStream, Packet);
+	TestEqual(TEXT("Allowed current-stream command is queued"), Pawn->QueuedServerMoves.Num(), 1);
+	Pawn->TickAuthorityDrive(1.f / 120.f);
+	TestEqual(TEXT("Authority actually processes the command"), Pawn->LastProcessedMoveId, 1u);
+
+	Progress.Phase = EMWRoomPhase::Countdown;
+	State->ApplyProgressFromServer(Progress);
+	const uint32 HeldStream = Pawn->ServerDriveSnapshot.StreamId;
+	TestTrue(TEXT("Stopping creates a new stream"), HeldStream != FirstStream);
+	TestFalse(TEXT("Locked snapshot announces denial"), Pawn->ServerDriveSnapshot.bDriveAllowed);
+	TestTrue(TEXT("Stopping clears old queued commands"), Pawn->QueuedServerMoves.IsEmpty());
+	TestTrue(TEXT("Stopping publishes zero velocity"), Pawn->ServerDriveSnapshot.Velocity.IsZero());
+	Pawn->ServerSubmitDriveMoves_Implementation(HeldStream, Packet);
+	TestTrue(TEXT("Even a current-stream packet is rejected while locked"), Pawn->QueuedServerMoves.IsEmpty());
+	Pawn->RefreshDrivePermission();
+	TestEqual(TEXT("Repeated refresh does not churn streams"), Pawn->ServerDriveSnapshot.StreamId, HeldStream);
+
+	Progress.Phase = EMWRoomPhase::Racing;
+	State->ApplyProgressFromServer(Progress);
+	const uint32 ResumedStream = Pawn->ServerDriveSnapshot.StreamId;
+	TestTrue(TEXT("Resuming creates another stream"), ResumedStream != HeldStream);
+	Pawn->ServerSubmitDriveMoves_Implementation(FirstStream, Packet);
+	Pawn->ServerSubmitDriveMoves_Implementation(HeldStream, Packet);
+	TestTrue(TEXT("All previous streams are rejected after resume"), Pawn->QueuedServerMoves.IsEmpty());
+	Pawn->ServerSubmitDriveMoves_Implementation(ResumedStream, Packet);
+	Pawn->TickAuthorityDrive(1.f / 120.f);
+	TestEqual(TEXT("Fresh resumed stream processes move one"), Pawn->LastProcessedMoveId, 1u);
+
+	// 같은 Pawn을 소유자 역할로 전환해 실제 예측 함수를 검사한다.
+	Scene.Controller->Player = nullptr;
+	Scene.Controller->NetConnection = nullptr;
+	Scene.Controller->SetAsLocalPlayerController();
+	Pawn->SetRole(ROLE_AutonomousProxy);
+	Pawn->ServerDriveSnapshot.bDriveAllowed = false;
+	Pawn->ServerDriveSnapshot.ImpactYawRate = 90.f;
+	Pawn->RefreshDrivePermission();
+	TestFalse(TEXT("Phase and personal state cannot bypass missing server permission"), Pawn->CanDrive());
+	Pawn->TickPredictedDrive(1.f / 120.f);
+	TestTrue(TEXT("Denied owner builds no predicted inputs"), Pawn->PredictedMoves.IsEmpty());
+	Pawn->ServerDriveSnapshot.bDriveAllowed = true;
+	Pawn->ServerDriveSnapshot.RoundEpoch = 2;
+	TestFalse(TEXT("A snapshot for another epoch cannot enable prediction"), Pawn->CanDrive());
+	Pawn->ServerDriveSnapshot.RoundEpoch = 1;
+	Pawn->RefreshDrivePermission();
+	Scene.Input(1);
+	Pawn->TickPredictedDrive(1.f / 120.f);
+	TestEqual(TEXT("Fully ready owner predicts immediately"), Pawn->PredictedMoves.Num(), 1);
+	Round.RaceStatus = EMWRaceStatus::Waiting;
+	Player->ApplyRoundStateFromServer(Round);
+	TestTrue(TEXT("Personal lock discards unacknowledged prediction"), Pawn->PredictedMoves.IsEmpty());
+	Pawn->TickPredictedDrive(1.f / 120.f);
+	const FTransform Corrected = Pawn->GetActorTransform();
+	Pawn->TickPredictedDrive(1.f / 120.f);
+	TestTrue(TEXT("Held owner stays fixed after applying the current authoritative pose"), Corrected.Equals(Pawn->GetActorTransform()));
+	TestTrue(TEXT("Held owner never rebuilds predicted history"), Pawn->PredictedMoves.IsEmpty());
+	Pawn->SetRole(ROLE_Authority);
+	Pawn->PublishDriveSnapshot();
+	TestEqual(TEXT("Holding clears collision-induced rotation as well"), Pawn->ServerDriveSnapshot.ImpactYawRate, 0.f);
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Player->ApplyRoundStateFromServer(Round);
+	Scene.Input(1);
+	Pawn->TickAuthorityDrive(1.f / 120.f);
+	TestTrue(TEXT("Listen-host input uses the same permission and resumes without an RPC"), Scene.Movement->Velocity.Size() > 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWRaceDriveSnapshotTest, "MW.Gameplay.DriveControl.SnapshotSerialization",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
+{
+	for (const bool bAllowed : {false, true})
+	{
+		FMWVehicleDriveSnapshot Sent;
+		Sent.StreamId = 11;
+		Sent.Revision = 23;
+		Sent.LastProcessedMoveId = 7;
+		Sent.bDriveAllowed = bAllowed;
+		Sent.RoundEpoch = 42;
+		Sent.Location = FVector(100, 200, 300);
+		Sent.Velocity = FVector(800, 0, 0);
+		Sent.ImpactYawRate = 25.f;
+		Sent.bGrounded = true;
+		Sent.ServerTimeSeconds = 17.25;
+		TArray<uint8> Bytes;
+		FMemoryWriter Writer(Bytes);
+		bool bWrite = false;
+		Sent.NetSerialize(Writer, nullptr, bWrite);
+		FMWVehicleDriveSnapshot Received;
+		Received.bDriveAllowed = !bAllowed;
+		FMemoryReader Reader(Bytes);
+		bool bRead = false;
+		Received.NetSerialize(Reader, nullptr, bRead);
+		TestTrue(TEXT("Full drive snapshot serializes successfully"), bWrite && bRead && Reader.Tell() == Reader.TotalSize());
+		TestEqual(TEXT("Permission is transmitted"), Received.bDriveAllowed, bAllowed);
+		TestEqual(TEXT("Round epoch is transmitted with the stream"), Received.RoundEpoch, Sent.RoundEpoch);
+		TestEqual(TEXT("Stream survives serialization"), Received.StreamId, Sent.StreamId);
+		TestEqual(TEXT("ACK survives serialization"), Received.LastProcessedMoveId, Sent.LastProcessedMoveId);
+		TestTrue(TEXT("Pose and motion survive serialization"), Received.Location.Equals(Sent.Location, 0.1)
+			&& Received.Velocity.Equals(Sent.Velocity, 0.1) && Received.ImpactYawRate == Sent.ImpactYawRate
+			&& Received.bGrounded && Received.ServerTimeSeconds == Sent.ServerTimeSeconds);
+	}
 	return true;
 }
 

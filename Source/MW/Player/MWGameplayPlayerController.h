@@ -33,6 +33,8 @@ public:
 	virtual void SetPawn(APawn* InPawn) override;
 	virtual void OnRep_PlayerState() override;
 	virtual void PostSeamlessTravel() override;
+	UFUNCTION(BlueprintPure, Category = "MW|Race")
+	bool IsLocalRaceReady() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "MW|Construction")
 	void RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId);
@@ -56,11 +58,14 @@ protected:
 
 private:
 	friend class UMWTrackPlacementViewComponent;
+	friend struct FMWRaceStartTestScene;
 
 	void ApplyGameplayInputMode();
 	void RefreshDrivingInput();
 	void ClearDrivingInput();
 	AMWVehiclePawn* GetInputVehicle() const;
+	bool IsDrivingInputReady() const;
+	void TryReportRaceReady();
 
 	// Construction
 	UFUNCTION(Server, Reliable)
@@ -78,14 +83,16 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerPlaceTrack(int32 SessionId, int32 CourseRevision, const FMWTrackPlacementIntent& Intent);
 	UFUNCTION(Server, Reliable)
-	void ServerConfirmTrackCourseReady(int32 SessionId, int32 CourseRevision);
+	void ServerReportRaceReady(int32 RoundEpoch, int32 CourseSessionId, int32 CourseRevision);
 	UFUNCTION(Client, Reliable)
 	void ClientTrackPlacementReply(int32 SessionId, EMWTrackPlacementResult Result);
 
 	UPROPERTY(VisibleAnywhere, Category = "MW|Construction")
 	TObjectPtr<UMWTrackPlacementViewComponent> PlacementView;
 	EMWRoomPhase PresentedPhase = EMWRoomPhase::Failed;
-	int32 LastReadyPlacementSessionId = 0;
+	int32 LastReadyRoundEpoch = 0;
+	int32 LastReadyCourseSessionId = 0;
+	int32 LastReadyCourseRevision = 0;
 
 	void HandleTrackSelectPressed();
 	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;

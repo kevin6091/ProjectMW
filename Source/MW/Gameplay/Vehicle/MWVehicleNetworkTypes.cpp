@@ -5,6 +5,13 @@ bool FMWVehicleDriveSnapshot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool&
 	Ar << StreamId;
 	Ar << Revision;
 	Ar << LastProcessedMoveId;
+	uint8 Allowed = bDriveAllowed ? 1 : 0;
+	Ar.SerializeBits(&Allowed, 1);
+	if (Ar.IsLoading())
+	{
+		bDriveAllowed = Allowed != 0;
+	}
+	Ar << RoundEpoch;
 	bool bLocationSuccess = false;
 	bool bVelocitySuccess = false;
 	Location.NetSerialize(Ar, Map, bLocationSuccess);

@@ -35,6 +35,13 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	uint32 LastProcessedMoveId = 0;
 
+	// 서버의 주행 허용과 해당 경기 세대도 위치·스트림과 함께 전달한다.
+	UPROPERTY()
+	bool bDriveAllowed = false;
+
+	UPROPERTY()
+	int32 RoundEpoch = 0;
+
 	UPROPERTY()
 	FVector_NetQuantize10 Location = FVector::ZeroVector;
 

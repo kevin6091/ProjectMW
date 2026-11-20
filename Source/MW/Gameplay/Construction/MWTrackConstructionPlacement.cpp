@@ -9,6 +9,7 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
+#include "Components/PrimitiveComponent.h"
 
 bool UMWTrackConstructionComponent::FPreparedTrack::SetTransform(const FTransform& Transform) const
 {
@@ -86,9 +87,58 @@ void UMWTrackConstructionComponent::PublishTrack(const FPreparedTrack& Prepared,
 	Track->ForceNetUpdate();
 
 	const int32 PieceId = PlacementSession.PlacedTracks.Num() + 1;
-	PlacementSession.PlacedTracks.Add({PieceId, Prepared.DefinitionId, Track, Transform, ConnectedTo, PortIndex});
+	TInlineComponentArray<UPrimitiveComponent*> Primitives(Track);
+	const bool bRequiresCollision = Primitives.ContainsByPredicate([](const UPrimitiveComponent* Part)
+	{
+		return Part->IsQueryCollisionEnabled();
+	});
+	PlacementSession.PlacedTracks.Add({PieceId, Prepared.DefinitionId, Track, Transform, ConnectedTo, PortIndex, bRequiresCollision});
 	PlacementSession.CourseBounds += Track->GetComponentsBoundingBox(false);
 	++PlacementSession.CourseRevision;
+}
+
+bool UMWTrackConstructionComponent::IsCourseReadyForRace(int32 SessionId, int32 CourseRevision) const
+{
+	if (SessionId <= 0 || CourseRevision <= 0 || PlacementSession.SessionId != SessionId
+		|| PlacementSession.CourseRevision != CourseRevision || PlacementSession.bIsOpen
+		|| PlacementSession.PlacedTracks.IsEmpty())
+	{
+		return false;
+	}
+	for (const FMWPlacedTrack& Track : PlacementSession.PlacedTracks)
+	{
+		if (!IsValid(Track.Actor) || !Track.Actor->HasActorBegunPlay() || Track.Actor->IsActorBeingDestroyed()
+			|| !Track.Actor->GetActorTransform().Equals(Track.WorldTransform))
+		{
+			return false;
+		}
+		if (!Track.bRequiresCollision)
+		{
+			continue;
+		}
+		if (!Track.Actor->GetActorEnableCollision())
+		{
+			return false;
+		}
+		bool bFoundCollision = false;
+		TInlineComponentArray<UPrimitiveComponent*> Primitives(Track.Actor);
+		for (const UPrimitiveComponent* Part : Primitives)
+		{
+			if (Part->IsQueryCollisionEnabled())
+			{
+				bFoundCollision = true;
+				if (!Part->IsRegistered() || !Part->IsPhysicsStateCreated())
+				{
+					return false;
+				}
+			}
+		}
+		if (!bFoundCollision)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void UMWTrackConstructionComponent::OnRep_PlacementSession()
@@ -107,16 +157,25 @@ void UMWTrackConstructionComponent::OnRep_PlacementSession()
 	}
 }
 
-bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& CourseEnds, const FTransform& BuildFrame,
-	double LayoutScale, FText& OutError)
+bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& CourseEnds, const FTransform& BuildFrame, double LayoutScale, FText& OutError)
 {
 	auto* GS = Cast<AMWGameplayGameState>(GetOwner());
-	if (!HasServerAuthority() || !GS || !AreAllSelectionsConfirmed() || PlacementSession.bIsOpen || !PlacementSession.PlacedTracks.IsEmpty()
-		|| BuildFrame.ContainsNaN() || !BuildFrame.GetRotation().IsNormalized() || !FMath::IsFinite(LayoutScale) || LayoutScale < 1.0)
+
+	if (!HasServerAuthority()
+		|| !GS
+		|| GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement
+		|| !IsAllSelectionsConfirmed()
+		|| PlacementSession.bIsOpen
+		|| !PlacementSession.PlacedTracks.IsEmpty()
+		|| BuildFrame.ContainsNaN()
+		|| !BuildFrame.GetRotation().IsNormalized()
+		|| !FMath::IsFinite(LayoutScale)
+		|| LayoutScale < 1.0)
 	{
 		OutError = FText::FromString(TEXT("트랙 배치를 시작할 수 없습니다."));
 		return false;
 	}
+	
 	if (!CourseEnds.StartDefinitionId.IsValid() || !CourseEnds.EndDefinitionId.IsValid()
 		|| CourseEnds.StartDefinitionId == CourseEnds.EndDefinitionId)
 	{
@@ -220,9 +279,10 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 			PS->GetPlayerConstructionComponent()->SetPlacementForServer(Entry.Value);
 		}
 	}
+	
 	EndSelection();
-	GS->SetRoomPhaseFromServer(EMWRoomPhase::TrackPlacement);
 	OutError = FText::GetEmpty();
+	
 	UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Opened session=%d players=%d"),
 		PlacementSession.SessionId, PendingTracks.Num());
 	return true;
@@ -333,13 +393,17 @@ bool UMWTrackConstructionComponent::PositionEndCap(const FMWOpenTrackEnd& Tail, 
 
 void UMWTrackConstructionComponent::FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform)
 {
-	// 캡에는 다음 열린 포트가 없다. 코스 복제와 차량 준비는 캡까지 포함한 리비전을 기다린다.
+	// 종료 캡까지 코스에 등록한다.
 	PublishTrack(PendingEndCap, EndTransform, Tail.Id, 0);
+
 	PendingEndCap = {};
 	PlacementSession.OpenEnds.Reset();
 	PlacementSession.bIsOpen = false;
+
 	GetOwner()->ForceNetUpdate();
-	OnPlacementFinished.Broadcast();
+
+	// 코스 전체가 성공적으로 확정된 뒤 보고한다.
+	OnPlacementFinished.Broadcast(PlacementSession.SessionId, PlacementSession.CourseRevision);
 }
 
 void UMWTrackConstructionComponent::RemovePlacementPlayer(AMWPlayerState* Player)
@@ -357,10 +421,13 @@ void UMWTrackConstructionComponent::RemovePlacementPlayer(AMWPlayerState* Player
 				FinishPlacement(PlacementSession.OpenEnds[0], EndTransform);
 				return;
 			}
+			
+			const int32 FailedSessionId = PlacementSession.SessionId;
+
 			CancelPlacement();
 			if (auto* GS = Cast<AMWGameplayGameState>(GetOwner()))
 			{
-				GS->SetRoomPhaseFromServer(EMWRoomPhase::Failed);
+				OnConstructionFailed.Broadcast(FailedSessionId, FString(TEXT("남은 코스를 정상적으로 확정하지 못했습니다.")));
 			}
 		}
 	}
