@@ -169,19 +169,36 @@ PR 인계 목록 57개를 현재 로컬 파일과 UVCS `/main`에서 대조했�
 
 팀원은 UVCS `/main`의 `cs:61`을 기준으로 차량 선택 UI를 받으면 된다. 이 변경 세트는 로딩·경기 HUD를 인계한 `cs:60` 위에 적용된다. `WBP_VehicleSelection_Preview.uasset` 래퍼는 기존 `cs:31` 개정을 사용한다. 이 변경 세트의 InvisiblePilot 관련 파일은 차량 선택용 썸네일 텍스처이며, `BP_MWVehiclePawn_InvisiblePilot.uasset`의 부스터 변경은 보류 중이다. Git 커밋·푸시는 수행하지 않았다. 팀원 PC의 수신 확인은 별도다.
 
+## UVCS 운영 경기 트랙 UI 인계 완료 · `cs:62`
+
+2026-11-20 · UVCS `ProjectMW/ProjectMW`의 `/main` · 별도 변경 세트 **`cs:62`**
+
+체크인 설명은 **운영 경기 트랙 선택·배치 위젯 수정본 인계**이다. 서버 변경 목록과 서버에서 다시 내려받은 파일로 수정 1개와 SHA-256을 확인했다.
+
+| 팀원이 받을 경로 | 개정 | 크기(바이트) | 서버 SHA-256 |
+|---|---|---:|---|
+| `Content/UI/Construction/WBP_TrackSelectionTest.uasset` | `cs:62` | 75758 | `5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b` |
+
+`WBP_TrackSelectionTest`는 실제 경기와 개발맵에서 함께 사용한다. Cua Driver로 설원 `L_Dev_Drive` 3인 PIE에 진입해, 운영 `BP_MWGameplayPlayerController`가 트랙 선택과 배치 두 단계에서 세 창에 `WBP_TrackSelectionTest_C`를 표시하는 것을 확인했다.
+
+- `cs:61` 스냅샷의 기존 `cs:41` 개정으로도 세 명 모두 트랙을 확정·설치하고 실제 출발선에서 `Racing`에 진입했다. 선택·스냅·설치 안내와 표본의 원격 커서도 동작했다.
+- 기존 개정에서는 어두운 안내판이 표시됐고 후보 이름표가 빈 흰 사각형으로 보였다. 배치 안내와 명단의 여백도 빠졌다. `cs:62`에 등록한 파일의 해시는 노란 안내판, 읽을 수 있는 후보 이름표와 배치 여백을 확인한 로컬 검증본과 같다. [트랙 선택 검증](TRACK_SELECTION_MIXED_DPI.md) · [배치 커서·문구 검증](TRACK_PLACEMENT_CURSOR_VERIFICATION.md)
+
+팀원은 `cs:62`를 받으면 앞선 `cs:60`·`cs:61`의 인계 에셋도 함께 받는다. `cs:62`를 받은 팀원 PC의 패키지 검증 결과는 아래 절에 기록한다.
+
 ## 팀원 수신 검증
 
 ### 1. Git과 UVCS 버전 확인
 
 - Unreal Editor를 닫고 ProjectMW 루트에서 실행한다. Git은 PR #17의 `fix/track-ui-dpi-verification`을 사용한다. 기존 검증·인계 기준은 `c3784bf`이고, 절차를 추가한 문서 커밋이 포함된 브랜치를 받아도 실행 코드는 동일하다. 결과에는 실제 사용한 전체 Git SHA를 남긴다.
-- UVCS `ProjectMW/ProjectMW`의 `/main`을 `cs:61`에 맞춘다. `cs:61`에는 `cs:60`의 에셋도 포함된다. 이미 받은 경우 조회 명령만 실행한다. 다른 버전이라면 UVCS 대기 변경을 확인하고 로컬 작업을 보존한 뒤 `cm update --changeset=cs:61`로 받는다.
+- UVCS `ProjectMW/ProjectMW`의 `/main`을 `cs:62`에 맞춘다. 이 스냅샷은 `cs:60`·`cs:61`의 에셋과 운영 트랙 WBP를 포함한다. 이미 받은 경우 조회 명령만 실행한다. 다른 버전이라면 UVCS 대기 변경을 확인하고 로컬 작업을 보존한 뒤 `cm update --changeset=cs:62`로 받는다.
 
 ```powershell
 git rev-parse HEAD
 cm status --header
 ```
 
-### 2. 원본 에셋 9개 SHA-256 대조
+### 2. 원본 에셋 10개 SHA-256 대조
 
 에디터에서 에셋을 열거나 저장하기 전에 ProjectMW 루트에서 다음 블록을 실행한다. 대상은 [에셋 인계 목록](../../Reviews/FrontendIntegration/PR_ASSET_HANDOFF.csv)의 `UVCS_CHECKED_IN` 행이다.
 
@@ -211,12 +228,12 @@ $results = foreach ($asset in $assets) {
 $results | Format-List
 $matched = @($results | Where-Object Result -eq 'OK').Count
 "$matched/$($assets.Count) SHA-256 일치"
-if ($assets.Count -ne 9 -or $matched -ne 9) {
-    throw '인계 에셋 9개의 경로와 SHA-256을 확인하세요.'
+if ($assets.Count -ne 10 -or $matched -ne 10) {
+    throw '인계 에셋 10개의 경로와 SHA-256을 확인하세요.'
 }
 ```
 
-통과 기준은 **`9/9 SHA-256 일치`**다. `MISSING`은 파일 경로, `MISMATCH`는 출력된 기준·실제 해시와 UVCS 개정 및 로컬 수정 여부를 확인한다. 차이가 해결되면 해시를 다시 확인하고 패키징으로 넘어간다.
+통과 기준은 **`10/10 SHA-256 일치`**다. `MISSING`은 파일 경로, `MISMATCH`는 출력된 기준·실제 해시와 UVCS 개정 및 로컬 수정 여부를 확인한다. 차이가 해결되면 해시를 다시 확인하고 패키징으로 넘어간다.
 
 ### 3. Win64 Development 패키지 진입 체크리스트
 
@@ -232,8 +249,9 @@ if ($assets.Count -ne 9 -or $matched -ne 9) {
 ```
 
 - [ ] 두 창에서 준비하고 서로 다른 차량을 선택·확정했다. 로딩이 표시되고, 가림이 걷힌 뒤 호스트와 참가자 모두 설원 `L_Dev_Drive`의 트랙 선택 화면에서 실제로 트랙을 확정했다. 이 단계까지가 패키지 첫 진입 통과다.
+- [ ] 선택과 배치에서 노란 안내판이 보였다. 선택 화면에서 후보 이름표 글자가 읽히고, 배치 화면에서 설치 안내와 참가자 명단 사이에 여백이 유지됐다.
 - [ ] 각자 트랙을 실제로 설치했다. 두 차량이 체크무늬 출발선에서 `Racing`에 진입했고, 주행을 시작한 뒤 관찰한 시간 동안 로비나 타이틀로 돌아가지 않았다. 대기판이 표시된 경우 로고와 명단을, 주행 중에는 아이템 슬롯을 확인했다. 대기판이 보이지 않은 실행은 해당 항목을 미관찰로 기록한다.
-- [ ] 호스트의 `ServerTravel`과 각 창에서 `MWArrival covered`와 `MWArrival reveal`이 같은 시도 ID로 기록됐는지 확인했다. 실패 시 어느 창의 어느 단계에서 멈췄는지와 `MWArrival failed`, 이동 실패 또는 관련 에셋 로드 오류를 남겼다.
+- [ ] 호스트 로그에서 `ServerTravel`을 확인했다. 각 창에서 `MWArrival covered`와 `MWArrival reveal`이 같은 시도 ID로 기록됐는지 확인했다. 실패 시 어느 창의 어느 단계에서 멈췄는지와 `MWArrival failed`, 이동 실패 또는 관련 에셋 로드 오류를 남겼다.
 
 이 실행은 **팀원 PC의 정상 경로 확인**이다. 기본 이동 제한 45초와 기본 트랙 후보를 사용한다. 테스트용 패킷 지연, 시간 배율 변경, 후보 비우기, 선택 밉 제거는 기존 결함 재현 기록의 조건이다.
 
@@ -251,13 +269,12 @@ if ($assets.Count -ne 9 -or $matched -ne 9) {
 
 ### UVCS에서 별도 체크인하지 않은 파일
 
-체크인 전 [UVCS 대조표](PR17_UVCS_ASSET_AUDIT.csv)의 PR 인계 목록 57개 중 47개는 기존 개정과 내용이 같았다. 차이가 있거나 누락됐던 10개 중 UI 에셋 9개를 `cs:60`과 `cs:61`로 전달했다. 나머지 한 개는 의도적으로 보류한 InvisiblePilot 차량 BP다. 계기판 `WBP_RaceHUD`와 차량 선택 래퍼 `WBP_VehicleSelection_Preview`는 각각 기존 `cs:59`와 `cs:31` 개정을 사용한다.
+체크인 전 [UVCS 대조표](PR17_UVCS_ASSET_AUDIT.csv)는 당시 인계 목록 57개를 기록한다. 그중 47개는 기존 개정과 내용이 같았고, 손볼 10개 중 UI 에셋 9개는 `cs:60`·`cs:61`로 전달했다. 최신 목록에는 운영에서 쓰는 트랙 WBP 1개를 `cs:62`로 추가했다. 계기판 `WBP_RaceHUD`와 차량 선택 래퍼 `WBP_VehicleSelection_Preview`는 각각 기존 `cs:59`와 `cs:31` 개정을 사용한다.
 
-UVCS `cs:61` 워크스페이스에서 대기로 표시된 네 경로를 서버 원본과 대조했다.
+트랙 WBP 체크인 뒤 `cs:62` 워크스페이스에 남은 세 경로는 아래와 같다.
 
 | 로컬 파일 | 확인 결과와 인계 범위 |
 |---|---|
-| `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset` | 서버에는 `cs:59` 차량 BP가 있다. 로컬 부스터 장착 변경은 UI 검증과 별개이므로 보류했다. 이 값을 팀에 적용할 경우 담당자 확인과 주행 중 부스터 검증을 거쳐 별도 변경 세트로 다룬다. |
+| `Content/Gameplay/Vehicles/BP_MWVehiclePawn_InvisiblePilot.uasset` | 팀원은 기존 `cs:59` 차량 BP를 사용한다. 로컬 변경은 부스터 장착 오버라이드와 장착 위치·회전·스케일이다. 차량·아이템 동작에 해당하므로 이번 UI 인계에서 보류했다. 이 값을 적용할 때는 차량·아이템 담당자 확인과 실제 주행 중 부스터 검증을 거쳐 별도 변경 세트로 다룬다. 차량 선택용 썸네일은 `cs:61`에 포함돼 있다. |
 | `Content/UI/Common/Slate/ItemSlotGlass.svg` | UVCS에는 `CH`로 표시되지만 로컬과 서버의 `cs:61` 스냅샷이 SHA-256까지 같다. 이미 전달된 기존 `cs:57` 개정을 사용한다. |
-| `Content/UI/Construction/WBP_TrackSelectionTest.uasset` | 기존 `cs:41` 개정이 서버에 있고 로컬 저장본 해시는 다르다. 확인한 참조는 개발용 `BP_TrackSelectionTestPC`다. 개발맵 UI 변경은 이번 운영 UI 인계 범위 밖에 뒀다. |
-| `Content/Gameplay/Vehicles/Art/SM_MW_InvisiblePilot_DrivingCollision.uasset` | 로컬 전용 파일이며 서버의 `cs:61`에 경로가 없다. 현재 차량 이동·충돌 통합은 기존 박스 충돌체를 사용한다. 복구용 충돌 메시의 도입과 차량 검증은 별도 작업으로 남긴다. |
+| `Content/Gameplay/Vehicles/Art/SM_MW_InvisiblePilot_DrivingCollision.uasset` | 로컬 전용 파일이며 서버의 `cs:62` 스냅샷에 경로가 없다. 현재 차량 이동·충돌 통합은 기존 박스 충돌체를 사용한다. 복구용 충돌 메시의 도입과 차량 검증은 별도 작업으로 남긴다. |
