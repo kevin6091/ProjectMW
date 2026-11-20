@@ -1,0 +1,6 @@
+Cua Driver 3인 PIE | 배기음 수치 검증
+디스크 에셋을 저장하지 않는 직행 경기로 음향을 검증했다.
+Host vehicle BP_MWVehiclePawn_FRED_C_0 driven with throttle=1 for 2 s
+P1 /Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive: idle=3 pitch=0.82 gain=0.10, FRED own=True peak=3146.33 cm/s pitch=1.58855 gain=0.34454 playing=True
+P2 /Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive: idle=3 pitch=0.82 gain=0.10, FRED own=False peak=3131.3 cm/s pitch=1.58392 gain=0.34307 playing=True
+P3 /Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive: idle=3 pitch=0.82 gain=0.10, FRED own=False peak=3131.3 cm/s pitch=1.58392 gain=0.34307 playing=True

@@ -184,6 +184,7 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
     UpdateGroundVisual(DeltaSeconds);
     UpdateWheelVisuals(DeltaSeconds);
     UpdateExhaustEffect();
+    UpdateEngineAudio(DeltaSeconds);
 }
 
 // 캐시한 시각 바퀴의 회전·조향만 갱신한다. 실제 이동 입력과 서버 스냅샷을 덮어쓰지 않는다.
@@ -618,6 +619,7 @@ void AMWVehiclePawn::BeginPlay()
 void AMWVehiclePawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     StopExhaustEffect();
+    StopEngineAudio();
     if (RootComponent)
         RootComponent->TransformUpdated.Remove(VisualRootTransformHandle);
     VisualRootTransformHandle.Reset();
