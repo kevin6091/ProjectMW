@@ -23,8 +23,16 @@ public:
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
+	struct FGhostSnapBlend
+	{
+		FTransform Start;
+		double ElapsedSeconds = 0.0;
+	};
+
 	struct FGhost
 	{
+		TOptional<FGhostSnapBlend> SnapBlend;
+		TOptional<FTransform> PreviousSnapTarget;
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
 		bool bSnapped = false;
@@ -35,8 +43,10 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
-	bool UpdateGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds);
+	bool ResolveGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session,
+		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped);
+	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds, double FreeMoveAlpha) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
