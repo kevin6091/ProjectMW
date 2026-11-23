@@ -7,21 +7,39 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/GameViewportClient.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Slate/SceneViewport.h"
 #include "UnrealClient.h"
+
+bool MWCursorProjection::SampleViewportPointer(const APlayerController& PC, FVector2D& OutPosition)
+{
+	// 로딩 가림 중의 숨은 포인터와 비활성 PIE 창의 포인터는 입력으로 쓰지 않는다.
+	const auto* LP = PC.GetLocalPlayer();
+	const FSceneViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->GetGameViewport() : nullptr;
+	if (!PC.bShowMouseCursor || !Viewport || !Viewport->IsForegroundWindow()) return false;
+
+	const FIntPoint Size = Viewport->GetSizeXY();
+	if (Size.X <= 0 || Size.Y <= 0) return false;
+	float X, Y;
+	if (PC.GetMousePosition(X, Y))
+	{
+		OutPosition = FVector2D(X, Y);
+	}
+	else
+	{
+		// Slate가 마우스 이동을 아직 뷰포트에 전달하지 않았으면 현재 포인터를 같은 픽셀 공간으로 변환한다.
+		const FGeometry& Geometry = Viewport->GetCachedGeometry();
+		const FVector2D LocalSize = Geometry.GetLocalSize();
+		if (!FSlateApplication::IsInitialized() || LocalSize.X <= 0.0 || LocalSize.Y <= 0.0) return false;
+		OutPosition = Geometry.AbsoluteToLocal(FSlateApplication::Get().GetCursorPos()) * FVector2D(Size) / LocalSize;
+	}
+	return OutPosition.X >= 0.0 && OutPosition.Y >= 0.0 && OutPosition.X < Size.X && OutPosition.Y < Size.Y;
+}
 
 bool MWCursorProjection::SampleWorldPlane(const APlayerController& PC, const FVector& Point, const FVector& Normal, FVector& OutPosition)
 {
-	// 숨겨진 커서나 비활성 PIE 창의 마우스 위치를 현재 플레이어의 포인터로 공유하지 않는다.
-	if (!PC.bShowMouseCursor) return false;
-	const auto* LP = PC.GetLocalPlayer();
-	const FViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->Viewport : nullptr;
-	if (!Viewport || !Viewport->IsForegroundWindow()) return false;
-	float X, Y;
-	int32 Width, Height;
-	PC.GetViewportSize(Width, Height);
-	if (!PC.GetMousePosition(X, Y) || X < 0 || Y < 0 || X >= Width || Y >= Height) return false;
+	FVector2D Screen;
 	FVector Origin, Direction;
-	if (!PC.DeprojectMousePositionToWorld(Origin, Direction)) return false;
+	if (!SampleViewportPointer(PC, Screen) || !PC.DeprojectScreenPositionToWorld(Screen.X, Screen.Y, Origin, Direction)) return false;
 	// 광선이 평면과 거의 평행하면 교점 계산 오차가 커지므로 표시할 좌표를 만들지 않는다.
 	const double Dot = FVector::DotProduct(Direction, Normal);
 	if (FMath::Abs(Dot) < KINDA_SMALL_NUMBER) return false;

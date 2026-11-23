@@ -280,8 +280,10 @@ bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 {
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	FVector PlanePosition, Start, Direction;
-	if (!GS || !GetCursorPosition(PlanePosition) || !Viewer->DeprojectMousePositionToWorld(Start, Direction))
+	FVector2D Screen;
+	FVector Start, Direction;
+	if (!GS || !Viewer.IsValid() || !MWCursorProjection::SampleViewportPointer(*Viewer, Screen)
+		|| !Viewer->DeprojectScreenPositionToWorld(Screen.X, Screen.Y, Start, Direction))
 	{
 		return INDEX_NONE;
 	}

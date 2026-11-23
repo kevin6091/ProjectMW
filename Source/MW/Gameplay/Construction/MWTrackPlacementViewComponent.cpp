@@ -18,6 +18,7 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/MWTrackSelectionWidget.h"
+#include "UI/Cursor/MWCursorProjection.h"
 #include "UnrealClient.h"
 
 namespace
@@ -310,23 +311,18 @@ bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPl
 	const FMWTrackPlacementSession& Session, const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped,
 	FPointerSample* OutPointer)
 {
-	const auto* LocalPlayer = PC.GetLocalPlayer();
-	const FViewport* Viewport = LocalPlayer && LocalPlayer->ViewportClient ? LocalPlayer->ViewportClient->Viewport : nullptr;
-	float X, Y;
-	if (!Viewport || !Viewport->IsForegroundWindow() || !PC.GetMousePosition(X, Y)
-		|| X < 0 || Y < 0 || X >= Viewport->GetSizeXY().X || Y >= Viewport->GetSizeXY().Y)
-	{
-		return false;
-	}
+	FVector2D Screen;
 	FVector Origin, Ray;
-	if (!PC.DeprojectScreenPositionToWorld(X, Y, Origin, Ray)
+	if (!MWCursorProjection::SampleViewportPointer(PC, Screen) || !PC.DeprojectScreenPositionToWorld(Screen.X, Screen.Y, Origin, Ray)
 		|| !MWTrackSnap::UpdateIntentFromRay(Ghost.Ports, Session, Origin, Ray, Intent))
 	{
 		return false;
 	}
 	if (OutPointer)
 	{
-		*OutPointer = {X, Viewport->GetSizeXY().X};
+		int32 Width, Height;
+		PC.GetViewportSize(Width, Height);
+		*OutPointer = {static_cast<float>(Screen.X), Width};
 	}
 	bOutSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, OutTarget);
 	return true;
