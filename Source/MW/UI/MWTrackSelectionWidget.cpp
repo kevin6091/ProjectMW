@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
@@ -151,12 +152,16 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
 		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
 	if (!Offer) return FText::FromString(TEXT("후보 데이터 대기"));
-	FString Name = Offer->TrackClass.ToSoftObjectPath().GetAssetName();
-	Name.RemoveFromEnd(TEXT("_C"));
-	Name.RemoveFromStart(TEXT("BP_Track"));
-	Name.RemoveFromStart(TEXT("Visual"));
-	Name.RemoveFromStart(TEXT("_"));
-	return FText::FromString(FName::NameToDisplayString(Name, false));
+
+	if (const UWorld* World = GetWorld())
+	{
+		if (const auto* Runtime = World->GetSubsystem<UMWTrackRuntimeSubsystem>())
+		{
+			const FText Name = Runtime->GetTrackDisplayName(Offer->TrackClass);
+			if (!Name.IsEmpty()) return Name;
+		}
+	}
+	return FText::Format(NSLOCTEXT("MWTrackSelection", "UnnamedOffer", "트랙 {0}"), FText::AsNumber(OfferId));
 }
 
 void UMWTrackSelectionWidget::Refresh()

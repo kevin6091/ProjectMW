@@ -11,6 +11,8 @@ namespace MWGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_PlaceConstruction, "Asset.Input.PlaceConstruction");
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_SelectConstruction, "Asset.Input.SelectConstruction");
 	
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_RuntimeCatalog, "Asset.Track.RuntimeCatalog");
+
 	// VehicleAsset ID
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_SMIET, "Asset.Vehicle.SMIET");
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_MAMMOTH, "Asset.Vehicle.MAMMOTH");

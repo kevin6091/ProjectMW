@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Gameplay/Track/MWTrackRuntimeData.h"
+#include "Data/MWTrackDefinitionData.h"
 #include "MWTrackRuntimeComponent.generated.h"
 
 class AMWVehiclePawn;
@@ -22,7 +22,7 @@ public:
     UMWTrackRuntimeComponent();
 
     // 복구 데이터의 값과 에셋 참조를 소유한 뒤 충돌·움직임·교통을 구성한다.
-    void Configure(const FMWTrackPieceRuntimeData& Data);
+    void Configure(const FMWTrackDefinition& Data);
 
     // 미리보기 조각에서 실제 경기 트리거·충돌·음향이 동작하지 않도록 표시 상태를 구분한다.
     void SetPreview(bool bInPreview);
@@ -135,7 +135,7 @@ private:
     // 설정 값과 그 안의 에셋 참조는 이 컴포넌트의 수명 동안 보관한다.
     UPROPERTY(Transient)
     // 설정 배열 원소를 가리키는 포인터 대신 값을 보관해 카탈로그 조회 수명과 분리한다.
-    FMWTrackPieceRuntimeData Piece;
+    FMWTrackDefinition Piece;
 
     bool bConfigured = false;
 

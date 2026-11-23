@@ -8,19 +8,29 @@
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "LogChannel.h"
-#include "Misc/Paths.h"
+#include "MWGameplayTags.h"
+#include "System/MWAssetManager.h"
 #include "TimerManager.h"
 
 void UMWTrackRuntimeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
     // 복제된 트랙 컴포넌트가 초기화될 때 사용할 수 있도록 월드 시작 전에 카탈로그를 준비한다.
-    const auto& CatalogRef = GetDefault<UMWTrackRuntimeSettings>()->RuntimeCatalog;
-    Catalog = CatalogRef.LoadSynchronous();
+    Catalog = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(MWGameplayTags::Asset_Track_RuntimeCatalog);
     if (!Catalog)
     {
-        UE_LOG(LogDefault, Warning, TEXT("[MWTrackRuntime] 프로젝트 설정의 트랙 카탈로그를 불러올 수 없습니다. %s"),
-            *CatalogRef.ToString());
+        UE_LOG(LogDefault, Warning, TEXT("[MWTrackRuntime] 공용 에셋 목록에서 트랙 카탈로그를 불러올 수 없습니다."));
+        return;
+    }
+
+    // 월드 시작 전에 조회 표를 만들어 원격에서 복제된 컴포넌트도 같은 행을 찾게 한다.
+    Pieces.Reserve(Catalog->Pieces.Num());
+    for (const FMWTrackDefinition& Piece : Catalog->Pieces)
+    {
+        if (!Piece.TrackClass.IsNull())
+        {
+            Pieces.Add(Piece.TrackClass.ToSoftObjectPath(), &Piece);
+        }
     }
 }
 
@@ -34,30 +44,29 @@ TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
 {
     TArray<TSoftClassPtr<AActor>> Result;
     const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
-    const FString& TrackDirectory = Settings->TrackBlueprintDirectory.Path;
-    if (!Catalog || TrackDirectory.IsEmpty())
+    if (!Catalog)
     {
         return Result;
     }
 
-    // 카탈로그의 클래스 이름은 설정에 지정한 폴더 바로 아래의 BP 패키지와 대응한다.
-    // 풀을 읽을 때는 경로만 만들고, 서버가 뽑은 클래스만 선택 시작 시 불러온다.
+    // 추첨 전에 전체 BP를 로드하지 않도록 카탈로그의 소프트 참조만 모은다.
     Result.Reserve(Catalog->Pieces.Num());
-    for (const FMWTrackPieceRuntimeData& Piece : Catalog->Pieces)
+    for (const FMWTrackDefinition& Piece : Catalog->Pieces)
     {
-        const FString ClassName = Piece.VisualClass.ToString();
-        if (!ClassName.EndsWith(TEXT("_C")))
-        {
-            continue;
-        }
-        const FString PackageName = FPaths::Combine(TrackDirectory, ClassName.LeftChop(2));
-        const TSoftClassPtr<AActor> TrackClass(FSoftObjectPath(PackageName + TEXT(".") + ClassName));
-        if (!Settings->CourseOnlyTracks.Contains(TrackClass))
+        const auto& TrackClass = Piece.TrackClass;
+        if (!TrackClass.IsNull() && TrackClass != Settings->StartTrackClass && TrackClass != Settings->FinishTrackClass
+            && !Settings->CourseOnlyTracks.Contains(TrackClass))
         {
             Result.AddUnique(TrackClass);
         }
     }
     return Result;
+}
+
+FText UMWTrackRuntimeSubsystem::GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const
+{
+    const FMWTrackDefinition* const* Definition = Pieces.Find(TrackClass.ToSoftObjectPath());
+    return Definition ? (*Definition)->DisplayName : FText::GetEmpty();
 }
 
 // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.
@@ -69,10 +78,6 @@ void UMWTrackRuntimeSubsystem::OnWorldBeginPlay(UWorld& InWorld)
         return;
     }
 
-    for (const FMWTrackPieceRuntimeData& Piece : Catalog->Pieces)
-    {
-        Pieces.Add(Piece.VisualClass, &Piece);
-    }
     ActorSpawnHandle = InWorld.AddOnActorSpawnedHandler(
         FOnActorSpawned::FDelegate::CreateUObject(this, &UMWTrackRuntimeSubsystem::OnActorSpawned));
     for (TActorIterator<AActor> Actor(&InWorld); Actor; ++Actor)
@@ -104,7 +109,7 @@ void UMWTrackRuntimeSubsystem::Deinitialize()
 // 늦게 복제되거나 생성된 트랙에도 기존 카탈로그 연결을 적용한다.
 void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 {
-    if (!Pieces.Contains(Actor->GetClass()->GetFName()))
+    if (!Pieces.Contains(FSoftObjectPath(Actor->GetClass())))
     {
         return;
     }
@@ -124,7 +129,7 @@ void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActo
     {
         return;
     }
-    const FMWTrackPieceRuntimeData* const* Data = Pieces.Find(Actor->GetClass()->GetFName());
+    const FMWTrackDefinition* const* Data = Pieces.Find(FSoftObjectPath(Actor->GetClass()));
     if (!Data)
     {
         return;
@@ -158,20 +163,15 @@ void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActo
 void UMWTrackRuntimeSubsystem::ConfigureRuntimeComponent(UMWTrackRuntimeComponent& Component)
 {
     const AActor* Actor = Component.GetOwner();
-    if (!Catalog || !IsValid(Actor))
+    if (!IsValid(Actor))
     {
         return;
     }
-    // 클라이언트의 월드 초기화보다 먼저 호출될 수 있으므로 아직 완성되지 않은 조회 표에 의존하지 않는다.
-    const FMWTrackPieceRuntimeData* Data = Catalog->Pieces.FindByPredicate(
-        [Actor](const FMWTrackPieceRuntimeData& Entry)
-        {
-            return Entry.VisualClass == Actor->GetClass()->GetFName();
-        });
+    const FMWTrackDefinition* const* Data = Pieces.Find(FSoftObjectPath(Actor->GetClass()));
     if (Data)
     {
         Component.SetPreview(PreviewActors.Contains(Actor));
-        Component.Configure(*Data);
+        Component.Configure(**Data);
     }
 }
 

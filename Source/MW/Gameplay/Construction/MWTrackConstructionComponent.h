@@ -48,7 +48,7 @@ public:
 	const FMWTrackPlacementSession& GetPlacementSession() const { return PlacementSession; }
 
 	// BuildFrame은 레벨의 출발 그리드이며 +X가 주행 방향이다.
-	bool BeginPlacement(const FMWTrackCourseEnds& CourseEnds, const FTransform& BuildFrame, double LayoutScale, FText& OutError);
+	bool BeginPlacement(const FTransform& BuildFrame, double LayoutScale, FText& OutError);
 	void CancelPlacement();
 	void UpdatePlacementPreview(APlayerController* Requester, int32 SessionId, int32 Sequence,
 		const FMWTrackPlacementIntent& Intent);
@@ -60,7 +60,6 @@ private:
 	struct FPreparedTrack
 	{
 		TWeakObjectPtr<AActor> Actor;
-		FGameplayTag DefinitionId;
 		FMWTrackPortFrames Ports;
 		bool bEnableCollision = false;
 		bool bEnableTick = false;
@@ -80,8 +79,8 @@ private:
 	UFUNCTION()
 	void OnRep_PlacementSession();
 
-	bool PrepareTrack(UClass* TrackClass, const FVector& Origin, bool bSinglePort, FPreparedTrack& OutTrack, FText& OutError);
-	bool PrepareCourseEnd(FGameplayTag DefinitionId, const FVector& Origin, FPreparedTrack& OutTrack, FText& OutError);
+	bool PrepareTrack(const TSoftClassPtr<AActor>& TrackClass, const FVector& Origin, bool bSinglePort,
+		FPreparedTrack& OutTrack, FText& OutError);
 	void PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform, FMWTrackEndId ConnectedTo = {}, int32 PortIndex = INDEX_NONE);
 	FPreparedTrack* FindPendingTrack(APlayerController* Requester, int32 SessionId);
 	bool PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const;

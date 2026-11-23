@@ -1,12 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataAsset.h"
-#include "MWTrackRuntimeData.generated.h"
+#include "MWTrackRuntimeTypes.generated.h"
 
 class AActor;
 class UStaticMesh;
-class USoundBase;
 
 UENUM(BlueprintType)
 enum class EMWTrackShape : uint8
@@ -155,57 +153,3 @@ struct FMWTrackTrafficModelData
     int32 Weight = 0;
 };
 
-// 트랙 하나의 충돌·기믹·복귀 위치·레일·교통 의존성을 함께 보관한다.
-USTRUCT(BlueprintType)
-struct FMWTrackPieceRuntimeData
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    FName VisualClass;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackShapeData> Shapes;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackMotionData> Motions;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FTransform> RespawnPoints;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FTransform> Rails;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackTrainPart> TrainParts;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    float TrainInterval = 0;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TObjectPtr<USoundBase> TrainBell;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackTrafficLaneData> TrafficLanes;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackTrafficModelData> TrafficModels;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    float LiftDelay = 0;
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    float LiftReturnDelay = 0;
-};
-
-// 복구 트랙 외형 클래스와 실행 설정의 카탈로그다.
-UCLASS(BlueprintType)
-class MW_API UMWTrackRuntimeData : public UDataAsset
-{
-    GENERATED_BODY()
-
-public:
-
-    UPROPERTY(EditAnywhere, Category = "Track")
-    TArray<FMWTrackPieceRuntimeData> Pieces;
-};

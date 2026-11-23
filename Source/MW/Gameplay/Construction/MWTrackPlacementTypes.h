@@ -2,22 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/NetSerialization.h"
-#include "GameplayTagContainer.h"
 #include "MWTrackPlacementTypes.generated.h"
 
 class AActor;
-
-USTRUCT(BlueprintType)
-struct FMWTrackCourseEnds
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
-	FGameplayTag StartDefinitionId;
-
-	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
-	FGameplayTag EndDefinitionId;
-};
 
 USTRUCT(BlueprintType)
 struct FMWTrackEndId
@@ -50,7 +37,6 @@ struct FMWPlacedTrack
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly) int32 PieceId = 0;
-	UPROPERTY(BlueprintReadOnly) FGameplayTag DefinitionAssetId;
 	UPROPERTY(BlueprintReadOnly) TObjectPtr<AActor> Actor;
 	UPROPERTY(BlueprintReadOnly) FTransform WorldTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) FMWTrackEndId ConnectedTo;

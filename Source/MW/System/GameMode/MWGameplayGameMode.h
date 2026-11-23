@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "GameplayTagContainer.h"
-#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "MWGameplayGameMode.generated.h"
 
 class AMWGameplayPlayerController;
@@ -37,9 +35,9 @@ private:
 	void PrepareRace(const TArray<AMWGameplayPlayerController*>& Players);
 	void FailGameplay(const FString& Error);
 
-	// 코스 양 끝의 트랙을 설정한 맵에서 공용 트랙 풀로 건설 단계를 시작한다.
+	// 건설 단계 사용 여부는 시작·종료 BP의 설정과 별개다.
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
-	FMWTrackCourseEnds CourseEnds;
+	bool bEnableTrackConstruction = true;
 
 	TWeakObjectPtr<AMWPlayerStartManager> StartManager;
 	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;

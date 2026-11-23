@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
-#include "Gameplay/Track/MWTrackRuntimeData.h"
+#include "Data/MWTrackDefinitionData.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "MWTrackRuntimeSubsystem.generated.h"
 
@@ -55,6 +55,9 @@ public:
     // 복구 카탈로그에 등록된 일반 트랙만 선택 후보로 제공한다.
     TArray<TSoftClassPtr<AActor>> GetSelectionPool() const;
 
+    // 화면에서 같은 정의의 표시 이름을 읽는다. BP를 새로 로드하지 않는다.
+    FText GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const;
+
     // 배치 미리보기 상태를 실제 트랙 런타임에 전달한다.
     void SetTrackPreview(AActor& Actor, bool bPreview);
     // 복제로 생성된 승강기 컴포넌트에도 기존 카탈로그의 설정을 적용한다.
@@ -85,9 +88,9 @@ private:
     void OnPreviewActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason);
 
     UPROPERTY()
-    TObjectPtr<UMWTrackRuntimeData> Catalog;
+    TObjectPtr<UMWTrackDefinitionData> Catalog;
 
-    TMap<FName, const FMWTrackPieceRuntimeData*> Pieces;
+    TMap<FSoftObjectPath, const FMWTrackDefinition*> Pieces;
 
     // 미리보기 Actor의 수명과 상태는 이 월드에서 관리한다.
     TSet<TWeakObjectPtr<AActor>> PreviewActors;
