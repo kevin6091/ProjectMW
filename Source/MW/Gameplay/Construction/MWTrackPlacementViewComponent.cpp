@@ -1,5 +1,6 @@
 #include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
 
+#include "Components/SceneComponent.h"
 #include "Data/MWInputData.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "Engine/GameViewportClient.h"
@@ -22,6 +23,9 @@
 namespace
 {
 	constexpr double GhostSnapBlendSeconds = 0.12;
+	constexpr float HeldSwayMaxAngleDegrees = 2.0f;
+	constexpr double HeldSwayDegreesAtOneWidthPerSecond = 4.0;
+	constexpr double HeldSwayMinAngleDegrees = 0.02;
 	const FLinearColor LocalColor(0.05f, 0.55f, 1.0f);
 	const FLinearColor SnapColor(0.1f, 1.0f, 0.35f);
 	const FLinearColor RemoteColors[] = {
@@ -29,6 +33,24 @@ namespace
 		FLinearColor(0.82f, 0.18f, 0.75f),
 		FLinearColor(0.55f, 0.26f, 1.0f)
 	};
+
+	double GetProjectedHorizontalDelta(const APlayerController& PC, const FVector& From, const FVector& To)
+	{
+		if (From.Equals(To))
+		{
+			return 0.0;
+		}
+
+		int32 ViewportWidth, ViewportHeight;
+		PC.GetViewportSize(ViewportWidth, ViewportHeight);
+		FVector2D FromScreen, ToScreen;
+		if (ViewportWidth <= 0 || !PC.ProjectWorldLocationToScreen(From, FromScreen)
+			|| !PC.ProjectWorldLocationToScreen(To, ToScreen))
+		{
+			return 0.0;
+		}
+		return (ToScreen.X - FromScreen.X) / ViewportWidth;
+	}
 }
 
 AActor* UMWTrackPlacementViewComponent::GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const
@@ -92,16 +114,38 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		if (FGhost* Ghost = GetOrCreateGhost(PlayerId, Player, bLocal))
 		{
 			VisiblePlayers.Add(PlayerId);
+			const bool bWasBlending = Ghost->SnapBlend.IsSet();
+			double ScreenDelta = 0.0;
 			if (bLocal)
 			{
-				bCanPlace = UpdateLocalPreview(*PC, Session, *Ghost, DeltaSeconds);
+				TOptional<FPointerSample> Pointer;
+				bCanPlace = UpdateLocalPreview(*PC, Session, *Ghost, DeltaSeconds, Pointer);
+				if (Ghost->HeldSway.IsSet())
+				{
+					auto& Previous = Ghost->HeldSway->PreviousPointer;
+					// 포커스·뷰포트 크기가 바뀌거나 스냅으로 이동할 때는 포인터 속도를 새로 잰다.
+					if (Pointer.IsSet() && Previous.IsSet() && Pointer->ViewportWidth == Previous->ViewportWidth
+						&& !Ghost->bSnapped && !bWasBlending && !Ghost->SnapBlend.IsSet())
+					{
+						ScreenDelta = (Pointer->X - Previous->X) / Pointer->ViewportWidth;
+					}
+					Previous = Pointer;
+				}
 			}
 			else if (AActor* Actor = Ghost->Actor.Get())
 			{
 				const double FreeMoveAlpha = FMath::Clamp(DeltaSeconds * 16.0, 0.0, 1.0);
 				const FTransform Pose = BlendGhostPose(*Ghost, Player.PreviewTransform, Player.bSnapped, DeltaSeconds, FreeMoveAlpha);
+				if (Ghost->HeldSway.IsSet() && !Player.bSnapped && !bWasBlending && !Ghost->SnapBlend.IsSet())
+				{
+					// 원격 입력은 기존 복제 자세로 표시한다. 두 자세의 포트 중앙을 같은 카메라로 투영한다.
+					const FVector Center = (Ghost->Ports[0].GetLocation() + Ghost->Ports[1].GetLocation()) * 0.5;
+					ScreenDelta = GetProjectedHorizontalDelta(*PC, Actor->GetActorTransform().TransformPosition(Center),
+						Pose.TransformPosition(Center));
+				}
 				Actor->SetActorLocationAndRotation(Pose.GetLocation(), Pose.GetRotation());
 			}
+			UpdateHeldSway(*Ghost, ScreenDelta, DeltaSeconds);
 		}
 	}
 
@@ -175,11 +219,28 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
 	MWTrackPreview::ShowWireframes(*Actor);
 	MWTrackPreview::SetWireframeColor(*Actor, Color);
+	if (USceneComponent* Wireframes = MWTrackPreview::FindWireframeGroup(*Actor))
+	{
+		if (const USceneComponent* Parent = Wireframes->GetAttachParent();
+			Parent && !Wireframes->IsUsingAbsoluteLocation() && !Wireframes->IsUsingAbsoluteRotation())
+		{
+			// 표시 그룹의 부모 좌표로 연결점 두 개를 옮겨 트랙 중앙을 지나는 축을 잡는다.
+			const FTransform& ParentWorld = Parent->GetComponentTransform();
+			const FTransform& ActorWorld = Actor->GetActorTransform();
+			const FVector First = ParentWorld.InverseTransformPosition(ActorWorld.TransformPosition(Ghost.Ports[0].GetLocation()));
+			const FVector Last = ParentWorld.InverseTransformPosition(ActorWorld.TransformPosition(Ghost.Ports[1].GetLocation()));
+			const FVector Axis = (Last - First).GetSafeNormal();
+			if (!Axis.IsNearlyZero())
+			{
+				Ghost.HeldSway.Emplace(FHeldSway{Wireframes, Wireframes->GetRelativeTransform(), (First + Last) * 0.5, Axis});
+			}
+		}
+	}
 	return &Ghosts.Add(PlayerId, MoveTemp(Ghost));
 }
 
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds)
+	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds, TOptional<FPointerSample>& OutPointer)
 {
 	if (bWaitingForReply)
 	{
@@ -188,7 +249,8 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 
 	FTransform Target;
 	bool bSnapped;
-	if (!ResolveGhostFromPointer(PC, Session, Ghost, Target, bSnapped))
+	FPointerSample Pointer;
+	if (!ResolveGhostFromPointer(PC, Session, Ghost, Target, bSnapped, &Pointer))
 	{
 		if (Ghost.SnapBlend.IsSet())
 		{
@@ -207,6 +269,7 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 		}
 		return false;
 	}
+	OutPointer = Pointer;
 	const bool bLocalTurn = Ghost.bLastLocalReversed != Intent.bReversed;
 	Ghost.bLastLocalReversed = Intent.bReversed;
 	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0, bLocalTurn));
@@ -225,7 +288,8 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 }
 
 bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped)
+	const FMWTrackPlacementSession& Session, const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped,
+	FPointerSample* OutPointer)
 {
 	const auto* LocalPlayer = PC.GetLocalPlayer();
 	const FViewport* Viewport = LocalPlayer && LocalPlayer->ViewportClient ? LocalPlayer->ViewportClient->Viewport : nullptr;
@@ -240,6 +304,10 @@ bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPl
 		|| !MWTrackSnap::UpdateIntentFromRay(Ghost.Ports, Session, Origin, Ray, Intent))
 	{
 		return false;
+	}
+	if (OutPointer)
+	{
+		*OutPointer = {X, Viewport->GetSizeXY().X};
 	}
 	bOutSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, OutTarget);
 	return true;
@@ -311,6 +379,38 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		Location = Center - Rotation.RotateVector(Target.GetScale3D() * PortCenter);
 	}
 	return FTransform(Rotation, Location, Target.GetScale3D());
+}
+
+void UMWTrackPlacementViewComponent::UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const
+{
+	if (!Ghost.HeldSway.IsSet())
+	{
+		return;
+	}
+	FHeldSway& Sway = Ghost.HeldSway.GetValue();
+	USceneComponent* Wireframes = Sway.Wireframes.Get();
+	if (!Wireframes)
+	{
+		return;
+	}
+
+	// 화면 폭당 이동 속도를 써서 창 크기와 프레임 시간에 따라 기울기가 달라지는 것을 줄인다.
+	const double Speed = DeltaSeconds > UE_SMALL_NUMBER ? ScreenDelta / DeltaSeconds : 0.0;
+	const double DesiredAngle = Speed * HeldSwayDegreesAtOneWidthPerSecond;
+	const float TargetAngle = FMath::Abs(DesiredAngle) < HeldSwayMinAngleDegrees ? 0.0f
+		: static_cast<float>(FMath::Clamp(DesiredAngle, -HeldSwayMaxAngleDegrees, HeldSwayMaxAngleDegrees));
+	const float LastAngle = Sway.AngleDegrees;
+	Sway.AngleDegrees = FMath::FInterpConstantTo(LastAngle, TargetAngle, DeltaSeconds,
+		HeldSwayMaxAngleDegrees / static_cast<float>(GhostSnapBlendSeconds));
+	if (Sway.AngleDegrees == LastAngle)
+	{
+		return;
+	}
+
+	const FQuat Tilt(Sway.Axis, FMath::DegreesToRadians(Sway.AngleDegrees));
+	// 루트와 소켓은 그대로 두고 와이어프레임의 위치와 회전만 원래 자세에서 계산한다.
+	const FVector Location = Sway.Center + Tilt.RotateVector(Sway.RestPose.GetLocation() - Sway.Center);
+	Wireframes->SetRelativeLocationAndRotation(Location, Tilt * Sway.RestPose.GetRotation());
 }
 
 void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const

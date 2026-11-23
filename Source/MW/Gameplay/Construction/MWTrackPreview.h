@@ -4,6 +4,7 @@
 
 class AActor;
 class UMaterialInterface;
+class USceneComponent;
 
 namespace MWTrackPreview
 {
@@ -18,6 +19,7 @@ namespace MWTrackPreview
 	// 선택판·배치 고스트는 확정 트랙으로 승격되지 않고 폐기된다.
 	bool IsDisplayOnly(const AActor& Track);
 
+	USceneComponent* FindWireframeGroup(const AActor& Track);
 	void HideWireframes(AActor& Track);
 	void SetWireframeColor(AActor& Track, const FLinearColor& Color);
 }
