@@ -14,7 +14,6 @@
 #include "CollisionShape.h"
 #include "Math/RotationMatrix.h"
 #include "HAL/IConsoleManager.h"
-#include "ProfilingDebugging/CpuProfilerTrace.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogMWVehicleSupport, Log, All);
 
@@ -82,8 +81,6 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 // 독립 실행, 서버 재현, 소유자의 예측과 재실행이 같은 충돌·접지 계산을 사용한다.
 void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_DriveStep);
-
 	FHitResult Contact;
 	UpdateGroundState(&Contact);
 	
@@ -97,17 +94,6 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime)
 		if (bHasGroundPlane)
 		{
 			GroundOrientationNormal = OrientationNormal;
-		}
-
-		// 기존 접지 로그와 같은 스텝의 목표 자세를 기록한다. 진단을 위한 추가 Trace는 하지 않는다.
-		if (CVarVehicleSupportLog.GetValueOnGameThread() != 0)
-		{
-			UE_LOG(LogMWVehicleSupport, Log,
-				TEXT("VehicleOrientation Time=%.6f Frame=%llu Actor=%s Plane=%d ")
-				TEXT("HalfLength=%.6f HalfWidth=%.6f NX=%.6f NY=%.6f NZ=%.6f"),
-				GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0, GFrameCounter, *GetPathNameSafe(PawnOwner),
-				bHasGroundPlane, DriveConfig.GroundPlaneProbeHalfLength, DriveConfig.GroundPlaneProbeHalfWidth,
-				GroundOrientationNormal.X, GroundOrientationNormal.Y, GroundOrientationNormal.Z);
 		}
 	}
 	
@@ -1019,7 +1005,6 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool b
 	
 	const auto SweepGround = [&](const FCollisionShape& ProbeShape) -> bool
 	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_GroundSweep);
 		return World->SweepSingleByChannel(
 			OutHit,
 			Start,
@@ -1473,16 +1458,12 @@ double UMWVehicleMovementComponent::EstimateRequiredNormalAcceleration(const FHi
 
 	FHitResult AheadHit;
 	
-	bool bHit;
-	{
-		TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_GroundCurvatureTrace);
-		bHit = World->LineTraceSingleByChannel(
+	const bool bHit = World->LineTraceSingleByChannel(
 			AheadHit,
 			ProbeCenter + Normal * ProbeHeight,
 			ProbeCenter - Normal * ProbeHeight,
 			VehicleGroundChannel,
 			QueryParams);
-	}
 
 	if (!bHit || !AheadHit.IsValidBlockingHit())
 	{
