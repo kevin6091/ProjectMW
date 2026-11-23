@@ -8,6 +8,8 @@ class AMWGameplayGameState;
 class AMWLobbyGameState;
 class UMWEnvironmentTheme;
 class USceneComponent;
+class UInstancedStaticMeshComponent;
+class UStaticMesh;
 
 USTRUCT()
 struct FMWEnvironmentBinding
@@ -51,6 +53,10 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     TArray<FString> HiddenBackdropActorPaths;
 
+    // 설치한 트랙을 받치는 로컬 렌더링 메시다. 미지정 시 지지대를 표시하지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
+    TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
+
     UFUNCTION(BlueprintPure, Category = "Environment")
     AMWEnvironmentGenerator* GetGenerator() const
     {
@@ -78,6 +84,13 @@ private:
     TObjectPtr<AMWEnvironmentGenerator> Generator;
 
     TSharedPtr<struct FStreamableHandle> FirstViewMaterialHandle;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInstancedStaticMeshComponent> TrackSupports;
+
+    int32 SupportSessionId = INDEX_NONE;
+    TSet<int32> ResolvedSupportPieces;
+    void RefreshTrackSupports();
 
     UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;

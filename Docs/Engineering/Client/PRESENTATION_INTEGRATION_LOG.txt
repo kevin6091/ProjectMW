@@ -1,0 +1,66 @@
+ProjectMW | UE 5.8 | 2026-11-23 KST | feature/presentation-integration
+origin/main 9a1d9be + Niagara 2bdb511 + 지지대 4fe138a, 두 쿠킹 경로 유지
+UE 원문 시각 UTC. 관측기 t는 시작 후 경과 초.
+
+[Editor Win64 Development 빌드]
+Result: Succeeded
+Total execution time: 46.93 seconds
+
+[Cua Driver 정상 로비와 트랙 설치 → Racing]
+[2026.11.23-01.08.54:605][972]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-01.11.45:215][111]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-01.12.48:096][503]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-01.12.48:597][508]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.23-01.12.48:636][509]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.23-01.12.48:662][509]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_UFOLOGY_C_0
+[2026.11.23-01.12.48:676][509]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-01.12.48:752][509]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-01.12.48:813][509]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+Course 1 Asset.Track.Course.Start.WoodenCapped
+Course 2 Asset.Track.Straight.Test
+Course 3 Asset.Track.Curve.Test
+Course 4 Asset.Track.Placeholder.Test
+Course 5 Asset.Track.Course.End.WoodenCap
+P1 BP_MWVehiclePawn_FRED_C_0 위치=[-2620.0, 375.0, 6099.094] 지지대:
+  piece 2: XY=[2760.39, 450.0] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 3: XY=[7204.367, 83.885] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 4: XY=[9817.176, -2450.259] floor=0.0 top=6462.41 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 5: XY=[12409.984, -5043.066] floor=0.0 top=7046.07 collision=<CollisionEnabled.NO_COLLISION: 0>
+P2 BP_MWVehiclePawn_DOUG_C_0 위치=[-2620.0, 525.0, 6048.333] 지지대:
+  piece 2: XY=[2760.39, 450.0] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 3: XY=[7204.367, 83.885] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 4: XY=[9817.176, -2450.26] floor=0.0 top=6462.41 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 5: XY=[12409.984, -5043.066] floor=0.0 top=7046.07 collision=<CollisionEnabled.NO_COLLISION: 0>
+P3 BP_MWVehiclePawn_UFOLOGY_C_0 위치=[-2870.0, 375.0, 6077.858] 지지대:
+  piece 2: XY=[2760.39, 450.0] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 3: XY=[7204.367, 83.885] floor=0.0 top=5878.84 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 4: XY=[9817.176, -2450.26] floor=0.0 top=6462.41 collision=<CollisionEnabled.NO_COLLISION: 0>
+  piece 5: XY=[12409.984, -5043.066] floor=0.0 top=7046.07 collision=<CollisionEnabled.NO_COLLISION: 0>
+
+[부스터 Type 검사 · P2 DOUG]
+[2026.11.23-01.14.56:203][ 80]LogPython: [MWBoosterQA] integration camera reset pass, extra native pickup at <Struct 'Vector' (0x0000012B958C3D50) {x: -2180.000000, y: 525.000000, z: 6047.000000}>, same race and original course
+[2026.11.23-01.14.56:756][ 98]LogPython: [MWBoosterQA] integration camera reset pass: real pickup overlap granted Booster to P2
+P1 원격 발동 전 t=514.437 일반=2 부스터=0 속력=329.96 cm/s
+P1 원격 발동 중 t=546.297 일반=0 부스터=1 속력=338.92 cm/s
+P1 원격 자동 종료 후 t=548.422 일반=2 부스터=0 속력=1984.54 cm/s
+P2 본인 발동 전 t=514.437 일반=2 부스터=0 속력=323.11 cm/s
+P2 본인 발동 중 t=546.312 일반=0 부스터=1 속력=326.83 cm/s
+P2 본인 자동 종료 후 t=548.422 일반=2 부스터=0 속력=1926.80 cm/s
+P3 원격 발동 전 t=513.906 일반=2 부스터=0 속력=4014.61 cm/s
+P3 원격 발동 중 t=546.312 일반=0 부스터=1 속력=305.60 cm/s
+P3 원격 자동 종료 후 t=548.422 일반=2 부스터=0 속력=2022.94 cm/s
+상태 변경 관측 31행 중 동시 활성 0회.
+
+[기존 자동화 10개]
+[2026.11.23-01.16.36:080][315]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+[2026.11.23-01.16.36:259][317]LogAutomationController: Display: Test Completed. Result={Success} Name={CheckpointVelocity} Path={MW.Vehicle.CheckpointVelocity}
+[2026.11.23-01.16.36:556][319]LogAutomationController: Error: Test Completed. Result={Fail} Name={CollisionAndGround} Path={MW.Vehicle.CollisionAndGround}
+[2026.11.23-01.16.36:727][321]LogAutomationController: Display: Test Completed. Result={Success} Name={ConfigValidation} Path={MW.Vehicle.ConfigValidation}
+[2026.11.23-01.16.36:957][325]LogAutomationController: Display: Test Completed. Result={Success} Name={FrameRateAndReset} Path={MW.Vehicle.FrameRateAndReset}
+[2026.11.23-01.16.37:208][326]LogAutomationController: Display: Test Completed. Result={Success} Name={LocalControls} Path={MW.Vehicle.LocalControls}
+[2026.11.23-01.16.37:590][329]LogAutomationController: Display: Test Completed. Result={Success} Name={OverspeedRecovery} Path={MW.Vehicle.OverspeedRecovery}
+[2026.11.23-01.16.37:731][330]LogAutomationController: Display: Test Completed. Result={Success} Name={VehicleContact} Path={MW.Vehicle.VehicleContact}
+[2026.11.23-01.16.38:445][332]LogAutomationController: Display: Test Completed. Result={Success} Name={WallBounce} Path={MW.Vehicle.WallBounce}
+[2026.11.23-01.16.38:684][334]LogAutomationController: Display: Test Completed. Result={Success} Name={WallGroundContact} Path={MW.Vehicle.WallGroundContact}
+[2026.11.23-01.16.36:576][320]LogAutomationController: Error: Expected 'Upward impulse releases ground' to be false. [C:\workspace\UE\ProjectMW\Source\MW\Tests\MWVehicleMovementTests.cpp(213)]
+[2026.11.23-01.16.36:588][320]LogAutomationController: Error: Expected 'Upward impulse is not erased' to be true. [C:\workspace\UE\ProjectMW\Source\MW\Tests\MWVehicleMovementTests.cpp(214)]

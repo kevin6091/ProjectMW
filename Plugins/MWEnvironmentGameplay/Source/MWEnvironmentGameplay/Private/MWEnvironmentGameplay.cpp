@@ -144,6 +144,7 @@ void UMWEnvironmentGameplay::RefreshState()
     if (Generator && ActiveTheme == ThemeId)
     {
         Generator->ViewPlayerController = Local;
+        RefreshTrackSupports();
         if (!MatchTheme.IsNone() && Preload && !ArrivalTheme.IsNone())
         {
             Preload->ClearSelection();
@@ -253,6 +254,9 @@ void UMWEnvironmentGameplay::StopEnvironment()
         Generator->ClearEnvironment();
         Generator->Destroy();
     }
+    TrackSupports = nullptr;
+    SupportSessionId = INDEX_NONE;
+    ResolvedSupportPieces.Reset();
     FirstViewMaterialHandle.Reset();
     Generator = nullptr;
     ActiveTheme = NAME_None;

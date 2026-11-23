@@ -1,0 +1,57 @@
+Cua Driver 3인 PIE | 지지대 좌표 단위 cm
+P1 <MWRoomPhase.RACING: 9> 지지대 4
+P1 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 0
+P1 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 1
+P1 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 2
+P1 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 4
+P2 <MWRoomPhase.RACING: 9> 지지대 4
+P2 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 0
+P2 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 1
+P2 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 2
+P2 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 4
+P3 <MWRoomPhase.RACING: 9> 지지대 4
+P3 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 0
+P3 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 1
+P3 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 2
+P3 <MWRoomPhase.TRACK_PLACEMENT: 5> 지지대 4
+P1 /Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive 차량=BP_MWVehiclePawn_FRED_C_0 위치=[-2620.0, 375.0, 6069.2] 소유=True
+  #2 XY=[2760.39, 450.0] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #3 XY=[7760.39, 450.001] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #4 XY=[12760.39, 450.002] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #5 XY=[16510.39, 450.003] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+P2 /Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive 차량=BP_MWVehiclePawn_DOUG_C_0 위치=[-2620.0, 525.0, 6046.2] 소유=True
+  #2 XY=[2760.39, 450.0] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #3 XY=[7760.39, 450.0] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #4 XY=[12760.39, 450.003] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #5 XY=[16510.39, 450.003] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+P3 /Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive 차량=BP_MWVehiclePawn_UFOLOGY_C_0 위치=[-2870.0, 375.0, 6061.2] 소유=True
+  #2 XY=[2760.39, 450.0] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #3 XY=[7760.39, 450.0] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #4 XY=[12760.39, 450.003] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+  #5 XY=[16510.39, 450.003] Z=0.0..5878.84 <CollisionEnabled.NO_COLLISION: 0>
+[2026.11.20-08.35.41:000][ 27]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.35.41:202][ 27]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.28:451][787]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.28:696][788]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.28:926][789]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.29:285][791]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.30:275][811]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.38.30:528][812]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.39.32:245][985]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=2 FloorZ=0.0 Top=V(X=2760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.39.33:264][ 27]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=2 FloorZ=0.0 Top=V(X=2760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.39.33:276][ 27]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=2 FloorZ=0.0 Top=V(X=2760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.39.46:787][478]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=3 FloorZ=0.0 Top=V(X=7760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.39.46:799][478]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=3 FloorZ=0.0 Top=V(X=7760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.39.46:993][483]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=3 FloorZ=0.0 Top=V(X=7760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.00:997][963]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=4 FloorZ=0.0 Top=V(X=12760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:009][963]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=5 FloorZ=0.0 Top=V(X=16510.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:047][964]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=4 FloorZ=0.0 Top=V(X=12760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:054][964]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=5 FloorZ=0.0 Top=V(X=16510.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:066][964]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=4 FloorZ=0.0 Top=V(X=12760.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:082][964]LogTemp: Verbose: [MWTrackSupports] World=L_Dev_Drive Session=1 Piece=5 FloorZ=0.0 Top=V(X=16510.39, Y=450.00, Z=5878.84)
+[2026.11.20-08.40.01:178][965]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.20-08.40.01:238][966]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.20-08.40.01:296][967]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.20-08.41.41:348][556]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.41.41:519][556]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared
+[2026.11.20-08.41.41:651][556]LogTemp: Display: [MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared

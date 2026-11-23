@@ -246,6 +246,10 @@ UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeDa
         Component->SetCollisionResponseToAllChannels(ECR_Block);
         Component->SetGenerateOverlapEvents(false);
         Component->ComponentTags.Add(RoadTag);
+        if (Shape.MotionIndex == INDEX_NONE)
+        {
+            Component->ComponentTags.Add(FixedRoadTag);
+        }
         RoadCollision.Add(Component);
     }
     else
