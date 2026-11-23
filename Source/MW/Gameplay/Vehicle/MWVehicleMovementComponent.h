@@ -132,10 +132,10 @@ private:
 	// 기하학적으로 유효한 도로 후보를 찾는다.
 	// 접지 상태나 속도는 변경하지 않는다.
 	// 반환값이 true일 때만 OutHit을 사용한다.
-	bool FindGroundCandidate(FHitResult& OutHit) const;
+	bool FindGroundCandidate(FHitResult& OutHit, bool bWasGrounded) const;
 	void UpdateGroundState(FHitResult* OutAcceptedHit = nullptr);
 	// 노면 정렬과 조향을 충돌·간격 보정과 함께 적용한다.
-	void UpdateGroundRotation(float DeltaTime);
+	bool UpdateGroundRotation(float DeltaTime);
 	
 	// 이전 노면의 접선 속도를 새 노면으로 회전시킨다.
 	// 외력·점프에 의한 분리 속도와 접지 여부는 호출부에서 판단한다.
@@ -168,9 +168,9 @@ private:
 	};
 
 	double CalculateDownforceAcceleration(double TangentSpeed) const;
-	double EstimateRequiredNormalAcceleration(const FHitResult& Contact, const FVector& TangentVelocity,
+	double EstimateRequiredNormalAcceleration(const FHitResult& Contact, const FVector& TangentVelocity, bool bWasGrounded,
 		FGroundSupportDiagnostics& Diagnostics) const;
-	double CalculateGroundNormalLoadAcceleration(const FHitResult& Contact, const FVector& TangentVelocity,
+	double CalculateGroundNormalLoadAcceleration(const FHitResult& Contact, const FVector& TangentVelocity, bool bWasGrounded,
 		FGroundSupportDiagnostics& Diagnostics) const;
 	void LogGroundSupport(const TCHAR* Decision, bool bWasGrounded, const FHitResult* Candidate,
 		const FGroundSupportDiagnostics& Diagnostics) const;
