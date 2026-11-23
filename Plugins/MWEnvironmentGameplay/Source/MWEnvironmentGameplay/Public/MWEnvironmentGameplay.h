@@ -60,6 +60,13 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
     TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
 
+    // 설치가 승인된 직후 노면 표시가 커졌다 돌아오는 시간과 최대 확대량이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackPlacementPopSeconds = 0.23f;
+
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", ClampMax = "0.15"))
+    float TrackPlacementPopScale = 0.075f;
+
     // 설치 섬광과 연기를 한 번 재생하는 카메라 방향 머티리얼이다.
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
     TSoftObjectPtr<UMaterialInterface> TrackLaidParticleMaterial;
@@ -130,6 +137,32 @@ private:
         float RiseHeight;
         double StartedAt;
     };
+
+    struct FTrackPopSurface
+    {
+        TWeakObjectPtr<UStaticMeshComponent> Original;
+        TWeakObjectPtr<UStaticMeshComponent> Visual;
+        FTransform RestTransform;
+    };
+
+    struct FTrackPlacementPop
+    {
+        int32 PieceId = 0;
+        FVector ContactPoint = FVector::ZeroVector;
+        double StartedAt = 0.0;
+        bool bLoggedPeak = false;
+        TArray<FTrackPopSurface> Surfaces;
+    };
+
+    int32 PlacementPopSessionId = INDEX_NONE;
+    bool bSawOpenPlacementForPop = false;
+    TSet<int32> PresentedPopPieces;
+    TArray<FTrackPlacementPop> TrackPlacementPops;
+    FTimerHandle PlacementPopTimer;
+    void RefreshTrackPlacementPops();
+    void TickTrackPlacementPops();
+    void RestoreTrackPopSurfaces(const FTrackPlacementPop& Pop) const;
+    void ResetTrackPlacementPops();
 
     int32 SupportSessionId = INDEX_NONE;
     bool bObservedOpenPlacement = false;

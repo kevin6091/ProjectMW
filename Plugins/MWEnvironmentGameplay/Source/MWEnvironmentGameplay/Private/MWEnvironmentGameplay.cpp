@@ -159,6 +159,7 @@ void UMWEnvironmentGameplay::RefreshState()
     if (Generator && ActiveTheme == ThemeId)
     {
         Generator->ViewPlayerController = Local;
+        RefreshTrackPlacementPops();
         RefreshTrackSupports();
         if (!MatchTheme.IsNone() && Preload && !ArrivalTheme.IsNone())
         {
@@ -265,6 +266,7 @@ void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInt
 // 현재 생성기를 정리하고 잠시 숨겼던 레벨 배경·조명의 표시 상태를 복원한다.
 void UMWEnvironmentGameplay::StopEnvironment()
 {
+    ResetTrackPlacementPops();
     ResetTrackSupports();
     if (IsValid(Generator))
     {
