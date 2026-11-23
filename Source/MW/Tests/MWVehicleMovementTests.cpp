@@ -774,6 +774,50 @@ bool FMWRaceDriveNetworkTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Proxy presentation never returns to the old finish pose"), Pawn->GetActorLocation().Equals(PreparedSnapshot.Location, 0.1));
 	Pawn->SetPlayerState(Player);
 	Pawn->SetRole(ROLE_Authority);
+
+	// 머지 회귀: 실제 예측 경로에서 한 스텝의 충돌 회전과 상대 접촉 검사를 함께 확인한다.
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Round.FinishOrder = 0;
+	Player->ApplyRoundStateFromServer(Round);
+	Scene.Reset(FVector(0, 0, 1000));
+	Pawn->SetRole(ROLE_AutonomousProxy);
+	const auto ResetAirPrediction = [&]()
+	{
+		FMWVehicleDriveSnapshot Air;
+		Air.StreamId = Pawn->AppliedStreamId + 1;
+		Air.bDriveAllowed = true;
+		Air.RoundEpoch = Progress.RoundEpoch;
+		Air.Location = FVector(0, 0, 1000);
+		Air.ImpactYawRate = 90.f;
+		Pawn->ServerDriveSnapshot = Air;
+		Pawn->TickPredictedDrive(0.f); // 새 스트림 복원만 하고 이동은 아래 한 스텝에서 수행한다.
+	};
+	ResetAirPrediction();
+	AMWVehiclePawn::FPredictedMove FreeRotation;
+	FreeRotation.ResultTime = 1.0 / 120.0;
+	Pawn->SimulatePredictedMove(FreeRotation);
+	TestTrue(TEXT("One predicted step integrates 90 degrees per second into 0.75 degrees"),
+		FMath::IsNearlyEqual(FreeRotation.Result.Rotation.Yaw, 0.75, 0.001));
+	TestTrue(TEXT("Collision yaw damping is applied once per predicted step"),
+		FMath::IsNearlyEqual(FreeRotation.Result.ImpactYawRate, 90.f * FMath::Exp(-MWVehicleImpactYawDamping / 120.f), 0.001f));
+
+	ResetAirPrediction();
+	AMWVehiclePawn::FPredictedMove BlockedRotation;
+	BlockedRotation.ResultTime = 1.0 / 120.0;
+	FMWVehicleContactSample Contact{};
+	Contact.Vehicle = FObjectKey(Scene.Floor->GetOwner()); // 실제 차량 충돌체 대신 저장된 예측 접촉만 사용한다.
+	Contact.StreamId = Contact.Revision = 1;
+	Contact.Extent = Pawn->CollisionRoot->GetScaledBoxExtent();
+	Contact.Location = Contact.SourceLocation = FVector(0, 2 * Contact.Extent.Y + 0.5, 1000);
+	Contact.Rotation = Contact.SourceRotation = FQuat::Identity;
+	Contact.Velocity = Contact.SourceVelocity = FVector::ZeroVector;
+	Contact.Tuning = {1200.f, 0.1f, 1.f, 100.f};
+	BlockedRotation.Contacts.Add(Contact);
+	Pawn->SimulatePredictedMove(BlockedRotation);
+	TestTrue(TEXT("A saved predicted contact blocks rotation into another vehicle"),
+		FMath::IsNearlyZero(BlockedRotation.Result.Rotation.Yaw, 0.001));
+	TestFalse(TEXT("Airborne rotation does not invent ground support"), BlockedRotation.Result.bGrounded);
+	Pawn->SetRole(ROLE_Authority);
 	return true;
 }
 

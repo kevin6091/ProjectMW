@@ -369,6 +369,16 @@ GameMode는 서버 전용 준비 집합 하나, 타이머 하나와 기존 `Prog
 - GameState에 C++ 읽기 전용 GetProgressRef를 추가하여 CanDrive·충돌 상태 갱신·이동 스냅샷의 Epoch 조회에서 Results 배열 복사를 제거했다. Blueprint GetProgress와 타이머/Phase 전환의 값 스냅샷은 유지한다. 프레임 성능 개선 수치는 측정하지 않았다.
 - 이번 보완의 MWEditor/MW Win64 Development 빌드와 자동화 23/23(테스트 경고 0)을 통과했다. 기존 RoundLoop 검사에 준비 거절/재수락/중복 재평가와 결과 대기 중 이탈 경계를 추가했다. 빌드에는 변경 범위 밖의 MWItemComponentVisual.cpp GetBindings() C4996 경고가 남아 있다. 결과는 `Saved/Automation/RoundLoopFix/index.json`, `Saved/Logs/RoundLoopFix*Build.log`, `Saved/Logs/RoundLoopFixVerification.json`에 있다. 서버 진입점의 재수신 검사이며 실제 클라이언트 재보고 주기·다중 프로세스 패킷·프레임 성능·Cook/패키징 검증은 수행하지 않았다.
 
+### main 경사로 접지 변경의 병합 보완 — 2026-11-23
+
+- 대상 머지는 `50200ea`(GameProgress `c4ce90c` + main `59c2dc7`)다. 수정 전 정상 Editor 빌드에서 UpdateGroundRotation 인자 불일치(C2660), 누락된 PredictedContacts(C2065), bool 함수의 반환값 누락(C2561)을 확인했다. 한 스텝에 회전 함수가 두 번 호출되는 병합 흔적도 남아 있었다.
+- 기존 UpdateGroundRotation에 main의 bool 반환을 적용하되 PredictedContacts 인자를 유지한다. SimulateDriveStep는 이를 한 번 호출하여 이동 여부를 받고, 기존 CanDrive 재검사 후 main의 조건부 UpdateGroundState를 수행한다. 공중 분기는 목표 회전만 갱신하고 실제 이동은 MoveVehicle에서 수행하므로 false를 반환한다.
+- main의 접지 중 안쪽 Box 재검사, bWasGrounded 전달, 다른 트랙의 볼록 곡률을 미리 적용하지 않는 CrossTrackCrest와 바닥 검사 재사용 조건을 유지한다. 기존 회전 중 예측 접촉 검사·충돌 회전 감쇠·주행 잠금·라운드/점수/서든데스 계약도 유지한다. 새 RPC·필드·클래스·게임 규칙은 추가하지 않는다.
+- 기존 StreamAndPrediction 자동화에 공중 90도/초의 120Hz 단일 스텝 회전량 0.75도, 스텝당 한 번 감쇠, 실제 상대 Actor 없이 저장한 예측 접촉만으로 회전 차단을 확인하는 회귀 검사를 추가했다. 기존 역할 전환 fixture를 사용하며 별도 테스트 GameMode나 Runtime 접근 API는 만들지 않는다.
+- 검증: UE 5.8.4 MWEditor/MW Win64 Development 정상 빌드는 모두 성공했다. 자동화는 22/23 성공이며, 추가한 회전·감쇠·예측 접촉 검사와 기존 주행 잠금·완주·충돌·접지·프레임 시간 검사는 통과했다. RoundLoop는 현재 초기화된 카탈로그에 Asset.Track.Straight.Test가 없어 첫 선택 승인 단계에서 실패했다. 새 프로세스에서 RoundLoop만 실행해도 같은 실패가 재현되어 다른 테스트 실행 순서와 구분했다. 이 데이터 문제를 이번 병합 수정으로 해결한 것으로 처리하지 않으며 이전 머지 전 23/23 결과를 현재 결과로 재사용하지 않는다.
+- main 부모의 FindGroundCandidate, EstimateRequiredNormalAcceleration, CalculateGroundNormalLoadAcceleration는 공백을 제외한 함수 본문 비교에서 모두 일치했다. GameMode/PlayerState/GameState/Controller/차량 네트워크 코드와 카탈로그 설정은 이번 수정에 포함하지 않았다. 빌드의 기존 MWItemComponentVisual.cpp GetBindings() C4996 경고는 유지된다. 실제 다중 프로세스 주행·지연/손실·렌더링·Cook/패키징은 이번에 실행하지 않았다.
+- 결과 경로: Saved/Logs/MainMergeFixEditorBuild.log, MainMergeFixGameBuild.log, MainMergeFixVerification.json, Saved/Automation/MainMergeFix/index.json(전체), Saved/Automation/MainMergeFixRoundLoop/index.json(단독 재현). 수정 전 컴파일 실패 증거는 Saved/Logs/MainMergeReviewEditorBuild.log에 보존한다.
+
 ### 복구 차량 외형·바퀴 표시 이관 — 2026-11-05
 
 `feature/vehicle-visuals`의 로컬 ProjectMW에서 Smiet, Mammoth, Ufology, Doug, Fred의 Pawn Blueprint 5개를 직접 메시 구조로 변경했다. Commit/Push/UVCS 제출은 수행하지 않았다.

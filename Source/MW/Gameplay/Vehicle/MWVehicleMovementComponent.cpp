@@ -296,14 +296,13 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 		}
 	}
 
-	UpdateGroundRotation(DeltaTime, PredictedContacts);
+	const bool bMovedForRotation = UpdateGroundRotation(DeltaTime, PredictedContacts);
 	if (Vehicle && !Vehicle->CanDrive())
 	{
 		StopMovementImmediately();
 		return;
 	}
 
-	const bool bMovedForRotation = UpdateGroundRotation(DeltaTime);
 	// 움직이지 않은 접지 차량은 같은 위치와 자세에서 얻은 바닥 검사 결과를 재사용한다.
 	if (bMovedForRotation || !bGrounded)
 	{
@@ -1380,7 +1379,7 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool b
 	return FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) >= MinGroundDot;
 }
 
-bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
+bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts)
 {
 	if (!UpdatedComponent)
 	{
@@ -1418,7 +1417,8 @@ bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
 		{
 			TargetRotation = Candidate;
 		}
-		return;
+		// 공중에서는 목표 회전만 계산한다. 실제 이동은 MoveVehicle에서 수행한다.
+		return false;
 	}
 	const FVector Normal = GroundNormal.GetSafeNormal();
 

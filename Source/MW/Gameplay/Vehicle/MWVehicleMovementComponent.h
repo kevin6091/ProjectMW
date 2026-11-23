@@ -143,8 +143,8 @@ private:
 	// 반환값이 true일 때만 OutHit을 사용한다.
 	bool FindGroundCandidate(FHitResult& OutHit, bool bWasGrounded) const;
 	void UpdateGroundState(FHitResult* OutAcceptedHit = nullptr);
-	// 노면 정렬과 조향을 충돌·간격 보정과 함께 적용한다.
-	bool UpdateGroundRotation(float DeltaTime);
+	// 예측 접촉을 포함해 노면 정렬과 조향을 적용하고, 실제 충돌체를 움직였는지 반환한다.
+	bool UpdateGroundRotation(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts);
 	
 	// 이전 노면의 접선 속도를 새 노면으로 회전시킨다.
 	// 외력·점프에 의한 분리 속도와 접지 여부는 호출부에서 판단한다.
