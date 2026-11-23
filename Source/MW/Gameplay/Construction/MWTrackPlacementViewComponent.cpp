@@ -194,7 +194,9 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 		{
 			// 포인터를 읽을 수 없을 때는 마지막 표시 목표까지 보간만 마치고 입력을 전송하지 않는다.
 			const FTransform LastTarget = Ghost.SnapBlend->Target;
-			Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, LastTarget, Ghost.bSnapped, DeltaSeconds, 1.0));
+			const bool bLastTargetSnapped = Ghost.PreviousSnapTarget.IsSet();
+			Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, LastTarget, bLastTargetSnapped, DeltaSeconds, 1.0));
+			SetGhostSnapColor(Ghost, bLastTargetSnapped && !Ghost.SnapBlend.IsSet());
 #if WITH_EDITOR
 			if (!Ghost.SnapBlend.IsSet() && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
 			{
@@ -208,7 +210,9 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 	const bool bLocalTurn = Ghost.bLastLocalReversed != Intent.bReversed;
 	Ghost.bLastLocalReversed = Intent.bReversed;
 	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0, bLocalTurn));
-	SetGhostSnapColor(Ghost, bSnapped);
+	// 이동하는 고스트가 목표에 닿은 뒤에만 연결 완료 색상과 안내를 표시한다.
+	const bool bVisiblySnapped = bSnapped && !Ghost.SnapBlend.IsSet();
+	SetGhostSnapColor(Ghost, bVisiblySnapped);
 
 	const double Now = GetWorld()->GetTimeSeconds();
 	// 로컬 고스트는 매 프레임 갱신하되 원격 표시용 위치 전송은 초당 20회로 제한한다.
@@ -217,7 +221,7 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 		PC.ServerUpdateTrackPlacementPreview(SessionId, ++PreviewSequence, Intent);
 		NextPreviewTime = Now + 0.05;
 	}
-	return bSnapped;
+	return bVisiblySnapped;
 }
 
 bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPlayerController& PC,
@@ -266,7 +270,8 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 
 	const FTransform* Start = &Current;
 	double Alpha = bSnapped ? 1.0 : FreeMoveAlpha;
-	bool bRotateAroundCenter = false;
+	// 원격의 자유 자세도 포트 중앙을 따라 보간해 Q/E에서 트랙이 크게 휘돌지 않게 한다.
+	bool bRotateAroundCenter = !bSnapped;
 	if (Ghost.SnapBlend.IsSet())
 	{
 		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
@@ -416,18 +421,28 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 	}
 
 #if WITH_EDITOR
+	const FTransform Visual = Ghost->Actor->GetActorTransform();
+#endif
+	// 확정 입력이 보간보다 먼저 들어오면 클릭으로 판정한 위치에서 서버 응답을 기다린다.
+	Ghost->SnapBlend.Reset();
+	Ghost->PreviousSnapTarget = ResolvedTarget;
+	Ghost->Actor->SetActorTransform(ResolvedTarget);
+	SetGhostSnapColor(*Ghost, true);
+
+#if WITH_EDITOR
 	if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
 	{
-		const FTransform Visual = Ghost->Actor->GetActorTransform();
 		const FVector P = ResolvedTarget.GetLocation(), Scale = ResolvedTarget.GetScale3D();
 		const FQuat Q = ResolvedTarget.GetRotation();
 		float X = 0.f, Y = 0.f;
 		PC->GetMousePosition(X, Y);
-		UE_LOG(LogTemp, Display, TEXT("MWPlacement accept world=%s member=%d session=%d revision=%d target=%d:%d source=%d pointer=(%.1f,%.1f) resolved=(%.9f,%.9f,%.9f) quat=(%.9f,%.9f,%.9f,%.9f) scale=(%.9f,%.9f,%.9f) visual_gap_cm=%.3f visual_gap_deg=%.3f"),
+		UE_LOG(LogTemp, Display, TEXT("MWPlacement accept world=%s member=%d session=%d revision=%d target=%d:%d source=%d pointer=(%.1f,%.1f) resolved=(%.9f,%.9f,%.9f) quat=(%.9f,%.9f,%.9f,%.9f) scale=(%.9f,%.9f,%.9f) visual_gap_cm=%.3f visual_gap_deg=%.3f locked_gap_cm=%.6f locked_gap_deg=%.6f"),
 			*GetWorld()->GetName(), PS->GetLobbyMemberId(), SessionId, Session.CourseRevision,
 			Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort, X, Y,
 			P.X, P.Y, P.Z, Q.X, Q.Y, Q.Z, Q.W, Scale.X, Scale.Y, Scale.Z,
-			FVector::Distance(P, Visual.GetLocation()), FMath::RadiansToDegrees(Q.AngularDistance(Visual.GetRotation())));
+			FVector::Distance(P, Visual.GetLocation()), FMath::RadiansToDegrees(Q.AngularDistance(Visual.GetRotation())),
+			FVector::Distance(P, Ghost->Actor->GetActorLocation()),
+			FMath::RadiansToDegrees(Q.AngularDistance(Ghost->Actor->GetActorQuat())));
 	}
 #endif
 	bWaitingForReply = true;
