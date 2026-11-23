@@ -95,3 +95,26 @@ UE 5.8 Win64 Development Editor에서 빌드했다. 저장한 WBP를 새 에디�
 세 창의 후속 캡처에서 중앙 안내가 사라진 뒤에도 후보 세 개와 좌상단 선택 목록이 보였다. 세 명이 목재 직선 트랙을 확정하자 `TrackPlacement`에서 기존 ‘트랙을 / 배치하세요’ 마름모가 중앙에 표시됐다. 배치 캡처의 ‘Preparing Shaders’ 문구는 에디터 표시다.
 
 [세 창의 선택 첫 화면·안내 종료·배치 안내 비교](Images/TrackSelectionDiamondThreePlayers.jpg) · [에셋 대조와 PIE 로그](TRACK_SELECTION_DIAMOND_PIE_LOG.txt)
+
+## 첫 장면 렌더 검사 소스 분리
+
+`refactor/arrival-frame`은 PR #17이 포함된 `origin/main`에서 분기했다. `Source/MW/UI/Gameplay/MWArrivalFrame.h`에 Scene View Extension 선언을, `MWArrivalFrame.cpp`에 카메라·세션 확인, 선택 장면 색 샘플링, GPU fence 확인을 옮겼다. `UMWArrivalScreen`은 기존처럼 전방 선언된 렌더 검사를 만들고 가림·입력·이동 실패를 관리한다. 설정값과 공개 조건은 그대로다.
+
+UE 5.8 Win64 Development Editor 빌드에서 `MWArrivalFrame.cpp`와 `MWArrivalScreen.cpp`가 각각 컴파일됐고 링크가 성공했다. 분리 커밋 `70879aa`에서 코드 대조와 Editor 빌드를 검증했다.
+
+### 렌더 검사 분리 후 3인 PIE 회귀 검증
+
+2026-11-23 · `refactor/arrival-frame@70879aa` · UE 5.8.4 Editor Win64 Development · 설원 `L_Dev_Drive` · LocalIP 리슨 호스트 1명과 클라이언트 2명. 같은 실행 파일을 서로 다른 프로세스에서 사용했다. 세 뷰포트는 944×447이고 UMG DPI는 약 0.444였다. Cua Driver로 로비 준비, 게임 시작, 차량 선택, 트랙 선택과 설치 입력을 수행했다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 정상 진입 | 세 월드가 시간 배율 1.0으로 이동했다. 서버는 참가자별 출발 보고를 한 번 받고 실제로 한 번 이동했다. 가림 시작 후 5.328–5.518초에 세 창의 트랙 선택이 공개됐다. 세 창에서 실제 클릭으로 선택·설치를 완료했고, 체크무늬 출발선에서 차량을 각각 소유한 채 `Racing`에 진입했다. |
+| 기본 45초 안내 | P1·P2가 아직 `L_Title`에 있을 때 ‘경기 맵으로 이동하지 못했습니다. 방을 나가 주세요’와 ‘방 나가기’ 버튼을 표시했다. 가림과 안내의 UTC 로그 간격은 각각 44.979초와 44.929초였다. 엔진은 기존 단조 시계의 기본 45초 조건으로 안내를 판단한다. |
+| 늦은 도착 후 복구 | P3의 기존 출발 보고 뒤 서버가 `L_Dev_Drive`로 한 번 이동했다. 시간 초과가 있었던 P1·P2는 가림 시작 후 각각 48.680초와 49.998초에 같은 시도 ID로 준비를 재개했다. 다시 표시된 로딩 가림막은 실제 첫 장면 준비가 끝난 뒤 4.629초와 3.718초에 걷혔다. P3도 첫 장면을 공개했다. |
+| 복구 후 입력 | P1·P2의 안내와 로딩 가림막이 화면에서 사라졌다. 세 창에서 각각 목재 직선 트랙을 클릭했고 서버가 세 요청을 승인했다. 각 참가자의 `bConfirmed=True`와 세 창 모두 `TrackPlacement`로 바뀐 화면을 확인했다. |
+
+지연은 테스트에서만 재현했다. 차량 카드가 표시된 뒤 P3 로컬 월드의 시간 배율을 0.001로 낮췄다. P1·P2가 실제 출발을 보고한 뒤 리슨 서버의 월드만 0.05로 낮춰 서버 출발 제한이 먼저 끝나지 않게 했다. 두 창의 안내를 Cua Driver로 캡처한 다음 시간 배율을 1.0으로 복원했다. 출발 보고와 `ServerTravel`은 기존 게임 경로를 사용했다. 시험에 사용한 세 WBP의 SHA-256은 로그에 기록했다.
+
+각 비교 이미지에 가림막, 공개가 확인되는 첫 녹화 프레임, 약 2초 뒤의 같은 시야를 담았다. 정상 실행에는 실제 출발선, 지연 실행에는 45초 안내와 클릭 확정 뒤 배치 화면을 함께 담았다. 이 커밋에는 검증 문서와 비교 자료를 담았다.
+
+[정상 진입 세 창 비교](Images/ArrivalFrameNormalThreePlayers.jpg) · [45초 안내와 늦은 도착 세 창 비교](Images/ArrivalFrameLateTravelThreePlayers.jpg) · [빌드·시도별 시간·서버 입력 승인 로그](ARRIVAL_FRAME_PIE_LOG.txt)
