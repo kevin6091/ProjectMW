@@ -302,8 +302,13 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 		StopMovementImmediately();
 		return;
 	}
-	// 자세와 중심 위치가 바뀌었으므로 다시 검사한다.
-	UpdateGroundState();
+
+	const bool bMovedForRotation = UpdateGroundRotation(DeltaTime);
+	// 움직이지 않은 접지 차량은 같은 위치와 자세에서 얻은 바닥 검사 결과를 재사용한다.
+	if (bMovedForRotation || !bGrounded)
+	{
+		UpdateGroundState();
+	}
 
 	if (bGrounded)
 	{
@@ -1024,6 +1029,8 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 
 void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_UpdateGroundState);
+
 	if (OutAcceptedHit)
 	{
 		OutAcceptedHit->Reset();
@@ -1040,8 +1047,8 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 	GroundNormalLoadAcceleration = 0.0;
 
 	FHitResult Candidate;
-
-	if (!FindGroundCandidate(Candidate))
+	
+	if (!FindGroundCandidate(Candidate, bWasGrounded))
 	{
 		LogGroundSupport(TEXT("NoCandidate"), bWasGrounded, nullptr, Diagnostics);
 		return;
@@ -1102,8 +1109,8 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 		// 착지는 현재 공중 속도를 새 노면에 투영한다.
 		AcceptedVelocity = FVector::VectorPlaneProject(Velocity, CandidateNormal);
 	}
-
-	const double NormalLoad = CalculateGroundNormalLoadAcceleration(Candidate, AcceptedVelocity, Diagnostics);
+	
+	const double NormalLoad = CalculateGroundNormalLoadAcceleration(Candidate, AcceptedVelocity, bWasGrounded, Diagnostics);
 
 	if (!FMath::IsFinite(NormalLoad))
 	{
@@ -1298,7 +1305,7 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 	}
 }
 
-bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit) const
+bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool bWasGrounded) const
 {
 	OutHit.Reset();
 
@@ -1345,7 +1352,9 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit) const
 		return false;
 	}
 
-	if (OutHit.bStartPenetrating && Shape.IsBox() && FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) < MinGroundDot)
+	// 이미 접지한 차량은 박스 가장자리가 노면을 가리는 경우에도 안쪽으로 다시 검사한다.
+	if (Shape.IsBox() && (OutHit.bStartPenetrating || bWasGrounded) &&
+		FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) < MinGroundDot)
 	{
 		constexpr double SideInset = 0.5;
 
@@ -1371,11 +1380,11 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit) const
 	return FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) >= MinGroundDot;
 }
 
-void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts)
+bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime)
 {
 	if (!UpdatedComponent)
 	{
-		return;
+		return false;
 	}
 
 	// 공중이거나 자세 변경이 실패해도 실제 회전과 일치시킨다.
@@ -1383,14 +1392,14 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayVi
 
 	if (!bDriveConfigReady || !PawnOwner || !UpdatedPrimitive || DeltaTime <= 0.f)
 	{
-		return;
+		return false;
 	}
 
 	const FCollisionShape Shape = UpdatedPrimitive->GetCollisionShape();
 
 	if (!Shape.IsBox())
 	{
-		return;
+		return false;
 	}
 
 	// 충돌 회전은 공중에서도 감쇠한다. 입력 조향은 아래 노면 회전 경로에서 한 번만 계산한다.
@@ -1415,7 +1424,7 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayVi
 
 	if (Normal.IsNearlyZero())
 	{
-		return;
+		return false;
 	}
 
 	const FQuat StartRotation = TargetRotation;
@@ -1429,7 +1438,7 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayVi
 
 	if (AngleDegrees <= KINDA_SMALL_NUMBER)
 	{
-		return;
+		return false;
 	}
 
 	// 일반적인 회전은 약 1도 단위로 나눈다.
@@ -1517,12 +1526,13 @@ void UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayVi
             ScopedMove.RevertMove();
 
             TargetRotation = UpdatedComponent->GetComponentQuat();
-
-            return;
+        	
+            return false;
         }
     }
 
     TargetRotation = UpdatedComponent->GetComponentQuat();
+    return true;
 }
 
 bool UMWVehicleMovementComponent::TryTransportGroundTangentVelocity(
@@ -1760,7 +1770,7 @@ double UMWVehicleMovementComponent::CalculateDownforceAcceleration(double Tangen
 }
 
 double UMWVehicleMovementComponent::EstimateRequiredNormalAcceleration(const FHitResult& Contact,
-	const FVector& TangentVelocity, FGroundSupportDiagnostics& Diagnostics) const
+	const FVector& TangentVelocity, bool bWasGrounded, FGroundSupportDiagnostics& Diagnostics) const
 {
 	UWorld* World = GetWorld();
 
@@ -1800,11 +1810,11 @@ double UMWVehicleMovementComponent::EstimateRequiredNormalAcceleration(const FHi
 	FHitResult AheadHit;
 
 	const bool bHit = World->LineTraceSingleByChannel(
-		AheadHit,
-		ProbeCenter + Normal * ProbeHeight,
-		ProbeCenter - Normal * ProbeHeight,
-		VehicleGroundChannel,
-		QueryParams);
+			AheadHit,
+			ProbeCenter + Normal * ProbeHeight,
+			ProbeCenter - Normal * ProbeHeight,
+			VehicleGroundChannel,
+			QueryParams);
 
 	if (!bHit || !AheadHit.IsValidBlockingHit())
 	{
@@ -1846,18 +1856,24 @@ double UMWVehicleMovementComponent::EstimateRequiredNormalAcceleration(const FHi
 	Diagnostics.CurvatureResult = TEXT("Sampled");
 	// 한 트랙의 노면이 여러 메시로 구성되어 있어도, 다음 트랙까지 보조를 이어가지는 않는다.
 	Diagnostics.bSameTrackAhead = Contact.GetActor() && Contact.GetActor() == AheadHit.GetActor();
+	if (bWasGrounded && !Diagnostics.bSameTrackAhead && SignedCurvature < 0.0 && Normal.Z > 0.0 && AheadNormal.Z > 0.0)
+	{
+		// 다음 조각의 기울기는 실제로 닿기 전까지 현재 노면의 볼록한 곡률로 보지 않는다.
+		Diagnostics.CurvatureResult = TEXT("CrossTrackCrest");
+		return 0.0;
+	}
 
 	// 원형 경로에서는 v²/R에 해당한다.
 	return SpeedSquared * SignedCurvature;
 }
 
 double UMWVehicleMovementComponent::CalculateGroundNormalLoadAcceleration(const FHitResult& Contact,
-	const FVector& TangentVelocity, FGroundSupportDiagnostics& Diagnostics) const
+	const FVector& TangentVelocity, bool bWasGrounded, FGroundSupportDiagnostics& Diagnostics) const
 {
 	const FVector Normal = FVector(Contact.ImpactNormal).GetSafeNormal();
 	const FVector Gravity(0.0, 0.0, GetGravityZ() * DriveConfig.GravityScale);
-
-	const double RequiredNormalAcceleration = EstimateRequiredNormalAcceleration(Contact, TangentVelocity, Diagnostics);
+	
+	const double RequiredNormalAcceleration = EstimateRequiredNormalAcceleration(Contact, TangentVelocity, bWasGrounded, Diagnostics);
 	const double GravityNormalAcceleration = FVector::DotProduct(Gravity, Normal);
 	const double DownforceAcceleration = CalculateDownforceAcceleration(TangentVelocity.Size());
 
