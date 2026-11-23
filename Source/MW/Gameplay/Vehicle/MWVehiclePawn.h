@@ -172,6 +172,7 @@ private:
     bool bRespawningAtCheckpoint = false;
 
 	friend class UMWVehicleMovementComponent;
+    friend class UMWItemComponent;
 
     UPROPERTY(Transient)
     float BoosterCameraBlend = 0.f;

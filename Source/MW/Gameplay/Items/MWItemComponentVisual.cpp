@@ -1,6 +1,7 @@
 // 같은 ItemComponent의 표시 구현이다. 부스터 외형·시퀀스·음향의 시작과 정리를 담당한다.
 
 #include "Gameplay/Items/MWItemComponent.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 
 #include "CollisionQueryParams.h"
 #include "Components/StaticMeshComponent.h"
@@ -277,6 +278,11 @@ void UMWItemComponent::RestoreBoosterPose()
     }
 }
 
+bool UMWItemComponent::IsBoosterJetActive() const
+{
+    return IsValid(BoosterJet);
+}
+
 // 노즐 기준으로 배기 외형과 사용 음향을 시작한다. 서버 속도를 직접 변경하지 않는다.
 void UMWItemComponent::StartBoosterJet()
 {
@@ -284,6 +290,11 @@ void UMWItemComponent::StartBoosterJet()
     {
         if (BoosterJetMesh)
         {
+            // 복제 콜백이 차량 틱보다 늦어도 일반 배기 입자가 불꽃과 같은 프레임에 남지 않게 한다.
+            if (auto* Vehicle = Cast<AMWVehiclePawn>(GetOwner()))
+            {
+                Vehicle->StopExhaustEffect();
+            }
             BoosterJet = NewObject<UStaticMeshComponent>(BoosterVisual, NAME_None, RF_Transient);
             BoosterJet->ComponentTags.Add(TEXT("BoosterExhaust"));
             BoosterJet->SetStaticMesh(BoosterJetMesh);

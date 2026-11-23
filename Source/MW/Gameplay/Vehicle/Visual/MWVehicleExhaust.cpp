@@ -15,7 +15,8 @@ void AMWVehiclePawn::UpdateExhaustEffect()
     }
 
     const auto* State = GetWorld()->GetGameState<AMWGameplayGameState>();
-    if (!State || State->GetRoomPhase() != EMWRoomPhase::Racing)
+    // 소유자 전용 부스터 타이머 대신 이 창의 분사구가 제거되는 시점까지 기다린다.
+    if (!State || State->GetRoomPhase() != EMWRoomPhase::Racing || ItemComponent->IsBoosterJetActive())
     {
         StopExhaustEffect();
         return;
@@ -24,8 +25,7 @@ void AMWVehiclePawn::UpdateExhaustEffect()
     const auto& Settings = *GetDefault<UMWVehicleExhaustSettings>();
     const double LongitudinalSpeed = FMath::Abs(FVector::DotProduct(GetVelocity(), GetActorForwardVector()));
     const bool bPedal = IsLocallyControlled() && FMath::Max(DriveInput.Throttle, DriveInput.Reverse) > UE_SMALL_NUMBER;
-    // 일반 배기와 아이템 분사구가 같은 프레임에서 겹치지 않게 한다.
-    const bool bEmitting = (LongitudinalSpeed >= Settings.WakeSpeed || bPedal) && !ItemComponent->IsBoosterActive();
+    const bool bEmitting = LongitudinalSpeed >= Settings.WakeSpeed || bPedal;
     if (bEmitting == bExhaustEmitting)
     {
         return;
