@@ -25,10 +25,6 @@ void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetVisibility(ESlateVisibility::HitTestInvisible);
-	if (PlacementStatusSpace)
-	{
-		PlacementStatusSpace->SetVisibility(ESlateVisibility::Collapsed);
-	}
 	RemoteCursors = CreateWidget<UMWRemoteCursorOverlay>(GetOwningPlayer(), UMWRemoteCursorOverlay::StaticClass());
 	PointerClass = GetDefault<UMWRemoteCursorOverlay>()->PointerWidgetClass.LoadSynchronous();
 	if (RemoteCursors)
@@ -65,27 +61,14 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FText& Status)
+void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Status)
 {
 	if (!bShowingPlacement)
 	{
 		bShowingPlacement = true;
-		// 배치 문구가 바뀌어도 참가자 목록이 밀리지 않도록 디자이너에서 지정한 공간을 확보한다.
-		if (PlacementStatusSpace)
-		{
-			PlacementStatusSpace->SetVisibility(ESlateVisibility::Hidden);
-		}
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
 		// 선택 후보 이름표만 감춘다. 같은 캔버스의 참가자 포인터는 배치 단계에도 필요하다.
 		for (const auto& Pair : OfferPlates) Pair.Value->SetVisibility(ESlateVisibility::Collapsed);
-		if (Text_Title)
-		{
-			Text_Title->SetText(FText::FromString(TEXT("트랙 배치")));
-		}
-	}
-	if (!Text_Players->GetText().EqualTo(Players))
-	{
-		Text_Players->SetText(Players);
 	}
 	if (!Text_SessionStatus->GetText().EqualTo(Status))
 	{
@@ -180,27 +163,17 @@ void UMWTrackSelectionWidget::Refresh()
 			if (auto* PS = Cast<AMWPlayerState>(State)) Players.Add(PS);
 	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B) { return A.GetLobbyMemberId() < B.GetLobbyMemberId(); });
 	TMap<int32, TArray<FString>> ConfirmedNames;
-	TArray<FString> Lines;
 	bool bOwnConfirmed = false;
 	for (const auto* PS : Players)
 	{
 		const auto Selection = PS->GetPlayerConstructionComponent()->GetSelection();
 		const bool bSame = Selection.SelectionSessionId == Session.SelectionSessionId && Selection.OffersRevision == Session.OffersRevision;
-		const int32 OfferId = Selection.bConfirmed ? Selection.SelectedOfferId : Selection.HoveredOfferId;
-		FString State = TEXT("선택 중");
-		if (bSame && !Selection.bConfirmed && OfferId != INDEX_NONE)
-			State = GetOfferName(OfferId).ToString();
-		if (!bSame) State = TEXT("참여 준비 중");
-		const FString Name = PS->GetPlayerName();
 		if (bSame && Selection.bConfirmed)
 		{
-			ConfirmedNames.FindOrAdd(Selection.SelectedOfferId).Add(Name);
-			State = TEXT("선택 완료");
+			ConfirmedNames.FindOrAdd(Selection.SelectedOfferId).Add(PS->GetPlayerName());
+			bOwnConfirmed |= PS == OwnPS;
 		}
-		Lines.Add(FString::Printf(TEXT("%s%s  ·  %s"), *Name, PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State));
-		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
 	}
-	Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
 
 	// 이름과 확정자는 선택 상태 변경 때만 갱신한다. 매 프레임에는 화면 위치와 호버색만 맞춘다.
 	for (const FMWTrackOffer& Offer : Session.Offers)
@@ -219,13 +192,13 @@ void UMWTrackSelectionWidget::Refresh()
 		Label->SetText(FText::FromString(Caption));
 	}
 	if (bOwnConfirmed) bRequestPending = false;
-	FString Status = Session.bIsOpen ? TEXT("[좌클릭]  트랙 고르기") : TEXT("다른 플레이어를 기다리고 있습니다.");
+	FString Status = Session.bIsOpen ? TEXT("좌클릭 · 트랙 선택") : TEXT("참가자 대기 중");
 	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Failed)
 	{
 		Status = TEXT("게임을 계속 진행할 수 없습니다.");
 	}
 	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
-	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 참가자 대기 중");
+	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 다른 참가자 대기 중");
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : FText::FromString(Status));
 }
 
@@ -241,7 +214,7 @@ UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
 	Plate->SetVisibility(ESlateVisibility::Collapsed);
 
 	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	Label->SetFont(Text_Players->GetFont());
+	Label->SetFont(Text_SessionStatus->GetFont());
 	Label->SetColorAndOpacity(FLinearColor::White);
 	Label->SetJustification(ETextJustify::Center);
 	Plate->SetContent(Label);

@@ -23,18 +23,14 @@ public:
 	void HandleSelectionReply(const FMWTrackSelectionReply& Reply);
 	void ConfirmOffer(int32 OfferId);
 	void PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered);
-	void ShowPlacementStatus(const FText& Players, const FText& Status);
+	void ShowPlacementStatus(const FText& Status);
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& Geometry, float DeltaSeconds) override;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_Players;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
-	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Title;
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UWidget> PlacementStatusSpace;
 
 	// 차량 선택 이름표와 같은 판면을 사용한다. 브러시 색은 기본색, 호버 색은 별도로 편집한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
