@@ -39,6 +39,10 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	bool bDriveAllowed = false;
 
+	// 완주 후 충돌 해제와 다음 준비 위치에서의 복원을 이동 상태와 함께 전달한다.
+	UPROPERTY()
+	bool bFinishCollisionDisabled = false;
+
 	UPROPERTY()
 	int32 RoundEpoch = 0;
 

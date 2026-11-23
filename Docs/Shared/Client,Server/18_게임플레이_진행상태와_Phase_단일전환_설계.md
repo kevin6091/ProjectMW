@@ -1,12 +1,112 @@
 # 게임플레이 진행 상태와 Phase 단일 전환 설계
 
-- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.1
+- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.4
 - **작성:** 2026-11-12 / Client + Server
 - **기준:** fix/Network-Prediction, HEAD 772d2e0, 조사 시작 시 작업 트리 깨끗함
 - **엔진:** 설치 UE 5.8.4 / CL 58902052, MW.uproject의 EngineAssociation은 5.8
-- **상태:** 2026-11-20 `Server/GameProgress`에서 ① 개인 상태, ② 경기 제어, ③ 출발 준비·카운트다운을 구현했다. 이후 결과·점수·복귀·매치 완성은 설계 단계다. 아래 772d2e0의 출발점·미구현 표기는 초안 작성 당시의 기록이다.
+- **상태:** ① 개인 상태, ② 경기 제어, ③ 출발 흐름과 개인 완주에 이어 2026-11-23 확정 규칙의 점수·전원 종료·결과 스냅샷·코스 확장·4000점 종료·서든데스를 기존 클래스에 연결했다. 최신 구현 계약은 0.8~0.9절이다. 아래 772d2e0의 출발점·미구현 표기는 초안 작성 당시 기록이다.
 
 현재 구현은 사용자의 작은 구조 요구에 따라 검증된 완료 콜백/RPC/타이머에서 곧바로 `EnterPhase`를 호출한다. 초안의 `RequestFlowUpdate`/`TryAdvanceGameplay` 예약 계층과 GameMode의 완료 세션 복사본은 도입하지 않았다. 이후 절에 남은 해당 이름은 초안 제안이며 현재 구현 API가 아니다.
+
+## 0. 라운드 반복과 경기 종료 · 2026-11-23
+
+### 0.1 이번 범위와 완료 조건
+
+`Racing → 전원 종료 → RoundResults → PreparingConstruction → TrackPlacement → PreparingRace → Countdown → Racing`을 같은 월드에서 반복한다. 새 Manager·Subsystem·단계별 객체·맵 이동은 추가하지 않는다. 점수·최종 승리·서든데스를 포함하고 주행 제한시간·재경기는 후속 범위다. 일반 경기에서 체크포인트로 복귀한 사람은 같은 라운드를 계속 달리며 완료 인원으로 세지 않는다.
+
+첫 구현은 현재 코스의 서버 결승 트리거를 완주 기준으로 연결한다. 체크포인트 순서·방향·점수의 정식 판정은 후속 경기 규칙 작업에서 보강한다. 기존 복귀 구현은 재사용한다.
+
+사용자 지시로 `MWRaceStartTests.cpp`와 그 테스트 전용 friend 선언을 삭제했다. 다른 종류의 테스트는 유지한다. 본문의 과거 RaceStart 실행 결과는 당시 기록이며 현재 실행 가능한 테스트 목록이 아니다.
+
+### 0.2 상태와 소유자
+
+| 기존 소유자 | 추가 또는 변경할 최소 상태·역할 |
+|---|---|
+| `FMWPlayerRoundState` / PlayerState | 기존 Waiting=0, Active=1을 유지하고 Finished=2를 추가한다. FinishOrder=0은 미완주이며 수락된 완주에 서버가 1부터 순서를 부여한다. equality와 기존 NetSerialize도 같은 필드를 처리한다. 개인 상태가 전원 완료 집계의 원본이다. |
+| GameMode | 서버 전용 `MatchMembers` 멤버 ID 집합 하나를 최초 명단에서 구성한다. 이탈 시 제거하고 새 라운드까지 남은 명단을 유지한다. 다음 완주 순서 카운터와 기본 3초를 제안하는 결과 대기 프로퍼티를 둔다. |
+| GameState | 기존 `FMWGameplayProgress`에 `ResultsEpoch`와 `TArray<FMWPlayerRoundState> Results`를 추가한다. 별도의 결과 구조체 없이 개인 상태를 복사하고 Phase와 함께 NetSerialize한다. 결과 진입 때 확정하고 다음 결과까지 보존한다. |
+| TrackRuntimeSubsystem | 기존 Racers의 체크포인트·복귀 위치·경과 시간 계산을 유지한다. 새 Epoch의 Racing 진입 직전에 이번 차량들의 기록을 초기화하고 StartTime을 서버 출발 시각으로 설정한다. 완주 기록은 GameMode가 승인한 뒤에만 기존 조회 호환용 bFinished에 반영한다. |
+| Construction | 기존 PlacedTracks·CourseRevision을 코스 원본으로 유지한다. 서버 전용 `FMWOpenTrackEnd NextRoundEnd`에 종료 캡 직전의 열린 끝을 저장하고 Id 유효성으로 초기 상태를 구분한다. |
+
+`RoundIndex`는 표시 번호, `RoundEpoch`는 실행 구분자다. 첫 라운드는 기존 1/1이고, RoundResults에서 다음 선택 단계로 갈 때 둘을 한 번 증가시킨다. 선택·배치·준비·카운트다운·주행 사이에서는 Epoch가 바뀌지 않는다.
+
+### 0.3 완주 이벤트와 개인 상태
+
+1. 기존 `MWTrackRuntimeComponent::OnTrigger`가 서버의 결승 겹침을 감지하고 기존 `ProcessRaceTrigger`로 전달한다.
+2. Gameplay 월드에서는 `GameMode.TryFinishPlayerRace(Vehicle, FinishTrack, RoundEpoch)`라는 일반 서버 C++ 진입점으로 승인받는다. 새 Client RPC나 NetMulticast는 필요 없다. 개인 완주 단위에서 이 API를 구현했다.
+3. GameMode는 Racing·현재 Epoch·MatchMembers·정상 소유 차량·개인 Active·현재 코스의 마지막 종료 트랙을 검사한다. 중복 Finished, 이전 Epoch, 다른 코스 결승은 상태를 바꾸지 않는다.
+4. 수락한 플레이어에게만 Finished와 FinishOrder를 저장한다. 기존 PlayerState Notify → Pawn.RefreshDrivePermission → CanDrive 경로로 입력·속도·충돌 회전·이동 스트림을 정리한다. 이동/표시 전체 Tick은 끄지 않는다.
+5. 완주 차량이 결승선을 막지 않도록 충돌 루트의 질의 충돌을 서버와 표시 클라이언트에서 끈다. 기존 충돌 설정을 보관하고 다음 PreparingRace에서 출발 위치로 재배치한 뒤 복원한다. 단순히 다음 선택의 Waiting 상태가 도착했다는 이유로 결승선에 겹쳐 있는 차량들의 충돌부터 다시 켜지 않는다. 이 적용은 RefreshDrivePermission의 허용 bool 조기 반환보다 앞에서 개인 상태와 준비 상태로 평가한다. 다른 차량의 Controller가 없는 원격 표시 차량도 개인 Finished로 판정해야 한다. 서버 아이템 사용도 개인 주행 허용을 확인한다.
+6. GameMode가 `TryEndRound()`로 남은 참가자의 개인 상태를 재조회한다. 한 명이라도 현재 Epoch의 Active면 주행을 유지한다. 전원 Finished이면 `EnterPhase(RoundResults)`를 호출한다. 완료 인원 카운터를 별도 원본으로 보관하지 않는다.
+
+복귀는 기존 `RespawnAtTrackCheckpoint → Pawn.RespawnAtCheckpoint`를 사용하며 Finished로 바꾸지 않는다. Runtime의 기록 초기화는 Racing 진입 전 한 번 수행한다. 출발 트리거가 준비 단계에서 이미 겹쳤더라도 새 Overlap을 기다리지 않고 모든 참가자의 출발 시각을 설정한다. Gameplay가 아닌 기존 DriveTest의 체크포인트 경로는 보존한다.
+
+### 0.4 결과와 다음 Epoch
+
+`EnterPhase(RoundResults)`는 Racing에서만 허용하고 전원 완료를 다시 확인한다. 개인 상태를 Waiting으로 덮지 않고 Finished/Eliminated로 보존한 채 결과 스냅샷을 한 번 만든다. 기존 `RacePhaseTimer`와 `Progress.PhaseEndServerTime`을 재사용해 결과 대기를 예약한다. `WaitForRacePhaseDeadline`는 기존 Phase/Epoch/코스/기한 일치 검사 후 목표 도달 인원에 따라 다음 건설·서든데스 준비·최종 결과를 선택한다. 클라이언트의 표시 타이머는 전환을 결정하지 않는다. 결과 진입 처리를 끝내면 반드시 return하여 실패 정리 경로로 내려가지 않는다.
+
+`EnterPhase(PreparingConstruction)`에는 최초 진입과 RoundResults 이후 진입 두 경우만 둔다. 다음 라운드에서 Epoch/표시 번호를 증가시키고, 남은 MatchMembers를 Waiting·FinishOrder=0으로 초기화하며 기존 준비 보고 집합을 비운다. 종료된 이전 선택 SessionId가 0이 아니라는 이유로 반복을 거절하지 않는다. 기존 BeginSelection이 새 선택 세션을 발급하도록 한다. 결과 스냅샷과 설치된 도로는 이 단계에서 지우지 않는다.
+
+처음 접속 완료를 기다릴 때는 기존 GameInstance.StartingPlayers 전원 확인을 유지한다. 시작 후의 CollectStartingControllers는 MatchMembers에 속한 정상 Controller를 기존 시작 순서로 수집한다. 준비·카운트다운 중 이탈은 기존 Failed 정책을 유지한다. Racing 중 이탈은 명단에서 제거하고 TryEndRound를 호출한다. RoundResults 중 이탈은 다음 명단에만 반영하며 이미 확정한 결과를 고치지 않는다. 남은 참가자가 없으면 기존 Failed/방 종료 경로로 정리한다.
+
+### 0.5 기존 코스에 다음 배치 이어 붙이기
+
+현재 BeginPlacement는 PlacedTracks가 있으면 거절하고, FinishPlacement는 OpenEnds를 비운다. 따라서 Phase를 되돌리거나 CancelPlacement를 호출하는 것만으로 반복되지 않는다.
+
+- FinishPlacement에서 종료 캡을 Publish하기 전에 Tail을 서버의 다음 확장 끝으로 저장한다.
+- 기존 BeginPlacement의 외부 시그니처를 유지한다. 빈 코스이면 현재처럼 시작 조각을 만든다. 완료된 기존 코스이면 저장한 끝을 검사하고 새 PendingTracks와 새 종료 캡을 먼저 준비한다.
+- 준비가 성공한 뒤 이전 종료 캡만 서버에서 제거하고 PlacedTracks에서도 뺀다. 나머지 도로 Actor·PieceId·배치 Transform은 유지한다. 저장한 끝을 OpenEnds에 복구하고 CourseRevision과 코스 범위를 갱신한다.
+- 새 선택 세션 ID를 배치 SessionId로 사용하고 현재 방식으로 설치를 진행한다. 새 시작 트랙을 중복 생성하거나 PlacedTracks 전체를 초기화하지 않는다. 실제 도로 연결은 기존 MWTrackSnap.AlignPorts와 서버 PlaceTrack을 그대로 사용한다.
+- 마지막 설치 뒤 기존 FinishPlacement가 새 종료 캡을 붙이고 새 확장 끝을 저장한다. 기존 OnPlacementFinished → EnterPhase(PreparingRace)로 연결한다.
+
+### 0.6 차량과 표시 소비자
+
+PrepareRace는 기존 Pawn을 유지하고 기존 PlayerStart 슬롯으로 안전하게 이동시킨다. 기존 TeleportSucceeded/OnTeleported와 PrepareForRaceFromServer로 스트림·시작 스냅샷·카메라 이력을 초기화한다. 성공 위치를 공개한 뒤 기존 클라이언트 준비 보고와 3초 Countdown을 다시 수행한다. 새 Epoch/세션 키이므로 이전 보고는 재사용되지 않는다.
+
+EnvironmentGameplay의 환경 유지 Phase에 RoundResults를 포함한다. HUD는 RoundResults와 결과 스냅샷을 읽고 기존 서버 시각 조회로 대기 시간을 표시한다. 같은 월드의 반복을 위해 ArrivalScreen.Begin이나 ServerTravel을 다시 호출하지 않는다. 현재 트랙 위젯의 생성·제거와 카메라 전환 경로를 재사용한다. 전용 결과 UI 시스템이나 표시 완료 ACK는 이번 반복 조건에 추가하지 않는다.
+
+구현 순서는 개인 Finished/서버 완주 승인 → 전원 집계/결과 스냅샷 → 다음 Epoch/명단/타이머 → 코스 확장 → 차량 재배치/기존 준비 흐름 재사용 → HUD/환경 조건 연결이다. 전체 루프 구현 후 실제 플레이에서 2개 라운드를 연속 수행하고, 중복 완주·기존 결승·복귀 후 완주·주행 중 이탈을 확인한다. 0.1~0.6은 전체 설계이며 전체 루프의 실행 검증 완료 기록이 아니다.
+
+### 0.7 개인 완주 1차 구현 기록 · 이후 확장은 0.8절 우선
+
+- 실제 `DA_TrackRuntime`의 `BP_Track_WoodEndCap_C`는 바닥 충돌만 가지며 Finish 트리거가 없다. PreparingRace에서 현재 종료 캡의 Runtime을 즉시 연결하고 기존 `CreateShape`/`OnTrigger`로 서버 전용 결승 Box를 만든다. 연결점 +X가 코스 밖인 기존 프레임을 사용해 Box의 바깥 면을 연결점에 맞춘다. GameMode의 `FinishTriggerHalfExtent` 기본값은 (50, 1350, 1250)cm이고 X는 진행 깊이, Y는 도로 반폭, Z는 높이의 절반이다. 폭·높이는 기존 WoodFinish 결승 형상에 맞췄다. 이미 결승 형상이 있거나 준비된 영역이 있으면 재사용한다. 카탈로그와 BP 에셋은 수정하지 않는다.
+- `FMWPlayerRoundState`에 `Finished=2`, `FinishOrder=0`을 추가하고 equality/NetSerialize에 포함했다. 기존 PlayerState의 서버 setter·공용 Notify·RepNotify를 유지한다.
+- GameMode의 `TryFinishPlayerRace`는 현재 Racing/Epoch, 최초 StartingPlayers 명단, Controller/Pawn/PlayerState 소유 관계, 현재 확정 코스와 마지막 종료 Actor를 검증한다. 이 단위에서는 별도 MatchMembers 집합 없이 최초 명단을 재사용한다. `NextFinishOrder`는 Racing 진입에 1로 초기화하고 승인할 때만 증가한다. 전원 집계나 RoundResults 전환은 하지 않는다.
+- Racing 진입에서 기존 Runtime의 `BeginPlayerRace`를 개인 Active 적용 전에 호출해 체크포인트·완주 기록을 새 Epoch로 초기화하고 출발 시각을 설정한다. Gameplay 트리거는 현재 Active/기록 Epoch를 요구하며 공식 완주 승인 뒤에만 기존 bFinished 조회 값을 갱신한다. 기존 DriveTest 기록 경로는 보존한다. 0/0의 건설 생략 Gameplay 경로에는 코스 결승 원본이 없으므로 이 승인 API로 완주를 확정하지 않는다.
+- 서버 Pawn은 공식 Finished를 받아 기존 RefreshDrivePermission으로 입력·속도·회전·예측 이력·아이템을 정리하고 CollisionRoot를 NoCollision으로 바꾼다. 이전 충돌 모드를 저장한다. 이동/표시 Tick과 카메라 계층은 유지한다. 서버의 중간 이동 Overlap으로 완주해도 남은 스텝이 이동을 재개하지 않는다.
+- 기존 차량 이동 스냅샷에 `bFinishCollisionDisabled`를 한 비트로 포함한다. 이것은 서버 Pawn의 충돌 적용 상태를 전달하는 파생 값이며, 공식 완주 상태/순서의 원본은 PlayerState다. 스냅샷 RepNotify와 이동 Tick의 공용 갱신으로 소유자·Controller/PlayerState가 늦는 원격 표시 차량에도 적용한다. 다른 Actor의 복제 순서를 가정하지 않는다.
+- 다음 Waiting만으로 충돌을 켜지 않는다. 기존 GameMode.PrepareRace가 유지 중인 Pawn을 출발 슬롯으로 Teleport한 후 PrepareForRaceFromServer를 호출하여 충돌 모드를 복원하고 새 시작 스냅샷을 공개한다. 클라이언트는 충돌을 복원하는 스냅샷의 위치부터 적용한 후 충돌을 켠다. 실제 다음 라운드 전환 경로는 후속 작업이다.
+- 아이템의 Gameplay 허용 조건도 개인 CanDrive를 요구하여 완주 뒤의 지급/사용을 차단한다. 기존 Items 자동화 fixture도 정상 PlayerState와 Epoch를 준비하도록 맞췄다. 삭제한 RaceStart 테스트/전용 GameMode를 다시 만들지 않고 기존 PlayerRound·DriveControl 검사에 완주/복원 범위를 추가한다.
+
+검증: UE 5.8.4 Editor 빌드와 자동화 21/21을 통과했다. 개인 완주 검사는 실제 서버 Box Overlap으로 이동 중 완주, 순서 1/2, 중복/이전 Epoch/코스 변경/명단 외 거절, 충돌 복원과 기존 DriveTest 회귀를 포함한다. 소유자/표시 차량의 수신 순서 검사는 역할 전환·RepNotify 호출을 통한 단위 검증이며 실제 다중 프로세스 네트워크 플레이와 구분한다. 결과는 `Saved/Automation/PersonalFinish/index.json`, 실행 로그는 `Saved/Logs/PersonalFinishAutomation.log`에 남긴다. Game 타깃과 BP 최종 확인 결과는 차량 문서에 기록한다.
+
+### 0.8 4000점 경기와 기존 코스 반복 구현 계약
+
+사용자 확정 규칙: 정상 경기에서 구간별 무탈락 체크포인트 통과 100점, 완주 순서 1/2/3등에 300/150/50점이다. 복귀한 구간은 0점이고 다음 체크포인트를 승인한 뒤 다음 구간은 다시 득점할 수 있다. 서버가 라운드 종료 후 누적 4000점 이상인 사람을 센다. 0명은 다음 건설, 1명은 최종 결과, 2명 이상은 해당 플레이어만 기존 코스에서 서든데스를 진행한다. 서든데스는 점수를 추가하지 않으며 복귀 없이 탈락하고, 완주 순서 우선·탈락 순서 역순으로 최종 순위를 정한다.
+
+**기존 상태 재사용:** 새 결과 구조체/Manager/Subsystem은 없다. `FMWPlayerRoundState`에 MemberId, 체크포인트 수, 체크포인트/완주 획득점수, 누적점수, 탈락 순서, 라운드/최종 순위, 참가 여부, 구간 득점 가능 여부를 추가했다. GameState의 기존 `FMWGameplayProgress.Results`가 개인 상태 배열을 복사하고 ResultsEpoch와 Phase를 같은 NetSerialize로 전달한다. 다음 준비에서 개인 라운드 값은 초기화하지만 누적점수와 직전 결과 배열은 유지한다.
+
+**서버 판정:** 기존 Runtime의 체크포인트 감지 → TryPassPlayerCheckpoint에서 코스에 표시된 체크포인트 순서를 검사한 뒤 한 번만 100점을 지급한다. TryFinishPlayerRace는 모든 체크포인트 통과도 요구하고 정상 경기의 완주 보너스를 한 번만 지급한다. HandlePlayerRaceFailure는 정상 경기의 해당 구간 득점을 차단하거나 서든데스에서 Eliminated와 서버 탈락 순서를 기록한다. 개인 상태의 공용 Notify로 기존 차량 정지/아이템 정리/충돌 해제와 스냅샷 복제를 재사용한다.
+
+**단일 전환:** TryEndRound는 남은 현재 참가자 전원이 Finished 또는 Eliminated일 때만 EnterPhase(RoundResults)를 호출한다. 정상 경기의 복귀는 Active를 유지하므로 완료로 세지 않는다. RoundResults에서 결과를 확정하고 기존 RacePhaseTimer/PhaseEndServerTime으로 기본 3초 대기한다. 기한 콜백은 Phase/Epoch/코스/기한을 다시 검사한 뒤 목표 도달 인원에 따라 MatchResults, PreparingRace(서든데스), PreparingConstruction(다음 정상 라운드)로 전환한다. 정상 라운드 또는 서든데스를 새로 시작할 때만 RoundIndex/Epoch를 한 번 증가시킨다.
+
+**코스 확장:** FinishPlacement가 종료 캡 직전의 FMWOpenTrackEnd를 보관한다. 다음 BeginPlacement는 선택 트랙과 새 종료 캡을 준비한 뒤 이전 종료 캡만 제거한다. 남은 도로/Actor/PieceId는 유지하고 저장한 끝에서 새 트랙을 붙인다. 이전 결승은 마지막 기존 도로에 서버 체크포인트 Box와 복귀 후보를 추가하고 기존 PlacedTracks.bCheckpoint에 표시한다. 원래 체크포인트가 있는 트랙도 게시 시 표시하여 코스 순서 판정에 포함한다. 이전 종료 Actor, 세션, 리비전에 대한 오래된 요청은 승인하지 않는다.
+
+**준비와 탈락:** 기존 Pawn을 최초 출발 슬롯에 재배치한 뒤 충돌을 복원하고 새 시작 스냅샷을 공개한다. 준비 보고/3초 Countdown을 매 라운드 재사용한다. 서든데스 비참가자는 Spectating, 참가자는 Waiting→Active로 설정하여 준비 집계와 입력에서 분리한다. 비참가자/탈락자의 로컬 Controller는 남은 참가자 차량을 기존 카메라로 본다. 서버는 코스 최저 높이보다 기본 1000cm 아래인 추락을 0.25초 간격으로 확인하고 기존 복귀 경로에 전달한다. 최초 체크포인트 이전 실패는 출발 위치로 복귀한다. KillZ도 Pawn 파괴 전에 같은 복귀/탈락 경로를 사용한다. 선두 거리 차와 차량 파괴의 별도 검출기는 이 단위에 새로 만들지 않았다. 추가 탈락 원인은 같은 HandlePlayerRaceFailure로 연결한다.
+
+**소비자와 종료:** 기존 HUD에 점수와 결과 텍스트를 표시하고 EnvironmentGameplay는 RoundResults/MatchResults에서도 환경을 유지한다. 정상 최종 결과는 누적점수순, 동점은 직전 라운드 순위·참가 ID순이다. 서든데스 비참가자는 참가자 뒤에서 누적점수·참가 ID순이다. 주행 중 이탈자는 서버 명단에서 제거하고 완료 집계를 다시 한다. 확정된 라운드 결과 스냅샷은 이탈로 고치지 않는다. 기존 건설/참가자의 출발 준비 중 이탈 실패 정책은 유지한다. 주행 제한시간·재경기/로비 복귀 UI는 추가하지 않는다.
+
+**검증:** UE 5.8.4 MWEditor/MW Win64 Development 정상 빌드, 자동화 23/23 성공(경고 0). 실제 트랙 Definition의 선택/소켓 배치로 정상 3라운드와 기존 도로 보존·종료 캡 교체를 수행하고, 100점/복귀 구간 0점/중복 거절, 300·150·50점, 결과 보존·Epoch 증가, 단독 정확히 4000점 종료, 복수 도달자만의 서든데스, 무복귀 탈락·전원 탈락 역순·관전자만 남을 때 무한 대기 방지를 검증했다. 비동기 메시 컴파일은 통합 fixture에서 FinishAllCompilation으로 마무리한 뒤 실제 물리 준비 조건을 검사한다. Blueprint 18개 컴파일 성공, 검사 에셋 19개 SHA-256 전후 동일. 결과는 `Saved/Automation/RoundLoop/index.json`, 빌드는 `Saved/Logs/RoundLoopEditorBuild.log`, `Saved/Logs/RoundLoopGameBuild.log`, BP 검증은 `Saved/Logs/RoundLoopAssets.json`에 있다. 실제 3PC/다중 프로세스 패킷·지연/손실·화면 확인과 Cook/패키징은 수행하지 않았다.
+
+임시 `Saved/Codex/RoundLoopAudit.py`는 최종 BP/에셋 검증 JSON으로 대체한 뒤 삭제했다. 중간 `Saved/Automation/RoundLoopFocused`와 `Saved/Logs/RoundLoopFocused*.log`는 최종 RoundLoop 결과가 대체하지만, 정리 명령이 자동 승인 검토의 정책 차단을 받아 유지했다(상세 차단 사유 미제공). 고유 최종 결과·에셋 해시·코드 검증 증거는 RoundLoop 결과와 로그/검증 JSON에 유지한다.
+
+### 0.9 준비 재보고·결과 확정 후 이탈·반복 조회 보완
+
+- **준비 재보고:** Controller는 로컬 준비 조건이 충족되면 기존 Reliable ServerReportRaceReady를 보낸다. 같은 Epoch/Session/Revision도 PreparingRace 동안 0.5초 간격으로 다시 보낸다. 새 준비 키는 즉시 보고하고 PostSeamlessTravel에서 재보고 시각도 초기화한다. 서버 거절에 별도 ACK나 새 복제 상태를 만들지 않는다. 서버는 기존 RaceReadyMembers에 한 번만 등록/로그를 남기며 중복 보고에서도 AreAllRaceReady를 다시 평가한다. 성공하면 기존 EnterPhase(Countdown)으로 이동하여 로컬 재보고가 멈춘다. 기존 30초 준비 제한시간은 유지한다.
+- **확정 결과와 접속 명단:** CountQualifiedPlayers는 현재 Epoch의 Results와 기록된 TargetScore로 목표 도달 인원을 센다. 최종 BuildResults는 확정 배열을 복사해 FinalRank를 부여한다. RoundResults 대기 중 PlayerState가 사라져도 단독 도달자의 경기 종료, 서든데스 완주자/탈락자의 순위와 점수를 다시 계산하지 않는다. PlayerState 갱신은 현재 접속한 멤버에만 적용하고 모든 결과 행은 GameState에 보존한다.
+- **다음 주행:** 서든데스 자격은 직전 결과에서, 실제 다음 참가자는 남은 MatchMembers에서 가져온다. 둘 이상이 자격을 얻은 뒤 한 명이 나가도 서든데스 경로를 유지하며 남은 자격자가 주행한다. 자격자가 모두 떠나 관전자만 남으면 기존 Failed로 종료한다. 다음 일반 라운드 역시 남은 명단으로 진행하며 준비 중 이탈의 기존 실패 정책은 유지한다.
+- **복사 비용:** Blueprint의 값 반환 GetProgress는 유지하고 C++ 전용 const 참조 GetProgressRef를 추가한다. CanDrive, 차량의 권한/충돌 갱신 및 이동 스냅샷의 Epoch 조회는 참조 경로를 사용한다. EnterPhase의 Current/Next, 타이머의 Expected, 결과 저장은 과거 값을 고정해야 하므로 값 복사를 유지한다. 참조는 멤버로 보관하거나 지연 콜백에 캡처하지 않는다.
+- **검증:** UE 5.8.4 MWEditor/MW Win64 Development 빌드 성공, 자동화 23/23 성공(테스트 경고 0). 기존 RoundLoop 통합 검사에 일시적 코스 미준비 보고 거절→동일 키 재수락, 이전 Epoch 거절, 먼저 보고한 차량의 준비 상태 회복→중복 보고로 Countdown 진입, 단독 도달자/서든데스 완주자의 결과 대기 중 이탈과 PlayerState 제거, 복수 자격자 중 한 명 이탈 후 서든데스 유지, 전원 자격자 이탈 후 Failed를 추가했다. 기존 점수/확장/복제/차량/아이템/HUD/커서 검사도 통과했다. 빌드에는 이번에 수정하지 않은 MWItemComponentVisual.cpp의 GetBindings() C4996 경고가 남아 있다. 결과는 `Saved/Automation/RoundLoopFix/index.json`, `Saved/Logs/RoundLoopFixEditorBuild.log`, `Saved/Logs/RoundLoopFixGameBuild.log`, `Saved/Logs/RoundLoopFixVerification.json`이다. 준비 재보고 검사는 서버 진입점으로 재수신을 주입한 단위/통합 검사이며 실제 클라이언트의 0.5초 주기·패킷 지연/손실·다중 프로세스 실행과 성능 측정, Cook/패키징은 미실행이다.
 
 ## 1. 목적과 적용 범위
 

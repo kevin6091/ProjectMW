@@ -22,6 +22,8 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
 #include "System/MWDriveTestGameMode.h"
+#include "System/GameMode/MWGameplayGameMode.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 
 namespace
@@ -173,6 +175,11 @@ void AMWVehiclePawn::InitializeWheelVisuals()
 void AMWVehiclePawn::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+	if (HasAuthority() && GetWorld()->GetTimeSeconds() >= NextRaceFailureCheck)
+	{
+		NextRaceFailureCheck = GetWorld()->GetTimeSeconds() + 0.25;
+		if (auto* Mode = GetWorld()->GetAuthGameMode<AMWGameplayGameMode>()) Mode->CheckPlayerRaceFailure(*this);
+	}
     // main의 차체 완충을 먼저 계산한 뒤 바퀴·자국 표시를 갱신한다.
     UpdateGroundVisual(DeltaSeconds);
     UpdateWheelVisuals(DeltaSeconds);
@@ -317,17 +324,62 @@ bool AMWVehiclePawn::CanDrive() const
 	{
 		return false;
 	}
-	const FMWGameplayProgress Progress = GS->GetProgress();
+	const FMWGameplayProgress& Progress = GS->GetProgressRef();
 	const FMWPlayerRoundState Round = PS->GetRoundState();
-	return Progress.Phase == EMWRoomPhase::Racing && Progress.RoundEpoch > 0
-		&& Round.RoundEpoch == Progress.RoundEpoch && Round.RaceStatus == EMWRaceStatus::Active
+	return !bFinishCollisionDisabled && Progress.Phase == EMWRoomPhase::Racing && Progress.RoundEpoch > 0
+		&& Round.RoundEpoch == Progress.RoundEpoch && Round.bRaceParticipant && Round.RaceStatus == EMWRaceStatus::Active
 		&& (HasAuthority() || (ServerDriveSnapshot.bDriveAllowed && ServerDriveSnapshot.RoundEpoch == Progress.RoundEpoch));
+}
+
+bool AMWVehiclePawn::SetFinishCollisionDisabled(bool bDisabled)
+{
+	if (bFinishCollisionDisabled == bDisabled)
+	{
+		return false;
+	}
+	bFinishCollisionDisabled = bDisabled;
+	if (bDisabled)
+	{
+		CollisionBeforeFinish = CollisionRoot->GetCollisionEnabled();
+		CollisionRoot->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	else
+	{
+		CollisionRoot->SetCollisionEnabled(CollisionBeforeFinish);
+	}
+	return true;
 }
 
 void AMWVehiclePawn::RefreshDrivePermission()
 {
+	bool bCollisionChanged = false;
+	if (HasAuthority())
+	{
+		const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+		const auto* PS = GetPlayerState<AMWPlayerState>();
+		if (GS && PS && GS->GetProgressRef().RoundEpoch > 0
+			&& PS->GetRoundState().RoundEpoch == GS->GetProgressRef().RoundEpoch
+			&& (PS->GetRoundState().RaceStatus == EMWRaceStatus::Finished || PS->GetRoundState().RaceStatus == EMWRaceStatus::Eliminated
+				|| !PS->GetRoundState().bRaceParticipant))
+		{
+			bCollisionChanged = SetFinishCollisionDisabled(true);
+		}
+	}
+	else if (ServerDriveSnapshot.StreamId != 0)
+	{
+		if (bFinishCollisionDisabled && !ServerDriveSnapshot.bFinishCollisionDisabled)
+		{
+			// PlayerState/Progress의 수신 순서와 무관하게 새 위치부터 적용한 뒤 충돌을 켠다.
+			if (VehicleMovement->UpdatedComponent != CollisionRoot)
+			{
+				return;
+			}
+			VehicleMovement->ApplyDriveSnapshot(ServerDriveSnapshot);
+		}
+		bCollisionChanged = SetFinishCollisionDisabled(ServerDriveSnapshot.bFinishCollisionDisabled);
+	}
 	const bool bAllowed = CanDrive();
-	if (bDriveAllowed == bAllowed)
+	if (bDriveAllowed == bAllowed && !bCollisionChanged)
 	{
 		return;
 	}
@@ -336,6 +388,10 @@ void AMWVehiclePawn::RefreshDrivePermission()
 	DriveInput = FMWVehicleDriveInput{};
 	VehicleMovement->ResetDriveInput();
 	VehicleMovement->StopMovementImmediately();
+	if (!bAllowed)
+	{
+		ItemComponent->ResetItemState();
+	}
 	DriveStepTime = 0.f;
 	SendTime = 0.f;
 	PredictedMoves.Reset();
@@ -396,9 +452,19 @@ void AMWVehiclePawn::PrepareForRaceFromServer()
 	{
 		return;
 	}
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const auto* PS = GetPlayerState<AMWPlayerState>();
+	if (GS && (GS->GetRoomPhase() != EMWRoomPhase::PreparingRace || !PS
+		|| PS->GetRoundState().RoundEpoch != GS->GetProgressRef().RoundEpoch
+		|| PS->GetRoundState().RaceStatus != EMWRaceStatus::Waiting))
+	{
+		return;
+	}
 	DriveInput = FMWVehicleDriveInput{};
 	VehicleMovement->ResetDriveInput();
 	VehicleMovement->StopMovementImmediately();
+	// GameMode가 출발 위치를 적용한 뒤 호출한다. Waiting 복제만으로는 충돌을 복원하지 않는다.
+	SetFinishCollisionDisabled(false);
 	RefreshDrivePermission();
 	// 이미 정지 중이어도 새 Epoch를 포함한 시작 위치를 반드시 공개한다.
 	ResetDriveStream();
@@ -445,6 +511,16 @@ void AMWVehiclePawn::UnPossessed()
 	{
 		ResetDriveStream();
 	}
+}
+
+void AMWVehiclePawn::FellOutOfWorld(const UDamageType& DamageType)
+{
+	if (HasAuthority() && GetWorld()->GetAuthGameMode<AMWGameplayGameMode>() && CanDrive())
+	{
+		GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->RespawnAtTrackCheckpoint(this);
+		return;
+	}
+	Super::FellOutOfWorld(DamageType);
 }
 
 bool AMWVehiclePawn::RespawnAtCheckpoint(const FVector& Location, const FRotator& Rotation)

@@ -193,6 +193,54 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& InData)
     SetPreview(bPreview);
 }
 
+bool UMWTrackRuntimeComponent::EnsureCourseFinishTrigger(const FTransform& PortFrame, const FVector& HalfExtent)
+{
+    return EnsureCourseRaceTrigger(EMWTrackTrigger::Finish, PortFrame, HalfExtent);
+}
+
+bool UMWTrackRuntimeComponent::EnsureCourseCheckpointTrigger(const FTransform& PortFrame, const FVector& HalfExtent)
+{
+    return EnsureCourseRaceTrigger(EMWTrackTrigger::Checkpoint, PortFrame, HalfExtent);
+}
+
+bool UMWTrackRuntimeComponent::HasCheckpointTrigger() const
+{
+    return (CourseFinishTrigger.IsValid() && CourseFinishShape.Trigger == EMWTrackTrigger::Checkpoint)
+        || Piece.Shapes.ContainsByPredicate([](const FMWTrackShapeData& Shape) { return Shape.Trigger == EMWTrackTrigger::Checkpoint; });
+}
+
+bool UMWTrackRuntimeComponent::EnsureCourseRaceTrigger(EMWTrackTrigger Trigger, const FTransform& PortFrame, const FVector& HalfExtent)
+{
+    if (!bConfigured || bPreview || !GetOwner()->HasAuthority() || PortFrame.ContainsNaN()
+        || !PortFrame.GetRotation().IsNormalized() || HalfExtent.ContainsNaN() || HalfExtent.GetMin() <= 0.0)
+    {
+        return false;
+    }
+    if (Piece.Shapes.ContainsByPredicate([Trigger](const FMWTrackShapeData& Shape)
+        { return Shape.Trigger == Trigger; }))
+    {
+        return true;
+    }
+    CourseFinishShape.Shape = EMWTrackShape::Box;
+    CourseFinishShape.Trigger = Trigger;
+    CourseFinishShape.Extent = HalfExtent;
+    // Port의 +X는 코스 밖이다. 영역의 바깥 면을 연결점에 맞추고 도로 위로 세운다.
+    CourseFinishShape.Local = FTransform(PortFrame.GetRotation(),
+        PortFrame.TransformPosition(FVector(-HalfExtent.X, 0.0, HalfExtent.Z)));
+    CourseRespawnPoints.Reset();
+    if (Trigger == EMWTrackTrigger::Checkpoint)
+    {
+        const FQuat Rotation = (PortFrame.GetRotation() * FQuat(FVector::UpVector, UE_HALF_PI)).GetNormalized();
+        for (const double Offset : {-300.0, 300.0, -600.0, 600.0})
+        {
+            CourseRespawnPoints.Add(FTransform(Rotation, PortFrame.TransformPosition(FVector(400, Offset, 60))));
+        }
+    }
+    if (!CourseFinishTrigger.IsValid()) CourseFinishTrigger = CreateShape(CourseFinishShape);
+    SetPreview(false);
+    return CourseFinishTrigger.IsValid();
+}
+
 // 복구한 로컬 변환과 형상 데이터로 실제 트랙의 충돌 또는 트리거를 만든다.
 UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeData& Shape)
 {
@@ -385,7 +433,8 @@ void UMWTrackRuntimeComponent::OnTrigger(UPrimitiveComponent* Overlapped, AActor
     case EMWTrackTrigger::Start:
     case EMWTrackTrigger::Checkpoint:
     case EMWTrackTrigger::Finish:
-        Runtime->ProcessRaceTrigger(*Vehicle, *GetOwner(), Shape.Trigger, Piece.RespawnPoints);
+        Runtime->ProcessRaceTrigger(*Vehicle, *GetOwner(), Shape.Trigger,
+            &Shape == &CourseFinishShape ? CourseRespawnPoints : Piece.RespawnPoints);
         break;
     default:
         break;

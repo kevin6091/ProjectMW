@@ -59,9 +59,9 @@ protected:
 
 private:
 	friend class UMWTrackPlacementViewComponent;
-	friend struct FMWRaceStartTestScene;
 
 	void ApplyGameplayInputMode();
+	void UpdateRaceViewTarget();
 	void RefreshDrivingInput();
 	void ClearDrivingInput();
 	AMWVehiclePawn* GetInputVehicle() const;
@@ -94,6 +94,7 @@ private:
 	int32 LastReadyRoundEpoch = 0;
 	int32 LastReadyCourseSessionId = 0;
 	int32 LastReadyCourseRevision = 0;
+	double NextRaceReadyReportTime = 0.0;
 
 	void HandleTrackSelectPressed();
 	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;

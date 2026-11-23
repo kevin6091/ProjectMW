@@ -3,21 +3,41 @@
 #include "Misc/AutomationTest.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Data/MWVehicleDriveData.h"
 #include "Components/BoxComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "TimerManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "System/MWDriveTestGameMode.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
+#include "System/MWGameInstance.h"
+#include "System/GameMode/MWGameplayGameMode.h"
+#include "Player/MWGameplayPlayerController.h"
+#include "Gameplay/PlayerStart/MWPlayerStartManager.h"
+#include "Gameplay/Construction/MWTrackSelectionBoard.h"
+#include "Gameplay/Construction/MWPlayerConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackSnap.h"
+#include "Data/MWTrackDefinitionData.h"
+#include "System/MWAssetManager.h"
+#include "Components/ArrowComponent.h"
+#include "Algo/Count.h"
+#include "Algo/AllOf.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/NetConnection.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
 #include "UObject/UnrealType.h"
 #include <limits>
+#if WITH_EDITOR
+#include "AssetCompilingManager.h"
+#endif
 
 namespace MWVehicleTests
 {
@@ -37,10 +57,14 @@ struct FScene
 	APlayerController* Controller = nullptr;
 	UBoxComponent* Floor = nullptr;
 
-	explicit FScene(const FMWVehicleDriveConfig& InConfig = FMWVehicleDriveConfig())
+	explicit FScene(const FMWVehicleDriveConfig& InConfig = FMWVehicleDriveConfig(), bool bInitializeActors = false)
 	{
 		World = UWorld::CreateWorld(EWorldType::Game, false);
 		GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
+		if (bInitializeActors)
+		{
+			World->InitializeActorsForPlay(FURL());
+		}
 		AGameStateBase* TestState = World->SpawnActor<AGameStateBase>();
 		TestState->GameModeClass = AMWDriveTestGameMode::StaticClass();
 		World->SetGameState(TestState);
@@ -61,6 +85,7 @@ struct FScene
 
 	~FScene()
 	{
+		if (World->HasBegunPlay()) World->EndPlay(EEndPlayReason::Quit);
 		World->DestroyWorld(false);
 		GEngine->DestroyWorldContext(World);
 	}
@@ -712,6 +737,500 @@ bool FMWRaceDriveNetworkTest::RunTest(const FString& Parameters)
 	Scene.Input(1);
 	Pawn->TickAuthorityDrive(1.f / 120.f);
 	TestTrue(TEXT("Listen-host input uses the same permission and resumes without an RPC"), Scene.Movement->Velocity.Size() > 0);
+
+	// 완주/다음 준비의 충돌 비트가 PlayerState보다 먼저 와도 서버 위치에서만 복원한다.
+	const auto CollisionBeforeFinish = Pawn->CollisionRoot->GetCollisionEnabled();
+	Round.RaceStatus = EMWRaceStatus::Finished;
+	Round.FinishOrder = 1;
+	Player->ApplyRoundStateFromServer(Round);
+	const FMWVehicleDriveSnapshot FinishedSnapshot = Pawn->ServerDriveSnapshot;
+	TestTrue(TEXT("Authority publishes disabled collision and a stopped new stream"),
+		FinishedSnapshot.bFinishCollisionDisabled && !FinishedSnapshot.bDriveAllowed
+		&& FinishedSnapshot.Velocity.IsNearlyZero() && FMath::IsNearlyZero(FinishedSnapshot.ImpactYawRate));
+	TestFalse(TEXT("Finished root cannot block another vehicle"), Pawn->CollisionRoot->IsQueryCollisionEnabled());
+	Pawn->SetFinishCollisionDisabled(false);
+	Pawn->SetRole(ROLE_AutonomousProxy);
+	Pawn->OnRep_ServerDriveSnapshot();
+	TestFalse(TEXT("Owner applies the finish collision bit independently of personal-state order"), Pawn->CollisionRoot->IsQueryCollisionEnabled());
+	TestTrue(TEXT("Finishing discards the owner's prediction history"), Pawn->PredictedMoves.IsEmpty());
+	Pawn->TickPredictedDrive(1.f / 120.f);
+	TestTrue(TEXT("A finished owner does not resume prediction"), Pawn->PredictedMoves.IsEmpty());
+	Pawn->SetFinishCollisionDisabled(false);
+	Pawn->SetRole(ROLE_SimulatedProxy);
+	Pawn->SetPlayerState(nullptr);
+	Pawn->ServerDriveSnapshot = FinishedSnapshot;
+	Pawn->OnRep_ServerDriveSnapshot();
+	TestFalse(TEXT("A proxy without PlayerState also disables collision from the drive snapshot"), Pawn->CollisionRoot->IsQueryCollisionEnabled());
+	FMWVehicleDriveSnapshot PreparedSnapshot = FinishedSnapshot;
+	++PreparedSnapshot.StreamId;
+	PreparedSnapshot.RoundEpoch = 2;
+	PreparedSnapshot.Location = FVector(1500, 300, 31);
+	PreparedSnapshot.bFinishCollisionDisabled = false;
+	Pawn->ServerDriveSnapshot = PreparedSnapshot;
+	Pawn->OnRep_ServerDriveSnapshot();
+	TestEqual(TEXT("Proxy restores its original collision setting"), Pawn->CollisionRoot->GetCollisionEnabled(), CollisionBeforeFinish);
+	TestTrue(TEXT("Proxy restores collision at the new authoritative pose"), Pawn->GetActorLocation().Equals(PreparedSnapshot.Location, 0.1));
+	Pawn->TickProxyDrive(1.f / 60.f);
+	TestTrue(TEXT("Proxy presentation never returns to the old finish pose"), Pawn->GetActorLocation().Equals(PreparedSnapshot.Location, 0.1));
+	Pawn->SetPlayerState(Player);
+	Pawn->SetRole(ROLE_Authority);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWPersonalFinishTest, "MW.Gameplay.DriveControl.PersonalFinish",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene(FMWVehicleDriveConfig{}, true);
+	Scene.Controller->UnPossess();
+	Scene.Controller->Destroy();
+	Scene.Controller = Scene.World->SpawnActor<AMWGameplayPlayerController>();
+	auto* State = Scene.UseRaceRules();
+	auto* Player = Scene.Vehicle->GetPlayerState<AMWPlayerState>();
+	Player->SetLobbyMemberIdFromServer(1);
+	State->AddPlayerState(Player);
+	auto* App = NewObject<UMWGameInstance>(GEngine);
+	Scene.World->SetGameInstance(App);
+	// 이 비상수 fixture의 최초 명단만 설정한다. 테스트용 Runtime API나 GameMode를 추가하지 않는다.
+	const_cast<TArray<int32>&>(App->GetStartingPlayers()) = {1, 2};
+	auto* Mode = Scene.World->SpawnActor<AMWGameplayGameMode>();
+	Scene.World->SetGameState(State);
+	FindFProperty<FObjectPropertyBase>(Mode->GetClass(), TEXT("GameState"))->SetObjectPropertyValue_InContainer(Mode, State);
+	FindFProperty<FObjectPropertyBase>(Scene.World->GetClass(), TEXT("AuthorityGameMode"))->SetObjectPropertyValue_InContainer(Scene.World, Mode);
+	const FGameplayTag FinishId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.End.WoodenCap")));
+	FindFProperty<FStructProperty>(Mode->GetClass(), TEXT("CourseEnds"))
+		->ContainerPtrToValuePtr<FMWTrackCourseEnds>(Mode)->EndDefinitionId = FinishId;
+	auto* FinishTrack = Scene.World->SpawnActor<AActor>();
+	auto* FinishRoot = NewObject<USceneComponent>(FinishTrack, TEXT("Root"));
+	FinishTrack->SetRootComponent(FinishRoot);
+	FinishRoot->RegisterComponent();
+	FinishTrack->SetActorLocation(FVector(500, 0, 0));
+	auto* Port = NewObject<USceneComponent>(FinishTrack, TEXT("ConnectionPoint1"));
+	Port->SetupAttachment(FinishRoot);
+	Port->SetRelativeRotation(FRotator(0, -90, 0));
+	Port->RegisterComponent();
+	auto* TrackComponent = NewObject<UMWTrackRuntimeComponent>(FinishTrack);
+	FinishTrack->AddInstanceComponent(TrackComponent);
+	TrackComponent->Configure(FMWTrackPieceRuntimeData{});
+	TrackComponent->RegisterComponent();
+	FinishTrack->DispatchBeginPlay();
+	auto* Runtime = Scene.World->GetSubsystem<UMWTrackRuntimeSubsystem>();
+	TestTrue(TEXT("A plain end cap receives the existing server finish trigger"), Runtime->PrepareCourseFinish(*FinishTrack, FVector(50, 500, 150)));
+	const int32 TriggerCount = FinishTrack->GetComponents().Num();
+	TestTrue(TEXT("Repeated preparation reuses the same finish trigger"), Runtime->PrepareCourseFinish(*FinishTrack, FVector(50, 500, 150)));
+	TestEqual(TEXT("Finish preparation does not duplicate components"), FinishTrack->GetComponents().Num(), TriggerCount);
+	auto* OtherTrack = Scene.World->SpawnActor<AActor>();
+	auto* Construction = State->GetConstructionComponent();
+	auto& Course = *FindFProperty<FStructProperty>(Construction->GetClass(), TEXT("PlacementSession"))
+		->ContainerPtrToValuePtr<FMWTrackPlacementSession>(Construction);
+	Course.SessionId = 7;
+	Course.CourseRevision = 3;
+	FMWPlacedTrack Finish;
+	Finish.PieceId = 1;
+	Finish.DefinitionAssetId = FinishId;
+	Finish.Actor = FinishTrack;
+	Finish.WorldTransform = FinishTrack->GetActorTransform();
+	Finish.bRequiresCollision = true;
+	Course.PlacedTracks.Add(Finish);
+	TestTrue(TEXT("Fixture has a complete current course"), Construction->IsCourseReadyForRace(7, 3));
+	FMWGameplayProgress Progress;
+	Progress.Phase = EMWRoomPhase::Racing;
+	Progress.RoundEpoch = 1;
+	Progress.RoundIndex = 1;
+	Progress.CourseSessionId = 7;
+	Progress.CourseRevision = 3;
+	State->ApplyProgressFromServer(Progress);
+	FMWPlayerRoundState Round;
+	Round.RoundEpoch = 1;
+	Round.RaceStatus = EMWRaceStatus::Active;
+	Player->ApplyRoundStateFromServer(Round);
+	Runtime->BeginPlayerRace(*Scene.Vehicle, 1);
+	auto* Root = CastChecked<UBoxComponent>(Scene.Vehicle->GetRootComponent());
+	Root->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Scene.Input(1);
+	Scene.Step(0.15f);
+	TestTrue(TEXT("Participant is moving before finishing"), Scene.Movement->Velocity.Size() > 0);
+	TestTrue(TEXT("Participant can hold an item before finishing"), Scene.Vehicle->GetItemComponent()->TryGrantBooster());
+	TestFalse(TEXT("Old epoch cannot finish"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *FinishTrack, 0));
+	TestFalse(TEXT("An unrelated track cannot finish"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *OtherTrack, 1));
+	++Course.CourseRevision;
+	TestFalse(TEXT("A changed course cannot finish the previous race"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *FinishTrack, 1));
+	--Course.CourseRevision;
+	Scene.World->SetBegunPlay(true);
+	Scene.Step(2.0f);
+	Scene.World->SetBegunPlay(false);
+	TestTrue(TEXT("Existing runtime trigger stores official Finished"), Player->GetRoundState().RaceStatus == EMWRaceStatus::Finished);
+	TestEqual(TEXT("Rejected attempts do not consume the first finish order"), Player->GetRoundState().FinishOrder, 1);
+	TestTrue(TEXT("Legacy progress mirrors only approved completion"), Runtime->GetTrackRaceProgress(Scene.Vehicle).bFinished);
+	TestFalse(TEXT("Finished vehicle has no blocking or overlap collision"), Root->IsCollisionEnabled());
+	TestTrue(TEXT("Completion clears velocity and held input"), Scene.Movement->Velocity.IsZero() && Scene.Vehicle->GetDriveInput().Throttle == 0);
+	TestTrue(TEXT("Completion clears the held item"), Scene.Vehicle->GetItemComponent()->GetCurrentItemId() == EMWItemId::None);
+	TestFalse(TEXT("Completion rejects another item grant"), Scene.Vehicle->GetItemComponent()->TryGrantBooster());
+	TestFalse(TEXT("Duplicate completion is rejected"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *FinishTrack, 1));
+	TestFalse(TEXT("Finished player cannot respawn through the checkpoint path"), Runtime->RespawnAtTrackCheckpoint(Scene.Vehicle));
+	const FTransform Held = Scene.Vehicle->GetActorTransform();
+	Scene.Input(1, 0, 1, true);
+	Scene.Step(0.2f);
+	TestTrue(TEXT("Finished vehicle remains fixed despite more input"), Held.Equals(Scene.Vehicle->GetActorTransform(), 0.001));
+
+	// 같은 서버의 두 번째 참가자도 실제 소유/명단 검사를 거쳐 다음 순서를 받는다.
+	auto* OtherVehicle = Scene.World->SpawnActor<AMWVehiclePawn>(FVector(1000, 0, 31), FRotator::ZeroRotator);
+	auto* OtherMovement = CastChecked<UMWVehicleMovementComponent>(OtherVehicle->GetMovementComponent());
+	FindFProperty<FObjectPropertyBase>(OtherMovement->GetClass(), TEXT("DriveData"))->SetObjectPropertyValue_InContainer(
+		OtherMovement, NewObject<UMWVehicleDriveData>(OtherVehicle));
+	auto* OtherController = Scene.World->SpawnActor<AMWGameplayPlayerController>();
+	auto* OtherPlayer = Scene.World->SpawnActor<AMWPlayerState>();
+	OtherPlayer->SetOwner(OtherController);
+	OtherController->PlayerState = OtherPlayer;
+	OtherController->Possess(OtherVehicle);
+	OtherVehicle->SetPlayerState(OtherPlayer);
+	OtherVehicle->DispatchBeginPlay();
+	OtherPlayer->SetLobbyMemberIdFromServer(2);
+	State->AddPlayerState(OtherPlayer);
+	OtherPlayer->ApplyRoundStateFromServer(Round);
+	Runtime->BeginPlayerRace(*OtherVehicle, 1);
+	const_cast<TArray<int32>&>(App->GetStartingPlayers()).Remove(2);
+	TestFalse(TEXT("A player outside the starting roster cannot finish"), Mode->TryFinishPlayerRace(*OtherVehicle, *FinishTrack, 1));
+	const_cast<TArray<int32>&>(App->GetStartingPlayers()).Add(2);
+	Runtime->ProcessRaceTrigger(*OtherVehicle, *FinishTrack, EMWTrackTrigger::Finish, {});
+	TestEqual(TEXT("The second accepted completion receives order two"), OtherPlayer->GetRoundState().FinishOrder, 2);
+	TestTrue(TEXT("All personal finishes advance to RoundResults"), State->GetRoomPhase() == EMWRoomPhase::RoundResults);
+	TestEqual(TEXT("RoundResults publishes an immutable result snapshot"), State->GetProgress().Results.Num(), 2);
+
+	// 다음 준비는 공개 진입점을 사용한다. 전체 라운드 반복 전환은 이 작업에 추가하지 않는다.
+	Progress.Phase = EMWRoomPhase::PreparingRace;
+	Progress.RoundEpoch = 2;
+	State->ApplyProgressFromServer(Progress);
+	Round.RoundEpoch = 2;
+	Round.RaceStatus = EMWRaceStatus::Waiting;
+	Player->ApplyRoundStateFromServer(Round);
+	TestFalse(TEXT("Waiting alone cannot restore collision at the old finish line"), Root->IsCollisionEnabled());
+	const FVector NewStart(3000, 500, 31);
+	TestTrue(TEXT("The completed vehicle can be moved to a new start"), Scene.Vehicle->TeleportTo(NewStart, FRotator::ZeroRotator));
+	Scene.Vehicle->PrepareForRaceFromServer();
+	TestTrue(TEXT("Preparation restores the exact pre-finish collision mode"), Root->GetCollisionEnabled() == ECollisionEnabled::QueryOnly);
+	TestTrue(TEXT("Collision is restored at the new start"), Scene.Vehicle->GetActorLocation().Equals(NewStart, 0.1));
+	TestFalse(TEXT("Prepared vehicle remains locked until Racing/Active"), Scene.Vehicle->CanDrive());
+	Runtime->BeginPlayerRace(*Scene.Vehicle, 2);
+	TestFalse(TEXT("New race clears the previous runtime finish record"), Runtime->GetTrackRaceProgress(Scene.Vehicle).bFinished);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWGameplayRoundFlowTest, "MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene(FMWVehicleDriveConfig{}, true);
+	Scene.Controller->UnPossess();
+	Scene.Controller->Destroy();
+	Scene.Controller = Scene.World->SpawnActor<AMWGameplayPlayerController>();
+	auto* State = Scene.UseRaceRules();
+	TArray<AMWGameplayPlayerController*> Controllers{CastChecked<AMWGameplayPlayerController>(Scene.Controller)};
+	TArray<AMWVehiclePawn*> Vehicles{Scene.Vehicle};
+	for (int32 Index = 1; Index < 3; ++Index)
+	{
+		auto* Vehicle = Scene.World->SpawnActor<AMWVehiclePawn>(FVector(-1000, Index * 500, 60), FRotator::ZeroRotator);
+		auto* Movement = CastChecked<UMWVehicleMovementComponent>(Vehicle->GetMovementComponent());
+		FindFProperty<FObjectPropertyBase>(Movement->GetClass(), TEXT("DriveData"))->SetObjectPropertyValue_InContainer(Movement, NewObject<UMWVehicleDriveData>(Vehicle));
+		auto* PC = Scene.World->SpawnActor<AMWGameplayPlayerController>();
+		auto* PS = Scene.World->SpawnActor<AMWPlayerState>();
+		PS->SetOwner(PC);
+		PC->PlayerState = PS;
+		PC->Possess(Vehicle);
+		Vehicle->SetPlayerState(PS);
+		Vehicle->DispatchBeginPlay();
+		Controllers.Add(PC);
+		Vehicles.Add(Vehicle);
+	}
+	TArray<AMWPlayerState*> Players;
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		auto* PS = Vehicles[Index]->GetPlayerState<AMWPlayerState>();
+		PS->SetLobbyMemberIdFromServer(Index + 1);
+		PS->ConfirmVehicleAssetIDFromServer(FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Vehicle.InvisiblePilot"))));
+		State->AddPlayerState(PS);
+		Players.Add(PS);
+	}
+	auto* App = NewObject<UMWGameInstance>(GEngine);
+	Scene.World->SetGameInstance(App);
+	const_cast<TArray<int32>&>(App->GetStartingPlayers()) = {1, 2, 3};
+	auto* Mode = Scene.World->SpawnActor<AMWGameplayGameMode>();
+	Scene.World->SetGameState(State);
+	FindFProperty<FObjectPropertyBase>(Mode->GetClass(), TEXT("GameState"))->SetObjectPropertyValue_InContainer(Mode, State);
+	FindFProperty<FObjectPropertyBase>(Scene.World->GetClass(), TEXT("AuthorityGameMode"))->SetObjectPropertyValue_InContainer(Scene.World, Mode);
+	Mode->InitGameState();
+	Mode->StartManager = Scene.World->SpawnActor<AMWPlayerStartManager>();
+	TInlineComponentArray<UArrowComponent*> Slots(Mode->StartManager.Get());
+	for (int32 Index = 0; Index < Slots.Num(); ++Index) Slots[Index]->SetRelativeLocation(FVector(-300, Index * 400 - 600, 60));
+	Mode->SelectionBoard = Scene.World->SpawnActor<AMWTrackSelectionBoard>();
+	FindFProperty<FDoubleProperty>(Mode->SelectionBoard->GetClass(), TEXT("LayoutScale"))->SetPropertyValue_InContainer(Mode->SelectionBoard.Get(), 10.0);
+	for (const TCHAR* Tag : {TEXT("Asset.Track.Straight.Test"), TEXT("Asset.Track.Curve.Test"), TEXT("Asset.Track.Placeholder.Test")})
+		Mode->ConstructionTrackDefinitionIds.Add(FGameplayTag::RequestGameplayTag(FName(Tag)));
+	Mode->CourseEnds.StartDefinitionId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.Start.WoodenCapped")));
+	Mode->CourseEnds.EndDefinitionId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.End.WoodenCap")));
+	auto* Runtime = Scene.World->GetSubsystem<UMWTrackRuntimeSubsystem>();
+	Runtime->OnWorldBeginPlay(*Scene.World); // 트랙 서비스만 시작한다. 다른 서비스의 테스트용 수명은 만들지 않는다.
+	Scene.World->SetBegunPlay(true);
+	auto* Construction = State->GetConstructionComponent();
+	const auto Advance = [&Scene](double Seconds)
+	{
+		for (int32 Index = 0; Index < FMath::CeilToInt(Seconds / .1); ++Index)
+		{
+			++GFrameCounter;
+			Scene.World->Tick(LEVELTICK_All, .1f);
+		}
+	};
+	const auto PlaceRound = [&]() -> bool
+	{
+		const auto Selection = Construction->GetSelectionSession();
+		for (int32 Index = 0; Index < Controllers.Num(); ++Index)
+		{
+			if (!TestTrue(TEXT("Current selection is accepted"), Construction->ConfirmSelection(Controllers[Index], Selection.SelectionSessionId,
+				Selection.OffersRevision, Index + 1, State->GetProgress().RoundEpoch * 10 + Index).bAccepted)) return false;
+		}
+		if (!TestTrue(TEXT("All selections enter TrackPlacement"), State->GetRoomPhase() == EMWRoomPhase::TrackPlacement)) return false;
+		for (int32 Index = 0; Index < Controllers.Num(); ++Index)
+		{
+			const auto Id = Players[Index]->GetPlayerConstructionComponent()->GetPlacement().DefinitionAssetId;
+			const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Id);
+			if (!TestNotNull(TEXT("Selected track definition exists"), Definition)) return false;
+			AActor* Probe = Scene.World->SpawnActor<AActor>(Definition->GetTrackActorClass(), FVector(-100000, 0, 0), FRotator::ZeroRotator);
+			FMWTrackPortFrames Ports;
+			if (!TestTrue(TEXT("Selected track has both ports"), Probe && MWTrackSnap::ReadPorts(*Probe, Ports))) return false;
+			Probe->Destroy();
+			const auto Session = Construction->GetPlacementSession();
+			const auto End = Session.OpenEnds[0];
+			FMWTrackPlacementIntent Intent;
+			Intent.Target = End.Id;
+			Intent.SourcePort = 0;
+			Intent.bSnapRequested = true;
+			Intent.CursorLocation = MWTrackSnap::AlignPorts(Ports[0], End.WorldFrame).TransformPosition((Ports[0].GetLocation() + Ports[1].GetLocation()) * .5);
+			if (!TestTrue(TEXT("Server accepts a real socket placement"), Construction->PlaceTrack(Controllers[Index], Session.SessionId,
+				Session.CourseRevision, Intent) == EMWTrackPlacementResult::Accepted)) return false;
+		}
+		return TestTrue(TEXT("Completed placement enters PreparingRace"), State->GetRoomPhase() == EMWRoomPhase::PreparingRace);
+	};
+	const auto StartRace = [&]() -> bool
+	{
+		const auto Progress = State->GetProgress();
+#if WITH_EDITOR
+		FAssetCompilingManager::Get().FinishAllCompilation();
+#endif
+		// 실제 클라이언트도 매 틱 코스·물리·차량 준비를 확인한다. 지연 연결 콜백을 먼저 진행한다.
+		for (int32 Retry = 0; Retry < 20; ++Retry)
+		{
+			const bool bVehiclesReady = Algo::AllOf(Vehicles, [&Progress](const AMWVehiclePawn* Vehicle)
+				{ return !Vehicle->GetPlayerState<AMWPlayerState>()->GetRoundState().bRaceParticipant || Vehicle->IsReadyForRace(Progress.RoundEpoch); });
+			if (bVehiclesReady && Mode->IsRaceCourseCurrent()) break;
+			Advance(.1);
+		}
+		if (!Mode->IsRaceCourseCurrent()) for (const auto& Piece : Construction->GetPlacementSession().PlacedTracks)
+		{
+			AddInfo(FString::Printf(TEXT("CoursePiece %s Begun=%d Transform=%d Collision=%d Required=%d"), *GetNameSafe(Piece.Actor.Get()),
+				Piece.Actor->HasActorBegunPlay(), Piece.Actor->GetActorTransform().Equals(Piece.WorldTransform), Piece.Actor->GetActorEnableCollision(), Piece.bRequiresCollision));
+			TInlineComponentArray<UPrimitiveComponent*> Parts(Piece.Actor.Get());
+			for (const auto* Part : Parts) if (Part->IsQueryCollisionEnabled() && !Part->IsPhysicsStateCreated())
+			{
+				const auto* ISM = Cast<UInstancedStaticMeshComponent>(Part);
+				AddInfo(FString::Printf(TEXT("  %s Class=%s Registered=%d Should=%d Async=%d Instances=%d Scene=%d"), *Part->GetName(), *Part->GetClass()->GetName(), Part->IsRegistered(),
+					Part->ShouldCreatePhysicsState(), Part->IsAsyncCreatePhysicsStateRunning(), ISM ? ISM->GetInstanceCount() : -1, Scene.World->GetPhysicsScene() != nullptr));
+			}
+		}
+		TestTrue(TEXT("Server course is ready before readiness reports"), Mode->IsRaceCourseCurrent());
+		// 이미 전송된 보고가 서버의 일시적인 코스 미준비로 거절된 뒤 같은 키로 다시 도착하는 경우.
+		AActor* CourseActor = Construction->GetPlacementSession().PlacedTracks[0].Actor;
+		CourseActor->SetActorEnableCollision(false);
+		Mode->ReportRaceReady(Controllers[0], Progress.RoundEpoch, Progress.CourseSessionId, Progress.CourseRevision);
+		TestTrue(TEXT("A temporarily unready course does not accept a readiness report"), Mode->RaceReadyMembers.IsEmpty());
+		CourseActor->SetActorEnableCollision(true);
+		Mode->ReportRaceReady(Controllers[0], Progress.RoundEpoch - 1, Progress.CourseSessionId, Progress.CourseRevision);
+		TestTrue(TEXT("An old epoch cannot contribute readiness"), Mode->RaceReadyMembers.IsEmpty());
+		// 마지막 보고 때 앞서 보고한 차량만 미준비로 바꿔 중복 보고의 전원 재평가도 검증한다.
+		const int32 LastRacer = Players[2]->GetRoundState().bRaceParticipant ? 2 : 1;
+		for (int32 Index = 0; Index < Players.Num(); ++Index)
+			if (Players[Index]->GetRoundState().bRaceParticipant)
+			{
+				TestTrue(FString::Printf(TEXT("Vehicle %d is ready before report"), Index), Vehicles[Index]->IsReadyForRace(Progress.RoundEpoch));
+				if (Index == LastRacer)
+					Vehicles[0]->GetMovementComponent()->SetComponentTickEnabled(false);
+				Mode->ReportRaceReady(Controllers[Index], Progress.RoundEpoch, Progress.CourseSessionId, Progress.CourseRevision);
+			}
+		Vehicles[0]->GetMovementComponent()->SetComponentTickEnabled(true);
+		TestTrue(TEXT("Readiness waits while an earlier reporter is temporarily unready"), State->GetRoomPhase() == EMWRoomPhase::PreparingRace);
+		const int32 ReadyCount = Mode->RaceReadyMembers.Num();
+		Mode->ReportRaceReady(Controllers[LastRacer], Progress.RoundEpoch, Progress.CourseSessionId, Progress.CourseRevision);
+		TestEqual(TEXT("A duplicate report cannot add a second readiness entry"), Mode->RaceReadyMembers.Num(), ReadyCount);
+		if (!TestTrue(TEXT("Only participating players are needed for Countdown"), State->GetRoomPhase() == EMWRoomPhase::Countdown)) return false;
+		Advance(3.2);
+		return TestTrue(TEXT("Server countdown deadline starts Racing"), State->GetRoomPhase() == EMWRoomPhase::Racing);
+	};
+	const auto PassCheckpoints = [&](int32 Index)
+	{
+		for (const auto& Track : Construction->GetPlacementSession().PlacedTracks)
+			if (Track.bCheckpoint) Runtime->ProcessRaceTrigger(*Vehicles[Index], *Track.Actor, EMWTrackTrigger::Checkpoint, {});
+	};
+	const auto FinishAll = [&]() -> bool
+	{
+		for (int32 Index = 0; Index < 3; ++Index)
+			if (!TestTrue(TEXT("Current finish is accepted"), Mode->TryFinishPlayerRace(*Vehicles[Index], *Construction->GetPlacementSession().PlacedTracks.Last().Actor, State->GetProgress().RoundEpoch))) return false;
+		return TestTrue(TEXT("All racers enter RoundResults once"), State->GetRoomPhase() == EMWRoomPhase::RoundResults);
+	};
+	Mode->EnterPhase(EMWRoomPhase::PreparingConstruction);
+	if (!PlaceRound() || !StartRace() || !FinishAll()) return false;
+	TestEqual(TEXT("First place receives 300"), Players[0]->GetRoundState().FinishScore, 300);
+	TestEqual(TEXT("Second place receives 150"), Players[1]->GetRoundState().FinishScore, 150);
+	TestEqual(TEXT("Third place receives 50"), Players[2]->GetRoundState().FinishScore, 50);
+	const auto FirstResults = State->GetProgress().Results;
+	AActor* FirstRoad = Construction->GetPlacementSession().PlacedTracks[0].Actor;
+	TWeakObjectPtr<AActor> OldCap = Construction->GetPlacementSession().PlacedTracks.Last().Actor;
+	const int32 FirstPieceCount = Construction->GetPlacementSession().PlacedTracks.Num();
+	Advance(3.2);
+	TestEqual(TEXT("Next normal round issues exactly one new epoch"), State->GetProgress().RoundEpoch, 2);
+	TestTrue(TEXT("Starting a new round preserves the last results"), State->GetProgress().Results == FirstResults);
+	TestEqual(TEXT("New round preserves accumulated score"), Players[0]->GetRoundState().TotalScore, 300);
+	if (!PlaceRound() || !StartRace()) return false;
+	TestTrue(TEXT("Start and previous road actors are preserved"), Construction->GetPlacementSession().PlacedTracks[0].Actor == FirstRoad);
+	TestTrue(TEXT("Previous end cap is removed"), !OldCap.IsValid() || OldCap->IsActorBeingDestroyed());
+	TestEqual(TEXT("Second round appends three road pieces"), Construction->GetPlacementSession().PlacedTracks.Num(), FirstPieceCount + 3);
+	TestTrue(TEXT("Old finish becomes a checkpoint"), Algo::CountIf(Construction->GetPlacementSession().PlacedTracks, [](const FMWPlacedTrack& Track) { return Track.bCheckpoint; }) >= 1);
+	const double FallZ = Construction->GetPlacementSession().CourseBounds.Min.Z - Mode->FallRecoveryDepth - 100.0;
+	Vehicles[0]->SetActorLocation(FVector(0, 0, FallZ));
+	Mode->CheckPlayerRaceFailure(*Vehicles[0]);
+	TestTrue(TEXT("Server fall detection restores the vehicle before any checkpoint"), Vehicles[0]->GetActorLocation().Z > FallZ + 500);
+	TestFalse(TEXT("A recovered fall invalidates only the current segment"), Players[0]->GetRoundState().bCheckpointEligible);
+	for (int32 Index = 0; Index < 3; ++Index) PassCheckpoints(Index);
+	TestEqual(TEXT("Failed segment awards no checkpoint points"), Players[0]->GetRoundState().CheckpointScore, 0);
+	TestEqual(TEXT("Clean segment awards 100 checkpoint points"), Players[1]->GetRoundState().CheckpointScore, 100);
+	PassCheckpoints(1);
+	TestEqual(TEXT("Checkpoint cannot award twice"), Players[1]->GetRoundState().CheckpointScore, 100);
+	if (!FinishAll()) return false;
+	TestEqual(TEXT("Round and cumulative scoring remain separate"), Players[1]->GetRoundState().TotalScore, 400);
+	Advance(3.2);
+	if (!PlaceRound() || !StartRace()) return false;
+	for (int32 Index = 0; Index < 2; ++Index)
+	{
+		auto Round = Players[Index]->GetRoundState();
+		Round.TotalScore = 3900;
+		Players[Index]->ApplyRoundStateFromServer(Round);
+	}
+	for (int32 Index = 0; Index < 3; ++Index) PassCheckpoints(Index);
+	if (!FinishAll()) return false;
+	const int32 BeforeSuddenDeath = Construction->GetPlacementSession().PlacedTracks.Num();
+	const int32 WinnerScore = Players[0]->GetRoundState().TotalScore;
+	Advance(3.2);
+	TestTrue(TEXT("Multiple goal scorers enter SuddenDeath"), State->GetProgress().RaceMode == EMWRaceMode::SuddenDeath);
+	TestTrue(TEXT("Non-qualifier becomes a spectator"), !Players[2]->GetRoundState().bRaceParticipant && !Vehicles[2]->CanDrive());
+	TestEqual(TEXT("SuddenDeath adds no new track"), Construction->GetPlacementSession().PlacedTracks.Num(), BeforeSuddenDeath);
+	if (!StartRace()) return false;
+	const FTransform BeforeFailure = Vehicles[1]->GetActorTransform();
+	TestTrue(TEXT("SuddenDeath failure is consumed without a respawn"), Runtime->RespawnAtTrackCheckpoint(Vehicles[1]));
+	TestTrue(TEXT("SuddenDeath failure stays eliminated"), Players[1]->GetRoundState().RaceStatus == EMWRaceStatus::Eliminated);
+	TestTrue(TEXT("Eliminated vehicle is not teleported"), BeforeFailure.Equals(Vehicles[1]->GetActorTransform()));
+	PassCheckpoints(0);
+	TestTrue(TEXT("Survivor can finish"), Mode->TryFinishPlayerRace(*Vehicles[0], *Construction->GetPlacementSession().PlacedTracks.Last().Actor, State->GetProgress().RoundEpoch));
+	Advance(3.2);
+	TestTrue(TEXT("SuddenDeath ends in MatchResults"), State->GetRoomPhase() == EMWRoomPhase::MatchResults);
+	TestEqual(TEXT("SuddenDeath does not add score"), Players[0]->GetRoundState().TotalScore, WinnerScore);
+	TestEqual(TEXT("Finisher ranks first"), Players[0]->GetRoundState().FinalRank, 1);
+	TestEqual(TEXT("Eliminated contender ranks before spectators"), Players[1]->GetRoundState().FinalRank, 2);
+	TestEqual(TEXT("Non-qualifier receives the remaining final rank"), Players[2]->GetRoundState().FinalRank, 3);
+
+	// 같은 기존 객체로 종료 규칙의 두 경계를 검증한다. Runtime에 재경기 API는 추가하지 않는다.
+	const auto ResetRuleCase = [&](EMWRaceMode RaceMode, int32 FirstScore, int32 SecondScore)
+	{
+		Scene.World->GetTimerManager().ClearTimer(Mode->RacePhaseTimer);
+		Mode->MatchMembers = {1, 2, 3};
+		for (AMWPlayerState* Player : Players) if (!State->PlayerArray.Contains(Player)) State->AddPlayerState(Player);
+		auto Progress = State->GetProgress();
+		Progress.Phase = EMWRoomPhase::PreparingRace;
+		Progress.RaceMode = RaceMode;
+		++Progress.RoundEpoch;
+		State->ApplyProgressFromServer(Progress);
+		Mode->NextFinishOrder = Mode->NextEliminationOrder = 1;
+		const int32 Checkpoints = Algo::CountIf(Construction->GetPlacementSession().PlacedTracks, [](const FMWPlacedTrack& Track) { return Track.bCheckpoint; });
+		for (int32 Index = 0; Index < 3; ++Index)
+		{
+			FMWPlayerRoundState Round;
+			Round.RoundEpoch = Progress.RoundEpoch;
+			Round.MemberId = Index + 1;
+			Round.TotalScore = Index == 0 ? FirstScore : Index == 1 ? SecondScore : 500;
+			Round.bRaceParticipant = RaceMode == EMWRaceMode::Normal || Index < 2;
+			Round.RaceStatus = Round.bRaceParticipant ? EMWRaceStatus::Waiting : EMWRaceStatus::Spectating;
+			Round.CheckpointsPassed = Checkpoints;
+			Players[Index]->ApplyRoundStateFromServer(Round);
+			if (Round.bRaceParticipant) Vehicles[Index]->PrepareForRaceFromServer();
+		}
+		Progress.Phase = EMWRoomPhase::Racing;
+		State->ApplyProgressFromServer(Progress);
+		for (int32 Index = 0; Index < 3; ++Index)
+		{
+			auto Round = Players[Index]->GetRoundState();
+			if (!Round.bRaceParticipant) continue;
+			Round.RaceStatus = EMWRaceStatus::Active;
+			Players[Index]->ApplyRoundStateFromServer(Round);
+			Runtime->BeginPlayerRace(*Vehicles[Index], Progress.RoundEpoch);
+		}
+	};
+	ResetRuleCase(EMWRaceMode::Normal, 3700, 1000);
+	if (!FinishAll()) return false;
+	Advance(3.2);
+	TestTrue(TEXT("A single player reaching exactly 4000 ends the match"), State->GetRoomPhase() == EMWRoomPhase::MatchResults && Players[0]->GetRoundState().TotalScore == 4000);
+	ResetRuleCase(EMWRaceMode::SuddenDeath, 4000, 4000);
+	Runtime->RespawnAtTrackCheckpoint(Vehicles[0]);
+	Runtime->RespawnAtTrackCheckpoint(Vehicles[1]);
+	Advance(3.2);
+	TestEqual(TEXT("If everyone falls, the last elimination ranks first"), Players[1]->GetRoundState().FinalRank, 1);
+	TestEqual(TEXT("Earlier elimination ranks behind it"), Players[0]->GetRoundState().FinalRank, 2);
+
+	ResetRuleCase(EMWRaceMode::Normal, 3700, 1000);
+	if (!FinishAll()) return false;
+	const auto SoleWinnerResults = State->GetProgress().Results;
+	Mode->Logout(Controllers[0]);
+	State->RemovePlayerState(Players[0]);
+	TestTrue(TEXT("Leaving after completion preserves the published round snapshot"), State->GetProgress().Results == SoleWinnerResults);
+	Advance(3.2);
+	TestTrue(TEXT("A completed sole qualifier leaving cannot start another normal round"), State->GetRoomPhase() == EMWRoomPhase::MatchResults);
+	const auto* SoleWinner = State->GetProgressRef().Results.FindByPredicate([](const FMWPlayerRoundState& Entry) { return Entry.MemberId == 1; });
+	if (!TestNotNull(TEXT("Final results retain the disconnected winner without a PlayerState"), SoleWinner)) return false;
+	TestEqual(TEXT("The completed winner keeps first place"), SoleWinner->FinalRank, 1);
+	TestEqual(TEXT("The completed winner keeps exactly 4000 points"), SoleWinner->TotalScore, 4000);
+
+	ResetRuleCase(EMWRaceMode::SuddenDeath, 4000, 4000);
+	Mode->HandlePlayerRaceFailure(*Vehicles[1], State->GetProgress().RoundEpoch);
+	if (!TestTrue(TEXT("SuddenDeath winner finishes before disconnecting"), Mode->TryFinishPlayerRace(*Vehicles[0],
+		*Construction->GetPlacementSession().PlacedTracks.Last().Actor, State->GetProgress().RoundEpoch))) return false;
+	Mode->Logout(Controllers[0]);
+	State->RemovePlayerState(Players[0]);
+	Advance(3.2);
+	const auto* SuddenDeathWinner = State->GetProgressRef().Results.FindByPredicate([](const FMWPlayerRoundState& Entry) { return Entry.MemberId == 1; });
+	if (!TestNotNull(TEXT("SuddenDeath final results retain the disconnected finisher"), SuddenDeathWinner)) return false;
+	TestEqual(TEXT("Disconnect cannot promote an eliminated player over the finisher"), SuddenDeathWinner->FinalRank, 1);
+	TestEqual(TEXT("The eliminated contender remains second"), Players[1]->GetRoundState().FinalRank, 2);
+
+	ResetRuleCase(EMWRaceMode::Normal, 3700, 3850);
+	if (!FinishAll()) return false;
+	Mode->Logout(Controllers[0]);
+	State->RemovePlayerState(Players[0]);
+	Advance(3.2);
+	TestTrue(TEXT("Two frozen qualifiers keep the SuddenDeath route after one leaves"), State->GetRoomPhase() == EMWRoomPhase::PreparingRace
+		&& State->GetProgress().RaceMode == EMWRaceMode::SuddenDeath);
+	TestTrue(TEXT("Only the connected qualifier participates in the next race"), Players[1]->GetRoundState().bRaceParticipant
+		&& !Players[2]->GetRoundState().bRaceParticipant && !Mode->IsMatchMember(1));
+
+	ResetRuleCase(EMWRaceMode::Normal, 3700, 3850);
+	if (!FinishAll()) return false;
+	Mode->Logout(Controllers[0]);
+	Mode->Logout(Controllers[1]);
+	AddExpectedError(TEXT("서든데스에 참가할 목표점수 도달자가 남아 있지 않습니다."), EAutomationExpectedErrorFlags::Contains, 1);
+	Advance(3.2);
+	TestTrue(TEXT("No connected qualifier exits through the existing failure path"), State->GetRoomPhase() == EMWRoomPhase::Failed);
+
+	ResetRuleCase(EMWRaceMode::SuddenDeath, 4000, 4000);
+	Mode->Logout(Controllers[0]);
+	TestTrue(TEXT("One remaining contender can continue while a spectator is connected"), State->GetRoomPhase() == EMWRoomPhase::Racing);
+	AddExpectedError(TEXT("주행 참가자가 없습니다."), EAutomationExpectedErrorFlags::Contains, 1);
+	Mode->Logout(Controllers[1]);
+	TestTrue(TEXT("Losing every contender cannot leave spectators in an endless race"), State->GetRoomPhase() == EMWRoomPhase::Failed);
 	return true;
 }
 
@@ -726,6 +1245,7 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		Sent.Revision = 23;
 		Sent.LastProcessedMoveId = 7;
 		Sent.bDriveAllowed = bAllowed;
+		Sent.bFinishCollisionDisabled = !bAllowed;
 		Sent.RoundEpoch = 42;
 		Sent.Location = FVector(100, 200, 300);
 		Sent.Velocity = FVector(800, 0, 0);
@@ -739,11 +1259,13 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		Sent.NetSerialize(Writer, nullptr, bWrite);
 		FMWVehicleDriveSnapshot Received;
 		Received.bDriveAllowed = !bAllowed;
+		Received.bFinishCollisionDisabled = bAllowed;
 		FMemoryReader Reader(Bytes);
 		bool bRead = false;
 		Received.NetSerialize(Reader, nullptr, bRead);
 		TestTrue(TEXT("Full drive snapshot serializes successfully"), bWrite && bRead && Reader.Tell() == Reader.TotalSize());
 		TestEqual(TEXT("Permission is transmitted"), Received.bDriveAllowed, bAllowed);
+		TestEqual(TEXT("Finish collision state shares the authoritative pose"), Received.bFinishCollisionDisabled, Sent.bFinishCollisionDisabled);
 		TestEqual(TEXT("Round epoch is transmitted with the stream"), Received.RoundEpoch, Sent.RoundEpoch);
 		TestEqual(TEXT("Stream survives serialization"), Received.StreamId, Sent.StreamId);
 		TestEqual(TEXT("ACK survives serialization"), Received.LastProcessedMoveId, Sent.LastProcessedMoveId);

@@ -5,8 +5,12 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackSnap.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "System/GameMode/MWGameplayGameMode.h"
+#include "System/GameState/MWGameplayGameState.h"
+#include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -154,11 +158,56 @@ void UMWTrackRuntimeSubsystem::SetTrackPreview(AActor& Actor, bool bPreview)
     }
 }
 
+bool UMWTrackRuntimeSubsystem::PrepareCourseFinish(AActor& Track, const FVector& HalfExtent)
+{
+    if (!Track.HasAuthority() || Track.GetWorld() != GetWorld())
+    {
+        return false;
+    }
+    // 종료 캡이 이번 틱에 막 게시됐다면 지연된 생성 콜백을 기다리지 않고 연결한다.
+    AttachTrack(&Track);
+    auto* Runtime = Track.FindComponentByClass<UMWTrackRuntimeComponent>();
+    FTransform PortFrame;
+    return Runtime && MWTrackSnap::ReadFirstPort(Track, PortFrame)
+        && Runtime->EnsureCourseFinishTrigger(PortFrame, HalfExtent);
+}
+
+bool UMWTrackRuntimeSubsystem::PrepareCourseCheckpoint(AActor& Track, const FTransform& WorldFrame, const FVector& HalfExtent)
+{
+    if (!Track.HasAuthority() || Track.GetWorld() != GetWorld()) return false;
+    AttachTrack(&Track);
+    auto* Runtime = Track.FindComponentByClass<UMWTrackRuntimeComponent>();
+    // 도로의 열린 끝을 종료 캡에서 보던 반대 프레임으로 바꾼다.
+    const FTransform Facing((WorldFrame.GetRotation() * FQuat(FVector::UpVector, UE_PI)).GetNormalized(), WorldFrame.GetLocation());
+    return Runtime && Runtime->EnsureCourseCheckpointTrigger(Facing.GetRelativeTransform(Track.GetActorTransform()), HalfExtent);
+}
+
+bool UMWTrackRuntimeSubsystem::IsCheckpointTrack(const AActor& Track) const
+{
+    if (const auto* Runtime = Track.FindComponentByClass<UMWTrackRuntimeComponent>(); Runtime && Runtime->HasCheckpointTrigger()) return true;
+    const auto* Data = Catalog ? Catalog->Pieces.FindByPredicate([&Track](const FMWTrackPieceRuntimeData& Entry)
+        { return Entry.VisualClass == Track.GetClass()->GetFName(); }) : nullptr;
+    return Data && Data->Shapes.ContainsByPredicate([](const FMWTrackShapeData& Shape) { return Shape.Trigger == EMWTrackTrigger::Checkpoint; });
+}
+
+void UMWTrackRuntimeSubsystem::BeginPlayerRace(AMWVehiclePawn& Vehicle, int32 RoundEpoch)
+{
+    if (!Vehicle.HasAuthority() || Vehicle.GetWorld() != GetWorld() || RoundEpoch <= 0)
+    {
+        return;
+    }
+    FRacer& Racer = Racers.FindOrAdd(&Vehicle);
+    Racer = FRacer{};
+    Racer.RoundEpoch = RoundEpoch;
+    Racer.StartTime = GetWorld()->GetTimeSeconds();
+    Racer.StartTransform = Vehicle.GetActorTransform();
+}
+
 // 서버가 현재 진행과 중복 통과를 검사해 출발·체크포인트·완주 상태를 기록한다.
 void UMWTrackRuntimeSubsystem::ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActor& Track, EMWTrackTrigger Trigger,
                                                   const TArray<FTransform>& RespawnPoints)
 {
-    if (!Vehicle.HasAuthority())
+    if (!Vehicle.HasAuthority() || Vehicle.GetWorld() != GetWorld() || Track.GetWorld() != GetWorld())
     {
         return;
     }
@@ -170,7 +219,21 @@ void UMWTrackRuntimeSubsystem::ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActo
         }
     }
 
+    auto* GameMode = GetWorld()->GetAuthGameMode<AMWGameplayGameMode>();
+    const auto* GameState = GetWorld()->GetGameState<AMWGameplayGameState>();
+    if (GameState)
+    {
+        const auto* Player = Vehicle.GetPlayerState<AMWPlayerState>();
+        if (!GameMode || !Player || !Vehicle.CanDrive() || Player->GetRoundState().RoundEpoch != GameState->GetProgress().RoundEpoch)
+        {
+            return;
+        }
+    }
     FRacer& Racer = Racers.FindOrAdd(&Vehicle);
+    if (GameState && Racer.RoundEpoch != GameState->GetProgress().RoundEpoch)
+    {
+        return;
+    }
     const double Now = GetWorld()->GetTimeSeconds();
     if (Racer.Progress.bFinished)
     {
@@ -186,18 +249,31 @@ void UMWTrackRuntimeSubsystem::ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActo
     }
     if (Trigger == EMWTrackTrigger::Checkpoint && !Racer.Passed.Contains(&Track))
     {
-        Racer.Passed.Add(&Track);
-        ++Racer.Progress.Checkpoints;
-        Racer.RespawnTransforms.Reset(RespawnPoints.Num());
+        if (GameState && !GameMode->TryPassPlayerCheckpoint(Vehicle, Track, Racer.RoundEpoch)) return;
+        FRacer* Checkpoint = Racers.Find(&Vehicle);
+        if (!Checkpoint) return;
+        Checkpoint->Passed.Add(&Track);
+        ++Checkpoint->Progress.Checkpoints;
+        Checkpoint->RespawnTransforms.Reset(RespawnPoints.Num());
         for (const FTransform& Point : RespawnPoints)
         {
-            Racer.RespawnTransforms.Add(Point * Track.GetActorTransform());
+            Checkpoint->RespawnTransforms.Add(Point * Track.GetActorTransform());
         }
+        return;
     }
     if (Trigger == EMWTrackTrigger::Finish)
     {
-        Racer.Progress.bFinished = true;
-        Racer.Progress.ElapsedSeconds = static_cast<float>(Now - Racer.StartTime);
+        const float Elapsed = static_cast<float>(Now - Racer.StartTime);
+        if (GameState && !GameMode->TryFinishPlayerRace(Vehicle, Track, Racer.RoundEpoch))
+        {
+            return;
+        }
+        // 승인 알림에서 다른 진행 기록이 바뀔 수 있으므로 TMap의 참조를 다시 찾는다.
+        if (FRacer* Finished = Racers.Find(&Vehicle))
+        {
+            Finished->Progress.bFinished = true;
+            Finished->Progress.ElapsedSeconds = Elapsed;
+        }
     }
 }
 
@@ -218,10 +294,26 @@ bool UMWTrackRuntimeSubsystem::RespawnAtTrackCheckpoint(AMWVehiclePawn* Vehicle)
     {
         return false;
     }
+    if (GetWorld()->GetGameState<AMWGameplayGameState>() && !Vehicle->CanDrive())
+    {
+        return false;
+    }
+    if (const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+    {
+        auto* Mode = GetWorld()->GetAuthGameMode<AMWGameplayGameMode>();
+        const bool bSuddenDeath = GS->GetProgress().RaceMode == EMWRaceMode::SuddenDeath;
+        if (!Mode || !Mode->HandlePlayerRaceFailure(*Vehicle, GS->GetProgress().RoundEpoch)) return false;
+        // 이미 영구 탈락으로 처리했다. 호출자가 표면 충격이나 복귀를 추가하지 않게 성공으로 소비한다.
+        if (bSuddenDeath) return true;
+    }
     const FRacer* Racer = Racers.Find(Vehicle);
     if (!Racer || Racer->Progress.bFinished)
     {
         return false;
+    }
+    if (Racer->RespawnTransforms.IsEmpty() && Racer->RoundEpoch > 0)
+    {
+        return Vehicle->RespawnAtCheckpoint(Racer->StartTransform.GetLocation(), Racer->StartTransform.Rotator());
     }
     for (const FTransform& Point : Racer->RespawnTransforms)
     {

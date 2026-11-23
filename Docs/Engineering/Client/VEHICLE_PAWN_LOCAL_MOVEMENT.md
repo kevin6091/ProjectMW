@@ -339,6 +339,36 @@ GameMode는 서버 전용 준비 집합 하나, 타이머 하나와 기존 `Prog
 - 최종 통합본은 MWEditor/MW Win64 Development 빌드와 자동화 23/23을 통과했다. 대상은 RaceStart 4개, DriveControl 3개, PlayerRound 2개, Vehicle 8개, Construction 스냅 1개, Items 1개, HUD 상태 수명 1개, Cursor 3개다. 선택적 아이템 바인딩이 있는 준비 검사와 GroundNormal을 포함한 스냅샷 직렬화도 포함한다. 테스트 결과는 `Saved/Automation/MergeGameProgressComplete/index.json`, 최종 빌드/실행 로그는 `Saved/Logs/MergeGameProgress*Complete.log`에 있다.
 - 별도 에디터 프로세스에서 차량 BP 6개·파일럿 ABP·Race HUD·차량 선택 WBP 2개, 총 10개를 컴파일했고 오류·ensure가 없었다. 항상 숨기는 PreviewNotice는 선택적 바인딩으로 연결해 기존 선택 WBP의 기능을 유지한다. 에셋은 저장하지 않았고 대상 10개 파일의 전후 해시가 같다. 실제 다중 클라이언트 주행·화면·Cook/패키징은 이번 병합에서 수행하지 않았다.
 
+2026-11-23 사용자 지시로 `Source/MW/Tests/MWRaceStartTests.cpp`와 GameMode/Controller의 전용 friend 선언을 삭제했다. 위 RaceStart 검사 수와 결과는 이전 실행 이력이며 현재 테스트 목록에는 포함되지 않는다. 라운드 반복은 공용 18번 문서의 0절을 따르며 개인 완주 단위부터 구현한다.
+
+### 개인 완주·충돌 해제와 준비 시 복원 — 2026-11-23
+
+- 공식 개인 상태는 기존 PlayerState.PlayerRound다. Finished=2와 FinishOrder를 기존 equality/NetSerialize에 추가했다. 서버 `TryFinishPlayerRace`가 Racing/Epoch/최초 명단/소유 관계/현재 코스의 마지막 종료 트랙을 검증한 뒤 승인한다. `NextFinishOrder`는 Racing 진입에 1로 초기화한다. RoundResults·전원 집계·다음 Epoch 전환은 이 작업에 포함하지 않는다.
+- 현재 종료 캡에는 카탈로그의 Finish 형상이 없으므로, PreparingRace에서 연결점 기준 서버 Box를 기존 Runtime 컴포넌트에 추가한다. 기존 CreateShape/OnTrigger/ProcessRaceTrigger로 감지하며, 에셋을 수정하거나 새 결승 Actor/Subsystem을 만들지 않는다. GameMode.FinishTriggerHalfExtent 기본값 (50,1350,1250)cm가 영역의 반크기다. 현재 코스 마지막 종료 Actor 외의 Finish는 승인하지 않는다.
+- Racing 진입에서 BeginPlayerRace로 서버 Runtime의 체크포인트/완주/시작 시각을 새 Epoch에 맞춘 뒤 개인 Active를 적용한다. 준비 때 이미 출발 볼륨 안에 있던 차량도 별도의 Start Overlap 없이 완주할 수 있다. 일반 DriveTest의 기존 체크포인트·복귀 기록 경로는 유지한다.
+- PlayerState 공용 Notify → RefreshDrivePermission이 서버 차량을 정지시키고 루트 충돌의 원래 모드를 보관한 뒤 NoCollision으로 바꾼다. 입력·선형 속도·충돌 회전·예측 이력·기존 아이템을 초기화하며 차량/표시 Tick은 유지한다. 중간 이동 Overlap에서 잠겨도 이후 이동 스텝이 다시 가속하지 않는다.
+- 기존 차량 이동 스냅샷에 한 비트 `bFinishCollisionDisabled`를 추가했다. 서버에서 적용한 충돌 상태와 위치/스트림을 함께 전달하며 공식 Finished/완주 순서의 원본을 대체하지 않는다. OnRep_ServerDriveSnapshot과 기존 이동 전 갱신을 사용하므로 소유자와 Controller/PlayerState가 아직 없는 표시 차량도 적용한다.
+- 다음 Waiting 상태만으로는 충돌을 복원하지 않는다. 기존 GameMode.PrepareRace가 유지 중인 차량을 출발 슬롯으로 Teleport한 뒤 PrepareForRaceFromServer를 호출한다. 이 함수가 충돌 모드를 복원하고 새 위치/정지/충돌 상태가 담긴 시작 스냅샷을 공개한다. 클라이언트는 해당 스냅샷의 위치를 적용한 뒤 충돌을 켜므로 결승선의 이전 위치를 먼저 막지 않는다.
+- 아이템 지급/사용에도 Gameplay의 개인 CanDrive를 적용한다. 기존 PlayerRound·DriveControl·Items 검사를 확장했으며 RaceStart 테스트는 복구하지 않았다. 실제 다중 프로세스 플레이와 전체 라운드 반복은 후속 확인 범위다.
+
+검증 결과: UE 5.8.4 `MWEditor`/`MW` Win64 Development 정상 빌드 성공, 자동화 21/21 성공. 실제 서버 Box 통과 중 완주·즉시 정지, 두 참가자의 순서 1/2, 중복/오래된 Epoch/변경 코스/명단 외 거절, 다음 준비에서 QueryOnly 원래 모드 복원, 소유자/표시 차량의 스냅샷 수신 경로를 포함한다. 역할 전환과 RepNotify 호출 검사는 실제 패킷 전송 시험과 구분한다. 차량 Pawn 6개·파일럿 ABP·Race HUD·종료 캡·Gameplay GameMode·기존 주행 테스트 GameMode 2개, 총 BP 12개를 별도 프로세스에서 컴파일했고 Error/ensure가 없었다. 카탈로그를 포함한 검사 에셋 13개의 SHA-256이 전후 같아 에셋 저장은 없다. 빌드 로그는 `Saved/Logs/PersonalFinishEditorBuild.log`, `PersonalFinishGameBuild.log`, 자동화 결과는 `Saved/Automation/PersonalFinish/index.json`, BP/카탈로그 검증 데이터는 `Saved/Logs/PersonalFinishAssets.json`이다. 임시 검증 스크립트는 결과 데이터와 로그를 남긴 뒤 삭제한다.
+
+### 점수·라운드 반복·서든데스 연결 — 2026-11-23
+
+- 기존 GameMode.EnterPhase/준비 보고/타이머와 PlayerState.PlayerRound를 확장했다. 목표 4000점, 구간별 무탈락 체크포인트 100점, 완주 1/2/3등 300/150/50점이다. 일반 복귀는 Active를 유지하며 현재 구간만 무득점으로 처리한다. 최초 체크포인트 이전 실패는 출발 위치를 재사용한다.
+- GameState의 기존 FMWGameplayProgress에 ResultsEpoch와 기존 개인 상태 배열 Results를 넣어 Phase와 함께 직렬화한다. 결과 대기 기본 3초 뒤 목표 도달자 0명은 새 Epoch·선택·기존 코스 확장, 1명은 최종 결과, 2명 이상은 해당 플레이어만 같은 코스의 서든데스다. 새 결과 구조체나 관리 클래스는 추가하지 않는다.
+- 이전 종료 캡만 제거하고 직전 도로 끝을 체크포인트로 전환한다. 기존 도로/배치 Actor/PieceId와 최초 출발점을 유지한다. Pawn은 다음 준비에서 최초 슬롯으로 이동한 뒤 충돌을 복원하며, 기존 준비 보고·3초 Countdown을 반복한다.
+- 서든데스의 영구 탈락과 비참가자는 기존 충돌 해제 스냅샷 경로를 재사용한다. Controller는 남은 참가자를 기존 차량 카메라로 관전한다. 서버는 0.25초마다 코스 최저 높이보다 1000cm 아래인 추락을 검사하고 KillZ도 같은 복귀/탈락 경로에 연결한다. 별도의 차량 파괴·선두 거리 차 검출기는 추가하지 않았다.
+- 기존 HUD에 누적/목표 점수와 결과 텍스트를 표시하고 환경을 RoundResults/MatchResults까지 유지한다. 완주자 우선·탈락자 역순과 관전자 뒤 순위를 결과에 저장한다. 주행 중 이탈자를 명단에서 제외하며 서든데스 참가자가 전부 이탈하면 기존 Failed 경로로 종료해 관전자만 무한 대기하지 않게 한다. 최종 결과 확정 후 이탈/월드 정리는 결과를 바꾸지 않는다.
+- 최종 검증: MWEditor/MW Win64 Development 빌드 성공, 자동화 23/23(경고 0), BP 18개 컴파일 성공·검사 에셋 19개 SHA-256 동일. 통합 검사는 실제 Definition 선택/소켓 배치로 정상 3라운드·코스 확장·점수·목표 종료·서든데스까지 수행한다. 역할 전환 검사를 실제 다중 프로세스 패킷 전달과 구분한다. 검증 경로는 `Saved/Automation/RoundLoop/index.json`, `Saved/Logs/RoundLoop*Build.log`, `Saved/Logs/RoundLoopAssets.json`, `Saved/Logs/RoundLoopVerification.json`이다. 실제 3PC 플레이·지연/손실·화면·Cook/패키징은 미실행이다.
+
+### 준비 재보고·결과 이탈·주행 조회 보완 — 2026-11-23
+
+- Controller는 같은 준비 키도 PreparingRace 동안 0.5초 간격으로 다시 보고한다. 서버는 중복 등록/로그 없이 전원 준비를 재평가하고 기존 Countdown으로 전환한다. 새 ACK·타이머·복제 상태는 추가하지 않는다.
+- 종료 경로의 목표 도달 인원과 최종 순위는 현재 PlayerArray 대신 해당 Epoch의 확정 Results를 사용한다. 완료 후 떠난 사람의 결과는 유지하고 다음 서든데스에는 남은 자격자만 참가한다. 자격자가 모두 떠나면 기존 Failed로 종료한다.
+- GameState에 C++ 읽기 전용 GetProgressRef를 추가하여 CanDrive·충돌 상태 갱신·이동 스냅샷의 Epoch 조회에서 Results 배열 복사를 제거했다. Blueprint GetProgress와 타이머/Phase 전환의 값 스냅샷은 유지한다. 프레임 성능 개선 수치는 측정하지 않았다.
+- 이번 보완의 MWEditor/MW Win64 Development 빌드와 자동화 23/23(테스트 경고 0)을 통과했다. 기존 RoundLoop 검사에 준비 거절/재수락/중복 재평가와 결과 대기 중 이탈 경계를 추가했다. 빌드에는 변경 범위 밖의 MWItemComponentVisual.cpp GetBindings() C4996 경고가 남아 있다. 결과는 `Saved/Automation/RoundLoopFix/index.json`, `Saved/Logs/RoundLoopFix*Build.log`, `Saved/Logs/RoundLoopFixVerification.json`에 있다. 서버 진입점의 재수신 검사이며 실제 클라이언트 재보고 주기·다중 프로세스 패킷·프레임 성능·Cook/패키징 검증은 수행하지 않았다.
+
 ### 복구 차량 외형·바퀴 표시 이관 — 2026-11-05
 
 `feature/vehicle-visuals`의 로컬 ProjectMW에서 Smiet, Mammoth, Ufology, Doug, Fred의 Pawn Blueprint 5개를 직접 메시 구조로 변경했다. Commit/Push/UVCS 제출은 수행하지 않았다.

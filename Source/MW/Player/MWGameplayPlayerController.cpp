@@ -75,6 +75,7 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	LastReadyRoundEpoch = 0;
 	LastReadyCourseSessionId = 0;
 	LastReadyCourseRevision = 0;
+	NextRaceReadyReportTime = 0.0;
 	ApplyGameplayInputMode();
 	RefreshDrivingInput();
 }
@@ -179,10 +180,30 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
     else
         SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
-	if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()))
+	UpdateRaceViewTarget();
+}
+
+void AMWGameplayPlayerController::UpdateRaceViewTarget()
+{
+	if (!IsLocalController()) return;
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const auto* PS = GetPlayerState<AMWPlayerState>();
+	AActor* Target = GetPawn();
+	if (GS && PS && GS->GetProgress().RaceMode == EMWRaceMode::SuddenDeath
+		&& (!PS->GetRoundState().bRaceParticipant || PS->GetRoundState().RaceStatus == EMWRaceStatus::Eliminated))
 	{
-		SetViewTarget(Vehicle);
+		for (const APlayerState* Base : GS->PlayerArray)
+		{
+			const auto* Racer = Cast<AMWPlayerState>(Base);
+			if (Racer && Racer->GetRoundState().bRaceParticipant && Racer->GetRoundState().RoundEpoch == GS->GetProgress().RoundEpoch
+				&& Racer->GetRoundState().RaceStatus != EMWRaceStatus::Eliminated && IsValid(Racer->GetPawn()))
+			{
+				Target = Racer->GetPawn();
+				if (Racer->GetRoundState().RaceStatus == EMWRaceStatus::Active) break;
+			}
+		}
 	}
+	if (IsValid(Target) && GetViewTarget() != Target) SetViewTarget(Target);
 }
 
 void AMWGameplayPlayerController::RestoreArrivalInput()
@@ -214,6 +235,8 @@ void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
 		ApplyGameplayInputMode();
 	}
 	PlacementView->Update(DeltaSeconds, Cast<UEnhancedInputComponent>(InputComponent));
+	if (GS && (GS->GetRoomPhase() == EMWRoomPhase::PreparingRace || GS->GetRoomPhase() == EMWRoomPhase::Countdown
+		|| GS->GetRoomPhase() == EMWRoomPhase::Racing)) UpdateRaceViewTarget();
 
 	TryReportRaceReady();
 }
@@ -264,7 +287,7 @@ bool AMWGameplayPlayerController::IsLocalRaceReady() const
 			return false;
 		}
 	}
-	const FMWGameplayProgress Progress = GS->GetProgress();
+	const FMWGameplayProgress& Progress = GS->GetProgressRef();
 	const FMWPlayerRoundState Round = PS->GetRoundState();
 	if (Progress.Phase != EMWRoomPhase::PreparingRace || Progress.RoundEpoch <= 0
 		|| Round.RoundEpoch != Progress.RoundEpoch || Round.RaceStatus != EMWRaceStatus::Waiting
@@ -307,15 +330,18 @@ void AMWGameplayPlayerController::TryReportRaceReady()
 	{
 		return;
 	}
-	const FMWGameplayProgress Progress = GS->GetProgress();
+	const FMWGameplayProgress& Progress = GS->GetProgressRef();
+	const double Now = GetWorld()->GetTimeSeconds();
 	if (LastReadyRoundEpoch == Progress.RoundEpoch && LastReadyCourseSessionId == Progress.CourseSessionId
-		&& LastReadyCourseRevision == Progress.CourseRevision)
+		&& LastReadyCourseRevision == Progress.CourseRevision && Now < NextRaceReadyReportTime)
 	{
 		return;
 	}
 	LastReadyRoundEpoch = Progress.RoundEpoch;
 	LastReadyCourseSessionId = Progress.CourseSessionId;
 	LastReadyCourseRevision = Progress.CourseRevision;
+	// Reliable은 서버 수락을 보장하지 않는다. 같은 준비 키도 Countdown에 진입할 때까지 재보고한다.
+	NextRaceReadyReportTime = Now + 0.5;
 	ServerReportRaceReady(Progress.RoundEpoch, Progress.CourseSessionId, Progress.CourseRevision);
 }
 

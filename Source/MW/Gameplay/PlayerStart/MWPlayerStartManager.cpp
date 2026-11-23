@@ -29,7 +29,7 @@ bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, TArray<APlaye
 	UWorld* World = GetWorld();
 	UArrowComponent* const Slots[] = {FrontLeft, FrontRight, RearLeft, RearRight};
 	constexpr int32 SlotCount = static_cast<int32>(UE_ARRAY_COUNT(Slots));
-	if (!World || GetNetMode() == NM_Client || PlayerCount < 2 || PlayerCount > SlotCount)
+	if (!World || GetNetMode() == NM_Client || PlayerCount < 1 || PlayerCount > SlotCount)
 	{
 		return false;
 	}

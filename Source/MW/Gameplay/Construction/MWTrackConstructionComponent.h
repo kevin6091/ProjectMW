@@ -85,6 +85,8 @@ private:
 	FMWTrackPlacementSession PlacementSession;
 	TMap<TWeakObjectPtr<AMWPlayerState>, FPreparedTrack> PendingTracks;
 	FPreparedTrack PendingEndCap;
+	// 종료 캡 직전 도로의 열린 끝. 다음 라운드에 종료 캡만 제거하고 여기부터 확장한다.
+	FMWOpenTrackEnd NextRoundEnd;
 	bool bCommittingPlacement = false;
 
 	UFUNCTION()

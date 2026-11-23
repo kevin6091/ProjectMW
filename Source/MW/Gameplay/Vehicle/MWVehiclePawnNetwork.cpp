@@ -105,17 +105,25 @@ void AMWVehiclePawn::ResetDriveStream()
 	ForceNetUpdate();
 }
 
+void AMWVehiclePawn::OnRep_ServerDriveSnapshot()
+{
+	// Controller가 없는 표시 차량도 동일한 충돌 해제/복원 경로를 실행한다.
+	RefreshDrivePermission();
+}
+
 void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 {
 	FMWVehicleDriveSnapshot Snapshot = ServerDriveSnapshot;
 	VehicleMovement->CaptureDriveSnapshot(Snapshot);
 	Snapshot.bDriveAllowed = bDriveAllowed;
+	Snapshot.bFinishCollisionDisabled = bFinishCollisionDisabled;
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	Snapshot.RoundEpoch = GS ? GS->GetProgress().RoundEpoch : 0;
+	Snapshot.RoundEpoch = GS ? GS->GetProgressRef().RoundEpoch : 0;
 
 	if (!bNewStream
 		&& Snapshot.LastProcessedMoveId == LastProcessedMoveId
 		&& Snapshot.bDriveAllowed == ServerDriveSnapshot.bDriveAllowed
+		&& Snapshot.bFinishCollisionDisabled == ServerDriveSnapshot.bFinishCollisionDisabled
 		&& Snapshot.RoundEpoch == ServerDriveSnapshot.RoundEpoch
 		&& Snapshot.Location == ServerDriveSnapshot.Location
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
@@ -253,6 +261,16 @@ void AMWVehiclePawn::TickAuthorityDrive(float DeltaTime)
 		PreviousDriveTransform = CollisionRoot->GetComponentTransform();
 		bHasPreviousDriveTransform = true;
 		VehicleMovement->SimulateDriveStep(DriveStep);
+		if (!CanDrive())
+		{
+			// 결승 Overlap은 이동 스텝 도중 발생할 수 있다. 남은 적립 시간도 여기서 폐기한다.
+			VehicleMovement->ResetDriveInput();
+			VehicleMovement->StopMovementImmediately();
+			DriveStepTime = 0.f;
+			PublishDriveSnapshot();
+			ForceNetUpdate();
+			return;
+		}
 		DriveStepTime -= DriveStep;
 	}
 

@@ -13,11 +13,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWPlayerRoundSerializationTest, "MW.Gameplay.P
 
 bool FMWPlayerRoundSerializationTest::RunTest(const FString& Parameters)
 {
-	for (const EMWRaceStatus Status : {EMWRaceStatus::Waiting, EMWRaceStatus::Active})
+	for (const EMWRaceStatus Status : {EMWRaceStatus::Waiting, EMWRaceStatus::Active, EMWRaceStatus::Finished, EMWRaceStatus::Eliminated, EMWRaceStatus::Spectating})
 	{
 		FMWPlayerRoundState Sent;
 		Sent.RoundEpoch = 42;
 		Sent.RaceStatus = Status;
+		Sent.FinishOrder = Status == EMWRaceStatus::Finished ? 3 : 0;
+		Sent.MemberId = 7;
+		Sent.CheckpointsPassed = 3;
+		Sent.CheckpointScore = 200;
+		Sent.FinishScore = 50;
+		Sent.TotalScore = 4250;
+		Sent.EliminationOrder = Status == EMWRaceStatus::Eliminated ? 2 : 0;
+		Sent.RoundRank = 3;
+		Sent.FinalRank = 2;
+		Sent.bRaceParticipant = Status != EMWRaceStatus::Spectating;
+		Sent.bCheckpointEligible = false;
 
 		TArray<uint8> Bytes;
 		FMemoryWriter Writer(Bytes);
@@ -27,15 +38,48 @@ bool FMWPlayerRoundSerializationTest::RunTest(const FString& Parameters)
 
 		FMWPlayerRoundState Received;
 		Received.RoundEpoch = 7;
+		Received.FinishOrder = 99;
 		Received.RaceStatus = Status == EMWRaceStatus::Waiting ? EMWRaceStatus::Active : EMWRaceStatus::Waiting;
 
 		FMemoryReader Reader(Bytes);
 		bool bReadSucceeded = false;
 		TestTrue(TEXT("The custom serializer reads the snapshot"), Received.NetSerialize(Reader, nullptr, bReadSucceeded));
 		TestTrue(TEXT("The complete snapshot was read"), bReadSucceeded && !Reader.IsError());
-		TestTrue(TEXT("Epoch and status replace the previous snapshot together"), Received == Sent);
+		TestTrue(TEXT("Epoch, status and finish order replace the previous snapshot together"), Received == Sent);
+		++Received.FinishOrder;
+		TestFalse(TEXT("A changed finish order is a changed snapshot"), Received == Sent);
 		TestEqual(TEXT("The snapshot has no unread trailing fields"), Reader.Tell(), Reader.TotalSize());
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWProgressResultsSerializationTest, "MW.Gameplay.PlayerRound.ProgressResultsSerialization",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWProgressResultsSerializationTest::RunTest(const FString& Parameters)
+{
+	FMWGameplayProgress Sent;
+	Sent.Phase = EMWRoomPhase::RoundResults;
+	Sent.RoundEpoch = Sent.ResultsEpoch = 9;
+	Sent.RoundIndex = 4;
+	Sent.TargetScore = 4000;
+	Sent.RaceMode = EMWRaceMode::SuddenDeath;
+	FMWPlayerRoundState Entry;
+	Entry.MemberId = 3;
+	Entry.RoundEpoch = 9;
+	Entry.RaceStatus = EMWRaceStatus::Finished;
+	Entry.FinishOrder = Entry.RoundRank = Entry.FinalRank = 1;
+	Entry.TotalScore = 4200;
+	Sent.Results.Add(Entry);
+	TArray<uint8> Bytes;
+	FMemoryWriter Writer(Bytes);
+	bool bWrite = false;
+	Sent.NetSerialize(Writer, nullptr, bWrite);
+	FMWGameplayProgress Received;
+	FMemoryReader Reader(Bytes);
+	bool bRead = false;
+	Received.NetSerialize(Reader, nullptr, bRead);
+	TestTrue(TEXT("Phase, mode, target and result entries travel in one snapshot"), bWrite && bRead && Sent == Received);
+	TestEqual(TEXT("All snapshot bytes were consumed"), Reader.Tell(), Reader.TotalSize());
 	return true;
 }
 
@@ -75,6 +119,10 @@ bool FMWPlayerRoundAuthorityAndNotifyTest::RunTest(const FString& Parameters)
 	Round.RaceStatus = EMWRaceStatus::Active;
 	Player->ApplyRoundStateFromServer(Round);
 	TestTrue(TEXT("Racing can activate the existing epoch"), Player->GetRoundState() == Round);
+	Round.RaceStatus = EMWRaceStatus::Finished;
+	Round.FinishOrder = 2;
+	Player->ApplyRoundStateFromServer(Round);
+	TestTrue(TEXT("Finished and server order are stored together"), Player->GetRoundState() == Round);
 
 	Player->SetRole(ROLE_SimulatedProxy);
 	auto* RemoteObserver = World->SpawnActor<AActor>();

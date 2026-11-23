@@ -5,12 +5,15 @@
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 #include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 bool UMWTrackConstructionComponent::FPreparedTrack::SetTransform(const FTransform& Transform) const
 {
@@ -94,7 +97,9 @@ void UMWTrackConstructionComponent::PublishTrack(const FPreparedTrack& Prepared,
 		return Part->IsQueryCollisionEnabled();
 	});
 	PlacementSession.PlacedTracks.Add({PieceId, Prepared.DefinitionId, Track, Transform, ConnectedTo, PortIndex, bRequiresCollision});
-	PlacementSession.CourseBounds += Track->GetComponentsBoundingBox(false);
+	PlacementSession.PlacedTracks.Last().bCheckpoint = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->IsCheckpointTrack(*Track);
+	// 게시 직후에는 지연 생성하는 Runtime 충돌이 없을 수 있어 표시 메시도 범위에 포함한다.
+	PlacementSession.CourseBounds += Track->GetComponentsBoundingBox(true);
 	++PlacementSession.CourseRevision;
 }
 
@@ -127,11 +132,16 @@ bool UMWTrackConstructionComponent::IsCourseReadyForRace(int32 SessionId, int32 
 		{
 			if (Part->IsQueryCollisionEnabled())
 			{
-				bFoundCollision = true;
-				if (!Part->IsRegistered() || !Part->IsPhysicsStateCreated())
+				if (!Part->IsRegistered()) return false;
+				if (const auto* Mesh = Cast<UStaticMeshComponent>(Part))
 				{
-					return false;
+					if (!Mesh->GetStaticMesh()) continue;
+					if (Mesh->GetStaticMesh()->IsCompiling()) return false;
 				}
+				// 빈 인스턴스 Models 그룹 등 엔진이 물리 본체를 만들지 않는 표시는 제외한다.
+				if (!Part->ShouldCreatePhysicsState()) continue;
+				bFoundCollision = true;
+				if (!Part->IsPhysicsStateCreated()) return false;
 			}
 		}
 		if (!bFoundCollision)
@@ -167,13 +177,23 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 		|| GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement
 		|| !IsAllSelectionsConfirmed()
 		|| PlacementSession.bIsOpen
-		|| !PlacementSession.PlacedTracks.IsEmpty()
 		|| BuildFrame.ContainsNaN()
 		|| !BuildFrame.GetRotation().IsNormalized()
 		|| !FMath::IsFinite(LayoutScale)
 		|| LayoutScale < 1.0)
 	{
 		OutError = FText::FromString(TEXT("트랙 배치를 시작할 수 없습니다."));
+		return false;
+	}
+	const bool bExtending = !PlacementSession.PlacedTracks.IsEmpty();
+	FMWPlacedTrack* PreviousTail = bExtending ? PlacementSession.PlacedTracks.FindByPredicate([this](const FMWPlacedTrack& Track)
+		{ return Track.PieceId == NextRoundEnd.Id.PieceId; }) : nullptr;
+	if (bExtending && (!NextRoundEnd.Id.IsValid() || !PreviousTail || !IsValid(PreviousTail->Actor)
+		|| !IsValid(PlacementSession.PlacedTracks.Last().Actor)
+		|| PlacementSession.PlacedTracks.Last().DefinitionAssetId != CourseEnds.EndDefinitionId
+		|| !(PlacementSession.PlacedTracks.Last().ConnectedTo == NextRoundEnd.Id)))
+	{
+		OutError = FText::FromString(TEXT("이전 코스의 확장 연결점을 확인할 수 없습니다."));
 		return false;
 	}
 	
@@ -183,7 +203,7 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 		OutError = FText::FromString(TEXT("코스의 시작 및 종료 트랙 정의를 설정해 주세요."));
 		return false;
 	}
-	const FVector BuildOrigin = BuildFrame.GetLocation();
+	const FVector BuildOrigin = bExtending ? NextRoundEnd.WorldFrame.GetLocation() : BuildFrame.GetLocation();
 
 	TMap<TWeakObjectPtr<AMWPlayerState>, FPreparedTrack> PreparedTracks;
 	TMap<TWeakObjectPtr<AMWPlayerState>, FMWPlayerTrackPlacement> PlayerPlacements;
@@ -237,30 +257,58 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 	}
 
 	// 종료 조각까지 미리 검증해, 배치를 다 끝낸 뒤 에셋이나 연결점 오류로 멈추는 일을 막는다.
-	if (!PrepareTrack(CourseEnds.StartDefinitionId, BuildOrigin, true, Starter, OutError)
+	if ((!bExtending && !PrepareTrack(CourseEnds.StartDefinitionId, BuildOrigin, true, Starter, OutError))
 		|| !PrepareTrack(CourseEnds.EndDefinitionId, BuildOrigin, true, EndCap, OutError))
 	{
 		DiscardPrepared();
 		return false;
 	}
-	FTransform StartGrid;
-	if (!MWTrackSnap::ReadStartGrid(*Starter.Actor.Get(), StartGrid))
+	FMWOpenTrackEnd OpenEnd;
+	if (bExtending)
 	{
-		DiscardPrepared();
-		OutError = FText::FromString(TEXT("시작 트랙의 StartGrid 기준점을 확인해 주세요."));
-		return false;
+		if (!EndCap.SetTransform(MWTrackSnap::AlignPorts(EndCap.Ports[0], NextRoundEnd.WorldFrame))
+			|| !GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->PrepareCourseCheckpoint(
+				*PreviousTail->Actor, NextRoundEnd.WorldFrame, FVector(50, 1350, 1250)))
+		{
+			DiscardPrepared();
+			OutError = FText::FromString(TEXT("다음 종료 트랙 또는 이전 결승의 체크포인트를 준비하지 못했습니다."));
+			return false;
+		}
+		PreviousTail->bCheckpoint = true;
+		OpenEnd = NextRoundEnd;
+		// 새 조각을 모두 준비한 뒤에만 이전 종료 캡을 제거한다. 도로와 PieceId는 보존한다.
+		PlacementSession.PlacedTracks.Last().Actor->Destroy();
+		PlacementSession.PlacedTracks.Pop();
+		++PlacementSession.CourseRevision;
+		PlacementSession.CourseBounds = FBox(ForceInit);
+		for (const FMWPlacedTrack& Track : PlacementSession.PlacedTracks)
+		{
+			if (IsValid(Track.Actor)) PlacementSession.CourseBounds += Track.Actor->GetComponentsBoundingBox(true);
+		}
 	}
-	const FTransform StartTransform = StartGrid.Inverse() * FTransform(BuildFrame.GetRotation(), BuildOrigin);
-	if (!Starter.SetTransform(StartTransform))
+	else
 	{
-		DiscardPrepared();
-		OutError = FText::FromString(TEXT("시작 트랙을 설치할 수 없습니다."));
-		return false;
+		FTransform StartGrid;
+		if (!MWTrackSnap::ReadStartGrid(*Starter.Actor.Get(), StartGrid))
+		{
+			DiscardPrepared();
+			OutError = FText::FromString(TEXT("시작 트랙의 StartGrid 기준점을 확인해 주세요."));
+			return false;
+		}
+		const FTransform StartTransform = StartGrid.Inverse() * FTransform(BuildFrame.GetRotation(), BuildOrigin);
+		if (!Starter.SetTransform(StartTransform))
+		{
+			DiscardPrepared();
+			OutError = FText::FromString(TEXT("시작 트랙을 설치할 수 없습니다."));
+			return false;
+		}
+		PublishTrack(Starter, StartTransform);
+		OpenEnd = {{1, 0}, Starter.Ports[0] * StartTransform};
 	}
-	PublishTrack(Starter, StartTransform);
-	PlacementSession.OpenEnds.Add({{1, 0}, Starter.Ports[0] * StartTransform});
+	PlacementSession.OpenEnds.Reset();
+	PlacementSession.OpenEnds.Add(OpenEnd);
 	// 일반 트랙 BP의 기본 진행축은 +Y다. 자유 미리보기는 레벨의 출발 방향을 기준으로 돌린다.
-	PlacementSession.PreviewYaw = FRotator::NormalizeAxis(BuildFrame.Rotator().Yaw - 90.0);
+	PlacementSession.PreviewYaw = FRotator::NormalizeAxis((bExtending ? OpenEnd.WorldFrame.Rotator().Yaw : BuildFrame.Rotator().Yaw) - 90.0);
 
 	PendingEndCap = EndCap;
 	PendingTracks = MoveTemp(PreparedTracks);
@@ -398,6 +446,7 @@ bool UMWTrackConstructionComponent::PositionEndCap(const FMWOpenTrackEnd& Tail, 
 
 void UMWTrackConstructionComponent::FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform)
 {
+	NextRoundEnd = Tail;
 	// 종료 캡까지 코스에 등록한다.
 	PublishTrack(PendingEndCap, EndTransform, Tail.Id, 0);
 

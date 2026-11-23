@@ -47,6 +47,13 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "MW|Race")
     bool RespawnAtTrackCheckpoint(AMWVehiclePawn* Vehicle);
 
+    // Racing 진입 시 차량 기록을 새로 시작한다. 출발 볼륨의 재진입을 기다리지 않는다.
+    void BeginPlayerRace(AMWVehiclePawn& Vehicle, int32 RoundEpoch);
+
+    bool PrepareCourseFinish(AActor& Track, const FVector& HalfExtent);
+    bool PrepareCourseCheckpoint(AActor& Track, const FTransform& WorldFrame, const FVector& HalfExtent);
+    bool IsCheckpointTrack(const AActor& Track) const;
+
     // 서버가 현재 진행과 중복 통과를 검사해 출발·체크포인트·완주 상태를 기록한다.
     void ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActor& Track, EMWTrackTrigger Trigger,
                             const TArray<FTransform>& RespawnPoints);
@@ -62,6 +69,8 @@ protected:
 private:
     struct FRacer
     {
+        int32 RoundEpoch = 0;
+
         FMWTrackRaceProgress Progress;
 
         TSet<TWeakObjectPtr<AActor>> Passed;
@@ -69,6 +78,7 @@ private:
         TArray<FTransform> RespawnTransforms;
 
         double StartTime = -1;
+        FTransform StartTransform = FTransform::Identity;
     };
 
     // 카탈로그에 대응하는 트랙에만 런타임을 연결하고 이미 있는 컴포넌트는 중복 생성하지 않는다.

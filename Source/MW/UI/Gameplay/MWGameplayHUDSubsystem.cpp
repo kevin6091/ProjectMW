@@ -145,7 +145,52 @@ namespace
             }
             ChildSlot[SNew(SOverlay)
                 + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
-                + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]];
+                + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]
+                + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
+                [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
+                    .Text_Lambda([this] { return ScoreText(); })
+                    .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ScoreText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
+                + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+                [SNew(SBorder).Padding(28).BorderBackgroundColor(FLinearColor(0.025f, 0.035f, 0.05f, 0.94f))
+                    .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ResultsText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                    [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20)).Text_Lambda([this] { return ResultsText(); })]]];
+        }
+
+        FText ScoreText() const
+        {
+            const auto* PC = Controller.Get();
+            const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
+            const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+            if (!GS || !PS || GS->GetProgress().RoundEpoch <= 0) return FText::GetEmpty();
+            const auto Progress = GS->GetProgress();
+            const FString Mode = Progress.RaceMode == EMWRaceMode::SuddenDeath
+                ? (PS->GetRoundState().bRaceParticipant ? TEXT("서든데스  ") : TEXT("서든데스 관전  ")) : TEXT("");
+            return FText::FromString(FString::Printf(TEXT("%s점수 %d / %d"), *Mode, PS->GetRoundState().TotalScore, Progress.TargetScore));
+        }
+
+        FText ResultsText() const
+        {
+            const auto* PC = Controller.Get();
+            const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
+            if (!GS) return FText::GetEmpty();
+            const auto Progress = GS->GetProgress();
+            const bool bFinal = Progress.Phase == EMWRoomPhase::MatchResults;
+            if ((!bFinal && Progress.Phase != EMWRoomPhase::RoundResults) || Progress.ResultsEpoch != Progress.RoundEpoch) return FText::GetEmpty();
+            FString Text = bFinal ? TEXT("최종 경기 결과\n\n") : FString::Printf(TEXT("라운드 %d 결과\n\n"), Progress.RoundIndex);
+            for (const auto& Entry : Progress.Results)
+            {
+                FString Name = FString::Printf(TEXT("플레이어 %d"), Entry.MemberId);
+                for (const APlayerState* Base : GS->PlayerArray)
+                {
+                    const auto* Player = Cast<AMWPlayerState>(Base);
+                    if (Player && Player->GetLobbyMemberId() == Entry.MemberId && !Player->GetPlayerName().IsEmpty()) { Name = Player->GetPlayerName(); break; }
+                }
+                const FString Rank = !Entry.bRaceParticipant && !bFinal ? TEXT("관전") : FString::Printf(TEXT("%d위"), bFinal ? Entry.FinalRank : Entry.RoundRank);
+                Text += FString::Printf(TEXT("%s  %s  ·  +%d점  ·  누적 %d점%s\n"), *Rank, *Name,
+                    Entry.CheckpointScore + Entry.FinishScore, Entry.TotalScore, Entry.RaceStatus == EMWRaceStatus::Eliminated ? TEXT("  (탈락)") : TEXT(""));
+            }
+            if (!bFinal) Text += FString::Printf(TEXT("\n다음 진행까지 %.0f초"), FMath::CeilToDouble(GS->GetPhaseSecondsRemaining()));
+            return FText::FromString(Text);
         }
 
         // 표시 단계·룰렛 시간·차량 닉네임 정보를 갱신한다. 서버 경기 단계를 자체 변경하지 않는다.

@@ -17,8 +17,10 @@
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerStart.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "System/MWAssetManager.h"
 #include "TimerManager.h"
+#include "Algo/Count.h"
 
 AMWGameplayGameMode::AMWGameplayGameMode()
 {
@@ -172,7 +174,13 @@ void AMWGameplayGameMode::TryStartGameplay()
     EnterPhase(EMWRoomPhase::PreparingConstruction);
 }
 
-bool AMWGameplayGameMode::CollectStartingControllers(TArray<AMWGameplayPlayerController*>& OutControllers) const
+bool AMWGameplayGameMode::IsMatchMember(int32 MemberId) const
+{
+	const auto* App = GetGameInstance<UMWGameInstance>();
+	return bMatchInitialized ? MatchMembers.Contains(MemberId) : App && App->GetStartingPlayers().Contains(MemberId);
+}
+
+bool AMWGameplayGameMode::CollectStartingControllers(TArray<AMWGameplayPlayerController*>& OutControllers, bool bRaceOnly) const
 {
 	OutControllers.Reset();
 
@@ -183,7 +191,8 @@ bool AMWGameplayGameMode::CollectStartingControllers(TArray<AMWGameplayPlayerCon
 	if (!World || !App || !GS)
 		return false;
 
-	const TArray<int32>& StartingPlayers = App->GetStartingPlayers();
+	TArray<int32> StartingPlayers = App->GetStartingPlayers();
+	if (bMatchInitialized) StartingPlayers.RemoveAll([this](int32 MemberId) { return !MatchMembers.Contains(MemberId); });
 
 	if (StartingPlayers.IsEmpty())
 		return false;
@@ -215,7 +224,9 @@ bool AMWGameplayGameMode::CollectStartingControllers(TArray<AMWGameplayPlayerCon
 		OutControllers[Index] = PC;
 	}
 
-	return !OutControllers.Contains(nullptr);
+	if (OutControllers.Contains(nullptr)) return false;
+	if (bRaceOnly) OutControllers.RemoveAll([](const AMWGameplayPlayerController* PC) { return !PC->GetPlayerState<AMWPlayerState>()->GetRoundState().bRaceParticipant; });
+	return !OutControllers.IsEmpty();
 }
 
 bool AMWGameplayGameMode::IsRaceCourseCurrent() const
@@ -251,7 +262,7 @@ bool AMWGameplayGameMode::AreAllRaceReady() const
 		return false;
 	}
 	TArray<AMWGameplayPlayerController*> Controllers;
-	if (!CollectStartingControllers(Controllers))
+	if (!CollectStartingControllers(Controllers, true))
 	{
 		return false;
 	}
@@ -299,13 +310,16 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	auto* Construction = GS->GetConstructionComponent();
 
 	TArray<AMWGameplayPlayerController*> Controllers;
+	const bool bNextNormalRound = NewPhase == EMWRoomPhase::PreparingConstruction && Current.Phase == EMWRoomPhase::RoundResults;
+	const bool bStartSuddenDeath = NewPhase == EMWRoomPhase::PreparingRace && Current.Phase == EMWRoomPhase::RoundResults;
 
 	// 전환 승인 전에 기존 대기 상태를 지우지 않는다.
 	switch (NewPhase)
 	{
 	case EMWRoomPhase::PreparingConstruction:
 		{
-			if (!bInitialEntry || ConstructionTrackDefinitionIds.IsEmpty())
+			if ((!bInitialEntry && !bNextNormalRound) || ConstructionTrackDefinitionIds.IsEmpty()
+				|| (bNextNormalRound && (Current.RaceMode != EMWRaceMode::Normal || CountQualifiedPlayers() != 0)))
 			{
 				return;
 			}
@@ -316,7 +330,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 				return;
 			}
 
-			if (Construction->GetSelectionSession().SelectionSessionId != 0)
+			if (Construction->GetSelectionSession().bIsOpen || (bInitialEntry && Construction->GetSelectionSession().SelectionSessionId != 0))
 			{
 				return;
 			}
@@ -382,10 +396,11 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 			const bool bSkipConstruction =
 				bInitialEntry && ConstructionTrackDefinitionIds.IsEmpty();
 
-			if (!bFromPlacement && !bSkipConstruction)
+			if (!bFromPlacement && !bSkipConstruction && !bStartSuddenDeath)
 			{
 				return;
 			}
+			if (bStartSuddenDeath && (Current.RaceMode != EMWRaceMode::Normal || CountQualifiedPlayers() < 2 || !IsRaceCourseCurrent())) return;
 
 			// 클라이언트 수신 대기는 PreparingRace에서 한다. 여기서는 서버의 확정 결과를 검사한다.
 			if (bFromPlacement && (!Construction || Construction->GetPlacementSession().SessionId <= 0
@@ -410,6 +425,21 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 			{
 				FailGameplay(TEXT("주행을 시작할 참가자 Controller를 확인하지 못했습니다."));
 				return;
+			}
+			if (bStartSuddenDeath)
+			{
+				// 자격은 확정 결과에서, 실제 다음 참가자는 현재 접속 명단에서 가져온다.
+				Controllers.RemoveAll([&Current](const AMWGameplayPlayerController* PC)
+				{
+					const int32 MemberId = PC->GetPlayerState<AMWPlayerState>()->GetLobbyMemberId();
+					return !Current.Results.ContainsByPredicate([&Current, MemberId](const FMWPlayerRoundState& Entry)
+						{ return Entry.MemberId == MemberId && Entry.TotalScore >= Current.TargetScore; });
+				});
+				if (Controllers.IsEmpty())
+				{
+					FailGameplay(TEXT("서든데스에 참가할 목표점수 도달자가 남아 있지 않습니다."));
+					return;
+				}
 			}
 
 			break;
@@ -445,6 +475,22 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 			break;
 		}
 
+	case EMWRoomPhase::RoundResults:
+		{
+			if (Current.Phase != EMWRoomPhase::Racing || !AreAllRacersDone()) return;
+			if (!FMath::IsFinite(RoundResultsSeconds) || RoundResultsSeconds <= 0.f)
+			{
+				FailGameplay(TEXT("결과 대기 시간은 0보다 커야 합니다."));
+				return;
+			}
+			break;
+		}
+	case EMWRoomPhase::MatchResults:
+		{
+			if (Current.Phase != EMWRoomPhase::RoundResults
+				|| (Current.RaceMode == EMWRaceMode::Normal && CountQualifiedPlayers() != 1)) return;
+			break;
+		}
 	case EMWRoomPhase::Failed:
 		{
 			break;
@@ -467,10 +513,24 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	FMWGameplayProgress Next = Current;
 	if (bInitialEntry)
 	{
+		bMatchInitialized = true;
+		for (AMWGameplayPlayerController* PC : Controllers) MatchMembers.Add(PC->GetPlayerState<AMWPlayerState>()->GetLobbyMemberId());
 		Next.RoundIndex = 1;
 		Next.RoundEpoch = 1;
 		Next.RaceMode = EMWRaceMode::Normal;
 	}
+	else if (bNextNormalRound || bStartSuddenDeath)
+	{
+		if (Current.RoundEpoch == MAX_int32 || Current.RoundIndex == MAX_int32)
+		{
+			FailGameplay(TEXT("라운드 번호 범위를 초과했습니다."));
+			return;
+		}
+		++Next.RoundIndex;
+		++Next.RoundEpoch;
+		Next.RaceMode = bStartSuddenDeath ? EMWRaceMode::SuddenDeath : EMWRaceMode::Normal;
+	}
+	Next.TargetScore = TargetScore;
 
 	Next.Phase = NewPhase;
 	Next.PhaseEndServerTime = 0.0;
@@ -485,26 +545,45 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	{
 		Next.PhaseEndServerTime = GetWorld()->GetTimeSeconds() + CountdownSeconds;
 	}
+	else if (NewPhase == EMWRoomPhase::RoundResults)
+	{
+		Next.PhaseEndServerTime = GetWorld()->GetTimeSeconds() + RoundResultsSeconds;
+	}
+	if (NewPhase == EMWRoomPhase::RoundResults || NewPhase == EMWRoomPhase::MatchResults)
+	{
+		Next.Results = BuildResults(NewPhase == EMWRoomPhase::MatchResults);
+		Next.ResultsEpoch = Next.RoundEpoch;
+	}
 
 	UE_LOG(LogMWServer, Log, TEXT("[MWProgress] %s -> %s Round=%d Epoch=%d"),
 		*UEnum::GetValueAsString(Current.Phase), *UEnum::GetValueAsString(NewPhase), Next.RoundIndex, Next.RoundEpoch);
 
+	if (NewPhase == EMWRoomPhase::Racing)
+	{
+		NextFinishOrder = 1;
+		NextEliminationOrder = 1;
+	}
 	GS->ApplyProgressFromServer(Next);
 
-	if (bInitialEntry)
+	if (bInitialEntry || bNextNormalRound || bStartSuddenDeath)
 	{
-		for (AMWGameplayPlayerController* PC : Controllers)
+		for (APlayerState* Base : GS->PlayerArray)
 		{
-			auto* PS = IsValid(PC) ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-			if (!IsValid(PS))
-			{
-				FailGameplay(TEXT("초기 라운드 상태를 적용할 참가자가 유효하지 않습니다."));
-				return;
-			}
+			auto* PS = Cast<AMWPlayerState>(Base);
+			if (!IsValid(PS) || !IsMatchMember(PS->GetLobbyMemberId())) continue;
 
 			FMWPlayerRoundState NewRound;
+			NewRound.MemberId = PS->GetLobbyMemberId();
+			NewRound.TotalScore = bInitialEntry ? 0 : PS->GetRoundState().TotalScore;
 			NewRound.RoundEpoch = Next.RoundEpoch;
-			NewRound.RaceStatus = EMWRaceStatus::Waiting;
+			if (bStartSuddenDeath)
+			{
+				const auto* Result = Current.Results.FindByPredicate([&NewRound](const FMWPlayerRoundState& Entry)
+					{ return Entry.MemberId == NewRound.MemberId; });
+				if (Result) NewRound.TotalScore = Result->TotalScore;
+				NewRound.bRaceParticipant = Result && Result->TotalScore >= Current.TargetScore;
+			}
+			NewRound.RaceStatus = NewRound.bRaceParticipant ? EMWRaceStatus::Waiting : EMWRaceStatus::Spectating;
 			PS->ApplyRoundStateFromServer(NewRound);
 		}
 	}
@@ -521,13 +600,21 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 			}
 
 			FMWPlayerRoundState PlayerRound = PS->GetRoundState();
-			if (PlayerRound.RoundEpoch != Next.RoundEpoch)
+			if (PlayerRound.RoundEpoch != Next.RoundEpoch || !PlayerRound.bRaceParticipant)
 			{
 				continue;
 			}
 
 			PlayerRound.RaceStatus = NewPhase == EMWRoomPhase::Racing
 				? EMWRaceStatus::Active : EMWRaceStatus::Waiting;
+			PlayerRound.FinishOrder = 0;
+			if (NewPhase == EMWRoomPhase::Racing)
+			{
+				if (auto* Vehicle = Cast<AMWVehiclePawn>(PS->GetPawn()))
+				{
+					GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->BeginPlayerRace(*Vehicle, Next.RoundEpoch);
+				}
+			}
 			PS->ApplyRoundStateFromServer(PlayerRound);
 		}
 	}
@@ -568,6 +655,12 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 		WaitForRacePhaseDeadline();
 		return;
 	}
+	if (NewPhase == EMWRoomPhase::RoundResults)
+	{
+		WaitForRacePhaseDeadline();
+		return;
+	}
+	if (NewPhase == EMWRoomPhase::MatchResults) return;
 
 	if (NewPhase == EMWRoomPhase::Racing)
 	{
@@ -624,7 +717,13 @@ void AMWGameplayGameMode::WaitForRacePhaseDeadline()
 		return;
 	}
 	const FMWGameplayProgress Expected = GS->GetProgress();
-	if ((Expected.Phase != EMWRoomPhase::PreparingRace && Expected.Phase != EMWRoomPhase::Countdown)
+	if (Expected.Phase == EMWRoomPhase::RoundResults
+		&& (Expected.ResultsEpoch != Expected.RoundEpoch || Expected.Results.IsEmpty()))
+	{
+		FailGameplay(TEXT("현재 라운드의 확정 결과가 없습니다."));
+		return;
+	}
+	if ((Expected.Phase != EMWRoomPhase::PreparingRace && Expected.Phase != EMWRoomPhase::Countdown && Expected.Phase != EMWRoomPhase::RoundResults)
 		|| Expected.RoundEpoch <= 0 || Expected.PhaseEndServerTime <= 0.0)
 	{
 		return;
@@ -636,9 +735,21 @@ void AMWGameplayGameMode::WaitForRacePhaseDeadline()
 		{
 			FailGameplay(TEXT("제한 시간 안에 전원의 출발 준비가 완료되지 않았습니다."));
 		}
-		else
+		else if (Expected.Phase == EMWRoomPhase::Countdown)
 		{
 			EnterPhase(EMWRoomPhase::Racing);
+		}
+		else if (Expected.RaceMode == EMWRaceMode::SuddenDeath || CountQualifiedPlayers() == 1)
+		{
+			EnterPhase(EMWRoomPhase::MatchResults);
+		}
+		else if (CountQualifiedPlayers() >= 2)
+		{
+			EnterPhase(EMWRoomPhase::PreparingRace);
+		}
+		else
+		{
+			EnterPhase(EMWRoomPhase::PreparingConstruction);
 		}
 		return;
 	}
@@ -681,7 +792,7 @@ void AMWGameplayGameMode::ReportRaceReady(AMWGameplayPlayerController* Player, i
 		return;
 	}
 	TArray<AMWGameplayPlayerController*> Controllers;
-	if (!IsValid(Player) || Player->GetWorld() != GetWorld() || !CollectStartingControllers(Controllers)
+	if (!IsValid(Player) || Player->GetWorld() != GetWorld() || !CollectStartingControllers(Controllers, true)
 		|| !Controllers.Contains(Player))
 	{
 		return;
@@ -690,17 +801,245 @@ void AMWGameplayGameMode::ReportRaceReady(AMWGameplayPlayerController* Player, i
 	const auto* Vehicle = Cast<AMWVehiclePawn>(Player->GetPawn());
 	if (!PS || PS->GetRoundState().RoundEpoch != RoundEpoch || PS->GetRoundState().RaceStatus != EMWRaceStatus::Waiting
 		|| !IsValid(Vehicle) || Vehicle->GetController() != Player || Vehicle->GetPlayerState() != PS
-		|| !Vehicle->IsReadyForRace(RoundEpoch) || RaceReadyMembers.Contains(PS->GetLobbyMemberId()))
+		|| !Vehicle->IsReadyForRace(RoundEpoch))
 	{
 		return;
 	}
-	RaceReadyMembers.Add(PS->GetLobbyMemberId());
-	UE_LOG(LogMWServer, Log, TEXT("[MWRaceReady] Member=%d Epoch=%d Course=%d Revision=%d Ready=%d/%d"),
-		PS->GetLobbyMemberId(), RoundEpoch, CourseSessionId, CourseRevision, RaceReadyMembers.Num(), Controllers.Num());
+	if (!RaceReadyMembers.Contains(PS->GetLobbyMemberId()))
+	{
+		RaceReadyMembers.Add(PS->GetLobbyMemberId());
+		UE_LOG(LogMWServer, Log, TEXT("[MWRaceReady] Member=%d Epoch=%d Course=%d Revision=%d Ready=%d/%d"),
+			PS->GetLobbyMemberId(), RoundEpoch, CourseSessionId, CourseRevision, RaceReadyMembers.Num(), Controllers.Num());
+	}
+	// 전원 보고 후 일시적인 서버 준비 상태가 회복된 경우 중복 보고로도 출발을 재평가한다.
 	if (AreAllRaceReady())
 	{
 		EnterPhase(EMWRoomPhase::Countdown);
 	}
+}
+
+AMWPlayerState* AMWGameplayGameMode::FindActiveRacePlayer(AMWVehiclePawn& Vehicle, int32 RoundEpoch) const
+{
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	const auto* App = GetGameInstance<UMWGameInstance>();
+	if (!HasAuthority() || !GS || !App || !Vehicle.HasAuthority()
+		|| Vehicle.GetWorld() != GetWorld() || Vehicle.IsActorBeingDestroyed())
+	{
+		return nullptr;
+	}
+	const FMWGameplayProgress Progress = GS->GetProgress();
+	auto* PC = Cast<AMWGameplayPlayerController>(Vehicle.GetController());
+	auto* PS = Vehicle.GetPlayerState<AMWPlayerState>();
+	if (Progress.Phase != EMWRoomPhase::Racing || RoundEpoch <= 0 || RoundEpoch != Progress.RoundEpoch
+		|| !IsValid(PC) || !IsValid(PS) || PS->IsInactive() || PS->GetOwner() != PC
+		|| PC->GetPawn() != &Vehicle || PC->GetPlayerState<AMWPlayerState>() != PS || !GS->PlayerArray.Contains(PS)
+		|| !IsMatchMember(PS->GetLobbyMemberId()) || !PS->GetRoundState().bRaceParticipant
+		|| PS->GetRoundState().RoundEpoch != RoundEpoch || PS->GetRoundState().RaceStatus != EMWRaceStatus::Active)
+	{
+		return nullptr;
+	}
+	return PS;
+}
+
+bool AMWGameplayGameMode::TryPassPlayerCheckpoint(AMWVehiclePawn& Vehicle, AActor& Track, int32 RoundEpoch)
+{
+	auto* PS = FindActiveRacePlayer(Vehicle, RoundEpoch);
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	if (!PS || Track.GetWorld() != GetWorld() || !IsRaceCourseCurrent()) return false;
+	int32 Ordinal = 0;
+	bool bExpected = false;
+	for (const auto& Piece : GS->GetConstructionComponent()->GetPlacementSession().PlacedTracks)
+	{
+		if (!Piece.bCheckpoint) continue;
+		++Ordinal;
+		if (Piece.Actor == &Track)
+		{
+			bExpected = Ordinal == PS->GetRoundState().CheckpointsPassed + 1;
+			break;
+		}
+	}
+	if (!bExpected) return false;
+	FMWPlayerRoundState Round = PS->GetRoundState();
+	Round.MemberId = PS->GetLobbyMemberId();
+	++Round.CheckpointsPassed;
+	if (Round.bCheckpointEligible && GS->GetProgress().RaceMode == EMWRaceMode::Normal)
+	{
+		Round.CheckpointScore += 100;
+		Round.TotalScore += 100;
+	}
+	Round.bCheckpointEligible = true;
+	PS->ApplyRoundStateFromServer(Round);
+	return true;
+}
+
+bool AMWGameplayGameMode::TryFinishPlayerRace(AMWVehiclePawn& Vehicle, AActor& FinishTrack, int32 RoundEpoch)
+{
+	auto* PS = FindActiveRacePlayer(Vehicle, RoundEpoch);
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	if (!PS || !FinishTrack.HasAuthority() || FinishTrack.GetWorld() != GetWorld() || FinishTrack.IsActorBeingDestroyed()) return false;
+	const FMWGameplayProgress Progress = GS->GetProgress();
+	const auto* Construction = GS->GetConstructionComponent();
+	if (!Construction || Progress.CourseSessionId <= 0 || Progress.CourseRevision <= 0 || !IsRaceCourseCurrent())
+	{
+		return false;
+	}
+	const auto& Tracks = Construction->GetPlacementSession().PlacedTracks;
+	if (Tracks.IsEmpty() || Tracks.Last().Actor != &FinishTrack
+		|| Tracks.Last().DefinitionAssetId != CourseEnds.EndDefinitionId || NextFinishOrder == MAX_int32
+		|| PS->GetRoundState().CheckpointsPassed != Algo::CountIf(Tracks, [](const FMWPlacedTrack& Track) { return Track.bCheckpoint; }))
+	{
+		return false;
+	}
+
+	FMWPlayerRoundState Finished = PS->GetRoundState();
+	Finished.RaceStatus = EMWRaceStatus::Finished;
+	Finished.MemberId = PS->GetLobbyMemberId();
+	Finished.FinishOrder = NextFinishOrder++;
+	if (Progress.RaceMode == EMWRaceMode::Normal)
+	{
+		Finished.FinishScore = Finished.FinishOrder == 1 ? 300 : Finished.FinishOrder == 2 ? 150 : Finished.FinishOrder == 3 ? 50 : 0;
+		Finished.TotalScore += Finished.FinishScore;
+	}
+	// 기존 공용 Notify가 서버 차량 정지와 충돌 해제·이동 스냅샷 갱신까지 실행한다.
+	PS->ApplyRoundStateFromServer(Finished);
+	UE_LOG(LogMWServer, Log, TEXT("[MWRace] Finished Member=%d Epoch=%d Order=%d Vehicle=%s"),
+		PS->GetLobbyMemberId(), RoundEpoch, Finished.FinishOrder, *Vehicle.GetName());
+	TryEndRound();
+	return true;
+}
+
+bool AMWGameplayGameMode::HandlePlayerRaceFailure(AMWVehiclePawn& Vehicle, int32 RoundEpoch)
+{
+	auto* PS = FindActiveRacePlayer(Vehicle, RoundEpoch);
+	if (!PS) return false;
+	FMWPlayerRoundState Round = PS->GetRoundState();
+	Round.MemberId = PS->GetLobbyMemberId();
+	Round.bCheckpointEligible = false;
+	if (GetGameState<AMWGameplayGameState>()->GetProgress().RaceMode == EMWRaceMode::SuddenDeath)
+	{
+		Round.RaceStatus = EMWRaceStatus::Eliminated;
+		Round.EliminationOrder = NextEliminationOrder++;
+	}
+	PS->ApplyRoundStateFromServer(Round);
+	TryEndRound();
+	return true;
+}
+
+void AMWGameplayGameMode::CheckPlayerRaceFailure(AMWVehiclePawn& Vehicle)
+{
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	if (!HasAuthority() || !GS || !Vehicle.CanDrive()) return;
+	const FBox Bounds = GS->GetConstructionComponent()->GetPlacementSession().CourseBounds;
+	if (Bounds.IsValid && FMath::IsFinite(FallRecoveryDepth) && FallRecoveryDepth > 0.f
+		&& Vehicle.GetActorLocation().Z < Bounds.Min.Z - FallRecoveryDepth)
+	{
+		GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->RespawnAtTrackCheckpoint(&Vehicle);
+	}
+}
+
+bool AMWGameplayGameMode::AreAllRacersDone() const
+{
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	const auto* App = GetGameInstance<UMWGameInstance>();
+	if (!GS || !App) return false;
+	int32 Racers = 0;
+	for (int32 Member : App->GetStartingPlayers())
+	{
+		if (!IsMatchMember(Member)) continue;
+		const auto* Found = GS->PlayerArray.FindByPredicate([Member](const APlayerState* Base)
+			{ const auto* PS = Cast<AMWPlayerState>(Base); return PS && !PS->IsInactive() && PS->GetLobbyMemberId() == Member; });
+		if (!Found) return false;
+		const auto Round = CastChecked<AMWPlayerState>(Found->Get())->GetRoundState();
+		if (Round.RoundEpoch != GS->GetProgress().RoundEpoch) return false;
+		if (!Round.bRaceParticipant) continue;
+		++Racers;
+		if (Round.RaceStatus != EMWRaceStatus::Finished && Round.RaceStatus != EMWRaceStatus::Eliminated) return false;
+	}
+	return Racers > 0;
+}
+
+void AMWGameplayGameMode::TryEndRound()
+{
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	if (!HasAuthority() || !GS || GS->GetRoomPhase() != EMWRoomPhase::Racing) return;
+	bool bHasRacer = false;
+	for (const APlayerState* Base : GS->PlayerArray)
+	{
+		const auto* PS = Cast<AMWPlayerState>(Base);
+		if (PS && !PS->IsInactive() && IsMatchMember(PS->GetLobbyMemberId())
+			&& PS->GetRoundState().RoundEpoch == GS->GetProgress().RoundEpoch && PS->GetRoundState().bRaceParticipant) bHasRacer = true;
+	}
+	if (!bHasRacer) { FailGameplay(TEXT("주행 참가자가 없습니다.")); return; }
+	if (AreAllRacersDone()) EnterPhase(EMWRoomPhase::RoundResults);
+}
+
+int32 AMWGameplayGameMode::CountQualifiedPlayers() const
+{
+	const auto* GS = GetGameState<AMWGameplayGameState>();
+	if (!GS) return 0;
+	const auto& Progress = GS->GetProgressRef();
+	if (Progress.ResultsEpoch != Progress.RoundEpoch) return 0;
+	// 결과 대기 중 이탈해도 라운드 종료 시 확정한 종료/서든데스 경로는 바뀌지 않는다.
+	return Algo::CountIf(Progress.Results, [&Progress](const FMWPlayerRoundState& Entry)
+		{ return Entry.TotalScore >= Progress.TargetScore; });
+}
+
+TArray<FMWPlayerRoundState> AMWGameplayGameMode::BuildResults(bool bFinal)
+{
+	auto* GS = GetGameState<AMWGameplayGameState>();
+	const auto& Progress = GS->GetProgressRef();
+	TArray<FMWPlayerRoundState> Results;
+	if (bFinal)
+	{
+		// 최종 순위는 확정 결과의 재정렬이다. 이미 완료한 이탈자의 기록도 보존한다.
+		Results = Progress.Results;
+	}
+	else
+	{
+		for (APlayerState* Base : GS->PlayerArray)
+		{
+			auto* PS = Cast<AMWPlayerState>(Base);
+			if (!IsValid(PS) || PS->IsInactive() || !IsMatchMember(PS->GetLobbyMemberId())) continue;
+			FMWPlayerRoundState Round = PS->GetRoundState();
+			if (Round.RoundEpoch != Progress.RoundEpoch) continue;
+			Round.MemberId = PS->GetLobbyMemberId();
+			Results.Add(Round);
+		}
+	}
+	const bool bScoreRanking = bFinal && Progress.RaceMode == EMWRaceMode::Normal;
+	Results.Sort([bScoreRanking](const FMWPlayerRoundState& A, const FMWPlayerRoundState& B)
+	{
+		if (bScoreRanking)
+		{
+			if (A.TotalScore != B.TotalScore) return A.TotalScore > B.TotalScore;
+			if (A.RoundRank != B.RoundRank) return A.RoundRank < B.RoundRank;
+		}
+		else
+		{
+			if (A.bRaceParticipant != B.bRaceParticipant) return A.bRaceParticipant;
+			if (A.bRaceParticipant)
+			{
+				if ((A.FinishOrder > 0) != (B.FinishOrder > 0)) return A.FinishOrder > 0;
+				if (A.FinishOrder != B.FinishOrder) return A.FinishOrder < B.FinishOrder;
+				if (A.EliminationOrder != B.EliminationOrder) return A.EliminationOrder > B.EliminationOrder;
+			}
+			else if (A.TotalScore != B.TotalScore) return A.TotalScore > B.TotalScore;
+		}
+		return A.MemberId < B.MemberId;
+	});
+	for (int32 Index = 0; Index < Results.Num(); ++Index)
+	{
+		auto& Entry = Results[Index];
+		if (bFinal) Entry.FinalRank = Index + 1;
+		else Entry.RoundRank = Entry.bRaceParticipant ? Index + 1 : 0;
+		for (APlayerState* Base : GS->PlayerArray)
+		{
+			auto* PS = Cast<AMWPlayerState>(Base);
+			if (IsValid(PS) && !PS->IsInactive() && IsMatchMember(PS->GetLobbyMemberId())
+				&& PS->GetLobbyMemberId() == Entry.MemberId) { PS->ApplyRoundStateFromServer(Entry); break; }
+		}
+	}
+	return Results;
 }
 
 void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>& Players)
@@ -709,6 +1048,16 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 	if (!HasAuthority() || !GS || GS->GetRoomPhase() != EMWRoomPhase::PreparingRace)
 	{
 		return;
+	}
+	if (GS->GetProgress().CourseSessionId > 0)
+	{
+		const auto& Tracks = GS->GetConstructionComponent()->GetPlacementSession().PlacedTracks;
+		AActor* FinishTrack = Tracks.IsEmpty() ? nullptr : Tracks.Last().Actor.Get();
+		if (!IsValid(FinishTrack) || !GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->PrepareCourseFinish(*FinishTrack, FinishTriggerHalfExtent))
+		{
+			FailGameplay(TEXT("현재 코스의 종료 트랙에 결승 영역을 준비하지 못했습니다."));
+			return;
+		}
 	}
 
 	TArray<APlayerStart*> PlayerStarts;
@@ -739,8 +1088,9 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 			return;
 		}
 
-		// 다시 호출된 경우에도 이미 소유한 차량은 유지합니다.
-		if (!IsValid(PC->GetPawn()))
+		// 기존 차량은 출발 슬롯으로 옮긴 다음 완주 때 껐던 충돌을 복원한다.
+		const bool bExistingVehicle = IsValid(PC->GetPawn());
+		if (!bExistingVehicle)
 		{
 			RestartPlayerAtPlayerStart(PC, Start);
 			if (APawn* Spawned = PC->GetPawn())
@@ -753,6 +1103,11 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 		if (!IsValid(Vehicle) || Vehicle->GetController() != PC)
 		{
 			FailRace(FString::Printf(TEXT("차량 생성 또는 Possess 실패. Slot=%d"), Index + 1));
+			return;
+		}
+		if (bExistingVehicle && !Vehicle->TeleportTo(Start->GetActorLocation(), Start->GetActorRotation()))
+		{
+			FailRace(FString::Printf(TEXT("기존 차량을 출발 위치로 옮기지 못했습니다. Slot=%d"), Index + 1));
 			return;
 		}
 		Vehicle->PrepareForRaceFromServer();
@@ -771,16 +1126,23 @@ void AMWGameplayGameMode::FailGameplay(const FString& Error)
 
 void AMWGameplayGameMode::Logout(AController* Exiting)
 {
-	const auto* PS = Exiting->GetPlayerState<AMWPlayerState>();
+	auto* PS = Exiting->GetPlayerState<AMWPlayerState>();
 	const auto* GS = GetGameState<AMWGameplayGameState>();
-	const auto* App = GetGameInstance<UMWGameInstance>();
-	if (PS && GS && App && App->GetStartingPlayers().Contains(PS->GetLobbyMemberId())
-		&& (GS->GetRoomPhase() == EMWRoomPhase::PreparingConstruction || GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement
-			|| GS->GetRoomPhase() == EMWRoomPhase::PreparingRace || GS->GetRoomPhase() == EMWRoomPhase::Countdown))
+	const bool bMember = PS && GS && IsMatchMember(PS->GetLobbyMemberId());
+	const bool bEnding = GetWorld()->bIsTearingDown || (GS && (GS->GetRoomPhase() == EMWRoomPhase::MatchResults || GS->GetRoomPhase() == EMWRoomPhase::Failed));
+	const bool bAbortPreparation = bMember && (GS->GetRoomPhase() == EMWRoomPhase::PreparingConstruction
+		|| GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement || (PS->GetRoundState().bRaceParticipant
+			&& (GS->GetRoomPhase() == EMWRoomPhase::PreparingRace || GS->GetRoomPhase() == EMWRoomPhase::Countdown)));
+	if (bMember)
 	{
-		FailGameplay(TEXT("건설 또는 출발 준비 중 시작 참가자가 나갔습니다."));
+		MatchMembers.Remove(PS->GetLobbyMemberId());
+		RaceReadyMembers.Remove(PS->GetLobbyMemberId());
 	}
 	Super::Logout(Exiting);
+	if (bEnding) return;
+	if (bMember && bMatchInitialized && MatchMembers.IsEmpty()) FailGameplay(TEXT("남아 있는 경기 참가자가 없습니다."));
+	else if (bAbortPreparation) FailGameplay(TEXT("건설 또는 출발 준비 중 참가자가 나갔습니다."));
+	else if (bMember) TryEndRound();
 }
 
 void AMWGameplayGameMode::HandleStartingNewPlayer_Implementation(APlayerController*)

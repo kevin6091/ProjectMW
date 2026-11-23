@@ -112,7 +112,8 @@ void UMWEnvironmentGameplay::RefreshState()
     const EMWRoomPhase Phase = State ? State->GetRoomPhase() : EMWRoomPhase::Traveling;
     const bool InMatch = Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement ||
                          Phase == EMWRoomPhase::ElementPlacement || Phase == EMWRoomPhase::PreparingRace ||
-                         Phase == EMWRoomPhase::Countdown || Phase == EMWRoomPhase::Racing;
+                         Phase == EMWRoomPhase::Countdown || Phase == EMWRoomPhase::Racing ||
+                         Phase == EMWRoomPhase::RoundResults || Phase == EMWRoomPhase::MatchResults;
     const FName MatchTheme = InMatch ? State->GetRoomSettings().MapThemeId.GetTagName() : NAME_None;
     // 복제된 경기 설정을 우선하고, 아직 받기 전에는 해당 목적지의 로비 테마를 먼저 표시한다.
     const FName ThemeId = MatchTheme.IsNone() && Phase != EMWRoomPhase::Failed ? ArrivalTheme : MatchTheme;

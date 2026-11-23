@@ -15,6 +15,7 @@
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
+#include "System/MWPlayerState.h"
 #include "UObject/UnrealType.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWItemPickupFlow, "MW.Items.PickupAndUse",
@@ -36,7 +37,11 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
     DriveDataProperty->SetObjectPropertyValue_InContainer(Movement, NewObject<UMWVehicleDriveData>(Vehicle));
     auto* Controller = World->SpawnActor<APlayerController>();
     Controller->SetAsLocalPlayerController();
+    auto* Player = World->SpawnActor<AMWPlayerState>();
+    Player->SetOwner(Controller);
+    Controller->PlayerState = Player;
     Controller->Possess(Vehicle);
+    Vehicle->SetPlayerState(Player);
     Vehicle->DispatchBeginPlay();
     UMWItemComponent* Items = Vehicle->GetItemComponent();
     TestTrue(TEXT("Vehicle is possessed"), Vehicle->GetController() == Controller);
@@ -67,7 +72,12 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
     {
         FMWGameplayProgress Progress = State->GetProgress();
         Progress.Phase = EMWRoomPhase::Racing;
+        Progress.RoundEpoch = 1;
         State->ApplyProgressFromServer(Progress);
+        FMWPlayerRoundState Round;
+        Round.RoundEpoch = 1;
+        Round.RaceStatus = EMWRaceStatus::Active;
+        Player->ApplyRoundStateFromServer(Round);
     }
     MoveTo(Middle->GetActorLocation());
     TestTrue(TEXT("Middle grants booster"), Items->GetCurrentItemId() == EMWItemId::Booster);

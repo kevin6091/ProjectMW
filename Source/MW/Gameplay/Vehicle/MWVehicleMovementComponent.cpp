@@ -262,6 +262,13 @@ void UMWVehicleMovementComponent::TickComponent(float DeltaTime, ELevelTick Tick
 void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts,
 	FMWVehiclePredictedImpact* OutImpact)
 {
+	const auto* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	if (Vehicle && !Vehicle->CanDrive())
+	{
+		ResetDriveInput();
+		StopMovementImmediately();
+		return;
+	}
 	FHitResult Contact;
 	UpdateGroundState(&Contact);
 
@@ -290,6 +297,11 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 	}
 
 	UpdateGroundRotation(DeltaTime, PredictedContacts);
+	if (Vehicle && !Vehicle->CanDrive())
+	{
+		StopMovementImmediately();
+		return;
+	}
 	// 자세와 중심 위치가 바뀌었으므로 다시 검사한다.
 	UpdateGroundState();
 
@@ -303,6 +315,11 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 	}
 
 	MoveVehicle(DeltaTime, PredictedContacts, OutImpact);
+	if (Vehicle && !Vehicle->CanDrive())
+	{
+		StopMovementImmediately();
+		return;
+	}
 
 	UpdateGroundState();
 	AdjustGroundHeight(DeltaTime);
@@ -1960,6 +1977,11 @@ bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, f
 		SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
 		{
+			return false;
+		}
+		if (const auto* Vehicle = Cast<AMWVehiclePawn>(PawnOwner); Vehicle && !Vehicle->CanDrive())
+		{
+			StopMovementImmediately();
 			return false;
 		}
 		if (!Hit.IsValidBlockingHit())

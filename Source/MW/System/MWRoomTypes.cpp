@@ -8,7 +8,9 @@ bool FMWGameplayProgress::operator==(const FMWGameplayProgress& Other) const
 		&& PhaseEndServerTime == Other.PhaseEndServerTime
 		&& RaceMode == Other.RaceMode
 		&& CourseSessionId == Other.CourseSessionId
-		&& CourseRevision == Other.CourseRevision;
+		&& CourseRevision == Other.CourseRevision
+		&& TargetScore == Other.TargetScore
+		&& ResultsEpoch == Other.ResultsEpoch && Results == Other.Results;
 }
 
 bool FMWGameplayProgress::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOutSuccess)
@@ -23,8 +25,26 @@ bool FMWGameplayProgress::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 	Ar << RaceModeValue;
 	Ar << CourseSessionId;
 	Ar << CourseRevision;
+	Ar << TargetScore;
+	Ar << ResultsEpoch;
+	uint8 Count = static_cast<uint8>(Results.Num());
+	Ar << Count;
+	if (Count > 16 || (Ar.IsSaving() && Results.Num() > 16))
+	{
+		Ar.SetError();
+		bOutSuccess = false;
+		return true;
+	}
+	if (Ar.IsLoading()) Results.SetNum(Count);
+	bool bResultsSuccess = true;
+	for (FMWPlayerRoundState& Entry : Results)
+	{
+		bool bEntrySuccess = false;
+		Entry.NetSerialize(Ar, Map, bEntrySuccess);
+		bResultsSuccess &= bEntrySuccess;
+	}
 
-	bOutSuccess = !Ar.IsError();
+	bOutSuccess = bResultsSuccess && !Ar.IsError();
 
 	if (Ar.IsLoading() && bOutSuccess)
 	{
@@ -39,7 +59,13 @@ bool FMWPlayerRoundState::operator==(
 	const FMWPlayerRoundState& Other) const
 {
 	return RoundEpoch == Other.RoundEpoch
-		&& RaceStatus == Other.RaceStatus;
+		&& RaceStatus == Other.RaceStatus
+		&& FinishOrder == Other.FinishOrder && MemberId == Other.MemberId
+		&& CheckpointsPassed == Other.CheckpointsPassed && CheckpointScore == Other.CheckpointScore
+		&& FinishScore == Other.FinishScore && TotalScore == Other.TotalScore
+		&& EliminationOrder == Other.EliminationOrder && RoundRank == Other.RoundRank
+		&& FinalRank == Other.FinalRank && bRaceParticipant == Other.bRaceParticipant
+		&& bCheckpointEligible == Other.bCheckpointEligible;
 }
 
 bool FMWPlayerRoundState::NetSerialize(
@@ -51,6 +77,17 @@ bool FMWPlayerRoundState::NetSerialize(
 
 	Ar << RoundEpoch;
 	Ar << StatusValue;
+	Ar << FinishOrder;
+	Ar << MemberId;
+	Ar << CheckpointsPassed;
+	Ar << CheckpointScore;
+	Ar << FinishScore;
+	Ar << TotalScore;
+	Ar << EliminationOrder;
+	Ar << RoundRank;
+	Ar << FinalRank;
+	Ar << bRaceParticipant;
+	Ar << bCheckpointEligible;
 
 	bOutSuccess = !Ar.IsError();
 

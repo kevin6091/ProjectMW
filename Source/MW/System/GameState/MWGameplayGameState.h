@@ -24,6 +24,8 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
 	FMWGameplayProgress GetProgress() const { return Progress; }
+	// C++의 반복 조회는 결과 배열을 복사하지 않는다. 상태를 고정해야 하는 호출자는 값으로 보관한다.
+	const FMWGameplayProgress& GetProgressRef() const { return Progress; }
 	UFUNCTION(BlueprintPure, Category = "MW|Gameplay")
 	double GetPhaseSecondsRemaining() const;
 	void ApplyProgressFromServer(const FMWGameplayProgress& NewProgress);

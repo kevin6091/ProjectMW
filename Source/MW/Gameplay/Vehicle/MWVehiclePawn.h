@@ -96,6 +96,7 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void FellOutOfWorld(const UDamageType& DamageType) override;
 
 protected:
     // 현재 통합의 박스 이동·충돌 루트를 유지하고 기존 아이템 중첩 이벤트를 허용한다.
@@ -172,6 +173,7 @@ protected:
 
 private:
     bool bRespawningAtCheckpoint = false;
+	double NextRaceFailureCheck = 0.0;
 
 	friend class UMWVehicleMovementComponent;
 	friend class UMWVehiclePresentationComponent;
@@ -245,9 +247,14 @@ private:
 
 	FMWVehicleDriveInput DriveInput;
 	bool bDriveAllowed = false;
+	bool bFinishCollisionDisabled = false;
+	ECollisionEnabled::Type CollisionBeforeFinish = ECollisionEnabled::NoCollision;
+	bool SetFinishCollisionDisabled(bool bDisabled);
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_ServerDriveSnapshot)
 	FMWVehicleDriveSnapshot ServerDriveSnapshot;
+	UFUNCTION()
+	void OnRep_ServerDriveSnapshot();
 
 	TMap<uint32, FMWVehicleDriveInput> QueuedServerMoves;
 	TArray<FPredictedMove> PredictedMoves;

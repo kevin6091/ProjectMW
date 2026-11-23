@@ -78,7 +78,8 @@ bool UMWItemComponent::IsItemPlayAllowed() const
     }
     if (const AMWGameplayGameState* State = World->GetGameState<AMWGameplayGameState>())
     {
-        return State->GetRoomPhase() == EMWRoomPhase::Racing;
+        const auto* Vehicle = Cast<AMWVehiclePawn>(GetOwner());
+        return State->GetRoomPhase() == EMWRoomPhase::Racing && Vehicle && Vehicle->CanDrive();
     }
     return World->GetAuthGameMode<AMWDriveTestGameMode>() != nullptr;
 }

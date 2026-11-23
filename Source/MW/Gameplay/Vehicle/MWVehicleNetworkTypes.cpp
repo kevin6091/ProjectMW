@@ -11,6 +11,12 @@ bool FMWVehicleDriveSnapshot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool&
 	{
 		bDriveAllowed = Allowed != 0;
 	}
+	uint8 FinishCollisionDisabled = bFinishCollisionDisabled ? 1 : 0;
+	Ar.SerializeBits(&FinishCollisionDisabled, 1);
+	if (Ar.IsLoading())
+	{
+		bFinishCollisionDisabled = FinishCollisionDisabled != 0;
+	}
 	Ar << RoundEpoch;
 	bool bLocationSuccess = false;
 	bool bVelocitySuccess = false;

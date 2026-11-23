@@ -24,6 +24,11 @@ public:
     // 복구 데이터의 값과 에셋 참조를 소유한 뒤 충돌·움직임·교통을 구성한다.
     void Configure(const FMWTrackPieceRuntimeData& Data);
 
+    // 코스 종료 캡에 서버 결승 영역을 추가한다. 기존 카탈로그 형상과 감지 경로를 재사용한다.
+    bool EnsureCourseFinishTrigger(const FTransform& PortFrame, const FVector& HalfExtent);
+    bool EnsureCourseCheckpointTrigger(const FTransform& PortFrame, const FVector& HalfExtent);
+    bool HasCheckpointTrigger() const;
+
     // 미리보기 조각에서 실제 경기 트리거·충돌·음향이 동작하지 않도록 표시 상태를 구분한다.
     void SetPreview(bool bInPreview);
 
@@ -138,6 +143,12 @@ private:
     FMWTrackPieceRuntimeData Piece;
 
     bool bConfigured = false;
+
+    // Triggers가 주소를 보관하므로 기존 Piece.Shapes 배열을 늘리지 않고 별도로 소유한다.
+    FMWTrackShapeData CourseFinishShape;
+    TWeakObjectPtr<UPrimitiveComponent> CourseFinishTrigger;
+    TArray<FTransform> CourseRespawnPoints;
+    bool EnsureCourseRaceTrigger(EMWTrackTrigger Trigger, const FTransform& PortFrame, const FVector& HalfExtent);
 
     TMap<TWeakObjectPtr<UPrimitiveComponent>, const FMWTrackShapeData*> Triggers;
 
