@@ -21,6 +21,13 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Marker")
     FText SelectingText;
 
+    // 현재 커서 그림에서 클릭할 끝점. 지정 전 기존 에셋은 Designer 화살표의 끝점을 계산한다.
+    UPROPERTY(EditDefaultsOnly, Category="MW|Vehicle UI|Marker")
+    bool bUseAuthoredHotspot = false;
+
+    UPROPERTY(EditDefaultsOnly, Category="MW|Vehicle UI|Marker", meta=(EditCondition="bUseAuthoredHotspot",ClampMin="0",ClampMax="1"))
+    FVector2D PointerHotspot = FVector2D(.5,.5);
+
     UPROPERTY(EditDefaultsOnly, Category = "MW|Vehicle UI|Marker")
     FText ConfirmedText;
 

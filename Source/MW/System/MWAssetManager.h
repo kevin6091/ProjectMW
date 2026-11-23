@@ -23,6 +23,10 @@ public:
 
 	/** 엔진 시작 때 설정된 에셋 목록을 적용하고, 미리 불러올 분류의 에셋을 준비합니다. */
 	virtual void StartInitialLoading() override;
+#if WITH_EDITOR
+    virtual void ModifyCook(TConstArrayView<const ITargetPlatform*> TargetPlatforms,
+        TArray<FName>& PackagesToCook, TArray<FName>& PackagesToNeverCook) override;
+#endif
 
 	/**
 	 * 목록을 검사한 뒤 ID, 경로, 분류를 복사해서 조회에 사용합니다.

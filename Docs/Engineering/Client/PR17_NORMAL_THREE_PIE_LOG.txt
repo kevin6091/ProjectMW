@@ -1,0 +1,74 @@
+PR #17 정상 3인 PIE · 2026-11-19 · UE 5.8 Windows Development
+입력=Cua Driver / 읽기 전용 관측=Unreal Editor Python
+gameplay_time_dilation=1.0 (읽기 샘플 전부), track_offers=3, LocalIP
+covered_to_reveal_seconds=[4.156, 4.194, 4.476]
+after_racing_observed_seconds=141.31, returned_to_lobby_events_after_server_travel=0
+
+[서버와 클라이언트 로그 발췌]
+[2026.11.19-08.01.21:672][407]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.01.23:742][411]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.01.24:064][412]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.01.58:645][720]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.02.03:123][911]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.02.07:873][119]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Title.L_Title phase=<MWRoomPhase.LOBBY: 0> pawn=None
+[2026.11.19-08.02.17:342][513]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Title.L_Title phase=<MWRoomPhase.VEHICLE_SELECTION: 2> pawn=None
+[2026.11.19-08.02.17:354][514]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Title.L_Title phase=<MWRoomPhase.VEHICLE_SELECTION: 2> pawn=None
+[2026.11.19-08.02.17:366][514]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Title.L_Title phase=<MWRoomPhase.VEHICLE_SELECTION: 2> pawn=None
+[2026.11.19-08.02.41:796][376]LogMWServer: [MWVehicleSelection] ID=1 차량 확정: Asset.Vehicle.FRED
+[2026.11.19-08.02.41:983][383]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Title.L_Title phase=<MWRoomPhase.VEHICLE_SELECTION: 2> pawn=None
+[2026.11.19-08.02.46:399][567]LogMWServer: [MWVehicleSelection] ID=2 차량 확정: Asset.Vehicle.DOUG
+[2026.11.19-08.02.46:435][568]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Title.L_Title phase=<MWRoomPhase.VEHICLE_SELECTION: 2> pawn=None
+[2026.11.19-08.02.50:720][745]LogMWServer: [MWVehicleSelection] ID=3 차량 확정: Asset.Vehicle.SMIET
+[2026.11.19-08.02.50:730][745]LogMWServer: [MWVehicleSelection] 시작 대상 전원의 차량 선택이 확정되었습니다.
+[2026.11.19-08.02.50:742][745]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=3 Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-08.02.50:905][751]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Title.L_Title phase=<MWRoomPhase.TRAVELING: 3> pawn=None
+[2026.11.19-08.02.50:911][752]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Title.L_Title phase=<MWRoomPhase.TRAVELING: 3> pawn=None
+[2026.11.19-08.02.50:923][752]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Title.L_Title phase=<MWRoomPhase.TRAVELING: 3> pawn=None
+[2026.11.19-08.02.53:262][850]LogTemp: Display: MWArrival covered attempt=67704D32413B1BACBC55858B80EA279E world=L_Title map=/Game/Levels/L_Dev_Drive t=16804693.988874
+[2026.11.19-08.02.53:274][850]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.19-08.02.53:325][851]LogTemp: Display: MWArrival covered attempt=7DA575B74E88BFFDB861B29EC0C81221 world=L_Title map=/Game/Levels/L_Dev_Drive t=16804693.990998
+[2026.11.19-08.02.53:371][851]LogTemp: Display: MWArrival covered attempt=5BEE249E49990E893F3B12A780C754C6 world=L_Title map=/Game/Levels/L_Dev_Drive t=16804693.992694
+[2026.11.19-08.02.53:383][851]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.19-08.02.53:395][851]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+[2026.11.19-08.02.53:407][851]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+[2026.11.19-08.02.53:719][852]LogPython: NORMAL_PIE_OBS member=1 world=/Temp/Untitled_3.Untitled phase=<MWRoomPhase.TRAVELING: 3> pawn=None
+[2026.11.19-08.02.55:280][858]LogTemp: Display: MWArrival ready attempt=67704D32413B1BACBC55858B80EA279E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16804695.686719
+[2026.11.19-08.02.55:321][859]LogTemp: Display: MWArrival ready attempt=7DA575B74E88BFFDB861B29EC0C81221 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16804696.078016
+[2026.11.19-08.02.55:328][859]LogTemp: Display: MWArrival ready attempt=5BEE249E49990E893F3B12A780C754C6 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16804696.078109
+[2026.11.19-08.02.57:389][906]LogTemp: Display: MWArrival reveal attempt=7DA575B74E88BFFDB861B29EC0C81221 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16804698.147246
+[2026.11.19-08.02.57:554][911]LogTemp: Display: MWArrival reveal attempt=5BEE249E49990E893F3B12A780C754C6 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16804698.187178
+[2026.11.19-08.02.57:706][914]LogTemp: Display: MWArrival reveal attempt=67704D32413B1BACBC55858B80EA279E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16804698.464827
+[2026.11.19-08.04.02:754][ 26]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+[2026.11.19-08.04.02:860][ 31]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+[2026.11.19-08.04.02:873][ 32]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+[2026.11.19-08.04.32:609][431]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+[2026.11.19-08.04.32:875][436]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+[2026.11.19-08.04.32:880][436]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+[2026.11.19-08.04.32:892][437]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+[2026.11.19-08.05.13:665][142]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.19-08.05.40:186][356]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.19-08.06.12:776][830]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.19-08.06.12:861][832]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.19-08.06.12:873][832]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.19-08.06.12:885][832]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_Smiet_C_0
+[2026.11.19-08.06.12:910][833]LogMWServer: [MWRace] 전원 차량 소유 확인 완료.
+[2026.11.19-08.06.13:288][837]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.19-08.06.13:292][837]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.19-08.06.13:306][838]LogPython: NORMAL_PIE_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_Smiet_C_0
+
+[경기 개시 시 각 클라이언트의 차량 소유 및 세션]
+{"member": 1, "world": "/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.FRED\")", "pawn": "BP_MWVehiclePawn_FRED_C_0", "possessed": true, "location": [-2620.0, 375.0, 6069.2], "time_dilation": 1.0, "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)", "placement": "(SessionId=1,DefinitionAssetId=(TagName=\"Asset.Track.Straight.Test\"),PreviewTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=False,bPlaced=True)"}
+{"member": 2, "world": "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.DOUG\")", "pawn": "BP_MWVehiclePawn_DOUG_C_0", "possessed": true, "location": [-2620.0, 525.0, 6046.2], "time_dilation": 1.0, "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)", "placement": "(SessionId=1,DefinitionAssetId=(TagName=\"Asset.Track.Straight.Test\"),PreviewTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=False,bPlaced=True)"}
+{"member": 3, "world": "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "vehicle": "(TagName=\"Asset.Vehicle.SMIET\")", "pawn": "BP_MWVehiclePawn_Smiet_C_0", "possessed": true, "location": [-2870.0, 375.0, 6051.2], "time_dilation": 1.0, "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)", "placement": "(SessionId=1,DefinitionAssetId=(TagName=\"Asset.Track.Straight.Test\"),PreviewTransform=(Rotation=(X=-0.000000,Y=-0.000000,Z=-0.707107,W=0.707107),Translation=(X=10260.390000,Y=450.001311,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=False,bPlaced=True)"}
+
+[관찰 종료 시 각 창]
+{"member": 1, "world": "/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_FRED_C_0", "possessed": true, "location": [-2620.0, 375.0, 6069.2], "time_dilation": 1.0}
+{"member": 2, "world": "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_DOUG_C_0", "possessed": true, "location": [-2620.0, 525.0, 6046.2], "time_dilation": 1.0}
+{"member": 3, "world": "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive", "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_Smiet_C_0", "possessed": true, "location": [-2870.0, 375.0, 6051.2], "time_dilation": 1.0}
+
+[서버가 설치한 코스]
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_2'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_3'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=10260.390000,Y=450.001311,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=15260.390000,Y=450.002623,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)

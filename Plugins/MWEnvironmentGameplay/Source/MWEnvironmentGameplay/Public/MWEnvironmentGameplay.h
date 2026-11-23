@@ -5,6 +5,7 @@
 
 class AMWEnvironmentGenerator;
 class AMWGameplayGameState;
+class AMWLobbyGameState;
 class UMWEnvironmentTheme;
 class USceneComponent;
 
@@ -18,6 +19,10 @@ struct FMWEnvironmentBinding
 
     UPROPERTY(EditAnywhere)
     TSoftObjectPtr<UMWEnvironmentTheme> Environment;
+
+    // 하늘·바닥 외에 해당 테마의 첫 화면에서 준비를 기다릴 재질을 지정한다.
+    UPROPERTY(EditAnywhere)
+    TArray<TSoftObjectPtr<UMaterialInterface>> FirstViewMaterials;
 };
 
 // 프로젝트 연결 계층이다. 기존 복제 상태를 읽어 배경만 표시하며 경기 규칙은 바꾸지 않는다.
@@ -29,6 +34,10 @@ public:
 
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     bool Enabled = false;
+
+    // 로비 선로딩만 끄고 같은 경기 화면의 스트리밍 비용을 비교할 수 있다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Streaming")
+    bool bPreloadLobbyTheme = true;
 
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     TArray<FMWEnvironmentBinding> Bindings;
@@ -68,8 +77,17 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<AMWEnvironmentGenerator> Generator;
 
+    TSharedPtr<struct FStreamableHandle> FirstViewMaterialHandle;
+
     UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;
+
+    TWeakObjectPtr<AMWLobbyGameState> LobbyState;
+    const FMWEnvironmentBinding* FindBinding(FName ThemeId) const;
+
+    UFUNCTION()
+    void RefreshLobbyTheme();
+    void CollectFirstView(UWorld& World, TArray<UMaterialInterface*>& Materials, FString& Pending);
 
     FTimerHandle ReadinessTimer;
 

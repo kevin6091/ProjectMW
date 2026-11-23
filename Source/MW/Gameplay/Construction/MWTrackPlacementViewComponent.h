@@ -18,6 +18,8 @@ class UMWTrackPlacementViewComponent : public UActorComponent
 public:
 	void Update(float DeltaSeconds, UEnhancedInputComponent* Input);
 	void ResetView();
+    // 첫 화면 준비 검사에는 현재 배치 세션에서 그리는 해당 참가자의 고스트만 제공한다.
+    AActor* GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const;
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
@@ -33,8 +35,8 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdatePointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, const FMWTrackPortFrames& Ports);
-	void UpdateLocalGhost(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;
@@ -43,11 +45,9 @@ private:
 	TArray<uint32> InputBindings;
 	FMWTrackPlacementIntent Intent;
 	int32 SessionId = 0;
-	int32 DisplayedRevision = 0;
 	int32 PreviewSequence = 0;
 	double NextPreviewTime = 0.0;
 	bool bTriedLoadingInput = false;
-	bool bCanPlace = false;
 	bool bWaitingForReply = false;
 	bool bAccepted = false;
 	EMWTrackPlacementResult LastResult = EMWTrackPlacementResult::Accepted;

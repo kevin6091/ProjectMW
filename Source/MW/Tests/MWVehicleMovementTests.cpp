@@ -2,6 +2,7 @@
 
 #include "Misc/AutomationTest.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Data/MWVehicleDriveData.h"
 #include "Components/BoxComponent.h"
@@ -435,6 +436,43 @@ bool FMWDriveFrameRateTest::RunTest(const FString& Parameters)
 	Scene.Vehicle->UnPossessed();
 	Scene.Step(0.2f);
 	TestTrue(TEXT("Unpossess clears stored input"), Scene.Movement->Velocity.IsNearlyZero());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWCheckpointVelocityTest, "MW.Vehicle.CheckpointVelocity",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMWCheckpointVelocityTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	UMWTrackRuntimeSubsystem* Tracks = Scene.World->GetSubsystem<UMWTrackRuntimeSubsystem>();
+	if (!TestNotNull(TEXT("트랙 런타임 생성"), Tracks))
+	{
+		return false;
+	}
+
+	Scene.Input(1.f);
+	Scene.Step(.5f);
+	const FVector PreviousVelocity = Scene.Movement->Velocity;
+	TestFalse(TEXT("복귀 전 차량 주행"), PreviousVelocity.IsNearlyZero());
+	TestFalse(TEXT("기록된 체크포인트가 없으면 복귀 실패"), Tracks->RespawnAtTrackCheckpoint(Scene.Vehicle));
+	TestTrue(TEXT("실패한 복귀는 주행 속도 유지"), Scene.Movement->Velocity.Equals(PreviousVelocity));
+
+	const FVector Target(1000, 1000, 60);
+	Scene.Vehicle->TeleportTo(Target, FRotator::ZeroRotator, false, true);
+	TestTrue(TEXT("일반 텔레포트는 속도 유지"), Scene.Movement->Velocity.Equals(PreviousVelocity));
+
+	// 트랙의 로컬 Y축을 출발 방향으로 쓰는 실제 복귀 경로를 지난다.
+	AActor* Track = Scene.World->SpawnActor<AActor>();
+	const FVector Checkpoint = Target + FVector(0, 500, 0);
+	Tracks->ProcessRaceTrigger(*Scene.Vehicle, *Track, EMWTrackTrigger::Checkpoint, { FTransform(Checkpoint) });
+	TestTrue(TEXT("기록된 체크포인트 복귀"), Tracks->RespawnAtTrackCheckpoint(Scene.Vehicle));
+	TestTrue(TEXT("저장 위치로 복귀"), Scene.Vehicle->GetActorLocation().Equals(Checkpoint, 1.f));
+	TestTrue(TEXT("체크포인트의 진행 방향 적용"), Scene.Vehicle->GetActorForwardVector().Equals(FVector::RightVector));
+	TestTrue(TEXT("복귀 직후 정지"), Scene.Movement->Velocity.IsNearlyZero());
+	Scene.Input(1.f);
+	Scene.Step(.3f);
+	TestTrue(TEXT("복귀 후 새 방향으로 재출발"), Scene.Movement->Velocity.Y > 0.f);
 	return true;
 }
 

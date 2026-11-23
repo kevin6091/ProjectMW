@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Blueprint/UserWidget.h"
+#include "UI/VehicleSelection/MWVehiclePlayerMarkerWidget.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScaleBox.h"
@@ -11,6 +12,10 @@ inline constexpr float MWPointerDesignSize = 176.f;
 
 inline FVector2D MWGetPointerHotspot(UUserWidget* Marker)
 {
+    // WBP에 끝점을 지정한 경우 그 값을 쓰고, 기존 에셋은 아래의 화살표 슬롯 계산을 사용한다.
+    const auto* PlayerMarker = Cast<UMWVehiclePlayerMarkerWidget>(Marker);
+    if (PlayerMarker && PlayerMarker->bUseAuthoredHotspot)
+        return PlayerMarker->PointerHotspot.ClampAxes(0.0,1.0);
     FVector2D Hotspot(MWPointerDesignSize * .5f);
     if (UWidget* Arrow = Marker->GetWidgetFromName(TEXT("Image_PointerArrow")))
         if (auto* Slot = Cast<UCanvasPanelSlot>(Arrow->Slot))

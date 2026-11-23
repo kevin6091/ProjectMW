@@ -16,15 +16,13 @@ class UFont;
 class UMaterialInterface;
 class UTexture2D;
 class UMWRaceHUDWidget;
+class UUserWidget;
 
 // 아이템 슬롯의 1920×1080 디자인 좌표와 실제 화면 최소 크기다. SVG 원본 좌표계와는 구분한다.
 USTRUCT()
 struct FMWItemSlotLayout
 {
     GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, meta = (ClampMin = "1"))
-    float Size = 168.f;
 
     UPROPERTY(EditAnywhere, meta = (ClampMin = "1"))
     float MinimumPixels = 96.f;
@@ -35,11 +33,6 @@ struct FMWItemSlotLayout
     UPROPERTY(EditAnywhere, meta = (ClampMin = "1"))
     float IconSize = 158.f;
 
-    UPROPERTY(EditAnywhere)
-    FMargin Margin = FMargin(48.f, 0.f, 0.f, 48.f);
-
-    UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
-    float FrameInset = 5.f;
 };
 
 // 대기판의 크기·여백·글자 크기다. 네 열의 의미와 참가자 상태는 기존 표시 모델을 그대로 사용한다.
@@ -47,36 +40,6 @@ USTRUCT()
 struct FMWWaitingBoardLayout
 {
     GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere)
-    FVector2D PanelSize = FVector2D(1152.f, 676.f);
-
-    UPROPERTY(EditAnywhere)
-    FMargin PanelMargin = FMargin(0.f, 80.f, 0.f, 0.f);
-
-    UPROPERTY(EditAnywhere)
-    float BorderWidth = 4.f;
-
-    UPROPERTY(EditAnywhere)
-    FVector2D LogoSize = FVector2D(176.f, 176.f);
-
-    UPROPERTY(EditAnywhere)
-    FMargin LogoMargin = FMargin(0.f, 36.f, 0.f, 0.f);
-
-    UPROPERTY(EditAnywhere)
-    float PoleWidth = 122.f;
-
-    UPROPERTY(EditAnywhere)
-    float TitleHeight = 106.f;
-
-    UPROPERTY(EditAnywhere)
-    float TitleFontSize = 64.f;
-
-    UPROPERTY(EditAnywhere)
-    float DividerHeight = 5.f;
-
-    UPROPERTY(EditAnywhere)
-    FMargin RosterPadding = FMargin(26.f, 4.f);
 
     // 위치·드라이버·차량·상태 열 순서다. 열을 추가하려면 기존 표시 모델의 계약도 함께 바꿔야 한다.
     UPROPERTY(EditAnywhere)
@@ -98,6 +61,22 @@ struct FMWWaitingBoardLayout
     float RowFontSize = 32.f;
 };
 
+// 월드 시작 때 한 번 결정하는 개발 맵 전용 표시 옵션이다.
+struct FMWPIEHUDPreview
+{
+    bool bSpeedometer = false;
+    bool bItemSlot = false;
+
+    bool IsEnabled() const { return bSpeedometer || bItemSlot; }
+};
+
+enum class EMWWaitingBoardReadiness : uint8
+{
+    Pending,
+    Ready,
+    Unavailable,
+};
+
 // 월드에서 로컬 HUD 연결을 준비하고 Pawn 교체·월드 종료 때 실제 구독과 화면을 정리한다.
 UCLASS(Config = Game)
 class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
@@ -106,18 +85,23 @@ class MW_API UMWGameplayHUDSubsystem : public UTickableWorldSubsystem
 
 public:
 
+    // 각 목록에 등록한 PIE 맵에서 해당 HUD를 경기 시작 전에도 검증할 수 있다.
+    UPROPERTY(Config)
+    TArray<TSoftObjectPtr<UWorld>> PIESpeedometerMaps;
+
+    UPROPERTY(Config)
+    TArray<TSoftObjectPtr<UWorld>> PIEItemSlotMaps;
+
+    const FMWPIEHUDPreview& GetPIEPreview() const { return PIEPreview; }
+
+    virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+
     // 화면 디자인은 지정된 WBP에서 편집하고 기존 Slate HUD에는 그 결과만 연결한다.
     UPROPERTY(Config)
     TSoftClassPtr<UMWRaceHUDWidget> RaceHUDWidgetClass;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UFont> DisplayFont;
-
-    UPROPERTY(Config)
-    TSoftObjectPtr<UTexture2D> BoardLogo;
-
-    UPROPERTY(Config)
-    TSoftObjectPtr<UTexture2D> BoardPole;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardBolt;
@@ -154,11 +138,16 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Layout")
     FMWWaitingBoardLayout WaitingBoardLayout;
 
+    UPROPERTY(Config)
+    TSoftClassPtr<UUserWidget> MatchPanelsClass;
+
     // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
     virtual void Tick(float DeltaTime) override;
 
     // 초기 연결 또는 GameState 교체가 필요할 때만 연결용 틱을 허용한다.
     virtual bool IsTickable() const override;
+
+    EMWWaitingBoardReadiness GetWaitingBoardReadiness(const APlayerController& PC) const;
 
     virtual TStatId GetStatId() const override;
 
@@ -178,6 +167,9 @@ protected:
     virtual void Deinitialize() override;
 
 private:
+    FMWPIEHUDPreview PIEPreview;
+    UPROPERTY(Transient) TObjectPtr<UUserWidget> MatchPanels;
+
     UPROPERTY(Transient)
     TObjectPtr<UMWRaceHUDWidget> RaceHUDWidget;
 
