@@ -5,27 +5,23 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "LogChannel.h"
+#include "Misc/Paths.h"
 #include "TimerManager.h"
-#include "UObject/ConstructorHelpers.h"
 
-namespace
+void UMWTrackRuntimeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-    const FName PreviewTag(TEXT("MWTrackVisualOnly"));
-    const TSet<FName> CourseOnlyClasses = {
-        TEXT("BP_Track_WoodStartCapped_C"),
-        TEXT("BP_Track_WoodStartOpen_C"),
-        TEXT("BP_Track_WoodStartFinish_C"),
-        TEXT("BP_Track_WoodFinish_C"),
-        TEXT("BP_Track_WoodEndCap_C")
-    };
-}
-
-UMWTrackRuntimeSubsystem::UMWTrackRuntimeSubsystem()
-{
-    static ConstructorHelpers::FObjectFinderOptional<UMWTrackRuntimeData> RuntimeData(
-        TEXT("/Game/Gameplay/Tracks/Data/DA_TrackRuntime.DA_TrackRuntime"));
-    Catalog = RuntimeData.Get();
+    Super::Initialize(Collection);
+    // 복제된 트랙 컴포넌트가 초기화될 때 사용할 수 있도록 월드 시작 전에 카탈로그를 준비한다.
+    const auto& CatalogRef = GetDefault<UMWTrackRuntimeSettings>()->RuntimeCatalog;
+    Catalog = CatalogRef.LoadSynchronous();
+    if (!Catalog)
+    {
+        UE_LOG(LogDefault, Warning, TEXT("[MWTrackRuntime] 프로젝트 설정의 트랙 카탈로그를 불러올 수 없습니다. %s"),
+            *CatalogRef.ToString());
+    }
 }
 
 // 일반 게임과 PIE 월드만 대상으로 해 에디터 미리보기에서 런타임 기능이 켜지지 않게 한다.
@@ -37,24 +33,29 @@ bool UMWTrackRuntimeSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) 
 TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
 {
     TArray<TSoftClassPtr<AActor>> Result;
-    if (!Catalog)
+    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
+    const FString& TrackDirectory = Settings->TrackBlueprintDirectory.Path;
+    if (!Catalog || TrackDirectory.IsEmpty())
     {
         return Result;
     }
 
-    // 복구 데이터의 클래스 이름은 Gameplay/Tracks 바로 아래의 BP 패키지와 대응한다.
+    // 카탈로그의 클래스 이름은 설정에 지정한 폴더 바로 아래의 BP 패키지와 대응한다.
     // 풀을 읽을 때는 경로만 만들고, 서버가 뽑은 클래스만 선택 시작 시 불러온다.
     Result.Reserve(Catalog->Pieces.Num());
     for (const FMWTrackPieceRuntimeData& Piece : Catalog->Pieces)
     {
         const FString ClassName = Piece.VisualClass.ToString();
-        if (CourseOnlyClasses.Contains(Piece.VisualClass) || !ClassName.EndsWith(TEXT("_C")))
+        if (!ClassName.EndsWith(TEXT("_C")))
         {
             continue;
         }
-        const FString AssetName = ClassName.LeftChop(2);
-        Result.AddUnique(TSoftClassPtr<AActor>(FSoftObjectPath(FString::Printf(
-            TEXT("/Game/Gameplay/Tracks/%s.%s"), *AssetName, *ClassName))));
+        const FString PackageName = FPaths::Combine(TrackDirectory, ClassName.LeftChop(2));
+        const TSoftClassPtr<AActor> TrackClass(FSoftObjectPath(PackageName + TEXT(".") + ClassName));
+        if (!Settings->CourseOnlyTracks.Contains(TrackClass))
+        {
+            Result.AddUnique(TrackClass);
+        }
     }
     return Result;
 }
@@ -87,6 +88,16 @@ void UMWTrackRuntimeSubsystem::Deinitialize()
     {
         GetWorld()->RemoveOnActorSpawnedHandler(ActorSpawnHandle);
     }
+    for (const TWeakObjectPtr<AActor>& Preview : PreviewActors)
+    {
+        if (AActor* Actor = Preview.Get())
+        {
+            Actor->OnEndPlay.RemoveDynamic(this, &ThisClass::OnPreviewActorEndPlay);
+        }
+    }
+    PreviewActors.Reset();
+    Pieces.Reset();
+    Catalog = nullptr;
     Super::Deinitialize();
 }
 
@@ -108,7 +119,7 @@ void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 // 카탈로그에 대응하는 트랙에만 런타임을 연결하고 이미 있는 컴포넌트는 중복 생성하지 않는다.
 void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActor)
 {
-    if (!IsValid(Actor) || !Actor->GetRootComponent() || Actor->ActorHasTag(PreviewTag)
+    if (!IsValid(Actor) || !Actor->GetRootComponent() || PreviewActors.Contains(Actor)
         || Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
     {
         return;
@@ -159,7 +170,7 @@ void UMWTrackRuntimeSubsystem::ConfigureRuntimeComponent(UMWTrackRuntimeComponen
         });
     if (Data)
     {
-        Component.SetPreview(Actor->ActorHasTag(PreviewTag));
+        Component.SetPreview(PreviewActors.Contains(Actor));
         Component.Configure(*Data);
     }
 }
@@ -169,20 +180,24 @@ void UMWTrackRuntimeSubsystem::SetTrackPreview(AActor& Actor, bool bPreview)
 {
     if (bPreview)
     {
-        Actor.Tags.AddUnique(PreviewTag);
+        PreviewActors.Add(&Actor);
+        Actor.OnEndPlay.AddUniqueDynamic(this, &ThisClass::OnPreviewActorEndPlay);
     }
-    else
+    else if (PreviewActors.Remove(&Actor) > 0)
     {
+        Actor.OnEndPlay.RemoveDynamic(this, &ThisClass::OnPreviewActorEndPlay);
         // 설치를 보류한 동안 생성하지 않았던 런타임을 확정 시점에 연결한다.
-        if (Actor.Tags.Remove(PreviewTag) > 0)
-        {
-            AttachTrack(&Actor);
-        }
+        AttachTrack(&Actor);
     }
     if (UMWTrackRuntimeComponent* Runtime = Actor.FindComponentByClass<UMWTrackRuntimeComponent>())
     {
         Runtime->SetPreview(bPreview);
     }
+}
+
+void UMWTrackRuntimeSubsystem::OnPreviewActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason)
+{
+    PreviewActors.Remove(Actor);
 }
 
 // 서버가 현재 진행과 중복 통과를 검사해 출발·체크포인트·완주 상태를 기록한다.

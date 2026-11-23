@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "Gameplay/Track/MWTrackRuntimeData.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "MWTrackRuntimeSubsystem.generated.h"
@@ -31,7 +32,7 @@ class MW_API UMWTrackRuntimeSubsystem : public UWorldSubsystem
     GENERATED_BODY()
 
 public:
-    UMWTrackRuntimeSubsystem();
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
     // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.
     virtual void OnWorldBeginPlay(UWorld& InWorld) override;
@@ -80,10 +81,16 @@ private:
     // 늦게 복제되거나 생성된 트랙에도 기존 카탈로그 연결을 적용한다.
     void OnActorSpawned(AActor* Actor);
 
+    UFUNCTION()
+    void OnPreviewActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason);
+
     UPROPERTY()
     TObjectPtr<UMWTrackRuntimeData> Catalog;
 
     TMap<FName, const FMWTrackPieceRuntimeData*> Pieces;
+
+    // 미리보기 Actor의 수명과 상태는 이 월드에서 관리한다.
+    TSet<TWeakObjectPtr<AActor>> PreviewActors;
 
     TMap<TWeakObjectPtr<AMWVehiclePawn>, FRacer> Racers;
 
