@@ -37,10 +37,7 @@ private:
 	void PrepareRace(const TArray<AMWGameplayPlayerController*>& Players);
 	void FailGameplay(const FString& Error);
 
-	// 순서대로 선택판에 표시한다. 빈 배열이면 건설 단계를 건너뛴다.
-	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
-	TArray<FGameplayTag> ConstructionTrackDefinitionIds;
-
+	// 코스 양 끝의 트랙을 설정한 맵에서 공용 트랙 풀로 건설 단계를 시작한다.
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
 	FMWTrackCourseEnds CourseEnds;
 

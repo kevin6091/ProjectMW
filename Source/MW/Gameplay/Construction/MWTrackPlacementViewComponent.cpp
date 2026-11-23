@@ -1,7 +1,7 @@
 #include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
 
 #include "Data/MWInputData.h"
-#include "Data/MWTrackDefinitionData.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -157,9 +157,9 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 		return Existing;
 	}
 	
-	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Player.DefinitionAssetId);
+	UClass* TrackClass = Player.TrackClass.LoadSynchronous();
 	
-	if (!Definition || !Definition->GetTrackActorClass())
+	if (!TrackClass)
 	{
 		return nullptr;
 	}
@@ -167,7 +167,7 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	FActorSpawnParameters Params;
 	Params.ObjectFlags |= RF_Transient;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	AActor* Actor = GetWorld()->SpawnActor<AActor>(Definition->GetTrackActorClass(), Player.PreviewTransform, Params);
+	AActor* Actor = GetWorld()->SpawnActor<AActor>(TrackClass, Player.PreviewTransform, Params);
 	
 	if (!Actor)
 	{
@@ -177,6 +177,10 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	Actor->SetReplicates(false);
 	Actor->SetActorEnableCollision(false);
 	Actor->SetActorTickEnabled(false);
+	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+	{
+		Runtime->SetTrackPreview(*Actor, true);
+	}
 	
 	FGhost Ghost;
 	Ghost.Actor = Actor;

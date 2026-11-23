@@ -79,7 +79,7 @@ void AMWTrackSelectionTestGameMode::TryStartSelection()
 
 	UMWTrackConstructionComponent* Construction = GS->GetConstructionComponent();
 	FText Error;
-	if (!Construction->BeginSelection(TestTrackDefinitionIds, Players, Error))
+	if (!Construction->BeginSelection(Players, Error))
 	{
 		UE_LOG(LogMWServer, Error, TEXT("트랙 선택 시작 실패. %s"), *Error.ToString());
 		return;

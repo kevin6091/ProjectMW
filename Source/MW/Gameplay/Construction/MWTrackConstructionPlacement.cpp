@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWAssetManager.h"
@@ -24,7 +25,7 @@ void UMWTrackConstructionComponent::FPreparedTrack::Destroy() const
 	}
 }
 
-bool UMWTrackConstructionComponent::PrepareTrack(FGameplayTag DefinitionId, const FVector& Origin, bool bSinglePort,
+bool UMWTrackConstructionComponent::PrepareCourseEnd(FGameplayTag DefinitionId, const FVector& Origin,
 	FPreparedTrack& OutTrack, FText& OutError)
 {
 	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(DefinitionId);
@@ -37,11 +38,17 @@ bool UMWTrackConstructionComponent::PrepareTrack(FGameplayTag DefinitionId, cons
 	{
 		return false;
 	}
+	OutTrack.DefinitionId = DefinitionId;
+	return PrepareTrack(Definition->GetTrackActorClass(), Origin, true, OutTrack, OutError);
+}
 
+bool UMWTrackConstructionComponent::PrepareTrack(UClass* TrackClass, const FVector& Origin, bool bSinglePort,
+	FPreparedTrack& OutTrack, FText& OutError)
+{
 	FActorSpawnParameters Params;
 	Params.ObjectFlags |= RF_Transient;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	AActor* Track = GetWorld()->SpawnActor<AActor>(Definition->GetTrackActorClass(), FTransform(Origin), Params);
+	AActor* Track = TrackClass ? GetWorld()->SpawnActor<AActor>(TrackClass, FTransform(Origin), Params) : nullptr;
 	if (!Track)
 	{
 		OutError = FText::FromString(TEXT("배치할 트랙을 만들 수 없습니다."));
@@ -50,19 +57,22 @@ bool UMWTrackConstructionComponent::PrepareTrack(FGameplayTag DefinitionId, cons
 
 	// 서버는 BP에서 포트를 직접 읽고 설치 전까지 Actor를 숨겨 둔다.
 	OutTrack.Actor = Track;
-	OutTrack.DefinitionId = DefinitionId;
 	OutTrack.bEnableCollision = Track->GetActorEnableCollision();
 	OutTrack.bEnableTick = Track->IsActorTickEnabled();
 	Track->SetReplicates(false);
 	Track->SetActorHiddenInGame(true);
 	Track->SetActorEnableCollision(false);
 	Track->SetActorTickEnabled(false);
+	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+	{
+		Runtime->SetTrackPreview(*Track, true);
+	}
 	const bool bHasPorts = bSinglePort ? MWTrackSnap::ReadFirstPort(*Track, OutTrack.Ports[0])
 		: MWTrackSnap::ReadPorts(*Track, OutTrack.Ports);
 	if (!bHasPorts)
 	{
 		OutError = FText::FromString(FString::Printf(
-			TEXT("%s의 연결점을 확인해 주세요."), *DefinitionId.ToString()));
+			TEXT("%s의 연결점을 확인해 주세요."), *GetNameSafe(TrackClass)));
 		OutTrack.Destroy();
 		return false;
 	}
@@ -83,10 +93,15 @@ void UMWTrackConstructionComponent::PublishTrack(const FPreparedTrack& Prepared,
 	Track->SetReplicates(true);
 	// 설치 도로는 움직이지 않는다. 생성 패킷의 양자화 오차는 확정 Transform으로 보정한다.
 	Track->SetReplicateMovement(false);
+	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+	{
+		Runtime->SetTrackPreview(*Track, false);
+	}
 	Track->ForceNetUpdate();
 
 	const int32 PieceId = PlacementSession.PlacedTracks.Num() + 1;
-	PlacementSession.PlacedTracks.Add({PieceId, Prepared.DefinitionId, Track, Transform, ConnectedTo, PortIndex});
+	PlacementSession.PlacedTracks.Add({PieceId, Prepared.DefinitionId, Track, Transform, ConnectedTo, PortIndex,
+		TSoftClassPtr<AActor>(Track->GetClass())});
 	PlacementSession.CourseBounds += Track->GetComponentsBoundingBox(false);
 	++PlacementSession.CourseRevision;
 }
@@ -161,14 +176,14 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 		}
 
 		FPreparedTrack& Prepared = PreparedTracks.Add(Participant);
-		if (!PrepareTrack(Offer->DefinitionAssetId, BuildOrigin, false, Prepared, OutError))
+		if (!PrepareTrack(Offer->TrackClass.LoadSynchronous(), BuildOrigin, false, Prepared, OutError))
 		{
 			DiscardPrepared();
 			return false;
 		}
 		auto& Player = PlayerPlacements.Add(Participant);
 		Player.SessionId = SelectionSession.SelectionSessionId;
-		Player.DefinitionAssetId = Offer->DefinitionAssetId;
+		Player.TrackClass = Offer->TrackClass;
 	}
 
 	if (PreparedTracks.IsEmpty())
@@ -178,8 +193,8 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& Cou
 	}
 
 	// 종료 조각까지 미리 검증해, 배치를 다 끝낸 뒤 에셋이나 연결점 오류로 멈추는 일을 막는다.
-	if (!PrepareTrack(CourseEnds.StartDefinitionId, BuildOrigin, true, Starter, OutError)
-		|| !PrepareTrack(CourseEnds.EndDefinitionId, BuildOrigin, true, EndCap, OutError))
+	if (!PrepareCourseEnd(CourseEnds.StartDefinitionId, BuildOrigin, Starter, OutError)
+		|| !PrepareCourseEnd(CourseEnds.EndDefinitionId, BuildOrigin, EndCap, OutError))
 	{
 		DiscardPrepared();
 		return false;

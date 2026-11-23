@@ -53,7 +53,7 @@ void AMWGameplayGameMode::TryInitializeGameplay()
 
 	// GameInstance는 이동 동안 서버 설정을 보관하고, 새 GameState는 이를 클라이언트에 복제합니다.
 	GS->ApplyRoomSettingsFromServer(Settings);
-	GS->SetRoomPhaseFromServer(ConstructionTrackDefinitionIds.IsEmpty()
+	GS->SetRoomPhaseFromServer(!CourseEnds.StartDefinitionId.IsValid() && !CourseEnds.EndDefinitionId.IsValid()
 		? EMWRoomPhase::PreparingRace : EMWRoomPhase::PreparingConstruction);
 	GameSession->MaxPlayers = Settings.MaxPlayers;
 	GameSession->MaxSpectators = 0;
@@ -184,7 +184,7 @@ void AMWGameplayGameMode::TryAdvanceGameplay()
 		Players.Add(PC->GetPlayerState<AMWPlayerState>());
 	}
 	FText Error;
-	if (!Construction->BeginSelection(ConstructionTrackDefinitionIds, Players, Error))
+	if (!Construction->BeginSelection(Players, Error))
 	{
 		FailGameplay(Error.ToString());
 		return;

@@ -4,13 +4,11 @@
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/TextBlock.h"
-#include "Data/MWTrackDefinitionData.h"
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
-#include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
@@ -153,9 +151,12 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
 		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
 	if (!Offer) return FText::FromString(TEXT("후보 데이터 대기"));
-	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Offer->DefinitionAssetId);
-	return Definition && !Definition->GetDisplayName().IsEmpty()
-		? Definition->GetDisplayName() : FText::FromName(Offer->DefinitionAssetId.GetTagName());
+	FString Name = Offer->TrackClass.ToSoftObjectPath().GetAssetName();
+	Name.RemoveFromEnd(TEXT("_C"));
+	Name.RemoveFromStart(TEXT("BP_Track"));
+	Name.RemoveFromStart(TEXT("Visual"));
+	Name.RemoveFromStart(TEXT("_"));
+	return FText::FromString(FName::NameToDisplayString(Name, false));
 }
 
 void UMWTrackSelectionWidget::Refresh()

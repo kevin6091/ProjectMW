@@ -2,8 +2,16 @@
 
 #include "CoreMinimal.h"
 #include "Engine/NetSerialization.h"
-#include "GameplayTagContainer.h"
 #include "MWTrackSelectionTypes.generated.h"
+
+class AActor;
+
+namespace MWTrackSelection
+{
+	inline constexpr int32 Columns = 3;
+	inline constexpr int32 Rows = 2;
+	inline constexpr int32 OfferCount = Columns * Rows;
+}
 
 // 이번 선택판에 제시한 후보 한 칸
 USTRUCT(BlueprintType)
@@ -15,7 +23,7 @@ struct MW_API FMWTrackOffer
 	int32 OfferId = INDEX_NONE;
 
 	UPROPERTY(BlueprintReadOnly)
-	FGameplayTag DefinitionAssetId;
+	TSoftClassPtr<AActor> TrackClass;
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 BoardSlotIndex = INDEX_NONE;

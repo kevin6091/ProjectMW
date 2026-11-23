@@ -25,9 +25,6 @@ private:
 	void TryFinishSelection();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test")
-	TArray<FGameplayTag> TestTrackDefinitionIds;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test")
 	FMWTrackCourseEnds CourseEnds;
 
 	// 단독 실행은 1명으로 시작한다. Listen/Dedicated 테스트에서 기다릴 인원이다.

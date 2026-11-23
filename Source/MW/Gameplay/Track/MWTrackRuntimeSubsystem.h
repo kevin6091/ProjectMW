@@ -51,6 +51,9 @@ public:
     void ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActor& Track, EMWTrackTrigger Trigger,
                             const TArray<FTransform>& RespawnPoints);
 
+    // 복구 카탈로그에 등록된 일반 트랙만 선택 후보로 제공한다.
+    TArray<TSoftClassPtr<AActor>> GetSelectionPool() const;
+
     // 배치 미리보기 상태를 실제 트랙 런타임에 전달한다.
     void SetTrackPreview(AActor& Actor, bool bPreview);
     // 복제로 생성된 승강기 컴포넌트에도 기존 카탈로그의 설정을 적용한다.

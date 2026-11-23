@@ -1,8 +1,8 @@
 ﻿#include "Gameplay/Construction/MWTrackConstructionComponent.h"
 
-#include "Data/MWTrackDefinitionData.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
-#include "System/MWAssetManager.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "LogChannel.h"
 #include "System/MWPlayerState.h"
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
@@ -37,7 +37,6 @@ void UMWTrackConstructionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeP
 }
 
 bool UMWTrackConstructionComponent::BeginSelection(
-	const TArray<FGameplayTag>& DefinitionIds, 
 	const TArray<AMWPlayerState*>& SelectionPlayers,
 	FText& OutError)
 {
@@ -50,8 +49,7 @@ bool UMWTrackConstructionComponent::BeginSelection(
 		return false;
 	}
 	
-	// 최초 예제는 공유 후보 세 개로 고정한다.
-	if (DefinitionIds.Num() != 3 || DefinitionIds.Num() < SelectionPlayers.Num() || NextSelectionSessionId == MAX_int32)
+	if (SelectionPlayers.IsEmpty() || SelectionPlayers.Num() > MWTrackSelection::OfferCount || NextSelectionSessionId == MAX_int32)
 	{
 		OutError = FText::FromString(TEXT("후보 설정을 확인해 주세요."));
 		return false;
@@ -59,26 +57,6 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	
 	TGuardValue<bool> PreparingGuard(bPreparingSelection, true);
 
-	// 실제 상태를 초기화하기 전에 모든 정의를 준비한다.
-	UMWAssetManager& Assets = UMWAssetManager::Get();
-	
-	for (const FGameplayTag DefinitionId : DefinitionIds)
-	{
-		const UMWTrackDefinitionData* Definition =
-			Assets.LoadAssetSynchronous<UMWTrackDefinitionData>(DefinitionId);
-
-		if (!Definition)
-		{
-			OutError = FText::FromString(TEXT("트랙 정의를 불러오지 못했습니다."));
-			return false;
-		}
-
-		if (!Definition->ValidateDefinition(OutError))
-		{
-			return false;
-		}
-	}
-	
 	// GameMode가 전달한 목록도 실제 월드의 정상 참가자인지 검사한다.
 	TSet<int32> SeenMemberIds;
 	
@@ -109,19 +87,37 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	}
 	
 	FMWTrackSelectionSession NewSession;
+	const auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>();
+	auto Pool = Runtime ? Runtime->GetSelectionPool() : TArray<TSoftClassPtr<AActor>>{};
+	const int32 PoolSize = Pool.Num();
+	while (!Pool.IsEmpty() && NewSession.Offers.Num() < MWTrackSelection::OfferCount)
+	{
+		// 뽑은 항목은 풀에서 제거한다. 여섯 칸의 순서와 클래스는 서버가 한 번만 정한다.
+		const int32 Index = FMath::RandRange(0, Pool.Num() - 1);
+		const TSoftClassPtr<AActor> TrackClass = Pool[Index];
+		Pool.RemoveAtSwap(Index);
+		const UClass* Class = TrackClass.LoadSynchronous();
+		if (!Class || Class->HasAnyClassFlags(CLASS_Abstract))
+		{
+			UE_LOG(LogMWServer, Warning, TEXT("[MWTrackSelection] 후보 클래스를 불러올 수 없습니다. %s"), *TrackClass.ToString());
+			continue;
+		}
+
+		const int32 Slot = NewSession.Offers.Num();
+		FMWTrackOffer& Offer = NewSession.Offers.AddDefaulted_GetRef();
+		Offer.OfferId = Slot + 1;
+		Offer.TrackClass = TrackClass;
+		Offer.BoardSlotIndex = Slot;
+	}
+	if (NewSession.Offers.Num() != MWTrackSelection::OfferCount)
+	{
+		OutError = FText::FromString(TEXT("선택 가능한 트랙 후보 여섯 개를 준비하지 못했습니다."));
+		return false;
+	}
+
 	NewSession.SelectionSessionId = ++NextSelectionSessionId;
 	NewSession.OffersRevision = 1;
 	NewSession.bIsOpen = true;
-
-	for (int32 Index = 0; Index < DefinitionIds.Num(); ++Index)
-	{
-		FMWTrackOffer Offer;
-		Offer.OfferId = Index + 1;
-		Offer.DefinitionAssetId = DefinitionIds[Index];
-		Offer.BoardSlotIndex = Index;
-
-		NewSession.Offers.Add(Offer);
-	}
 
 	Participants.Reset();
 
@@ -137,6 +133,8 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	// 개인 상태 준비 후 공용 상태를 공개한다.
 	// 실제 클라이언트 수신 순서는 화면 구현에서 따로 처리한다.
 	SelectionSession = NewSession;
+	UE_LOG(LogMWServer, Log, TEXT("[MWTrackSelection] Opened session=%d pool=%d offers=%d"),
+		SelectionSession.SelectionSessionId, PoolSize, SelectionSession.Offers.Num());
 
 	GetOwner()->ForceNetUpdate();
 	OnSelectionSessionChanged.Broadcast();

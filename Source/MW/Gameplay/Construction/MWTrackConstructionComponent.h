@@ -31,7 +31,6 @@ public:
 	
 	// 서버의 외부 진행 코드가 호출하는 일반 C++ API.
 	bool BeginSelection(
-		const TArray<FGameplayTag>& DefinitionIds,
 		const TArray<AMWPlayerState*>& SelectionPlayers, 
 		FText& OutError);
 	void EndSelection();
@@ -81,7 +80,8 @@ private:
 	UFUNCTION()
 	void OnRep_PlacementSession();
 
-	bool PrepareTrack(FGameplayTag DefinitionId, const FVector& Origin, bool bSinglePort, FPreparedTrack& OutTrack, FText& OutError);
+	bool PrepareTrack(UClass* TrackClass, const FVector& Origin, bool bSinglePort, FPreparedTrack& OutTrack, FText& OutError);
+	bool PrepareCourseEnd(FGameplayTag DefinitionId, const FVector& Origin, FPreparedTrack& OutTrack, FText& OutError);
 	void PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform, FMWTrackEndId ConnectedTo = {}, int32 PortIndex = INDEX_NONE);
 	FPreparedTrack* FindPendingTrack(APlayerController* Requester, int32 SessionId);
 	bool PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const;

@@ -12,6 +12,13 @@
 namespace
 {
     const FName PreviewTag(TEXT("MWTrackVisualOnly"));
+    const TSet<FName> CourseOnlyClasses = {
+        TEXT("BP_Track_WoodStartCapped_C"),
+        TEXT("BP_Track_WoodStartOpen_C"),
+        TEXT("BP_Track_WoodStartFinish_C"),
+        TEXT("BP_Track_WoodFinish_C"),
+        TEXT("BP_Track_WoodEndCap_C")
+    };
 }
 
 UMWTrackRuntimeSubsystem::UMWTrackRuntimeSubsystem()
@@ -25,6 +32,31 @@ UMWTrackRuntimeSubsystem::UMWTrackRuntimeSubsystem()
 bool UMWTrackRuntimeSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) const
 {
     return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;
+}
+
+TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
+{
+    TArray<TSoftClassPtr<AActor>> Result;
+    if (!Catalog)
+    {
+        return Result;
+    }
+
+    // 복구 데이터의 클래스 이름은 Gameplay/Tracks 바로 아래의 BP 패키지와 대응한다.
+    // 풀을 읽을 때는 경로만 만들고, 서버가 뽑은 클래스만 선택 시작 시 불러온다.
+    Result.Reserve(Catalog->Pieces.Num());
+    for (const FMWTrackPieceRuntimeData& Piece : Catalog->Pieces)
+    {
+        const FString ClassName = Piece.VisualClass.ToString();
+        if (CourseOnlyClasses.Contains(Piece.VisualClass) || !ClassName.EndsWith(TEXT("_C")))
+        {
+            continue;
+        }
+        const FString AssetName = ClassName.LeftChop(2);
+        Result.AddUnique(TSoftClassPtr<AActor>(FSoftObjectPath(FString::Printf(
+            TEXT("/Game/Gameplay/Tracks/%s.%s"), *AssetName, *ClassName))));
+    }
+    return Result;
 }
 
 // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.
@@ -76,7 +108,8 @@ void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 // 카탈로그에 대응하는 트랙에만 런타임을 연결하고 이미 있는 컴포넌트는 중복 생성하지 않는다.
 void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActor)
 {
-    if (!IsValid(Actor) || !Actor->GetRootComponent() || Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
+    if (!IsValid(Actor) || !Actor->GetRootComponent() || Actor->ActorHasTag(PreviewTag)
+        || Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
     {
         return;
     }
@@ -91,21 +124,18 @@ void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActo
         {
             return Motion.Type == EMWTrackMotion::Lift;
         });
-    if (GetWorld()->GetNetMode() == NM_Client && bLift && !Actor->ActorHasTag(PreviewTag))
+    if (GetWorld()->GetNetMode() == NM_Client && bLift)
     {
         // 서버가 같은 컴포넌트를 복제하므로 클라이언트에서 별도 생성해 이중 이동시키지 않는다.
         return;
     }
     UMWTrackRuntimeComponent* Runtime = NewObject<UMWTrackRuntimeComponent>(Actor);
     Actor->AddInstanceComponent(Runtime);
-    Runtime->SetPreview(Actor->ActorHasTag(PreviewTag));
     Runtime->Configure(**Data);
-    const bool bReplicatedLift = bLift && !Actor->ActorHasTag(PreviewTag);
-    Runtime->SetIsReplicated(bReplicatedLift);
+    Runtime->SetIsReplicated(bLift);
     Runtime->RegisterComponent();
     // 레벨에 저장된 승강기도 액터 채널이 있어야 작동 시각이 복제된다.
-    // 건설 중인 미확정 트랙은 기존 게시 절차가 끝날 때까지 공개하지 않는다.
-    if (bReplicatedLift && bInitialWorldActor && GetWorld()->GetNetMode() != NM_Client)
+    if (bLift && bInitialWorldActor && GetWorld()->GetNetMode() != NM_Client)
     {
         // 탑승자가 트랙 원점에서 멀어도 발판의 복제가 끊기지 않도록 기존 확정 트랙과 같은 가시성 규칙을 쓴다.
         Actor->bAlwaysRelevant = true;
@@ -143,7 +173,11 @@ void UMWTrackRuntimeSubsystem::SetTrackPreview(AActor& Actor, bool bPreview)
     }
     else
     {
-        Actor.Tags.Remove(PreviewTag);
+        // 설치를 보류한 동안 생성하지 않았던 런타임을 확정 시점에 연결한다.
+        if (Actor.Tags.Remove(PreviewTag) > 0)
+        {
+            AttachTrack(&Actor);
+        }
     }
     if (UMWTrackRuntimeComponent* Runtime = Actor.FindComponentByClass<UMWTrackRuntimeComponent>())
     {

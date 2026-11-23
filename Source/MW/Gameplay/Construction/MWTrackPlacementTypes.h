@@ -55,6 +55,7 @@ struct FMWPlacedTrack
 	UPROPERTY(BlueprintReadOnly) FTransform WorldTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) FMWTrackEndId ConnectedTo;
 	UPROPERTY(BlueprintReadOnly) int32 ConnectedPortIndex = INDEX_NONE;
+	UPROPERTY(BlueprintReadOnly) TSoftClassPtr<AActor> TrackClass;
 };
 
 USTRUCT(BlueprintType)
@@ -80,7 +81,7 @@ struct FMWPlayerTrackPlacement
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly) int32 SessionId = 0;
-	UPROPERTY(BlueprintReadOnly) FGameplayTag DefinitionAssetId;
+	UPROPERTY(BlueprintReadOnly) TSoftClassPtr<AActor> TrackClass;
 	UPROPERTY(BlueprintReadOnly) FTransform PreviewTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) bool bSnapped = false;
 	UPROPERTY(BlueprintReadOnly) bool bPlaced = false;
