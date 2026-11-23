@@ -1,0 +1,37 @@
+설원 3인 정상 코스, feature/vehicle-engine-audio 932b8f8
+
+[2026.11.23-02.00.17:368][305]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-02.00.24:315][673]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.23-02.00.28:241][872]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.23-02.00.28:365][874]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.00.28:432][876]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.00.28:479][877]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.07.11:001][ 63]LogPython: MW_ENGINE_NATURAL t=0.016 dist=905.2 speed=0.0 gain=0.100 is_playing=True
+[2026.11.23-02.07.11:492][ 80]LogPython: MW_ENGINE_NATURAL t=0.500 dist=905.2 speed=0.0 gain=0.100 is_playing=True
+[2026.11.23-02.07.11:990][100]LogPython: MW_ENGINE_NATURAL t=1.000 dist=905.2 speed=0.0 gain=0.100 is_playing=True
+[2026.11.23-02.07.12:478][118]LogPython: MW_ENGINE_NATURAL t=1.500 dist=905.2 speed=0.0 gain=0.100 is_playing=True
+[2026.11.23-02.07.12:993][136]LogPython: MW_ENGINE_NATURAL t=2.016 dist=905.2 speed=0.0 gain=0.100 is_playing=True
+[2026.11.23-02.07.13:487][153]LogPython: MW_ENGINE_NATURAL t=2.500 dist=991.9 speed=513.3 gain=0.129 is_playing=True
+[2026.11.23-02.07.13:986][167]LogPython: MW_ENGINE_NATURAL t=3.000 dist=1359.0 speed=1139.6 gain=0.177 is_playing=True
+[2026.11.23-02.07.14:481][184]LogPython: MW_ENGINE_NATURAL t=3.500 dist=2026.6 speed=1745.3 gain=0.223 is_playing=True
+[2026.11.23-02.07.14:979][200]LogPython: MW_ENGINE_NATURAL t=4.000 dist=3008.4 speed=2351.1 gain=0.271 is_playing=True
+[2026.11.23-02.07.15:515][215]LogPython: MW_ENGINE_NATURAL t=4.531 dist=4447.4 speed=3018.4 gain=0.323 is_playing=True
+[2026.11.23-02.07.15:977][229]LogPython: MW_ENGINE_NATURAL t=5.000 dist=5953.1 speed=3583.1 gain=0.367 is_playing=True
+[2026.11.23-02.07.16:480][243]LogPython: MW_ENGINE_NATURAL t=5.500 dist=7765.1 speed=3548.0 gain=0.377 is_playing=True
+[2026.11.23-02.07.17:026][259]LogPython: MW_ENGINE_NATURAL t=6.047 dist=9664.9 speed=3483.0 gain=0.372 is_playing=True
+[2026.11.23-02.07.17:499][273]LogPython: MW_ENGINE_NATURAL t=6.516 dist=11303.0 speed=3426.0 gain=0.368 is_playing=True
+[2026.11.23-02.07.17:992][286]LogPython: MW_ENGINE_NATURAL t=7.016 dist=12970.9 speed=3367.0 gain=0.363 is_playing=True
+[2026.11.23-02.07.18:528][299]LogPython: MW_ENGINE_NATURAL t=7.547 dist=14747.7 speed=3303.0 gain=0.358 is_playing=True
+[2026.11.23-02.07.19:000][311]LogPython: MW_ENGINE_NATURAL t=8.016 dist=16301.8 speed=3246.0 gain=0.353 is_playing=True
+[2026.11.23-02.07.19:491][324]LogPython: MW_ENGINE_NATURAL t=8.500 dist=17882.1 speed=3187.0 gain=0.349 is_playing=True
+[2026.11.23-02.07.19:983][337]LogPython: MW_ENGINE_NATURAL t=9.000 dist=19433.1 speed=3127.2 gain=0.344 is_playing=True
+[2026.11.23-02.07.20:522][349]LogPython: MW_ENGINE_NATURAL t=9.531 dist=21108.4 speed=3062.2 gain=0.339 is_playing=True
+[2026.11.23-02.07.21:001][361]LogPython: MW_ENGINE_NATURAL t=10.016 dist=22523.6 speed=3006.2 gain=0.335 is_playing=True
+P1 Racing 시점 루프 3개, 같은 FRED의 최대 pitch=1.26476, gain=0.24151, speed=1471.0 cm/s.
+P2 Racing 시점 루프 3개, 같은 FRED의 최대 pitch=1.16586, gain=0.21005, speed=1338.9 cm/s.
+P3 Racing 시점 루프 3개, 같은 FRED의 최대 pitch=1.16586, gain=0.21005, speed=1338.9 cm/s.
+
+호스트 출력 전체의 시간창별 RMS. 특정 엔진음만의 크기는 아님.
+engine-audio-master.wav 정차 -27.63 dBFS, 멀리 digital silence, 복귀 digital silence
+engine-audio-reentry.wav 정차 -26.96 dBFS, 멀리 -28.56 dBFS, 복귀 -28.02 dBFS
+engine-audio-natural.wav 근거리 -27.34 dBFS, 멀리 -27.49 dBFS
