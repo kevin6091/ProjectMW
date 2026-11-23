@@ -37,8 +37,9 @@ protected:
 	bool bUseTopDownPlacementCamera = true;
 
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
-	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<USceneComponent>> Anchors;
-	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<UBoxComponent>> HitAreas;
+	// 레벨에 저장된 이전 3칸 배열이 새 생성자에서 만든 6칸을 덮어쓰지 않게 한다.
+	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> SlotAnchors;
+	UPROPERTY(Transient) TArray<TObjectPtr<UBoxComponent>> SlotHitAreas;
 
 private:
 	bool BuildOffers(const FMWTrackSelectionSession& Session);

@@ -53,8 +53,8 @@ void AMWGameplayGameMode::TryInitializeGameplay()
 
 	// GameInstance는 이동 동안 서버 설정을 보관하고, 새 GameState는 이를 클라이언트에 복제합니다.
 	GS->ApplyRoomSettingsFromServer(Settings);
-	GS->SetRoomPhaseFromServer(ConstructionTrackDefinitionIds.IsEmpty()
-		? EMWRoomPhase::PreparingRace : EMWRoomPhase::PreparingConstruction);
+	GS->SetRoomPhaseFromServer(bEnableTrackConstruction
+		? EMWRoomPhase::PreparingConstruction : EMWRoomPhase::PreparingRace);
 	GameSession->MaxPlayers = Settings.MaxPlayers;
 	GameSession->MaxSpectators = 0;
 	bRoomSettingsApplied = true;
@@ -184,7 +184,7 @@ void AMWGameplayGameMode::TryAdvanceGameplay()
 		Players.Add(PC->GetPlayerState<AMWPlayerState>());
 	}
 	FText Error;
-	if (!Construction->BeginSelection(ConstructionTrackDefinitionIds, Players, Error))
+	if (!Construction->BeginSelection(Players, Error))
 	{
 		FailGameplay(Error.ToString());
 		return;
@@ -208,7 +208,7 @@ void AMWGameplayGameMode::StartTrackPlacement()
 
 	// 선택판의 위치와 독립적으로 출발 그리드의 원점과 전방에 기준 도로를 맞춘다.
 	FText Error;
-	if (!GS->GetConstructionComponent()->BeginPlacement(CourseEnds, StartManager->GetActorTransform(),
+	if (!GS->GetConstructionComponent()->BeginPlacement(StartManager->GetActorTransform(),
 		SelectionBoard->GetLayoutScale(), Error))
 	{
 		FailGameplay(Error.ToString());

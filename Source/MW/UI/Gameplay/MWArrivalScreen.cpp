@@ -381,7 +381,7 @@ bool UMWArrivalScreen::Tick(float Delta)
             const auto* View = PC->FindComponentByClass<UMWTrackPlacementViewComponent>();
             if (Local.SessionId != Session || (Placement.bIsOpen && !Local.bPlaced &&
                 (!View || !MWTrackPreview::CollectVisibleMaterials(View->GetArrivalGhost(Session, PS->GetLobbyMemberId()), Materials))))
-                Pending = FString::Printf(TEXT("placement preview %s"), *Local.DefinitionAssetId.ToString());
+                Pending = FString::Printf(TEXT("placement preview %s"), *Local.TrackClass.ToString());
             for (const auto& Placed : Placement.PlacedTracks)
                 if (!MWTrackPreview::CollectVisibleMaterials(Placed.Actor, Materials))
                     Pending = FString::Printf(TEXT("placed track %d"), Placed.PieceId);

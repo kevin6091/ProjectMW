@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "GameplayTagContainer.h"
-#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "MWGameplayGameMode.generated.h"
 
 class AMWGameplayPlayerController;
@@ -37,12 +35,9 @@ private:
 	void PrepareRace(const TArray<AMWGameplayPlayerController*>& Players);
 	void FailGameplay(const FString& Error);
 
-	// 순서대로 선택판에 표시한다. 빈 배열이면 건설 단계를 건너뛴다.
+	// 건설 단계 사용 여부는 시작·종료 BP의 설정과 별개다.
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
-	TArray<FGameplayTag> ConstructionTrackDefinitionIds;
-
-	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
-	FMWTrackCourseEnds CourseEnds;
+	bool bEnableTrackConstruction = true;
 
 	TWeakObjectPtr<AMWPlayerStartManager> StartManager;
 	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;

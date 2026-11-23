@@ -2,8 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "GameplayTagContainer.h"
-#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "MWTrackSelectionTestGameMode.generated.h"
 
 UCLASS()
@@ -23,12 +21,6 @@ private:
 	void TryStartSelection();
 
 	void TryFinishSelection();
-
-	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test")
-	TArray<FGameplayTag> TestTrackDefinitionIds;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test")
-	FMWTrackCourseEnds CourseEnds;
 
 	// 단독 실행은 1명으로 시작한다. Listen/Dedicated 테스트에서 기다릴 인원이다.
 	UPROPERTY(EditDefaultsOnly, Category = "Track Selection Test", meta = (ClampMin = "1"))

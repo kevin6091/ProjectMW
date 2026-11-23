@@ -29,6 +29,7 @@ public class MW : ModuleRules
             "Slate", 
 			"SlateCore",
 			"AssetRegistry", "Renderer", "RenderCore", "RHI", "ApplicationCore",
+			"DeveloperSettings",
 			"LevelSequence", "MovieScene",
             "EngineSettings",
             "MWConnection"
