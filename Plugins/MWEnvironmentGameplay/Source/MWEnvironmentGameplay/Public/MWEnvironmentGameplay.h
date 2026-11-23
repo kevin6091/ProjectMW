@@ -10,8 +10,8 @@ class UMWEnvironmentTheme;
 class USceneComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
-class UNiagaraComponent;
-class UNiagaraSystem;
+class UMaterialBillboardComponent;
+class UMaterialInstanceDynamic;
 class UMWTrackConstructionComponent;
 
 USTRUCT()
@@ -60,8 +60,17 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
     TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
 
+    // 설치 섬광과 연기를 한 번 재생하는 카메라 방향 머티리얼이다.
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
-    TSoftObjectPtr<UNiagaraSystem> TrackLaidEffect;
+    TSoftObjectPtr<UMaterialInterface> TrackLaidParticleMaterial;
+
+    // 곡선 안쪽의 빈 공간을 피하면서 설치 효과 사이에 확보할 최소 거리다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "1.0", Units = "cm"))
+    float TrackLaidEffectSpacing = 1700.0f;
+
+    // 지지대 폭에 비례하는 효과 판의 반폭이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.01"))
+    float TrackLaidParticleSizeFraction = 0.63f;
 
     // 설치 섬광이 먼저 보인 뒤 완성된 골조가 드러날 때까지의 시간이다.
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
@@ -113,13 +122,24 @@ private:
         int32 Layers;
     };
 
+    struct FTrackLaidSprite
+    {
+        TWeakObjectPtr<UMaterialBillboardComponent> Component;
+        TWeakObjectPtr<UMaterialInstanceDynamic> Material;
+        FVector Surface;
+        float RiseHeight;
+        double StartedAt;
+    };
+
     int32 SupportSessionId = INDEX_NONE;
     bool bObservedOpenPlacement = false;
     TSet<int32> ResolvedSupportPieces;
     TArray<FTrackSupportBuild> PendingSupportBuilds;
-    TArray<TWeakObjectPtr<UNiagaraComponent>> ActiveTrackLaidEffects;
+    TArray<FTrackLaidSprite> TrackLaidSprites;
     FTimerHandle SupportBuildTimer;
     void RefreshTrackSupports();
+    void PlayTrackLaidEffects(const AActor& Piece, int32 PieceId, const FVector& CenterSurface,
+        double Width, double StartedAt);
     void TickTrackSupportBuilds();
     void ResetTrackSupports();
 

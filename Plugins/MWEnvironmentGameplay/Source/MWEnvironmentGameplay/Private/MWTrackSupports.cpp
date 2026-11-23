@@ -1,6 +1,7 @@
 #include "MWEnvironmentGameplay.h"
 
 #include "CollisionQueryParams.h"
+#include "Components/MaterialBillboardComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -8,11 +9,10 @@
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackSnap.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "MWEnvironmentRestore.h"
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
@@ -21,6 +21,9 @@ namespace
     // 와이어프레임 받침과 비슷하게 양쪽 도로 가장자리보다 조금 안쪽에 세운다.
     constexpr double RoadWidthFraction = 0.85;
     constexpr int32 WidthMeasurements = 7;
+    constexpr double TrackLaidSpriteLifeSeconds = 1.0;
+    const FName ParticleAgeParameter(TEXT("Age"));
+    const FName ParticleSeedParameter(TEXT("Seed"));
 
     bool TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow = true)
     {
@@ -131,6 +134,67 @@ namespace
         return OutWidth > UE_SMALL_NUMBER;
     }
 
+    TArray<FVector> SampleTrackSurfaces(const AActor& Piece, const FVector& Center, double Spacing)
+    {
+        constexpr int32 GridResolution = 9;
+        constexpr int32 MaxEffectSites = 6;
+        TArray<FVector> Candidates;
+        TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
+        for (UPrimitiveComponent* Road : Components)
+        {
+            if (!Road->ComponentHasTag(UMWTrackRuntimeComponent::FixedRoadTag) || !Road->IsQueryCollisionEnabled())
+            {
+                continue;
+            }
+
+            // 고정 노면과 접촉한 지점만 남긴다. 굽은 조각의 양 끝을 잇는 직선 위에는 도로가 없을 수 있다.
+            const FBox Bounds = Road->Bounds.GetBox();
+            for (int32 X = 0; X < GridResolution; ++X)
+            {
+                for (int32 Y = 0; Y < GridResolution; ++Y)
+                {
+                    const FVector Probe(
+                        FMath::Lerp(Bounds.Min.X, Bounds.Max.X, (X + 0.5) / GridResolution),
+                        FMath::Lerp(Bounds.Min.Y, Bounds.Max.Y, (Y + 0.5) / GridResolution),
+                        Bounds.GetCenter().Z);
+                    FVector Surface;
+                    if (TraceRoad(*Road, Probe, Surface, /* bFromBelow */ false))
+                    {
+                        Candidates.Add(Surface);
+                    }
+                }
+            }
+        }
+
+        TArray<FVector> Sites { Center };
+        const double MinDistanceSquared = FMath::Square(Spacing);
+        // 골조 접점에서 시작하고, 이미 선택한 모든 점에서 가장 먼 후보를 추가해 한쪽 끝으로 쏠리지 않게 한다.
+        while (Sites.Num() < MaxEffectSites)
+        {
+            const FVector* Best = nullptr;
+            double BestDistance = MinDistanceSquared;
+            for (const FVector& Candidate : Candidates)
+            {
+                double Nearest = TNumericLimits<double>::Max();
+                for (const FVector& Site : Sites)
+                {
+                    Nearest = FMath::Min(Nearest, FVector::DistSquared2D(Candidate, Site));
+                }
+                if (Nearest > BestDistance)
+                {
+                    Best = &Candidate;
+                    BestDistance = Nearest;
+                }
+            }
+            if (!Best)
+            {
+                break;
+            }
+            Sites.Add(*Best);
+        }
+        return Sites;
+    }
+
     bool VerifySupports()
     {
         return FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement"));
@@ -200,35 +264,60 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         PendingSupportBuilds.Add({Piece.PieceId, Top, Rotation.Quaternion(), Height, ScaleXY, StartedAt, Duration, Layers});
         ResolvedSupportPieces.Add(Piece.PieceId);
 
-        // 도로가 설치되면 섬광을 먼저 재생하고, 연기 사이로 완성된 골조를 내보낸다.
-        UNiagaraComponent* Burst = nullptr;
-        if (bObservedOpenPlacement && !TrackLaidEffect.IsNull())
+        if (bObservedOpenPlacement)
         {
-            if (UNiagaraSystem* Effect = TrackLaidEffect.LoadSynchronous())
-            {
-                // 골조 위쪽의 실제 노면에서 재생해 경사에서도 섬광이 도로에 묻히지 않게 한다.
-                Burst = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Effect, RoadSurface, Rotation, FVector(ScaleXY));
-                if (Burst)
-                {
-                    ActiveTrackLaidEffects.RemoveAll([](const TWeakObjectPtr<UNiagaraComponent>& Item) { return !Item.IsValid(); });
-                    ActiveTrackLaidEffects.Add(Burst);
-                }
-            }
+            PlayTrackLaidEffects(*Piece.Actor, Piece.PieceId, RoadSurface, Width, StartedAt);
         }
         if (VerifySupports())
         {
-            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f burst=%d"),
+            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f"),
                 *GetWorld()->GetOutermost()->GetName(), Session.SessionId, Piece.PieceId,
-                Width, Layers, FloorZ, *Top.ToCompactString(), Duration, Burst != nullptr);
+                Width, Layers, FloorZ, *Top.ToCompactString(), Duration);
         }
     }
 
     if (!PendingSupportBuilds.IsEmpty() && !GetWorld()->GetTimerManager().IsTimerActive(SupportBuildTimer))
     {
         TickTrackSupportBuilds();
-        if (!PendingSupportBuilds.IsEmpty())
+        if (!PendingSupportBuilds.IsEmpty() || !TrackLaidSprites.IsEmpty())
         {
             GetWorld()->GetTimerManager().SetTimer(SupportBuildTimer, this, &ThisClass::TickTrackSupportBuilds, 1.0f / 60.0f, true);
+        }
+    }
+}
+
+void UMWEnvironmentGameplay::PlayTrackLaidEffects(const AActor& Piece, int32 PieceId, const FVector& CenterSurface,
+    double Width, double StartedAt)
+{
+    UMaterialInterface* Material = TrackLaidParticleMaterial.LoadSynchronous();
+    if (!Material)
+    {
+        return;
+    }
+
+    const float Size = Width * FMath::Max(0.01f, TrackLaidParticleSizeFraction);
+    const TArray<FVector> Sites = SampleTrackSurfaces(Piece, CenterSurface, FMath::Max(1.f, TrackLaidEffectSpacing));
+    for (int32 Index = 0; Index < Sites.Num(); ++Index)
+    {
+        const FVector& Site = Sites[Index];
+        auto* Sprite = NewObject<UMaterialBillboardComponent>(Generator, NAME_None, RF_Transient);
+        Sprite->SetupAttachment(Generator->GetRootComponent());
+        Sprite->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+        Sprite->SetCanEverAffectNavigation(false);
+        auto* Instance = UMaterialInstanceDynamic::Create(Material, Sprite);
+        Instance->SetScalarParameterValue(ParticleAgeParameter, 0.f);
+        Instance->SetScalarParameterValue(ParticleSeedParameter, Index + 1.f);
+        Sprite->AddElement(Instance, nullptr, false, Size, Size, nullptr);
+        // 불티는 노면 위로 나오고 짙은 연기의 아래쪽은 골조 머리를 가릴 수 있다.
+        Sprite->SetWorldLocation(Site);
+        Generator->AddInstanceComponent(Sprite);
+        Sprite->RegisterComponent();
+        TrackLaidSprites.Add({Sprite, Instance, Site, Size * 0.18f, StartedAt});
+
+        if (VerifySupports())
+        {
+            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] site world=%s session=%d piece=%d index=%d/%d position=%s particle=1"),
+                *GetWorld()->GetOutermost()->GetName(), SupportSessionId, PieceId, Index + 1, Sites.Num(), *Site.ToCompactString());
         }
     }
 }
@@ -271,7 +360,29 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
         }
         return true;
     });
-    if (PendingSupportBuilds.IsEmpty())
+    TrackLaidSprites.RemoveAll([Now](const FTrackLaidSprite& Particle)
+    {
+        UMaterialBillboardComponent* Sprite = Particle.Component.Get();
+        if (!Sprite)
+        {
+            return true;
+        }
+        const float Age = Now - Particle.StartedAt;
+        if (Age >= TrackLaidSpriteLifeSeconds)
+        {
+            Sprite->DestroyComponent();
+            return true;
+        }
+        // 섬광은 노면에서 시작하고, 연기가 퍼질 때는 노면의 깊이 판정에 잘리지 않게 위로 이동한다.
+        const double Rise = Particle.RiseHeight * FMath::SmoothStep(0.08f, 0.45f, Age);
+        Sprite->SetWorldLocation(Particle.Surface + FVector::UpVector * Rise);
+        if (UMaterialInstanceDynamic* Material = Particle.Material.Get())
+        {
+            Material->SetScalarParameterValue(ParticleAgeParameter, Age);
+        }
+        return false;
+    });
+    if (PendingSupportBuilds.IsEmpty() && TrackLaidSprites.IsEmpty())
     {
         GetWorld()->GetTimerManager().ClearTimer(SupportBuildTimer);
     }
@@ -280,14 +391,14 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
 void UMWEnvironmentGameplay::ResetTrackSupports()
 {
     GetWorld()->GetTimerManager().ClearTimer(SupportBuildTimer);
-    for (const TWeakObjectPtr<UNiagaraComponent>& Effect : ActiveTrackLaidEffects)
+    for (const FTrackLaidSprite& Particle : TrackLaidSprites)
     {
-        if (UNiagaraComponent* Component = Effect.Get())
+        if (UMaterialBillboardComponent* Component = Particle.Component.Get())
         {
             Component->DestroyComponent();
         }
     }
-    ActiveTrackLaidEffects.Reset();
+    TrackLaidSprites.Reset();
     PendingSupportBuilds.Reset();
     ResolvedSupportPieces.Reset();
     SupportSessionId = INDEX_NONE;

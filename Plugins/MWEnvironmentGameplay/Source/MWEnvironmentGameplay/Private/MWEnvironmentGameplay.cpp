@@ -187,7 +187,7 @@ void UMWEnvironmentGameplay::RefreshState()
     Generator->Theme = Theme;
     TArray<FSoftObjectPath> EntryPaths;
     for (const auto& Material : Binding->FirstViewMaterials) EntryPaths.AddUnique(Material.ToSoftObjectPath());
-    if (!TrackLaidEffect.IsNull()) EntryPaths.AddUnique(TrackLaidEffect.ToSoftObjectPath());
+    if (!TrackLaidParticleMaterial.IsNull()) EntryPaths.AddUnique(TrackLaidParticleMaterial.ToSoftObjectPath());
     if (!EntryPaths.IsEmpty())
         FirstViewMaterialHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(EntryPaths);
     // 생성기가 테마를 참조한 뒤 로비에서 보관한 로드 핸들을 놓는다.
