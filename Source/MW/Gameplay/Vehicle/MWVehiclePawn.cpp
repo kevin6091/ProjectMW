@@ -183,6 +183,7 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
     // main의 차체 완충을 먼저 계산한 뒤 바퀴·자국 표시를 갱신한다.
     UpdateGroundVisual(DeltaSeconds);
     UpdateWheelVisuals(DeltaSeconds);
+    UpdateExhaustEffect();
 }
 
 // 캐시한 시각 바퀴의 회전·조향만 갱신한다. 실제 이동 입력과 서버 스냅샷을 덮어쓰지 않는다.
@@ -616,6 +617,7 @@ void AMWVehiclePawn::BeginPlay()
 
 void AMWVehiclePawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    StopExhaustEffect();
     if (RootComponent)
         RootComponent->TransformUpdated.Remove(VisualRootTransformHandle);
     VisualRootTransformHandle.Reset();

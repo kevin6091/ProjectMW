@@ -1,0 +1,33 @@
+=== Editor Win64 Development ===
+Result: Succeeded
+Total execution time: 67.05 seconds
+=== Cua Driver 입력 구간의 pitch 중앙값·표본 수·최솟값·최댓값(도), 경사 Q/E ===
+curve slow-right median / count / min / max {1: [-0.1856, 71, -0.3119, -0.0853], 2: [-0.2073, 71, -0.3483, -0.0952], 3: [-0.1986, 71, -0.4332, 0.0]}
+curve fast-left median / count / min / max {1: [0.6452, 10, -0.4016, 1.1689], 2: [0.6973, 10, -0.4016, 1.2427], 3: [1.0085, 10, 0.782, 1.1816]}
+curve fast-right median / count / min / max {1: [-1.2203, 10, -1.2614, -0.7637], 2: [-1.3097, 10, -1.3511, -0.8528], 3: [-1.1397, 10, -1.2035, -0.633]}
+curve-still-2 {1: [29, 0.0, 0.0, False], 2: [29, 0.0, 0.0, False], 3: [29, 0.0, 0.0, False]}
+slope slow-right median / count / min / max {1: [-0.2096, 73, -0.4089, -0.081], 2: [-0.3034, 73, -0.4357, 0.0], 3: [-0.1926, 73, -0.3759, -0.0744]}
+slope fast-left median / count / min / max {1: [0.7342, 9, -1.0763, 1.1303], 2: [1.2482, 9, 1.1727, 1.6184], 3: [0.6745, 9, -0.9887, 1.0712]}
+slope fast-right median / count / min / max {1: [-1.0531, 10, -1.2347, -0.7066], 2: [-1.3495, 10, -1.7221, -0.9771], 3: [-0.9797, 10, -1.1342, -0.6491]}
+slope-QE {1: [30, 0.0, 0.0, False], 2: [30, 0.0, 0.0, False], 3: [30, 0.0, 0.0, False]}
+slope q max extra pitch / center drift cm / count / yaw {1: [0.0, 0.0, 46, -90.0, 90.0], 2: [0.0, 0.0007, 46, -90.0, 90.0], 3: [0.0, 0.0, 46, -90.0, 90.0]}
+slope e max extra pitch / center drift cm / count / yaw {1: [0.0, 0.004, 26, 90.0, -90.0], 2: [0.0, 0.0007, 26, 90.0, -90.0], 3: [0.0, 0.004, 26, 90.0, -90.0]}
+=== 서버 원본 UI 확인, 설치와 세 창 Racing ===
+[2026.11.23-02.30.54:598][  2]LogPython: CS64_SERVER_ORIGINALS_READY files=10 SelectSign=MWGameplaySignWidget BuildSign=MWGameplaySignWidget
+[2026.11.23-02.33.25:843][ 75]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(159.0,123.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=13221.390 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+[2026.11.23-02.33.25:852][ 75]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-02.37.29:884][310]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=2 target=2:1 source=0 pointer=(485.0,393.0) resolved=(5260.390000000,450.000437114,6000.000000000) quat=(0.000000000,0.000000000,0.707106719,-0.707106843) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=14043.073 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000010
+[2026.11.23-02.37.29:911][311]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-02.40.32:400][695]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=3 target=3:1 source=0 pointer=(407.0,418.0) resolved=(8088.252704803,-721.336568447,6000.000000000) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=1054.627 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.23-02.40.32:428][696]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-02.40.32:544][697]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.40.32:615][698]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.40.32:665][699]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+=== 서버 설치 좌표 ===
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Curve.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodLeft_45_Medium.BP_Track_WoodLeft_45_Medium_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodLeft_45_Medium_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Placeholder.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight_Sloped.BP_Track_WoodStraight_Sloped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_Sloped_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.923879,W=-0.382684),Translation=(X=8088.252705,Y=-721.336568,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.923879,W=0.382684),Translation=(X=11526.100309,Y=-4159.182370,Z=7167.227526),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)
+=== 세 창 최초 Racing과 소유 차량 ===
+[{"member":1,"pawn":"BP_MWVehiclePawn_FRED_C_0","location":[-2620.0,375.0,6099.979],"possessed":true,"size":[594,322],"dpi":0.4440000057220459},{"member":2,"pawn":"BP_MWVehiclePawn_DOUG_C_0","location":[-2620.0,525.0,6053.979],"possessed":true,"size":[1920,1000],"dpi":0.925777792930603},{"member":3,"pawn":"BP_MWVehiclePawn_UFOLOGY_C_0","location":[-2870.0,375.0,6083.979],"possessed":true,"size":[740,367],"dpi":0.4440000057220459}]

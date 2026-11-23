@@ -1,0 +1,50 @@
+=== Editor Win64 Development 빌드 ===
+Result: Succeeded
+Total execution time: 28.44 seconds
+=== SM6 머티리얼을 새 에디터에서 읽은 Cua Driver 3인 PIE ===
+SERVER COURSE: (PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Curve.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodElevated_Left_180_Long.BP_Track_WoodElevated_Left_180_Long_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodElevated_Left_180_Long_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+P1 PIE_0_L_Dev_Drive start=[-2620.0, 375.0, 6069.2] pawn=BP_MWVehiclePawn_FRED_C_0 reveal_sim=0.452 curve_width_cm=3705.49
+P2 PIE_1_L_Dev_Drive start=[-2620.0, 525.0, 6046.2] pawn=BP_MWVehiclePawn_DOUG_C_0 reveal_sim=0.442 curve_width_cm=3705.49
+P3 PIE_2_L_Dev_Drive start=[-2870.0, 375.0, 6061.2] pawn=BP_MWVehiclePawn_UFOLOGY_C_0 reveal_sim=0.442 curve_width_cm=3705.49
+[2026.11.23-04.47.48:957][  3]LogPython: MW_LONG_CURVE_TEST_ONLY definition=/Game/Data/TrackDefinition/DA_Track_Curve.DA_Track_Curve old=/Game/Gameplay/Tracks/BP_Track_WoodLeft_45_Medium.BP_Track_WoodLeft_45_Medium_C new=/Game/Gameplay/Tracks/BP_Track_WoodElevated_Left_180_Long.BP_Track_WoodElevated_Left_180_Long_C saved=0
+[2026.11.23-04.47.48:969][  3]LogPython: MW_TRACK_PLACEMENT_ART_READY /Game/Shared/VFX/M_MW_TrackPlacementParticle.M_MW_TrackPlacementParticle
+[2026.11.23-04.49.02:931][372]LogTemp: Display: MWArrival reveal attempt=27B2D9B045E115C2A61B0D941F749DDD world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17138650.867200
+[2026.11.23-04.49.02:962][373]LogTemp: Display: MWArrival reveal attempt=F05712E44CE990D69ED1C8A65FFBB03C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17138650.867352
+[2026.11.23-04.49.03:022][375]LogTemp: Display: MWArrival reveal attempt=B1802391413D1EDBB02ACBBA09B70D9F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17138650.957904
+[2026.11.23-04.49.25:347][ 69]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+[2026.11.23-04.49.36:346][385]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-04.50.12:888][284]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-04.50.36:991][848]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=1
+[2026.11.23-04.50.12:902][284]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=1/6 position=V(X=8260.39, Y=-1049.99, Z=6781.25) particle=1
+[2026.11.23-04.50.12:917][284]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=2/6 position=V(X=5593.74, Y=-9716.68, Z=9066.60) particle=1
+[2026.11.23-04.50.12:929][284]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=3/6 position=V(X=10260.39, Y=-6383.33, Z=7995.36) particle=1
+[2026.11.23-04.50.12:940][285]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=4/6 position=V(X=5593.72, Y=1616.67, Z=6058.09) particle=1
+[2026.11.23-04.50.12:951][285]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=5/6 position=V(X=10927.07, Y=-3049.98, Z=7388.43) particle=1
+[2026.11.23-04.50.12:965][285]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 index=6/6 position=V(X=6927.07, Y=-7050.00, Z=8618.42) particle=1
+[2026.11.23-04.50.12:976][285]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 width=3705.49 layers=2 floor=0.00 top=V(X=8260.39, Y=-1049.99, Z=6660.10) delay=0.440
+[2026.11.23-04.50.13:260][290]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 layers=2 elapsed=0.452
+[2026.11.23-04.50.12:989][285]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=1/6 position=V(X=8260.39, Y=-1049.99, Z=6781.25) particle=1
+[2026.11.23-04.50.13:002][285]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=2/6 position=V(X=5593.74, Y=-9716.68, Z=9066.60) particle=1
+[2026.11.23-04.50.13:014][286]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=3/6 position=V(X=10260.39, Y=-6383.34, Z=7995.36) particle=1
+[2026.11.23-04.50.13:026][286]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=4/6 position=V(X=5593.72, Y=1616.67, Z=6058.09) particle=1
+[2026.11.23-04.50.13:038][286]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=5/6 position=V(X=10927.07, Y=-3049.98, Z=7388.43) particle=1
+[2026.11.23-04.50.13:049][286]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 index=6/6 position=V(X=6927.07, Y=-7050.00, Z=8618.42) particle=1
+[2026.11.23-04.50.13:061][286]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 width=3705.49 layers=2 floor=0.00 top=V(X=8260.39, Y=-1049.99, Z=6660.10) delay=0.440
+[2026.11.23-04.50.13:313][291]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 layers=2 elapsed=0.442
+[2026.11.23-04.50.13:073][286]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=1/6 position=V(X=8260.39, Y=-1049.99, Z=6781.25) particle=1
+[2026.11.23-04.50.13:085][287]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=2/6 position=V(X=5593.74, Y=-9716.68, Z=9066.60) particle=1
+[2026.11.23-04.50.13:096][287]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=3/6 position=V(X=10260.39, Y=-6383.34, Z=7995.36) particle=1
+[2026.11.23-04.50.13:108][287]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=4/6 position=V(X=5593.72, Y=1616.67, Z=6058.09) particle=1
+[2026.11.23-04.50.13:120][287]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=5/6 position=V(X=10927.07, Y=-3049.98, Z=7388.43) particle=1
+[2026.11.23-04.50.13:132][287]LogTemp: Display: [MWTrackSupports] site world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 index=6/6 position=V(X=6927.07, Y=-7050.00, Z=8618.42) particle=1
+[2026.11.23-04.50.13:143][288]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 width=3705.49 layers=2 floor=0.00 top=V(X=8260.39, Y=-1049.99, Z=6660.10) delay=0.440
+[2026.11.23-04.50.13:316][291]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 layers=2 elapsed=0.442
+=== 세 창 비교 캡처에서 사용한 동일 녹화 프레임 ===
+frame=342 pts_time:18.966667
+frame=343 pts_time:19.033333
+frame=348 pts_time:19.366667
+frame=351 pts_time:19.566667
+frame=369 pts_time:20.7
+
+=== UVCS 에셋 서버 재다운로드 대조 ===
+cs:69 Content/Shared/VFX/M_MW_TrackPlacementParticle.uasset bytes=13816 sha256=c1de4ed85d9f9be7e59b0a8ab172e913f100ae21d9e6ea9d5fd6cce26ef3a159

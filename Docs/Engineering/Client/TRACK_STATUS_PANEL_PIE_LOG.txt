@@ -1,0 +1,23 @@
+### panel
+[2026.11.23-05.43.12:950][650]LogTemp: Display: MWArrival covered attempt=1587B0B5437D1C14233D4E8337E1E45A world=L_Title map=/Game/Levels/L_Dev_Drive t=17141900.852535
+[2026.11.23-05.43.12:962][650]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.23-05.43.13:009][651]LogTemp: Display: MWArrival covered attempt=8A7EDCA14899B53F485A369DE9F96641 world=L_Title map=/Game/Levels/L_Dev_Drive t=17141900.854745
+[2026.11.23-05.43.13:056][651]LogTemp: Display: MWArrival covered attempt=D3D4E2A749C35CEE7F4A1EA009486CA3 world=L_Title map=/Game/Levels/L_Dev_Drive t=17141900.856610
+[2026.11.23-05.43.13:067][651]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.23-05.43.13:079][651]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+[2026.11.23-05.43.15:412][659]LogTemp: Display: MWArrival ready attempt=1587B0B5437D1C14233D4E8337E1E45A world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17141903.333312
+[2026.11.23-05.43.15:776][662]LogTemp: Display: MWArrival ready attempt=8A7EDCA14899B53F485A369DE9F96641 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17141903.711860
+[2026.11.23-05.43.15:828][664]LogTemp: Display: MWArrival ready attempt=D3D4E2A749C35CEE7F4A1EA009486CA3 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17141903.753709
+[2026.11.23-05.43.18:216][708]LogTemp: Display: MWArrival reveal attempt=8A7EDCA14899B53F485A369DE9F96641 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17141906.151634
+[2026.11.23-05.43.18:322][710]LogTemp: Display: MWArrival reveal attempt=D3D4E2A749C35CEE7F4A1EA009486CA3 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17141906.257500
+[2026.11.23-05.43.18:533][714]LogTemp: Display: MWArrival reveal attempt=1587B0B5437D1C14233D4E8337E1E45A world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17141906.468190
+[2026.11.23-05.43.37:640][531]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.43.41:904][739]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=2 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.43.47:679][ 30]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+[2026.11.23-05.43.47:691][ 30]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=3 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.44.08:440][961]LogMWServer: [MWTrackPlacement] Placed piece=2 member=3 target=1/0 source=0
+[2026.11.23-05.44.14:830][206]LogMWServer: [MWTrackPlacement] Placed piece=3 member=1 target=2/1 source=0
+[2026.11.23-05.44.19:957][405]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-05.44.20:552][415]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-05.44.20:612][415]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-05.44.20:660][415]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00

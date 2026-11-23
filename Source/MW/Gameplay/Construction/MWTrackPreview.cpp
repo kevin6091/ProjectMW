@@ -117,6 +117,16 @@ bool MWTrackPreview::IsDisplayOnly(const AActor& Track)
 	return Track.ActorHasTag(DisplayOnlyTag);
 }
 
+USceneComponent* MWTrackPreview::FindWireframeGroup(const AActor& Track)
+{
+	TInlineComponentArray<USceneComponent*> Components(&Track);
+	USceneComponent* const* Group = Components.FindByPredicate([](const USceneComponent* Component)
+	{
+		return Component->GetFName() == WireframesName;
+	});
+	return Group ? *Group : nullptr;
+}
+
 void MWTrackPreview::HideWireframes(AActor& Track)
 {
 	TInlineComponentArray<UPrimitiveComponent*> Parts(&Track);

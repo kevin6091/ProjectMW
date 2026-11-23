@@ -1,0 +1,161 @@
+### Mixed viewport Cua Driver PIE
+P1 784x525 DPI=0.485625; P2 1098x544 DPI=0.503200; P3 1416x385 DPI=0.444000
+[2026.11.23-06.35.18:120][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Construction/WBP_TrackSelectionTest.uasset sha256=db71f35a45fe549371bd700a6567761e0a89001f04ab93bdec3edeb4c8eae094
+[2026.11.23-06.35.18:135][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/Levels/L_Dev_Drive.umap sha256=8e642cd75fd0db3a5c5f68f4bd41b06baab33decc442fd234023286d991bd2f9
+[2026.11.23-06.42.17:350][568]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=3 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-06.42.17:473][573]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=[1098, 544] dpi=0.5032 labels={"Text_SessionStatus": {"text": "선택 완료 · 다른 참가자 대기 중", "size": [313.5, 35.8]}}
+[2026.11.23-06.42.20:807][701]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-06.42.20:949][705]LogPython: MW_PANEL_OBS member=3 phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> viewport=[1416, 385] dpi=0.4440 labels={"Text_SessionStatus": {"text": "선택 완료 · 다른 참가자 대기 중", "size": [328.1, 38.3]}}
+[2026.11.23-06.42.50:378][792]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=2 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-06.42.50:391][792]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_0_L_Dev_Drive tip=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.42.50:414][792]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_1_L_Dev_Drive tip=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.42.50:438][792]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_2_L_Dev_Drive tip=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.42.50:449][793]LogPython: MW_PANEL_OBS member=1 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[784, 525] dpi=0.4856 labels={"Text_SessionStatus": {"text": "끝점에 가까이 · Q/E 회전", "size": [265.1, 37.1]}}
+[2026.11.23-06.42.50:485][794]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[1098, 544] dpi=0.5032 labels={"Text_SessionStatus": {"text": "끝점에 가까이 · Q/E 회전", "size": [255.9, 35.8]}}
+[2026.11.23-06.42.50:522][795]LogPython: MW_PANEL_OBS member=3 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[1416, 385] dpi=0.4440 labels={"Text_SessionStatus": {"text": "끝점에 가까이 · Q/E 회전", "size": [267.3, 38.3]}}
+[2026.11.23-06.43.01:897][108]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 begin mode=snap elapsed=0.0288 alpha=0.5481 gap_cm=2420.253
+[2026.11.23-06.43.01:922][109]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 begin mode=snap elapsed=0.0236 alpha=0.4673 gap_cm=2420.253
+[2026.11.23-06.43.01:925][109]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 begin mode=snap elapsed=0.0236 alpha=0.4673 gap_cm=2420.253
+[2026.11.23-06.43.06:631][241]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(199.0,223.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=6021.369 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+[2026.11.23-06.43.06:643][241]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-06.43.06:655][241]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 meshes=5 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -89.999995 Roll 0.000000
+[2026.11.23-06.43.06:715][242]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 width=2326.54 layers=3 floor=0.00 top=V(X=2204.37, Y=83.88, Z=5878.84) delay=0.440 assembly=0.220
+[2026.11.23-06.43.06:728][242]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_1_L_Dev_Drive tip=V(X=3088.25, Y=-721.34, Z=6000.00)
+[2026.11.23-06.43.06:740][243]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 meshes=5 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -90.000000 Roll 0.000000
+[2026.11.23-06.43.06:800][245]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 width=2326.54 layers=3 floor=0.00 top=V(X=2204.37, Y=83.88, Z=5878.84) delay=0.440 assembly=0.220
+[2026.11.23-06.43.06:812][245]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_2_L_Dev_Drive tip=V(X=3088.25, Y=-721.34, Z=6000.00)
+[2026.11.23-06.43.06:825][246]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 meshes=5 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -90.000000 Roll 0.000000
+[2026.11.23-06.43.06:885][246]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 width=2326.54 layers=3 floor=0.00 top=V(X=2204.37, Y=83.88, Z=5878.84) delay=0.440 assembly=0.220
+[2026.11.23-06.43.06:897][247]LogPython: MW_PANEL_OBS member=1 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[784, 525] dpi=0.4856 labels={"Text_SessionStatus": {"text": "설치 완료 · 다른 참가자 대기 중", "size": [324.8, 37.1]}}
+[2026.11.23-06.43.06:910][247]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 elapsed=0.112 scale=1.0682
+[2026.11.23-06.43.06:922][248]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 elapsed=0.112 scale=1.0682
+[2026.11.23-06.43.06:934][248]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 elapsed=0.112 scale=1.0682
+[2026.11.23-06.43.06:947][248]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 elapsed=0.266
+[2026.11.23-06.43.06:958][249]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 elapsed=0.266
+[2026.11.23-06.43.06:971][249]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 elapsed=0.266
+[2026.11.23-06.43.07:072][252]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layer=1/3 elapsed=0.443 bottom=3919.23
+[2026.11.23-06.43.07:085][252]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layer=1/3 elapsed=0.443 bottom=3919.23
+[2026.11.23-06.43.07:097][253]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layer=1/3 elapsed=0.443 bottom=3919.23
+[2026.11.23-06.43.07:198][255]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layer=2/3 elapsed=0.569 bottom=1959.61
+[2026.11.23-06.43.07:213][255]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layer=2/3 elapsed=0.569 bottom=1959.61
+[2026.11.23-06.43.07:227][256]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layer=2/3 elapsed=0.569 bottom=1959.61
+[2026.11.23-06.43.07:289][259]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layer=3/3 elapsed=0.660 bottom=-0.00
+[2026.11.23-06.43.07:298][259]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layers=3 elapsed=0.660
+[2026.11.23-06.43.07:310][259]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layer=3/3 elapsed=0.660 bottom=-0.00
+[2026.11.23-06.43.07:322][259]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layers=3 elapsed=0.660
+[2026.11.23-06.43.07:334][259]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layer=3/3 elapsed=0.660 bottom=-0.00
+[2026.11.23-06.43.07:346][259]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layers=3 elapsed=0.660
+[2026.11.23-06.43.34:203][303]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_Sloped_C_1 begin mode=snap elapsed=0.0549 alpha=0.8482 gap_cm=1614.630
+[2026.11.23-06.43.34:359][309]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_Sloped_C_1 end mode=snap elapsed=0.2130 alpha=1.0000 gap_cm=1614.630
+[2026.11.23-06.43.34:368][309]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodStraight_Sloped_C_1 point=V(X=3088.25, Y=-721.34, Z=6000.00)
+[2026.11.23-06.43.40:131][547]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(285.0,263.0) resolved=(3088.252602402,-721.337252780,6000.000000000) quat=(0.000000000,0.000000000,0.923879499,-0.382683513) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000002
+[2026.11.23-06.43.40:147][548]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.23-06.43.40:151][548]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=3 meshes=4 pivot=V(X=3088.25, Y=-721.34, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -134.999990 Roll 0.000000
+[2026.11.23-06.43.40:223][549]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 width=2370.19 layers=3 floor=0.00 top=V(X=4823.68, Y=-2456.77, Z=6464.62) delay=0.440 assembly=0.220
+[2026.11.23-06.43.40:234][550]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=3 meshes=4 pivot=V(X=3088.25, Y=-721.34, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -135.000000 Roll 0.000000
+[2026.11.23-06.43.40:306][553]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 width=2370.19 layers=3 floor=0.00 top=V(X=4823.68, Y=-2456.77, Z=6464.62) delay=0.440 assembly=0.220
+[2026.11.23-06.43.40:318][554]LogTemp: Display: MWPlacementArrow world=/Game/Levels/UEDPIE_2_L_Dev_Drive tip=V(X=6526.10, Y=-4159.18, Z=7167.23)
+[2026.11.23-06.43.40:330][554]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=3 meshes=4 pivot=V(X=3088.25, Y=-721.34, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -135.000000 Roll 0.000000
+[2026.11.23-06.43.40:402][557]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 width=2370.19 layers=3 floor=0.00 top=V(X=4823.68, Y=-2456.77, Z=6464.62) delay=0.440 assembly=0.220
+[2026.11.23-06.43.40:415][557]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[1098, 544] dpi=0.5032 labels={"Text_SessionStatus": {"text": "설치 완료 · 다른 참가자 대기 중", "size": [313.5, 35.8]}}
+[2026.11.23-06.43.40:438][558]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=3 elapsed=0.107 scale=1.0704
+[2026.11.23-06.43.40:450][559]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=3 elapsed=0.088 scale=1.0746
+[2026.11.23-06.43.40:462][559]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=3 elapsed=0.088 scale=1.0746
+[2026.11.23-06.43.40:474][560]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=3 elapsed=0.255
+[2026.11.23-06.43.40:486][560]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=3 elapsed=0.237
+[2026.11.23-06.43.40:498][561]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=3 elapsed=0.237
+[2026.11.23-06.43.40:583][564]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 layer=1/3 elapsed=0.454 bottom=4309.75
+[2026.11.23-06.43.40:607][565]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 layer=1/3 elapsed=0.459 bottom=4309.75
+[2026.11.23-06.43.40:614][565]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 layer=1/3 elapsed=0.459 bottom=4309.75
+[2026.11.23-06.43.40:690][567]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 layer=2/3 elapsed=0.561 bottom=2154.87
+[2026.11.23-06.43.40:713][568]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 layer=2/3 elapsed=0.565 bottom=2154.87
+[2026.11.23-06.43.40:720][568]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 layer=2/3 elapsed=0.565 bottom=2154.87
+[2026.11.23-06.43.40:793][572]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 layer=3/3 elapsed=0.664 bottom=0.00
+[2026.11.23-06.43.40:804][572]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.664
+[2026.11.23-06.43.40:851][573]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 layer=3/3 elapsed=0.703 bottom=0.00
+[2026.11.23-06.43.41:016][579]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.703
+[2026.11.23-06.43.41:028][580]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 layer=3/3 elapsed=0.703 bottom=0.00
+[2026.11.23-06.43.41:040][580]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.703
+[2026.11.23-06.43.48:777][904]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 begin mode=snap elapsed=0.0176 alpha=0.3645 gap_cm=1509.717
+[2026.11.23-06.43.48:846][906]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 begin mode=snap elapsed=0.0508 alpha=0.8122 gap_cm=4971.295
+[2026.11.23-06.43.48:853][906]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 begin mode=snap elapsed=0.0508 alpha=0.8122 gap_cm=4971.295
+[2026.11.23-06.43.48:947][911]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 end mode=snap elapsed=0.1865 alpha=1.0000 gap_cm=1509.717
+[2026.11.23-06.43.48:956][911]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 point=V(X=6526.10, Y=-4159.18, Z=7167.23)
+[2026.11.23-06.43.49:001][912]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 end mode=snap elapsed=0.2050 alpha=1.0000 gap_cm=4971.295
+[2026.11.23-06.43.49:011][912]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodStraight_C_2 point=V(X=6526.10, Y=-4159.18, Z=7167.23)
+[2026.11.23-06.43.49:023][913]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 end mode=snap elapsed=0.2050 alpha=1.0000 gap_cm=4971.295
+[2026.11.23-06.43.49:035][913]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodStraight_C_1 point=V(X=6526.10, Y=-4159.18, Z=7167.23)
+[2026.11.23-06.43.53:906][102]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=0 pointer=(496.0,185.0) resolved=(6526.099906262,-4159.183354457,7167.227525604) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000002
+[2026.11.23-06.43.53:925][103]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.23-06.43.53:933][103]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=4 meshes=4 pivot=V(X=6526.10, Y=-4159.18, Z=7167.23) actor=Rotation: Pitch 0.000000 Yaw -134.999985 Roll 0.000000
+[2026.11.23-06.43.54:005][105]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=4 width=2370.19 layers=3 floor=0.00 top=V(X=8293.87, Y=-5926.95, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:089][106]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=10945.52, Y=-8578.60, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:101][106]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=4 meshes=4 pivot=V(X=6526.10, Y=-4159.18, Z=7167.23) actor=Rotation: Pitch 0.000000 Yaw -135.000000 Roll 0.000000
+[2026.11.23-06.43.54:180][108]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=4 width=2370.19 layers=3 floor=0.00 top=V(X=8293.87, Y=-5926.95, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:263][110]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=10945.52, Y=-8578.60, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:275][110]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=4 meshes=4 pivot=V(X=6526.10, Y=-4159.18, Z=7167.23) actor=Rotation: Pitch 0.000000 Yaw -135.000000 Roll 0.000000
+[2026.11.23-06.43.54:347][113]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=4 width=2370.19 layers=3 floor=0.00 top=V(X=8293.87, Y=-5926.95, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:432][114]LogTemp: Display: [MWTrackSupports] begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=10945.52, Y=-8578.60, Z=7046.07) delay=0.440 assembly=0.220
+[2026.11.23-06.43.54:504][117]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-06.43.54:552][117]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=4 elapsed=0.090 scale=1.0744
+[2026.11.23-06.43.54:576][118]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-06.43.54:626][119]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-06.43.54:661][121]LogPython: MW_PANEL_OBS member=1 phase=<MWRoomPhase.RACING: 9> viewport=[784, 525] dpi=0.4856 labels={"Text_SessionStatus": {"text": "트랙 배치가 끝났습니다.", "size": [0.0, 0.0]}}
+[2026.11.23-06.43.54:697][121]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.RACING: 9> viewport=[1098, 544] dpi=0.5032 labels={"Text_SessionStatus": {"text": "트랙 배치가 끝났습니다.", "size": [0.0, 0.0]}}
+[2026.11.23-06.43.54:732][122]LogPython: MW_PANEL_OBS member=3 phase=<MWRoomPhase.RACING: 9> viewport=[1416, 385] dpi=0.4440 labels={"Text_SessionStatus": {"text": "트랙 배치가 끝났습니다.", "size": [0.0, 0.0]}}
+[2026.11.23-06.43.54:768][123]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=4 elapsed=0.152 scale=1.0404
+[2026.11.23-06.43.54:780][123]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=4 elapsed=0.152 scale=1.0404
+[2026.11.23-06.43.54:792][124]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=4 elapsed=0.246
+[2026.11.23-06.43.54:804][124]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=4 elapsed=0.259
+[2026.11.23-06.43.54:816][125]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=4 elapsed=0.259
+[2026.11.23-06.43.54:840][125]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=4 layer=1/3 elapsed=0.510 bottom=4697.38
+[2026.11.23-06.43.54:852][125]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=5 layer=1/3 elapsed=0.510 bottom=4697.38
+[2026.11.23-06.43.54:864][125]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=4 layer=1/3 elapsed=0.489 bottom=4697.38
+[2026.11.23-06.43.54:876][125]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=5 layer=1/3 elapsed=0.489 bottom=4697.38
+[2026.11.23-06.43.54:888][126]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=4 layer=1/3 elapsed=0.489 bottom=4697.38
+[2026.11.23-06.43.54:900][126]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=5 layer=1/3 elapsed=0.489 bottom=4697.38
+[2026.11.23-06.43.54:912][127]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=4 layer=2/3 elapsed=0.572 bottom=2348.69
+[2026.11.23-06.43.54:924][127]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=5 layer=2/3 elapsed=0.572 bottom=2348.69
+[2026.11.23-06.43.54:937][127]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=4 layer=2/3 elapsed=0.551 bottom=2348.69
+[2026.11.23-06.43.54:948][128]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=5 layer=2/3 elapsed=0.551 bottom=2348.69
+[2026.11.23-06.43.54:961][128]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=4 layer=2/3 elapsed=0.551 bottom=2348.69
+[2026.11.23-06.43.54:972][128]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=5 layer=2/3 elapsed=0.551 bottom=2348.69
+[2026.11.23-06.43.54:984][129]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=4 layer=3/3 elapsed=0.672 bottom=0.00
+[2026.11.23-06.43.54:996][129]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.672
+[2026.11.23-06.43.55:009][129]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=5 layer=3/3 elapsed=0.672 bottom=-0.00
+[2026.11.23-06.43.55:020][129]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.672
+[2026.11.23-06.43.55:032][129]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=4 layer=3/3 elapsed=0.680 bottom=0.00
+[2026.11.23-06.43.55:044][129]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.680
+[2026.11.23-06.43.55:056][130]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=5 layer=3/3 elapsed=0.680 bottom=-0.00
+[2026.11.23-06.43.55:069][130]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.680
+[2026.11.23-06.43.55:081][131]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=4 layer=3/3 elapsed=0.680 bottom=0.00
+[2026.11.23-06.43.55:093][131]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.680
+[2026.11.23-06.43.55:105][132]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=5 layer=3/3 elapsed=0.680 bottom=-0.00
+[2026.11.23-06.43.55:117][132]LogTemp: Display: [MWTrackSupports] complete world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.680
+
+### First run snap and verified positions
+[2026.11.23-06.38.53:303][ 29]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.38.53:326][ 30]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.38.53:350][ 31]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.38.54:355][ 68]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.38.54:379][ 69]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.23-06.38.54:403][ 69]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+Course pieces 2..4 had identical serialized transforms and ports in both runs.
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Curve.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodLeft_45_Medium.BP_Track_WoodLeft_45_Medium_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodLeft_45_Medium_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Placeholder.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight_Sloped.BP_Track_WoodStraight_Sloped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_Sloped_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.923879,W=0.382684),Translation=(X=3088.252602,Y=-721.337253,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.923879,W=-0.382684),Translation=(X=6526.099906,Y=-4159.183354,Z=7167.227526),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.923879,W=0.382684),Translation=(X=10061.634739,Y=-7694.716333,Z=7167.227526),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)
+P1 phase=<MWRoomPhase.RACING: 9> possessed=True location=-2620,375,6069.2 placement=(SessionId=1,DefinitionAssetId=(TagName="Asset.Track.Curve.Test"),PreviewTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=False,bPlaced=True)
+P2 phase=<MWRoomPhase.RACING: 9> possessed=True location=-2620,525,6061.2 placement=(SessionId=1,DefinitionAssetId=(TagName="Asset.Track.Placeholder.Test"),PreviewTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.923879,W=0.382684),Translation=(X=3088.252602,Y=-721.337253,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=False,bPlaced=True)
+P3 phase=<MWRoomPhase.RACING: 9> possessed=True location=-2870,375,6054.2 placement=(SessionId=1,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),PreviewTransform=(Rotation=(X=-0.000000,Y=-0.000000,Z=-0.923879,W=0.382684),Translation=(X=6526.099906,Y=-4159.183354,Z=7167.227526),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),bSnapped=True,bPlaced=True)
+
+### Automation
+[2026.11.23-06.33.14:143][591]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+
+### UVCS
+{
+  "changeset": "73",
+  "sha256": "DB71F35A45FE549371BD700A6567761E0A89001F04AB93BDEC3EDEB4C8EAE094",
+  "asset": "Content/UI/Construction/WBP_TrackSelectionTest.uasset"
+}

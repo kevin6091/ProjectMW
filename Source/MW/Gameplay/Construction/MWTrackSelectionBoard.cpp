@@ -56,6 +56,14 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = false;
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+	SelectionBackdrop = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SelectionBackdrop"));
+	SelectionBackdrop->SetupAttachment(RootComponent);
+	SelectionBackdrop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SelectionBackdrop->SetGenerateOverlapEvents(false);
+	SelectionBackdrop->SetCanEverAffectNavigation(false);
+	SelectionBackdrop->SetCastShadow(false);
+	SelectionBackdrop->SetHiddenInGame(true);
+
 	for (int32 Index = 0; Index < MWTrackSelection::OfferCount; ++Index)
 	{
 		auto* Anchor = CreateDefaultSubobject<USceneComponent>(*FString::Printf(TEXT("Anchor%d"), Index));
@@ -114,10 +122,6 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 		const FBox LocalBounds(-Extent, Extent);
 		const FVector Center = GetBuildOrigin();
 		FrameBounds(OutResult, LocalBounds.TransformBy(FTransform(GetActorQuat(), Center)), Aspect, 0.74);
-		// 왼쪽 안내판과 후보가 겹치지 않도록 전시 영역을 화면 오른쪽으로 옮긴다.
-		const double HalfWidth = FVector::Distance(OutResult.Location, Center)
-			* FMath::Tan(FMath::DegreesToRadians(OutResult.FOV * 0.5));
-		OutResult.Location -= FRotationMatrix(OutResult.Rotation).GetUnitAxis(EAxis::Y) * (HalfWidth * 0.24);
 		return;
 	}
 	if (!bUseTopDownPlacementCamera || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
@@ -227,6 +231,12 @@ void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSess
             return;
         }
     }
+    // 배경을 사용하는 맵에서는 후보와 같은 첫 장면 렌더 검사에 포함한다.
+    if (SelectionBackdrop->GetStaticMesh() && (SelectionBackdrop->bHiddenInGame ||
+        !MWTrackPreview::CollectVisibleMaterials(this, Materials)))
+    {
+        Pending = TEXT("selection backdrop mesh/material");
+    }
 }
 
 void AMWTrackSelectionBoard::ClearOffers()
@@ -266,6 +276,8 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	}
 	if (GS->GetRoomPhase() != EMWRoomPhase::PreparingConstruction)
 	{
+		// 배치 카메라로 옮겨도 선택 전시 배경은 경기 코스에 남지 않는다.
+		SelectionBackdrop->SetHiddenInGame(true);
 		if (Viewer.IsValid())
 		{
 			if (auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer()))
@@ -305,6 +317,7 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
 	if (Session.SelectionSessionId <= 0) return;
 	if ((SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision) && !BuildOffers(Session)) return;
+	SelectionBackdrop->SetHiddenInGame(false);
 	if (Session.bIsOpen)
 	{
 		const auto* PS = Viewer->GetPlayerState<AMWPlayerState>();

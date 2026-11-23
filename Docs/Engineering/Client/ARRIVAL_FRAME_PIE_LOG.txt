@@ -1,0 +1,232 @@
+=== MWEditor Win64 Development ===
+Result: Succeeded
+Total execution time: 48.76 seconds
+=== 검증 요약 및 실제 로그 ===
+{
+  "normal": {
+    "covered_to_reveal_s": [
+      5.328,
+      5.359,
+      5.518
+    ],
+    "late_attempts": {},
+    "arrival_frames_pts": {
+      "P1": {
+        "cover": 28.7,
+        "entry": 28.766667,
+        "settled": 30.733333
+      },
+      "P2": {
+        "cover": 28.433333,
+        "entry": 28.533333,
+        "settled": 30.5
+      },
+      "P3": {
+        "cover": 28.533333,
+        "entry": 28.566667,
+        "settled": 30.5
+      }
+    },
+    "final": [
+      {
+        "member": 1,
+        "phase": "<MWRoomPhase.RACING: 9>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "BP_MWVehiclePawn_FRED_C_0",
+        "location": [
+          -2620.0,
+          375.0,
+          6069.2
+        ]
+      },
+      {
+        "member": 2,
+        "phase": "<MWRoomPhase.RACING: 9>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "BP_MWVehiclePawn_DOUG_C_0",
+        "location": [
+          -2620.0,
+          525.0,
+          6046.2
+        ]
+      },
+      {
+        "member": 3,
+        "phase": "<MWRoomPhase.RACING: 9>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "BP_MWVehiclePawn_UFOLOGY_C_0",
+        "location": [
+          -2870.0,
+          375.0,
+          6061.2
+        ]
+      }
+    ]
+  },
+  "late": {
+    "covered_to_reveal_s": [
+      5.795,
+      53.308,
+      53.716
+    ],
+    "late_attempts": {
+      "72EBF3384934F897FD3CEF92BF7DB2A9": {
+        "cover_to_warning_utc_s": 44.979,
+        "cover_to_destination_s": 48.68,
+        "destination_to_reveal_s": 4.629
+      },
+      "FE9AA23F4493CAEBA3DD0CA9283F6D0E": {
+        "cover_to_warning_utc_s": 44.929,
+        "cover_to_destination_s": 49.998,
+        "destination_to_reveal_s": 3.718
+      }
+    },
+    "arrival_frames_pts": {
+      "P1": {
+        "cover": 16.033333,
+        "entry": 16.133333,
+        "settled": 18.066667
+      },
+      "P2": {
+        "cover": 16.466667,
+        "entry": 16.566667,
+        "settled": 18.533333
+      },
+      "P3": {
+        "cover": 16.466667,
+        "entry": 16.566667,
+        "settled": 18.533333
+      }
+    },
+    "final": [
+      {
+        "member": 1,
+        "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "SpectatorPawn_1",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "member": 2,
+        "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "SpectatorPawn_1",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "member": 3,
+        "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>",
+        "size": [
+          944,
+          447
+        ],
+        "dpi": 0.4440000057220459,
+        "selection": "(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)",
+        "pawn": "SpectatorPawn_1",
+        "location": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  }
+}
+
+=== normal PIE ===
+[2026.11.23-04.58.27:796][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Common/WBP_MWLoading.uasset sha256=6abf86be047011e3703b792bfee9a996992067a80741b6b01abb5621f5826e97
+[2026.11.23-04.58.27:803][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Race/WBP_MatchPanels.uasset sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.23-04.58.27:815][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Construction/WBP_TrackSelectionTest.uasset sha256=5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b
+[2026.11.23-04.59.59:153][364]LogTemp: Display: MWArrival covered attempt=C9D5CD7045871525985D90AC2A59D311 world=L_Title map=/Game/Levels/L_Dev_Drive t=17139307.054995
+[2026.11.23-04.59.59:166][365]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.23-04.59.59:213][366]LogTemp: Display: MWArrival covered attempt=E1491D334AA5E935C21564B2B703B76D world=L_Title map=/Game/Levels/L_Dev_Drive t=17139307.061219
+[2026.11.23-04.59.59:260][366]LogTemp: Display: MWArrival covered attempt=61EBA38E4BF207204AC9698B3DF8E739 world=L_Title map=/Game/Levels/L_Dev_Drive t=17139307.064823
+[2026.11.23-04.59.59:275][366]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.23-04.59.59:285][366]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+[2026.11.23-04.59.59:311][366]LogGameMode: ProcessServerTravel: /Game/Levels/L_Dev_Drive
+[2026.11.23-05.00.02:119][378]LogTemp: Display: MWArrival ready attempt=C9D5CD7045871525985D90AC2A59D311 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17139310.053361
+[2026.11.23-05.00.02:989][379]LogTemp: Display: MWArrival ready attempt=E1491D334AA5E935C21564B2B703B76D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17139310.924858
+[2026.11.23-05.00.02:997][380]LogTemp: Display: MWArrival ready attempt=61EBA38E4BF207204AC9698B3DF8E739 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17139310.924942
+[2026.11.23-05.00.04:454][427]LogTemp: Display: MWArrival reveal attempt=E1491D334AA5E935C21564B2B703B76D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17139312.389667
+[2026.11.23-05.00.04:489][428]LogTemp: Display: MWArrival reveal attempt=61EBA38E4BF207204AC9698B3DF8E739 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17139312.424227
+[2026.11.23-05.00.04:637][433]LogTemp: Display: MWArrival reveal attempt=C9D5CD7045871525985D90AC2A59D311 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17139312.572496
+[2026.11.23-05.00.25:831][216]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.00.25:875][217]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.00.31:064][485]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.00.31:218][493]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.00.36:053][736]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.00.36:138][737]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.00.36:146][738]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.00.36:157][738]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.00.58:394][674]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-05.01.10:422][251]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.23-05.01.19:079][665]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.23-05.01.19:339][668]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.23-05.01.19:349][669]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.23-05.01.19:361][669]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=BP_MWVehiclePawn_UFOLOGY_C_0
+
+=== late PIE ===
+[2026.11.23-05.10.13:824][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Common/WBP_MWLoading.uasset sha256=6abf86be047011e3703b792bfee9a996992067a80741b6b01abb5621f5826e97
+[2026.11.23-05.10.13:833][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Race/WBP_MatchPanels.uasset sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.23-05.10.13:845][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/UI/Construction/WBP_TrackSelectionTest.uasset sha256=5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b
+[2026.11.23-05.11.26:901][ 64]LogPython: ARRIVAL_REFACTOR_FIXTURE_ARM P3=.001 only; wait for P1 and P2 real departure reports
+[2026.11.23-05.11.35:511][372]LogTemp: Display: MWArrival covered attempt=72EBF3384934F897FD3CEF92BF7DB2A9 world=L_Title map=/Game/Levels/L_Dev_Drive t=17140003.420361
+[2026.11.23-05.11.35:523][372]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+[2026.11.23-05.11.35:571][374]LogTemp: Display: MWArrival covered attempt=FE9AA23F4493CAEBA3DD0CA9283F6D0E world=L_Title map=/Game/Levels/L_Dev_Drive t=17140003.422020
+[2026.11.23-05.11.35:583][375]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+[2026.11.23-05.11.35:691][377]LogPython: ARRIVAL_REFACTOR_FIXTURE_HOLD P1 server=.05 P2=1.0 P3=.001; default arrival timer
+[2026.11.23-05.12.20:490][327]LogTemp: Warning: MWArrival failed attempt=72EBF3384934F897FD3CEF92BF7DB2A9 pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+[2026.11.23-05.12.20:500][328]LogTemp: Warning: MWArrival failed attempt=FE9AA23F4493CAEBA3DD0CA9283F6D0E pending=map travel timeout source=L_Title current=/Game/Levels/L_Title destination=/Game/Levels/L_Dev_Drive
+[2026.11.23-05.12.23:155][414]LogPython: ARRIVAL_REFACTOR_FIXTURE_RELEASE all=1.0; engine follows normal departure and travel
+[2026.11.23-05.12.23:436][424]LogTemp: Display: MWArrival covered attempt=0F4BDB5E44A45B4BDE41F9BE8116C1B1 world=L_Title map=/Game/Levels/L_Dev_Drive t=17140051.344032
+[2026.11.23-05.12.23:447][424]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+[2026.11.23-05.12.23:472][425]LogGameMode: ProcessServerTravel: /Game/Levels/L_Dev_Drive
+[2026.11.23-05.12.24:384][428]LogTemp: Display: MWArrival resumed late travel attempt=72EBF3384934F897FD3CEF92BF7DB2A9 world=/Game/Levels/L_Dev_Drive t=17140052.099877
+[2026.11.23-05.12.25:698][430]LogTemp: Display: MWArrival resumed late travel attempt=FE9AA23F4493CAEBA3DD0CA9283F6D0E world=/Game/Levels/L_Dev_Drive t=17140053.419739
+[2026.11.23-05.12.26:425][430]LogTemp: Display: MWArrival ready attempt=72EBF3384934F897FD3CEF92BF7DB2A9 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17140054.360910
+[2026.11.23-05.12.27:660][452]LogTemp: Display: MWArrival ready attempt=FE9AA23F4493CAEBA3DD0CA9283F6D0E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17140055.595319
+[2026.11.23-05.12.27:669][453]LogTemp: Display: MWArrival ready attempt=0F4BDB5E44A45B4BDE41F9BE8116C1B1 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=17140055.595392
+[2026.11.23-05.12.28:793][488]LogTemp: Display: MWArrival reveal attempt=72EBF3384934F897FD3CEF92BF7DB2A9 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17140056.728418
+[2026.11.23-05.12.29:202][500]LogTemp: Display: MWArrival reveal attempt=FE9AA23F4493CAEBA3DD0CA9283F6D0E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17140057.138200
+[2026.11.23-05.12.29:230][501]LogTemp: Display: MWArrival reveal attempt=0F4BDB5E44A45B4BDE41F9BE8116C1B1 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17140057.138768
+[2026.11.23-05.13.01:706][834]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.13.01:910][843]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.13.06:897][ 82]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.13.07:008][ 86]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.13.11:721][322]LogMWServer: [MWTrackSelection] Session=1 Revision=1 Request=1 Offer=1 Accepted=1 Reason=EMWTrackSelectionRejectReason::None
+[2026.11.23-05.13.11:831][324]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.13.11:843][325]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.23-05.13.11:855][325]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1

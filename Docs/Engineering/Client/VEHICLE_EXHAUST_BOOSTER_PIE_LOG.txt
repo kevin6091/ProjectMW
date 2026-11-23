@@ -1,0 +1,57 @@
+# ProjectMW UE 5.8 | 2026-11-23 KST | feature/vehicle-exhaust-vfx
+# Unreal 원문 시간은 UTC. 표의 t는 관측기 시작 후 경과 초.
+# 출력은 같은 DOUG의 Niagara 활성 컴포넌트 수와 BoosterExhaust 표시 메시 수.
+
+[Editor build]
+C:\workspace\UE\ProjectMW\Source\MW\Gameplay\Items\MWItemComponentVisual.cpp(231,58): warning C4996: 'UMovieScene::GetBindings': Getting non-const access to GetBindings is no longer allowed. Please use const GetBindings() - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+Result: Succeeded
+Total execution time: 13.10 seconds
+
+[정상 로비, 트랙 배치, 실제 출발선]
+[2026.11.23-00.37.01:499][434]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-00.37.14:984][ 30]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-00.38.37:652][256]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-00.38.37:794][258]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.23-00.38.37:804][258]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.23-00.38.37:816][258]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_UFOLOGY_C_0
+[2026.11.23-00.38.37:829][258]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-00.38.37:842][258]LogMWServer: [MWRace] 전원 차량 소유 확인 완료.
+[2026.11.23-00.38.37:888][259]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-00.38.37:937][259]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+PIE P1 /Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive pawn=BP_MWVehiclePawn_FRED_C_0 possessed=True start=[-2620.0, 375.0, 6099.571] pickups=0
+PIE P2 /Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive pawn=BP_MWVehiclePawn_DOUG_C_0 possessed=True start=[-2620.0, 525.0, 6049.0] pickups=0
+PIE P3 /Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive pawn=BP_MWVehiclePawn_UFOLOGY_C_0 possessed=True start=[-2870.0, 375.0, 6079.721] pickups=0
+course=[(1, 'Asset.Track.Course.Start.WoodenCapped'), (2, 'Asset.Track.Straight.Test'), (3, 'Asset.Track.Straight.Test'), (4, 'Asset.Track.Placeholder.Test'), (5, 'Asset.Track.Course.End.WoodenCap')]
+
+[실제 픽업 중첩 로그]
+[2026.11.23-00.39.22:326][261]LogPython: [MWBoosterQA] transient native pickup=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.MWPickupBox_0 at=<Struct 'Vector' (0x000001A9540B3620) {x: -2400.000000, y: 525.000000, z: 6046.200017}>; normal course=5
+[2026.11.23-00.39.31:159][589]LogPython: [MWBoosterQA] real pickup overlap granted Booster to P2
+[2026.11.23-00.41.27:028][806]LogPython: [MWBoosterQA] camera pass: real pickup overlap granted Booster to P2
+[2026.11.23-00.44.17:912][600]LogPython: [MWBoosterQA] final camera pass: real pickup overlap granted Booster to P2
+
+[기본 카메라 · 동일한 세 창의 DOUG]
+P   소유    상태                  t(s)    일반 배기  부스터 제트    속력(cm/s)
+P1  원격   발동 전        473.641     2         0           312.67
+P1  원격   발동 중        501.610     0         1           451.33
+P1  원격   자동 종료 후     503.750     2         0           3321.68
+P2  본인   발동 전        473.641     2         0           368.67
+P2  본인   발동 중        501.610     0         1           658.45
+P2  본인   자동 종료 후     503.750     2         0           3286.75
+P3  원격   발동 전        473.157     2         0           149.30
+P3  원격   발동 중        501.610     0         1           451.30
+P3  원격   자동 종료 후     503.750     2         0           3333.29
+
+[최종 근접 카메라 · 동일한 세 창의 DOUG]
+P   소유    상태                  t(s)    일반 배기  부스터 제트    속력(cm/s)
+P1  원격   발동 전        729.157     2         0           346.60
+P1  원격   발동 중        752.016     0         1           450.33
+P1  원격   자동 종료 후     754.094     2         0           4213.41
+P2  본인   발동 전        729.157     2         0           334.60
+P2  본인   발동 중        752.016     0         1           657.41
+P2  본인   자동 종료 후     754.094     2         0           4178.53
+P3  원격   발동 전        728.782     2         0           235.20
+P3  원격   발동 중        752.016     0         1           450.30
+P3  원격   자동 종료 후     754.094     2         0           4213.42
+
+Racing 중 DOUG 관측 상태 변경 행 189개, 동시 활성 0개.
+관측기는 약 33ms 간격으로 조회하고 상태가 바뀔 때 행을 추가한다. 도구 실행 지연과 렌더링 부하는 샘플 간격에 영향을 준다.

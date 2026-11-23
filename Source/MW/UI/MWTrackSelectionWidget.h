@@ -23,18 +23,18 @@ public:
 	void HandleSelectionReply(const FMWTrackSelectionReply& Reply);
 	void ConfirmOffer(int32 OfferId);
 	void PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered);
-	void ShowPlacementStatus(const FText& Players, const FText& Status);
+	void ShowPlacementStatus(const FText& Status);
+	void ShowPlacementEndpoint(const FVector* WorldPosition);
+	void PulsePlacementEndpoint(const FVector& WorldPosition);
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& Geometry, float DeltaSeconds) override;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_Players;
+	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullRect,
+		FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style, bool bParentEnabled) const override;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
-	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Title;
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UWidget> PlacementStatusSpace;
 
 	// 차량 선택 이름표와 같은 판면을 사용한다. 브러시 색은 기본색, 호버 색은 별도로 편집한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
@@ -64,6 +64,9 @@ private:
 	FText RequestError;
 	bool bRequestPending = false;
 	bool bShowingPlacement = false;
+	TOptional<FVector> PlacementEndpoint;
+	TOptional<FVector> ContactPulse;
+	float ContactPulseAge = 0.0f;
 	int32 AcknowledgedOffer = INDEX_NONE;
 	UPROPERTY(Transient) TObjectPtr<UMWRemoteCursorOverlay> RemoteCursors;
 	UPROPERTY(Transient) TSubclassOf<UMWVehiclePlayerMarkerWidget> PointerClass;

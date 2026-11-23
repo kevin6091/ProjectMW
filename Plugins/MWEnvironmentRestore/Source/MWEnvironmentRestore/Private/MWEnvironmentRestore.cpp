@@ -285,6 +285,16 @@ FVector AMWEnvironmentGenerator::TileCenter(FIntPoint Key) const
     return GetActorLocation() + FVector(-Key.X * TileCm, Key.Y * TileCm, 0);
 }
 
+bool AMWEnvironmentGenerator::TryGetFloorZ(double& OutZ) const
+{
+    if (FloorRenderers.IsEmpty())
+    {
+        return false;
+    }
+    OutZ = TileCenter(FIntPoint::ZeroValue).Z;
+    return true;
+}
+
 // 같은 메시의 배경 장식을 인스턴스로 묶고 로컬 표시용 컴포넌트로 등록한다.
 UInstancedStaticMeshComponent* AMWEnvironmentGenerator::CreateRenderer(UStaticMesh* Mesh)
 {
