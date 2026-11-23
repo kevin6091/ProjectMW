@@ -1,0 +1,7 @@
+Cua Driver 3인 PIE | 차량 뒤 좌우 배기 입자
+PIE용 경기 직행은 에디터 메모리에서만 적용했다.
+Host vehicle BP_MWVehiclePawn_FRED_C_0 driven with throttle=1 for 3 s after a 5 s delay
+P1: 정차 0개 → 가속 시 2개, 상대 좌표=[[-66.0, -15.08, 17.0], [-66.0, 15.08, 17.0]] cm; 감속 후 활성 0개
+P2: 정차 0개 → 가속 시 2개, 상대 좌표=[[-66.0, -15.08, 17.0], [-66.0, 15.08, 17.0]] cm; 감속 후 활성 0개
+P3: 정차 0개 → 가속 시 2개, 상대 좌표=[[-66.0, -15.08, 17.0], [-66.0, 15.08, 17.0]] cm; 감속 후 활성 0개
+Niagara asset /Game/Gameplay/Vehicles/Art/Exhaust/NS_MW_VehicleExhaust.NS_MW_VehicleExhaust

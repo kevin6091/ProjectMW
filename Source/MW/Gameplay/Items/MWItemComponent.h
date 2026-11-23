@@ -83,6 +83,9 @@ public:
     // 현재 서버 시각 기준의 남은 시간으로 부스터 활성 여부를 판단한다.
     bool IsBoosterActive() const;
 
+    // 모든 창에 복제되는 표시 상태로 이 창에 실제 생성된 분사구를 조회한다.
+    bool IsBoosterJetActive() const;
+
     // 활성 효과에 적용할 설정 배율이다. 아이템 사용 승인·종료 시각·Snapshot은 변경하지 않는다.
     float GetBoosterSpeedMultiplier() const { return BoosterSpeedMultiplier; }
 
