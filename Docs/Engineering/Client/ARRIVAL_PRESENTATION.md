@@ -95,3 +95,9 @@ UE 5.8 Win64 Development Editor에서 빌드했다. 저장한 WBP를 새 에디�
 세 창의 후속 캡처에서 중앙 안내가 사라진 뒤에도 후보 세 개와 좌상단 선택 목록이 보였다. 세 명이 목재 직선 트랙을 확정하자 `TrackPlacement`에서 기존 ‘트랙을 / 배치하세요’ 마름모가 중앙에 표시됐다. 배치 캡처의 ‘Preparing Shaders’ 문구는 에디터 표시다.
 
 [세 창의 선택 첫 화면·안내 종료·배치 안내 비교](Images/TrackSelectionDiamondThreePlayers.jpg) · [에셋 대조와 PIE 로그](TRACK_SELECTION_DIAMOND_PIE_LOG.txt)
+
+## 첫 장면 렌더 검사 소스 분리
+
+`refactor/arrival-frame`은 PR #17이 포함된 `origin/main`에서 분기했다. `Source/MW/UI/Gameplay/MWArrivalFrame.h`에 Scene View Extension 선언을, `MWArrivalFrame.cpp`에 카메라·세션 확인, 선택 장면 색 샘플링, GPU fence 확인을 옮겼다. `UMWArrivalScreen`은 기존처럼 전방 선언된 렌더 검사를 만들고 가림·입력·이동 실패를 관리한다. 설정값과 공개 조건은 그대로다.
+
+UE 5.8 Win64 Development Editor 빌드에서 `MWArrivalFrame.cpp`와 `MWArrivalScreen.cpp`가 각각 컴파일됐고 링크가 성공했다. 이 브랜치의 검증 범위는 코드 대조와 Editor 빌드다.
