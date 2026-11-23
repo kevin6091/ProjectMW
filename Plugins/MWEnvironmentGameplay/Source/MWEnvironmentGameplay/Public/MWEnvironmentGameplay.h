@@ -79,9 +79,13 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.01"))
     float TrackLaidParticleSizeFraction = 0.63f;
 
-    // 설치 섬광이 먼저 보인 뒤 완성된 골조가 드러날 때까지의 시간이다.
+    // 설치 섬광이 먼저 보인 뒤 골조 첫 층이 드러날 때까지의 시간이다.
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
     float TrackSupportRevealSeconds = 0.40f;
+
+    // 골조 첫 층부터 바닥에 닿는 마지막 층이 드러날 때까지의 시간이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackSupportAssemblySeconds = 0.22f;
 
     UFUNCTION(BlueprintPure, Category = "Environment")
     AMWEnvironmentGenerator* GetGenerator() const
@@ -125,8 +129,10 @@ private:
         double Height;
         double ScaleXY;
         double StartedAt;
-        double Duration;
+        double RevealDelay;
+        double AssemblyDuration;
         int32 Layers;
+        int32 RevealedLayers = 0;
     };
 
     struct FTrackLaidSprite

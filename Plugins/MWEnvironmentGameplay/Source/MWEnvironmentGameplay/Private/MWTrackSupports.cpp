@@ -259,9 +259,11 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         // 층을 이어 높은 조각에서도 가로대 사이 간격과 사선 각도가 과하게 늘어나지 않게 한다.
         const int32 Layers = FMath::Clamp(FMath::RoundToInt(Height / (MeshSize.Z * ScaleXY)), 1, 16);
         const double StartedAt = GetWorld()->GetTimeSeconds();
-        const double Duration = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportRevealSeconds) : 0.0;
+        const double RevealDelay = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportRevealSeconds) : 0.0;
+        const double AssemblyDuration = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportAssemblySeconds) : 0.0;
         const FRotator Rotation = Across.Rotation();
-        PendingSupportBuilds.Add({Piece.PieceId, Top, Rotation.Quaternion(), Height, ScaleXY, StartedAt, Duration, Layers});
+        PendingSupportBuilds.Add({Piece.PieceId, Top, Rotation.Quaternion(), Height, ScaleXY,
+            StartedAt, RevealDelay, AssemblyDuration, Layers});
         ResolvedSupportPieces.Add(Piece.PieceId);
 
         if (bObservedOpenPlacement)
@@ -270,9 +272,9 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         }
         if (VerifySupports())
         {
-            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f"),
+            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f assembly=%.3f"),
                 *GetWorld()->GetOutermost()->GetName(), Session.SessionId, Piece.PieceId,
-                Width, Layers, FloorZ, *Top.ToCompactString(), Duration);
+                Width, Layers, FloorZ, *Top.ToCompactString(), RevealDelay, AssemblyDuration);
         }
     }
 
@@ -326,19 +328,23 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
 {
     const double Now = GetWorld()->GetTimeSeconds();
     const FBox Bounds = ActiveTrackSupportMesh->GetBoundingBox();
-    PendingSupportBuilds.RemoveAll([this, Now, &Bounds](const FTrackSupportBuild& Build)
+    PendingSupportBuilds.RemoveAll([this, Now, &Bounds](FTrackSupportBuild& Build)
     {
         const double Elapsed = Now - Build.StartedAt;
-        if (Elapsed < Build.Duration)
+        if (Elapsed < Build.RevealDelay)
         {
             return false;
         }
 
         const double HeightPerLayer = Build.Height / Build.Layers;
         const double ScaleZ = HeightPerLayer / Bounds.GetSize().Z;
-        for (int32 Layer = 0; Layer < Build.Layers; ++Layer)
+        // 고정된 최종 위치에 위층부터 드러낸다. 프레임이 늦으면 경과한 층까지 따라간다.
+        const double Progress = Build.AssemblyDuration > 0.0
+            ? FMath::Clamp((Elapsed - Build.RevealDelay) / Build.AssemblyDuration, 0.0, 1.0) : 1.0;
+        const int32 LayerCount = 1 + FMath::FloorToInt((Build.Layers - 1) * Progress);
+        for (; Build.RevealedLayers < LayerCount; ++Build.RevealedLayers)
         {
-            const FVector Anchor = Build.Top - FVector(0, 0, Layer * HeightPerLayer + Bounds.Max.Z * ScaleZ);
+            const FVector Anchor = Build.Top - FVector(0, 0, Build.RevealedLayers * HeightPerLayer + Bounds.Max.Z * ScaleZ);
             const FTransform Transform(Build.Rotation, Anchor, FVector(Build.ScaleXY, Build.ScaleXY, ScaleZ));
             // 공유 재질에 인스턴싱 사용 플래그가 없어도 일반 메시 렌더링 경로에서 원래 재질을 쓴다.
             auto* Section = NewObject<UStaticMeshComponent>(Generator, NAME_None, RF_Transient);
@@ -352,6 +358,16 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
             Generator->AddInstanceComponent(Section);
             Section->RegisterComponent();
             TrackSupportComponents.Add(Section);
+            if (VerifySupports())
+            {
+                UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] layer world=%s session=%d piece=%d layer=%d/%d elapsed=%.3f bottom=%.2f"),
+                    *GetWorld()->GetOutermost()->GetName(), SupportSessionId, Build.PieceId, Build.RevealedLayers + 1,
+                    Build.Layers, Elapsed, Anchor.Z + Bounds.Min.Z * ScaleZ);
+            }
+        }
+        if (Build.RevealedLayers < Build.Layers)
+        {
+            return false;
         }
         if (VerifySupports())
         {
