@@ -1,0 +1,24 @@
+# ProjectMW 설원 3인 PIE · UE 5.8 · 2026-11-23 KST
+Git ddb4358, UVCS cs:68
+
+[2026.11.23-01.51.52:328][423]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-01.51.56:270][613]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.23-01.52.08:259][201]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.23-01.52.08:339][203]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.23-01.52.08:351][203]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.23-01.52.08:363][203]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_UFOLOGY_C_0
+[2026.11.23-01.52.25:468][928]LogPython: [MWBoosterQA] integration camera reset pass: real pickup overlap granted Booster to P2
+
+DOUG 상태 변화 (t는 관측기 시작 후 경과 초)
+P1 발동 전 t=197.172 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+P1 발동 중 t=215.734 일반=0 부스터=1 위치(cm)=[]
+P1 종료 후 t=217.812 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+P2 발동 전 t=197.172 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+P2 발동 중 t=215.734 일반=0 부스터=1 위치(cm)=[]
+P2 종료 후 t=217.875 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+P3 발동 전 t=196.640 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+P3 발동 중 t=215.734 일반=0 부스터=1 위치(cm)=[]
+P3 종료 후 t=217.875 일반=2 부스터=0 위치(cm)=[[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]
+
+상태 변화 관측 29행 중 두 효과 동시 활성 0회.
+서버 원본 SHA-256 a3139a914b3151c21d209ee0b4517a9b64195d1889f459b7f869cb525c23ced7
