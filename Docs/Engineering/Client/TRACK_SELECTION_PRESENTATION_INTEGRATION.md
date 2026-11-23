@@ -15,3 +15,10 @@
 - **정상 진입.** 로비에서 세 명이 준비하고 차량을 선택했다. 출발 보고 뒤 세 창이 `L_Dev_Drive`의 트랙 선택 카메라를 공개했다. P3 경사, P1 직선, P2 곡선을 차례로 설치했다. 서버는 조각 2·3·4를 승인했고 세 창 모두 시작 조각 위에서 자기 차량을 소유한 상태로 Racing에 진입했다. 경사 조각 설치와 Racing 시작까지를 검증 범위로 기록한다. [세 창 출발선](Images/PresentationIntegrationRace.jpg)
 - **45초 뒤 늦은 도착.** 별도 실행에서 P3의 출발 보고를 지연시키고 P1·P2 타임아웃을 기다렸다. P1·P2에서 출발 월드 `L_Title`의 기본 45초 복구 화면을 기록했다. 이후 지연을 풀어 원래 출발 보고 경로로 `L_Dev_Drive`에 진입했다. 기존 시도의 ID로 새 월드가 공개됐고 세 창의 실제 트랙 선택 클릭이 승인되어 배치까지 열렸다. [45초 안내와 복구 캡처](Images/PresentationIntegrationRecovery.jpg)
 - **차량 자동화.** 9개 중 8개 통과. `MW.Vehicle.CollisionAndGround`의 `Upward impulse releases ground`, `Upward impulse is not erased` 두 단언은 기준 main 이력과 동일하게 실패했다. [이전 차량 이동 검증](VEHICLE_PAWN_LOCAL_MOVEMENT.md) · [이번 실행 로그](PRESENTATION_ARRIVAL_PIE_LOG.txt)
+
+## 좌상단 트랙 상태판 축소
+
+- 편집 위치는 `/Game/UI/Construction/WBP_TrackSelectionTest` Designer다. `Size_SelectionGuide` 너비를 402에서 310으로 약 23% 줄였다. `Rows_SelectionGuide` 여백을 좌우 30에서 20으로, 위아래 16·17에서 10으로 줄였다. `PlacementStatusRow`의 위아래 여백은 8·15에서 4·7로 조정했다.
+- `Text_Title`과 `Text_SessionStatus`는 기존 Noto Sans KR 글꼴에서 23·18 크기를 사용하고 `Text_Players`는 17을 유지한다. 안내의 줄바꿈 폭은 286에서 270으로 맞췄다. `PlacementStatusSpace` 높이는 129에서 72로 줄여 가장 작은 창에서도 세 줄 안내와 참가자 목록에 공간을 남긴다.
+- WBP 컴파일 성공. 같은 세 창에서 수정 전후 선택과 배치를 비교했다. 후보 이름표 3개, 세 참가자 행과 위치·회전 안내를 읽을 수 있었고, P3 설치 뒤 ‘설치했습니다’ 상태와 참가자 목록이 겹치지 않았다. Cua Driver로 세 명의 선택과 설치를 각각 확정했으며 세 창 모두 Racing에 진입했다. 중앙 안내는 `WBP_MatchPanels`가 계속 담당한다. [전후 비교](Images/TrackStatusPanelMixedDpi.jpg) · [승인 및 단계 로그](TRACK_STATUS_PANEL_PIE_LOG.txt)
+- 팀원이 받을 파일은 UVCS **cs:70**의 `Content/UI/Construction/WBP_TrackSelectionTest.uasset`이다. 변경 세트는 WBP 1개로 구성됐다. PIE에서 읽은 SHA-256과 서버에서 `cm cat`으로 다시 받은 SHA-256이 `f5905188d18e88c6d2cbd397508b9428128434f9ab16b333f1a2cb05778c514e`로 일치했다.
