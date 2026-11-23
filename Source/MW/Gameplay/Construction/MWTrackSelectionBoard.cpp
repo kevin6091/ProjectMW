@@ -4,6 +4,8 @@
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Gameplay/Construction/MWTrackSelectionExposure.h"
 #include "UI/MWTrackSelectionWidget.h"
 #include "UI/Cursor/MWCursorProjection.h"
@@ -24,6 +26,8 @@ namespace
 	constexpr double ColumnSpacing = 1120.0;
 	constexpr double BoardHeight = 80.0;
 	const FVector SlotExtent(410.0, 460.0, 225.0);
+	const FVector SelectionExtent = SlotExtent + FVector(RowSpacing * (MWTrackSelection::Rows - 1) * 0.5,
+		ColumnSpacing * (MWTrackSelection::Columns - 1) * 0.5, 0.0);
 	const FVector SelectionViewDirection(-1.0, 0.0, -1.8);
 
 	void FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction)
@@ -93,10 +97,30 @@ void AMWTrackSelectionBoard::BeginPlay()
 	{
 		const int32 Row = Index / MWTrackSelection::Columns;
 		const int32 Column = Index % MWTrackSelection::Columns;
-		const FVector Slot((Row - 0.5) * RowSpacing, (1 - Column) * ColumnSpacing, BoardHeight);
+		const FVector Slot((Row - (MWTrackSelection::Rows - 1) * 0.5) * RowSpacing,
+			((MWTrackSelection::Columns - 1) * 0.5 - Column) * ColumnSpacing, BoardHeight);
 		SlotAnchors[Index]->SetRelativeLocation(Slot * LayoutScale);
 	}
 	Camera->SetRelativeLocation(Camera->GetRelativeLocation() * LayoutScale);
+	if (const UStaticMesh* BackdropMesh = SelectionBackdrop->GetStaticMesh())
+	{
+		const FBox MeshBounds = BackdropMesh->GetBoundingBox();
+		const FVector MeshSize = MeshBounds.GetSize();
+		if (MeshSize.X > UE_SMALL_NUMBER && MeshSize.Y > UE_SMALL_NUMBER)
+		{
+			// 레벨이 고른 메시와 높이는 유지하고, 전시 면만 현재 슬롯 배치에 맞춘다.
+			const FVector RequiredSize = SelectionExtent * (2.0 * LayoutScale);
+			FVector Scale = SelectionBackdrop->GetRelativeScale3D();
+			Scale.X = FMath::Max(Scale.X, RequiredSize.X / MeshSize.X);
+			Scale.Y = FMath::Max(Scale.Y, RequiredSize.Y / MeshSize.Y);
+			const FVector Center = SelectionBackdrop->GetRelativeRotation().RotateVector(MeshBounds.GetCenter() * Scale);
+			FVector Location = SelectionBackdrop->GetRelativeLocation();
+			Location.X = -Center.X;
+			Location.Y = -Center.Y;
+			SelectionBackdrop->SetRelativeLocation(Location);
+			SelectionBackdrop->SetRelativeScale3D(Scale);
+		}
+	}
 }
 
 void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
@@ -118,7 +142,7 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	{
 		// 전시 화면은 열을 수평으로 보고, 선택 후 빈 칸이 생겨도 카메라 범위는 고정한다.
 		OutResult.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
-		const FVector Extent = (SlotExtent + FVector(RowSpacing * 0.5, ColumnSpacing, 0.0)) * LayoutScale;
+		const FVector Extent = SelectionExtent * LayoutScale;
 		const FBox LocalBounds(-Extent, Extent);
 		const FVector Center = GetBuildOrigin();
 		FrameBounds(OutResult, LocalBounds.TransformBy(FTransform(GetActorQuat(), Center)), Aspect, 0.74);
