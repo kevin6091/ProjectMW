@@ -7,6 +7,7 @@
 
 class UCameraComponent;
 class UBoxComponent;
+class UStaticMeshComponent;
 class AMWGameplayPlayerController;
 
 // 실제 트랙 BP를 로컬 월드에 전시한다. 설치된 코스 Actor와는 별도 수명이다.
@@ -35,6 +36,10 @@ protected:
 	// 레벨에 저장된 값을 유지하기 위해 기존 프로퍼티 이름을 쓴다.
 	UPROPERTY(EditAnywhere, Category="Selection", meta=(DisplayName="Frame Course During Placement"))
 	bool bUseTopDownPlacementCamera = true;
+
+	// 메시와 배치는 경기 레벨에서 지정한다. 전시 배경이 없는 맵에서도 후보를 선택할 수 있다.
+	UPROPERTY(VisibleAnywhere, Category="Selection")
+	TObjectPtr<UStaticMeshComponent> SelectionBackdrop;
 
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
 	UPROPERTY(VisibleAnywhere) TArray<TObjectPtr<USceneComponent>> Anchors;
