@@ -17,10 +17,6 @@ class MW_API UMWRaceHUDWidget : public UUserWidget
 {
     GENERATED_BODY()
 
-public:
-    // 개발 맵에서는 경기 단계 없이 계기판을 표시한다.
-    void SetSpeedometerOnly(bool bEnabled);
-
 protected:
     virtual void NativePreConstruct() override;
 
@@ -92,6 +88,4 @@ private:
     int32 DisplayedSpeedKmh = INDEX_NONE;
 
     double NextSpeedSampleTime = 0.0;
-
-    bool bSpeedometerOnly = false;
 };

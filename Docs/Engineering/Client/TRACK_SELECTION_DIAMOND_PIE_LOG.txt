@@ -1,0 +1,166 @@
+[Authoring and reopen]
+[2026.11.20-04.37.23:860][  0]LogPython: MW_SELECT_DIAMOND_SAVED sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.20-04.41.39:063][  2]LogPython: MW_SELECT_DIAMOND_REOPEN_COMPILED sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89 untouched_cs63=9
+
+[Designer and hashes]
+{
+  "before_sha256": "ca5bc07eb791d1457dd6b7e10f6f8fc106cf07e5d0d044dfb91dc7266c4854ea",
+  "after_sha256": "6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89",
+  "old_caption": "트랙을 선택하세요",
+  "old_slot": "(Offsets=(Left=0.000000,Top=0.000000,Right=740.000000,Bottom=172.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))",
+  "select": {
+    "label": "트랙을\n선택하세요",
+    "visibility": "<SlateVisibility.COLLAPSED: 1>",
+    "slot": "(Offsets=(Left=0.000000,Top=0.000000,Right=385.000000,Bottom=385.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))",
+    "z": 0,
+    "style": {
+      "loading": "False",
+      "face_color": [
+        255,
+        162,
+        22,
+        255
+      ],
+      "edge_color": [
+        50,
+        43,
+        31,
+        255
+      ],
+      "edge_thickness": "0.041999999433755875",
+      "font_size": "54.0"
+    }
+  },
+  "build": {
+    "label": "트랙을\n배치하세요",
+    "visibility": "<SlateVisibility.COLLAPSED: 1>",
+    "slot": "(Offsets=(Left=0.000000,Top=0.000000,Right=385.000000,Bottom=385.000000),Anchors=(Minimum=(X=0.500000,Y=0.500000),Maximum=(X=0.500000,Y=0.500000)),Alignment=(X=0.500000,Y=0.500000))",
+    "z": 0,
+    "style": {
+      "loading": "False",
+      "face_color": [
+        255,
+        162,
+        22,
+        255
+      ],
+      "edge_color": [
+        50,
+        43,
+        31,
+        255
+      ],
+      "edge_thickness": "0.041999999433755875",
+      "font_size": "54.0"
+    }
+  }
+}
+
+[PIE evidence in UTC]
+[2026.11.20-04.43.37:921][178]LogTemp: Display: MWArrival covered attempt=8531FDB84D47461C14EB0AA19DF9321B world=L_Title map=/Game/Levels/L_Dev_Drive t=16879136.382223
+[2026.11.20-04.43.37:998][179]LogTemp: Display: MWArrival covered attempt=1627D00B46B8DF55678F16A4129C7F04 world=L_Title map=/Game/Levels/L_Dev_Drive t=16879136.385693
+[2026.11.20-04.43.38:063][179]LogTemp: Display: MWArrival covered attempt=7F674C2A467D4FDBFE18CDB01E38A64E world=L_Title map=/Game/Levels/L_Dev_Drive t=16879136.387691
+[2026.11.20-04.43.38:110][179]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+[2026.11.20-04.43.38:781][184]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+[2026.11.20-04.43.40:477][227]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+[2026.11.20-04.43.40:557][230]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+[2026.11.20-04.43.40:635][234]LogTemp: Display: MWArrival ready attempt=8531FDB84D47461C14EB0AA19DF9321B world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16879138.158208
+[2026.11.20-04.43.40:650][235]LogTemp: Display: MWArrival ready attempt=1627D00B46B8DF55678F16A4129C7F04 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16879138.363120
+[2026.11.20-04.43.40:666][236]LogTemp: Display: MWArrival ready attempt=7F674C2A467D4FDBFE18CDB01E38A64E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16879138.363189
+[2026.11.20-04.43.41:039][254]LogTemp: Display: MWArrival reveal attempt=1627D00B46B8DF55678F16A4129C7F04 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16879139.545463
+[2026.11.20-04.43.41:074][256]LogTemp: Display: MWArrival reveal attempt=7F674C2A467D4FDBFE18CDB01E38A64E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16879139.569598
+[2026.11.20-04.43.41:123][259]LogTemp: Display: MWArrival reveal attempt=8531FDB84D47461C14EB0AA19DF9321B world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16879139.625133
+[2026.11.20-04.44.46:685][685]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+[2026.11.20-04.44.46:720][685]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+[2026.11.20-04.44.46:748][686]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+
+[First captured selection and placement signs]
+[
+  {
+    "member": 1,
+    "select": {
+      "file": "select_22_p1.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_first_reveal_seconds": 0.127356
+    },
+    "build": {
+      "file": "build_01_p1.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_authority_transition_seconds": 0.366378
+    }
+  },
+  {
+    "member": 2,
+    "select": {
+      "file": "select_22_p2.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_first_reveal_seconds": 0.193358
+    },
+    "build": {
+      "file": "build_00_p2.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_authority_transition_seconds": 0.184382
+    }
+  },
+  {
+    "member": 3,
+    "select": {
+      "file": "select_22_p3.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_first_reveal_seconds": 0.262356
+    },
+    "build": {
+      "file": "build_00_p3.png",
+      "center": [
+        232.5,
+        144.5
+      ],
+      "line_x_delta": [
+        0.0,
+        0.0
+      ],
+      "ink_y_delta": 1.0,
+      "since_authority_transition_seconds": 0.24938
+    }
+  }
+]

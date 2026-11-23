@@ -1,0 +1,158 @@
+PR #17 · UVCS cs:63 서버 원본으로 전체 3인 PIE 확인
+2026-11-20 KST · UE 5.8 Win64 Development Editor · LocalIP 리슨 호스트 · 설원 L_Dev_Drive
+Git ddcb90a6b00b68b2b00b03f8cdaa9a0075a82021 / UVCS /main cs:63
+로비 준비·차량/트랙 선택·설치 및 화면 캡처는 Cua Driver로 수행했다.
+Unreal Editor Python은 런타임 상태와 원본 파일의 해시를 읽었다.
+테스트용 시간 배율·패킷 지연·후보 변경 없이 진행했다.
+가림부터 트랙 선택 공개까지의 단조 시계 차(초) [4.041, 3.676, 3.706]
+
+[마름모 초기·후속 캡처 측정값]
+{
+  "1": [
+    {
+      "file": "early_p1.png",
+      "time": 0.193,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    },
+    {
+      "file": "next_p1.png",
+      "time": 0.685,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    }
+  ],
+  "2": [
+    {
+      "file": "early_p2.png",
+      "time": 0.28,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    },
+    {
+      "file": "next_p2.png",
+      "time": 0.779,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    }
+  ],
+  "3": [
+    {
+      "file": "early_p3.png",
+      "time": 0.358,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    },
+    {
+      "file": "next_p3.png",
+      "time": 0.865,
+      "face_center": [
+        463.5,
+        269.5
+      ],
+      "line_x_delta": [
+        0.5,
+        0.0
+      ],
+      "ink_y_delta": 1.0
+    }
+  ]
+}
+
+[서버·클라이언트 로그 발췌 · 원본 줄 번호 / UTC]
+1969: [2026.11.20-03.28.33:715][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Common/WBP_MWLoading.uasset sha256=6abf86be047011e3703b792bfee9a996992067a80741b6b01abb5621f5826e97
+1970: [2026.11.20-03.28.33:720][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Race/WBP_MatchPanels.uasset sha256=ca5bc07eb791d1457dd6b7e10f6f8fc106cf07e5d0d044dfb91dc7266c4854ea
+1971: [2026.11.20-03.28.33:732][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Common/T_Make_Way_Logo_v1_Pole_49ad24987e58.uasset sha256=f1ba6eb5e7a5de071624a5185871ece66b017ab973817b80f8f2282560644083
+1972: [2026.11.20-03.28.33:744][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Common/T_Make_Way__Logo_Small_Sign_5909de5ef398.uasset sha256=38131eb337a71b27aca3b246f08684e6fda8679a6b86ecea2b216c7e458c6275
+1973: [2026.11.20-03.28.33:756][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Lobby/VehicleSelection/T_MW_VehiclePreview_InvisiblePilot.uasset sha256=187b1799516495f7cf573f4575cdefe18b89393fcb931e90b6d68db56edd3e9d
+1974: [2026.11.20-03.28.33:767][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Lobby/VehicleSelection/WBP_VehiclePlayerMarker_Dev.uasset sha256=241d7defda07884162c470b48d825687fe25a7f58668ad44b756f54bdf3f7498
+1975: [2026.11.20-03.28.33:778][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Lobby/VehicleSelection/WBP_VehicleSelection_Dev.uasset sha256=b85969aae71ac53a22975c0b8b6c89f970d9996d0d3691d4a3f2f1c2a01902f7
+1976: [2026.11.20-03.28.33:790][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Lobby/VehicleSelection/BP_VehicleSelectionPreview_Dev.uasset sha256=63d4fc9928cb7c49d654e0b0505ed62d89b4b62ff3523a7f586dfb13dfc642f0
+1977: [2026.11.20-03.28.33:801][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Lobby/VehicleSelection/M_VehicleSelectionBoard.uasset sha256=cebc5b123e7144f1c97077f159cc1c70790774ae0e6ae5ca292776cb66af8668
+1978: [2026.11.20-03.28.33:813][  2]LogPython: CS63_SERVER_ASSET path=Content/UI/Construction/WBP_TrackSelectionTest.uasset sha256=5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b
+1980: [2026.11.20-03.28.33:836][  3]LogPython: CS63_SERVER_ORIGINALS_READY files=10 BuildSign=MWGameplaySignWidget
+2438: [2026.11.20-03.32.25:270][856]LogTemp: Display: MWArrival covered attempt=AFD51ABC4EDD5A7E30F0CA92F56B169F world=L_Title map=/Game/Levels/L_Dev_Drive t=16874863.746663
+2439: [2026.11.20-03.32.25:281][856]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=2
+2443: [2026.11.20-03.32.25:330][857]LogTemp: Display: MWArrival covered attempt=D732E7BD4CBA06D15B7E88899EFEB73E world=L_Title map=/Game/Levels/L_Dev_Drive t=16874863.748976
+2447: [2026.11.20-03.32.25:377][857]LogTemp: Display: MWArrival covered attempt=BD2CFF6840E3D0F8A7E8E5A92442171E world=L_Title map=/Game/Levels/L_Dev_Drive t=16874863.751028
+2448: [2026.11.20-03.32.25:391][857]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=1
+2449: [2026.11.20-03.32.25:424][857]LogMWServer: [MWTravel] Vehicle departure ready. Player=3 Remaining=0
+2450: [2026.11.20-03.32.25:436][857]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2513: [2026.11.20-03.32.26:137][859]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2550: [2026.11.20-03.32.26:556][864]LogPython: CS63_FULL_PIE_PHASE member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2602: [2026.11.20-03.32.27:150][866]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2607: [2026.11.20-03.32.27:209][866]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2614: [2026.11.20-03.32.27:245][866]LogPython: CS63_FULL_PIE_PHASE member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2615: [2026.11.20-03.32.27:257][866]LogPython: CS63_FULL_PIE_PHASE member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> pawn=SpectatorPawn_1
+2616: [2026.11.20-03.32.27:361][866]LogTemp: Display: MWArrival ready attempt=AFD51ABC4EDD5A7E30F0CA92F56B169F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16874865.867646
+2617: [2026.11.20-03.32.27:504][868]LogTemp: Display: MWArrival ready attempt=D732E7BD4CBA06D15B7E88899EFEB73E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16874866.008973
+2618: [2026.11.20-03.32.27:514][868]LogTemp: Display: MWArrival ready attempt=BD2CFF6840E3D0F8A7E8E5A92442171E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 materials=6 t=16874866.009057
+2619: [2026.11.20-03.32.28:919][913]LogTemp: Display: MWArrival reveal attempt=D732E7BD4CBA06D15B7E88899EFEB73E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16874867.424683
+2622: [2026.11.20-03.32.28:951][914]LogTemp: Display: MWArrival reveal attempt=BD2CFF6840E3D0F8A7E8E5A92442171E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16874867.457458
+2625: [2026.11.20-03.32.29:280][925]LogTemp: Display: MWArrival reveal attempt=AFD51ABC4EDD5A7E30F0CA92F56B169F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16874867.787366
+2644: [2026.11.20-03.33.11:875][495]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2645: [2026.11.20-03.33.11:881][495]LogMWServer: [MWTrackPlacement] Opened session=1 players=3
+2647: [2026.11.20-03.33.11:904][495]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2648: [2026.11.20-03.33.11:916][495]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2651: [2026.11.20-03.33.11:959][495]LogPython: CS63_FULL_PIE_PHASE member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2652: [2026.11.20-03.33.11:965][496]LogPython: CS63_FULL_PIE_PHASE member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2653: [2026.11.20-03.33.11:975][496]LogPython: CS63_FULL_PIE_PHASE member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> pawn=SpectatorPawn_1
+2659: [2026.11.20-03.33.44:926][874]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(255.0,180.0) ghost=(260.390000000,450.000000000,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+2660: [2026.11.20-03.33.44:932][874]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+2662: [2026.11.20-03.34.04:239][815]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(221.0,171.0) ghost=(5260.390000000,450.000437114,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+2663: [2026.11.20-03.34.04:257][816]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+2667: [2026.11.20-03.34.22:146][717]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=0 pointer=(195.0,164.0) ghost=(10260.390000000,450.001311342,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+2668: [2026.11.20-03.34.22:167][718]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+2674: [2026.11.20-03.34.22:265][719]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2679: [2026.11.20-03.34.22:324][720]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2683: [2026.11.20-03.34.22:371][721]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2686: [2026.11.20-03.34.22:407][722]LogPython: CS63_FULL_PIE_PHASE member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+2687: [2026.11.20-03.34.22:418][722]LogPython: CS63_FULL_PIE_PHASE member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0
+2688: [2026.11.20-03.34.22:430][723]LogPython: CS63_FULL_PIE_PHASE member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_Smiet_C_0
+
+[실제 출발선의 창별 차량 소유와 위치(cm)]
+{"member": 1, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_FRED_C_0", "possessed": true, "location": [-2620.0, 375.0, 6069.2], "world": "/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "time_dilation": 1.0}
+{"member": 2, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_DOUG_C_0", "possessed": true, "location": [-2620.0, 525.0, 6046.2], "world": "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "time_dilation": 1.0}
+{"member": 3, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_Smiet_C_0", "possessed": true, "location": [-2870.0, 375.0, 6051.2], "world": "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive", "time_dilation": 1.0}
+
+[완성 코스의 서버 기록]
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_2'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_3'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=10260.390000,Y=450.001311,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=15260.390000,Y=450.002623,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)

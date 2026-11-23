@@ -15,6 +15,9 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SOverlay.h"
+#include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SScrollBox.h"
 
 // 기준 1920×1080 구도를 실제 Viewport의 안전 영역 안에 비율대로 맞춘다.
 TSharedRef<SWidget> MWGameplayUI::FitDesignCanvas(TSharedRef<SWidget> Content, EHorizontalAlignment Horizontal,
@@ -30,20 +33,8 @@ FMWGameplayUIArt::FMWGameplayUIArt()
 {
     const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
     DisplayFont.Reset(Settings->DisplayFont.LoadSynchronous());
-    Logo.Reset(Settings->BoardLogo.LoadSynchronous());
-    Pole.Reset(Settings->BoardPole.LoadSynchronous());
     Bolt.Reset(Settings->BoardBolt.LoadSynchronous());
-    LogoImage.SetResourceObject(Logo.Get());
-    PoleImage.SetResourceObject(Pole.Get());
     BoltImage.SetResourceObject(Bolt.Get());
-    LogoImage.DrawAs = ESlateBrushDrawType::Image;
-    PoleImage.DrawAs = ESlateBrushDrawType::Image;
-
-    // 브러시 기본 크기 대신 실제 텍스처 비율을 사용해 로고가 가로로 늘어나지 않게 한다.
-    if (const UTexture2D* Texture = Cast<UTexture2D>(Logo.Get()))
-    {
-        LogoImage.SetImageSize(FVector2f(Texture->GetSizeX(), Texture->GetSizeY()));
-    }
     BoltImage.DrawAs = ESlateBrushDrawType::Image;
 }
 
@@ -51,18 +42,6 @@ FMWGameplayUIArt::FMWGameplayUIArt()
 FSlateFontInfo FMWGameplayUIArt::Font(float Size) const
 {
     return DisplayFont ? FSlateFontInfo(DisplayFont.Get(), Size) : FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), Size);
-}
-
-// 공통 로고 자원이 준비됐으면 그 브러시를 반환하고 없으면 표시할 로고가 없음을 알린다.
-const FSlateBrush* FMWGameplayUIArt::LogoBrush() const
-{
-    return Logo ? &LogoImage : FCoreStyle::Get().GetBrush(TEXT("NoBrush"));
-}
-
-// 로고에 포함된 기둥과 별도의 기둥을 겹쳐 그리지 않도록 분리 자원만 사용한다.
-const FSlateBrush* FMWGameplayUIArt::PoleBrush() const
-{
-    return Pole ? &PoleImage : FCoreStyle::Get().GetBrush(TEXT("NoBrush"));
 }
 
 // 공통 볼트 자원을 우선 사용하고 누락된 경우에만 기존 벡터 대체 표시를 반환한다.
@@ -103,12 +82,46 @@ void SMWGameplayPanel::Construct(const FArguments& Args)
                                       22.f)[SNew(SImage).Image(Art.BoltBrush())]]]];
 }
 
+TSharedRef<SWidget> MWGameplayUI::RecoveryPanel(const FText& Message, const FText& RetryLabel, FOnClicked Retry,
+    const FText& LeaveLabel, FOnClicked Leave, bool bCanRetry, TSharedPtr<SButton>& InitialFocus)
+{
+    FMWGameplayUIArt Art;
+    const auto Action = [&Art](const FText& Label, FOnClicked Callback)
+    {
+        return SNew(SButton)
+            .HAlign(HAlign_Center).VAlign(VAlign_Center)
+            .ContentPadding(FMargin(32.f, 10.f)).ButtonColorAndOpacity(FLinearColor::FromSRGBColor(FColor(20, 65, 98)))
+            .OnClicked(Callback)
+            [SNew(STextBlock).Font(Art.Font(31.f)).ColorAndOpacity(FLinearColor::White).Text(Label)];
+    };
+    auto RetryButton = Action(RetryLabel, Retry);
+    auto LeaveButton = Action(LeaveLabel, Leave);
+    // 재시도할 수 없는 오류에서도 키보드로 보이는 버튼에 바로 접근할 수 있게 한다.
+    InitialFocus = bCanRetry ? RetryButton : LeaveButton;
+    RetryButton->SetVisibility(bCanRetry ? EVisibility::Visible : EVisibility::Collapsed);
+    return FitDesignCanvas(SNew(SOverlay) + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+        [SNew(SMWGameplayPanel).Size(FVector2D(1040.f, 410.f))
+            .Fill(FLinearColor::FromSRGBColor(FColor(16, 162, 220)))
+            .Border(FLinearColor::FromSRGBColor(FColor(9, 46, 68))).BorderWidth(6.f)
+            [SNew(SVerticalBox)
+                + SVerticalBox::Slot().FillHeight(1.f).Padding(74.f, 55.f, 74.f, 18.f).VAlign(VAlign_Center)
+                [SNew(SScrollBox) + SScrollBox::Slot()
+                    [SNew(STextBlock).Font(Art.Font(40.f)).ColorAndOpacity(FLinearColor::White)
+                        .Justification(ETextJustify::Center).AutoWrapText(true).Text(Message)]]
+                + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(32.f, 0.f, 32.f, 64.f)
+                [SNew(SHorizontalBox) + SHorizontalBox::Slot().AutoWidth()[RetryButton]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(bCanRetry ? 20.f : 0.f, 0.f, 0.f, 0.f)[LeaveButton]]]]);
+}
+
 // 표지판 문구와 로딩 애니메이션 상태를 준비한다. 게임 진행 단계를 자체 승인하지 않는다.
 void SMWGameplaySign::Construct(const FArguments& Args)
 {
     Label = Args._Label;
     bAnimateLoading = Args._AnimateLoading;
-    SignFont = Art.Font(bAnimateLoading ? 74.f : 54.f);
+    FaceColor = Args._FaceColor;
+    EdgeColor = Args._EdgeColor;
+    FaceInset = .914f - FMath::Clamp(Args._EdgeThickness, 0.f, .4f);
+    SignFont = Art.Font(Args._FontSize > 0.f ? Args._FontSize : (bAnimateLoading ? 74.f : 54.f));
     const float Size = bAnimateLoading ? 568.f : 385.f;
     ChildSlot[SNew(SBox).WidthOverride(Size).HeightOverride(Size)];
 
@@ -140,7 +153,6 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
     const FVector2f Center(Geometry.GetLocalSize() * .5);
     const float BaseRadius = FMath::Min(Center.X, Center.Y);
     const float Radius = BaseRadius * LoadingScale;
-    constexpr float FaceInset = .872f;
     constexpr float TextEdgePadding = .025f;
     const float Face = FMath::Cos(LoadingAngle);
     const float Depth = FMath::Sin(LoadingAngle);
@@ -170,8 +182,8 @@ int32 SMWGameplaySign::OnPaint(const FPaintArgs&, const FGeometry& Geometry, con
                                  {.027f, .986f},   {-.027f, .986f}, {-.986f, .027f}, {-.986f, -.027f}};
     Polygon(Outline, FColor(127, 105, 68), 1.f, .034f);
     Polygon(Outline, FColor(255, 187, 49));
-    Polygon(Outline, FColor(50, 43, 31), .914f);
-    Polygon(Outline, FColor(255, 162, 22), FaceInset);
+    Polygon(Outline, EdgeColor, .914f);
+    Polygon(Outline, FaceColor, FaceInset);
 
     if (bAnimateLoading)
     {

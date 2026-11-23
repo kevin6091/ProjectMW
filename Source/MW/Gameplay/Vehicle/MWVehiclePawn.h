@@ -85,6 +85,9 @@ public:
         return ItemComponent;
     }
 
+    // 서버가 고른 체크포인트 후보로 안전 이동한다. 성공한 후보에서만 속도를 초기화한다.
+    bool RespawnAtCheckpoint(const FVector& Location, const FRotator& Rotation);
+
     // main의 차체 표시 완충 뒤에 캐시한 바퀴·자국 표시를 갱신한다.
     virtual void Tick(float DeltaSeconds) override;
 
@@ -168,6 +171,8 @@ protected:
 	TObjectPtr<UMWVehiclePresentationComponent> PresentationTick;
 
 private:
+    bool bRespawningAtCheckpoint = false;
+
 	friend class UMWVehicleMovementComponent;
 	friend class UMWVehiclePresentationComponent;
 	friend class FMWRaceDriveNetworkTest;

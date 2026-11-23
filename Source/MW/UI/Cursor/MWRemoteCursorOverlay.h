@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "MWRemoteCursorOverlay.generated.h"
 
+class UMWVehiclePlayerMarkerWidget;
 class UCanvasPanel;
 class UScaleBox;
 
@@ -16,12 +17,19 @@ struct FMWCursorVisualLayout
 };
 
 // 화면 위 표시와 보간만 담당한다. 네트워크·차량·트랙 상태를 조회하지 않는다.
-UCLASS()
+UCLASS(Config=Game, DefaultConfig)
 class MW_API UMWRemoteCursorOverlay : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(Config)
+	TSoftClassPtr<UMWVehiclePlayerMarkerWidget> PointerWidgetClass;
+
+	// 공통 크기는 DPI 적용 전 논리 단위다. 소프트웨어 커서만 픽셀로 바꿔 넘긴다.
+	UPROPERTY(Config)
+	float PointerDisplaySize = 154.834854f;
+
 	void BeginCursorFrame();
 	UUserWidget* FindCursorVisual(int32 PlayerId) const;
 	void PresentCursor(int32 PlayerId, int32 StreamId, FVector2D Target, UUserWidget* Visual,

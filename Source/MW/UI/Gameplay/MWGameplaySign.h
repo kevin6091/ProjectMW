@@ -5,6 +5,7 @@
 #include "Fonts/SlateFontInfo.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
+#include "Widgets/Input/SButton.h"
 
 class UFont;
 class UTexture2D;
@@ -22,6 +23,14 @@ namespace MWGameplayUI
                                                EVerticalAlignment Vertical = VAlign_Center);
 }
 
+// 이동 경로별 문구와 동작만 받아 로비와 경기 복구 안내에 같은 판면을 사용한다.
+namespace MWGameplayUI
+{
+    MW_API TSharedRef<SWidget> RecoveryPanel(const FText& Message,
+        const FText& RetryLabel, FOnClicked Retry, const FText& LeaveLabel, FOnClicked Leave,
+        bool bCanRetry, TSharedPtr<SButton>& InitialFocus);
+}
+
 // 공통 폰트·로고·볼트 자원의 수명을 유지해 Slate 표시 중 참조가 사라지지 않게 한다.
 struct MW_API FMWGameplayUIArt
 {
@@ -30,27 +39,13 @@ struct MW_API FMWGameplayUIArt
     // 프로젝트의 공통 글꼴을 사용하고 자원이 없을 때만 기존 대체 글꼴로 표시한다.
     FSlateFontInfo Font(float Size) const;
 
-    // 공통 로고 자원이 준비됐으면 그 브러시를 반환하고 없으면 표시할 로고가 없음을 알린다.
-    const FSlateBrush* LogoBrush() const;
-
-    // 로고와 분리된 원본 기둥을 한 번만 그린다. 자원이 없으면 기둥을 생략한다.
-    const FSlateBrush* PoleBrush() const;
-
     // 공통 볼트 자원을 우선 사용하고 누락된 경우에만 기존 벡터 대체 표시를 반환한다.
     const FSlateBrush* BoltBrush() const;
 
 private:
     TStrongObjectPtr<UObject> DisplayFont;
 
-    TStrongObjectPtr<UObject> Logo;
-
-    TStrongObjectPtr<UObject> Pole;
-
     TStrongObjectPtr<UObject> Bolt;
-
-    FSlateBrush LogoImage;
-
-    FSlateBrush PoleImage;
 
     FSlateBrush BoltImage;
     FSlateRoundedBoxBrush FallbackBolt{FLinearColor(.34f, .39f, .44f), 12.f};
@@ -83,12 +78,16 @@ class MW_API SMWGameplaySign : public SCompoundWidget
 {
 public:
     SLATE_BEGIN_ARGS(SMWGameplaySign)
-        : _AnimateLoading(false)
+        : _AnimateLoading(false), _FaceColor(255,162,22), _EdgeColor(50,43,31), _EdgeThickness(.042f), _FontSize(0.f)
     {
     }
     SLATE_ARGUMENT(FText, Label)
     // 로딩 화면에서만 명시적으로 켠다. 일반 안내판은 회전·확대 모드를 사용하지 않는다.
     SLATE_ARGUMENT(bool, AnimateLoading)
+    SLATE_ARGUMENT(FColor, FaceColor)
+    SLATE_ARGUMENT(FColor, EdgeColor)
+    SLATE_ARGUMENT(float, EdgeThickness)
+    SLATE_ARGUMENT(float, FontSize)
     SLATE_END_ARGS()
 
     // 표지판 문구와 로딩 애니메이션 상태를 준비한다. 게임 진행 단계를 자체 승인하지 않는다.
@@ -106,6 +105,8 @@ private:
     FMWGameplayUIArt Art;
 
     FText Label;
+    FColor FaceColor, EdgeColor;
+    float FaceInset = .872f;
 
     FSlateFontInfo SignFont;
 

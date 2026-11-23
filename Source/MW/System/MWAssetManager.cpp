@@ -1,4 +1,16 @@
 #include "System/MWAssetManager.h"
+#if WITH_EDITOR
+#include "UI/Gameplay/MWArrivalScreen.h"
+
+void UMWAssetManager::ModifyCook(TConstArrayView<const ITargetPlatform*> TargetPlatforms,
+    TArray<FName>& PackagesToCook, TArray<FName>& PackagesToNeverCook)
+{
+    Super::ModifyCook(TargetPlatforms, PackagesToCook, PackagesToNeverCook);
+    // 로딩 WBP는 설정의 소프트 참조로 읽으므로 설정이 가리키는 패키지를 쿠킹 목록에 넣는다.
+    const FName Package = GetDefault<UMWArrivalScreen>()->GetLoadingPackage();
+    if (!Package.IsNone()) PackagesToCook.AddUnique(Package);
+}
+#endif
 
 #include "Data/MWAssetData.h"
 #include "Engine/Engine.h"
