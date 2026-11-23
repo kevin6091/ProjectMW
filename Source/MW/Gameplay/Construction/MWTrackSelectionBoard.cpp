@@ -279,15 +279,39 @@ bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 {
-	FVector Cursor;
-	FHitResult Hit;
-	if (!GetCursorPosition(Cursor) || !Viewer->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) return INDEX_NONE;
-	const int32 Slot = SlotHitAreas.IndexOfByPredicate([&Hit](const UBoxComponent* Box) { return Hit.GetComponent() == Box; });
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!GS) return INDEX_NONE;
+	FVector PlanePosition, Start, Direction;
+	if (!GS || !GetCursorPosition(PlanePosition) || !Viewer->DeprojectMousePositionToWorld(Start, Direction))
+	{
+		return INDEX_NONE;
+	}
+
+	// 전시판의 후보 상자만 비교하므로 배경과 장식의 월드 충돌이 선택을 가로채지 않는다.
+	const FVector End = Start + Direction * Viewer->HitResultTraceDistance;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
-	const auto* Offer = Session.Offers.FindByPredicate([Slot](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == Slot; });
-	return Offer && Offer->ClaimedByMemberId == INDEX_NONE ? Offer->OfferId : INDEX_NONE;
+	int32 BestOffer = INDEX_NONE;
+	float BestTime = TNumericLimits<float>::Max();
+	for (const FMWTrackOffer& Offer : Session.Offers)
+	{
+		if (Offer.ClaimedByMemberId != INDEX_NONE || !IsValid(Offers.FindRef(Offer.OfferId))
+			|| !SlotHitAreas.IsValidIndex(Offer.BoardSlotIndex))
+		{
+			continue;
+		}
+
+		const UBoxComponent& Box = *SlotHitAreas[Offer.BoardSlotIndex];
+		const FVector Extent = Box.GetUnscaledBoxExtent();
+		const FTransform& Transform = Box.GetComponentTransform();
+		FVector HitLocation, HitNormal;
+		float HitTime;
+		if (FMath::LineExtentBoxIntersection(FBox(-Extent, Extent), Transform.InverseTransformPosition(Start),
+			Transform.InverseTransformPosition(End), FVector::ZeroVector, HitLocation, HitNormal, HitTime) && HitTime < BestTime)
+		{
+			BestTime = HitTime;
+			BestOffer = Offer.OfferId;
+		}
+	}
+	return BestOffer;
 }
 
 void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
