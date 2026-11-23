@@ -62,6 +62,9 @@ public:
     // 복구 카탈로그에 등록된 일반 트랙만 선택 후보로 제공한다.
     TArray<TSoftClassPtr<AActor>> GetSelectionPool() const;
 
+    // 전시 후보와 설치 연출이 같은 코스 전용 클래스 목록을 사용한다.
+    static bool IsCourseOnlyTrack(const TSoftClassPtr<AActor>& TrackClass);
+
     // 화면에서 같은 정의의 표시 이름을 읽는다. BP를 새로 로드하지 않는다.
     FText GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const;
 

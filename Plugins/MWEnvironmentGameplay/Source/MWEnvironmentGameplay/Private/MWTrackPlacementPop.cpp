@@ -5,7 +5,7 @@
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackSnap.h"
-#include "Gameplay/Track/MWTrackRuntimeSettings.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "System/GameState/MWGameplayGameState.h"
@@ -38,7 +38,6 @@ void UMWEnvironmentGameplay::RefreshTrackPlacementPops()
     const bool bAnimateNewPieces = bSawOpenPlacementForPop;
     bSawOpenPlacementForPop |= Session.bIsOpen;
 
-    const auto* TrackSettings = GetDefault<UMWTrackRuntimeSettings>();
     for (const FMWPlacedTrack& Piece : Session.PlacedTracks)
     {
         AActor* Track = Piece.Actor.Get();
@@ -49,10 +48,7 @@ void UMWEnvironmentGameplay::RefreshTrackPlacementPops()
         PresentedPopPieces.Add(Piece.PieceId);
 
         FMWTrackPortFrames Ports;
-        // 최신 카탈로그에서 코스 전용 조각은 클래스 설정으로 구분한다.
-        const bool bCourseOnly = Piece.TrackClass == TrackSettings->StartTrackClass
-            || Piece.TrackClass == TrackSettings->FinishTrackClass || TrackSettings->CourseOnlyTracks.Contains(Piece.TrackClass);
-        if (!bAnimateNewPieces || !Piece.ConnectedTo.IsValid() || bCourseOnly
+        if (!bAnimateNewPieces || !Piece.ConnectedTo.IsValid() || UMWTrackRuntimeSubsystem::IsCourseOnlyTrack(Piece.TrackClass)
             || Piece.ConnectedPortIndex < 0 || Piece.ConnectedPortIndex >= Ports.Num()
             || !MWTrackSnap::ReadPorts(*Track, Ports))
         {
