@@ -8,6 +8,6 @@ public class MWEnvironmentGameplay : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "MWEnvironmentRestore" });
-        PrivateDependencyModuleNames.AddRange(new[] { "MW", "GameplayTags", "Json" });
+        PrivateDependencyModuleNames.AddRange(new[] { "MW", "GameplayTags", "Json", "Niagara" });
     }
 }

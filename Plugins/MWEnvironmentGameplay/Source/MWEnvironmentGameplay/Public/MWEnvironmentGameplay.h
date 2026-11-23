@@ -8,8 +8,11 @@ class AMWGameplayGameState;
 class AMWLobbyGameState;
 class UMWEnvironmentTheme;
 class USceneComponent;
-class UInstancedStaticMeshComponent;
+class UStaticMeshComponent;
 class UStaticMesh;
+class UNiagaraComponent;
+class UNiagaraSystem;
+class UMWTrackConstructionComponent;
 
 USTRUCT()
 struct FMWEnvironmentBinding
@@ -57,9 +60,12 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
     TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
 
-    // 확정된 도로 아래에서 골조가 바닥으로 내려오는 시간이다.
-    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0"))
-    float TrackSupportBuildSeconds = 0.38f;
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
+    TSoftObjectPtr<UNiagaraSystem> TrackLaidEffect;
+
+    // 설치 섬광이 먼저 보인 뒤 완성된 골조가 드러날 때까지의 시간이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackSupportRevealSeconds = 0.40f;
 
     UFUNCTION(BlueprintPure, Category = "Environment")
     AMWEnvironmentGenerator* GetGenerator() const
@@ -90,7 +96,10 @@ private:
     TSharedPtr<struct FStreamableHandle> FirstViewMaterialHandle;
 
     UPROPERTY(Transient)
-    TObjectPtr<UInstancedStaticMeshComponent> TrackSupports;
+    TObjectPtr<UStaticMesh> ActiveTrackSupportMesh;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UStaticMeshComponent>> TrackSupportComponents;
 
     struct FTrackSupportBuild
     {
@@ -102,14 +111,13 @@ private:
         double StartedAt;
         double Duration;
         int32 Layers;
-        int32 FinishedLayers = 0;
-        int32 ActiveInstance = INDEX_NONE;
     };
 
     int32 SupportSessionId = INDEX_NONE;
     bool bObservedOpenPlacement = false;
     TSet<int32> ResolvedSupportPieces;
     TArray<FTrackSupportBuild> PendingSupportBuilds;
+    TArray<TWeakObjectPtr<UNiagaraComponent>> ActiveTrackLaidEffects;
     FTimerHandle SupportBuildTimer;
     void RefreshTrackSupports();
     void TickTrackSupportBuilds();
@@ -119,6 +127,7 @@ private:
     TObjectPtr<AMWGameplayGameState> State;
 
     TWeakObjectPtr<AMWLobbyGameState> LobbyState;
+    TWeakObjectPtr<UMWTrackConstructionComponent> BoundConstruction;
     const FMWEnvironmentBinding* FindBinding(FName ThemeId) const;
 
     UFUNCTION()

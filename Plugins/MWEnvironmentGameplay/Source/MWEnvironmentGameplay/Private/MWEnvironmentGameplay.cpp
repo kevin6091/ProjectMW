@@ -2,6 +2,7 @@
 
 #include "MWEnvironmentGameplay.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
@@ -109,6 +110,20 @@ void UMWEnvironmentGameplay::RefreshState()
         if (State)
             State->OnGameplayStateChanged.AddUniqueDynamic(this, &ThisClass::RefreshState);
     }
+    // 맵 이동 초기에는 GameState가 있어도 건설 컴포넌트가 아직 준비되지 않을 수 있다.
+    auto* Construction = State ? State->GetConstructionComponent() : nullptr;
+    if (BoundConstruction.Get() != Construction)
+    {
+        if (auto* Previous = BoundConstruction.Get())
+        {
+            Previous->OnPlacementSessionChanged.RemoveAll(this);
+        }
+        BoundConstruction = Construction;
+        if (Construction)
+        {
+            Construction->OnPlacementSessionChanged.AddUObject(this, &ThisClass::RefreshState);
+        }
+    }
     const EMWRoomPhase Phase = State ? State->GetRoomPhase() : EMWRoomPhase::Traveling;
     const bool InMatch = Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement ||
                          Phase == EMWRoomPhase::ElementPlacement || Phase == EMWRoomPhase::PreparingRace ||
@@ -172,6 +187,7 @@ void UMWEnvironmentGameplay::RefreshState()
     Generator->Theme = Theme;
     TArray<FSoftObjectPath> EntryPaths;
     for (const auto& Material : Binding->FirstViewMaterials) EntryPaths.AddUnique(Material.ToSoftObjectPath());
+    if (!TrackLaidEffect.IsNull()) EntryPaths.AddUnique(TrackLaidEffect.ToSoftObjectPath());
     if (!EntryPaths.IsEmpty())
         FirstViewMaterialHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(EntryPaths);
     // 생성기가 테마를 참조한 뒤 로비에서 보관한 로드 핸들을 놓는다.
@@ -255,7 +271,6 @@ void UMWEnvironmentGameplay::StopEnvironment()
         Generator->ClearEnvironment();
         Generator->Destroy();
     }
-    TrackSupports = nullptr;
     FirstViewMaterialHandle.Reset();
     Generator = nullptr;
     ActiveTheme = NAME_None;
@@ -289,7 +304,14 @@ void UMWEnvironmentGameplay::Deinitialize()
     if (GetWorld())
         GetWorld()->GetTimerManager().ClearTimer(ReadinessTimer);
     if (State)
+    {
         State->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::RefreshState);
+    }
+    if (auto* Construction = BoundConstruction.Get())
+    {
+        Construction->OnPlacementSessionChanged.RemoveAll(this);
+    }
+    BoundConstruction.Reset();
     State = nullptr;
     StopEnvironment();
     UE_LOG(LogTemp, Display, TEXT("[MWEnvironmentGameplay] Deinitialize timer/delegate/generator cleared"));

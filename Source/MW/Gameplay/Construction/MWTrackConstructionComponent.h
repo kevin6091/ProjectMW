@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -38,6 +38,8 @@ public:
 	// Hover와 커서 갱신에는 호출되지 않는 서버 진행 이벤트다.
 	FSimpleMulticastDelegate OnAllSelectionsConfirmed;
 	FSimpleMulticastDelegate OnPlacementFinished;
+	// 호스트 설치와 원격 복제에서 로컬 표현이 같은 확정 목록을 읽는다.
+	FSimpleMulticastDelegate OnPlacementSessionChanged;
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
 	void UpdateHover(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId);

@@ -106,6 +106,7 @@ void UMWTrackConstructionComponent::OnRep_PlacementSession()
 			}
 		}
 	}
+	OnPlacementSessionChanged.Broadcast();
 }
 
 bool UMWTrackConstructionComponent::BeginPlacement(const FMWTrackCourseEnds& CourseEnds, const FTransform& BuildFrame,
@@ -323,6 +324,7 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 	GetOwner()->ForceNetUpdate();
 	UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Placed piece=%d member=%d target=%d/%d source=%d"),
 		PieceId, PS->GetLobbyMemberId(), Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort);
+	OnPlacementSessionChanged.Broadcast();
 	return EMWTrackPlacementResult::Accepted;
 }
 

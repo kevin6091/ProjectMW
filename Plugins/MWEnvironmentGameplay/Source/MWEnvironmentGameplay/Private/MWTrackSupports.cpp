@@ -1,7 +1,7 @@
 #include "MWEnvironmentGameplay.h"
 
 #include "CollisionQueryParams.h"
-#include "Components/InstancedStaticMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -11,6 +11,8 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
 #include "MWEnvironmentRestore.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
@@ -20,13 +22,13 @@ namespace
     constexpr double RoadWidthFraction = 0.85;
     constexpr int32 WidthMeasurements = 7;
 
-    bool TraceRoadBottom(UPrimitiveComponent& Road, const FVector& At, FVector& Out)
+    bool TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow = true)
     {
         const FBoxSphereBounds& Bounds = Road.Bounds;
         const FVector Bottom(At.X, At.Y, Bounds.Origin.Z - Bounds.BoxExtent.Z - 1.0);
         const FVector Top(At.X, At.Y, Bounds.Origin.Z + Bounds.BoxExtent.Z + 1.0);
         FHitResult Hit;
-        if (!Road.LineTraceComponent(Hit, Bottom, Top, FCollisionQueryParams()))
+        if (!Road.LineTraceComponent(Hit, bFromBelow ? Bottom : Top, bFromBelow ? Top : Bottom, FCollisionQueryParams()))
         {
             return false;
         }
@@ -44,7 +46,7 @@ namespace
         {
             const double Distance = (Inside + Outside) * 0.5;
             FVector Unused;
-            if (TraceRoadBottom(Road, Center + Across * Distance, Unused))
+            if (TraceRoad(Road, Center + Across * Distance, Unused))
             {
                 Inside = Distance;
             }
@@ -56,7 +58,8 @@ namespace
         return Inside;
     }
 
-    bool FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth)
+    bool FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth,
+        FVector& OutRoadSurface)
     {
         TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
         static const FName LegMarkerName(TEXT("MiddleLeg"));
@@ -75,8 +78,8 @@ namespace
             }
             FVector Bottom;
             // 직선·경사는 BP의 프리뷰 받침 위치를 사용한다. 곡선은 고정 도로에서 접점을 구한다.
-            if (!(LegMarker && TraceRoadBottom(*Part, Preferred, Bottom))
-                && !TraceRoadBottom(*Part, Part->Bounds.Origin, Bottom))
+            if (!(LegMarker && TraceRoad(*Part, Preferred, Bottom))
+                && !TraceRoad(*Part, Part->Bounds.Origin, Bottom))
             {
                 continue;
             }
@@ -92,6 +95,8 @@ namespace
         {
             return false;
         }
+        OutRoadSurface = OutTop;
+        TraceRoad(*Road, OutTop, OutRoadSurface, /* bFromBelow */ false);
 
         OutAcross = Piece.GetActorForwardVector().GetSafeNormal2D();
         if (LegMarker)
@@ -113,6 +118,16 @@ namespace
         const double Left = RoadHalfWidth(*Road, OutTop, -OutAcross);
         const double Right = RoadHalfWidth(*Road, OutTop, OutAcross);
         OutWidth = 2.0 * FMath::Min(Left, Right) * RoadWidthFraction;
+        if (const UStaticMeshComponent* Marker = LegMarker ? Cast<UStaticMeshComponent>(*LegMarker) : nullptr)
+        {
+            if (const UStaticMesh* Mesh = Marker->GetStaticMesh())
+            {
+                // BP의 받침 폭이 있으면 그 폭을 우선하되 도로 아래에 들어오는 범위만 사용한다.
+                const double AuthoredWidth = Mesh->GetBoundingBox().GetSize().X *
+                    FMath::Abs(Marker->GetComponentScale().X);
+                OutWidth = FMath::Min(OutWidth, AuthoredWidth);
+            }
+        }
         return OutWidth > UE_SMALL_NUMBER;
     }
 
@@ -148,8 +163,9 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
 
         FVector Top;
         FVector Across;
+        FVector RoadSurface;
         double Width;
-        if (!FitScaffoldToRoad(*Piece.Actor, Top, Across, Width))
+        if (!FitScaffoldToRoad(*Piece.Actor, Top, Across, Width, RoadSurface))
         {
             continue;
         }
@@ -160,24 +176,16 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
             continue;
         }
 
-        if (!TrackSupports)
+        if (!ActiveTrackSupportMesh)
         {
-            UStaticMesh* Mesh = TrackSupportMesh.LoadSynchronous();
-            if (!Mesh)
+            ActiveTrackSupportMesh = TrackSupportMesh.LoadSynchronous();
+            if (!ActiveTrackSupportMesh)
             {
                 return;
             }
-            TrackSupports = NewObject<UInstancedStaticMeshComponent>(Generator, TEXT("InstalledTrackSupports"), RF_Transient);
-            TrackSupports->SetupAttachment(Generator->GetRootComponent());
-            TrackSupports->SetStaticMesh(Mesh);
-            TrackSupports->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
-            TrackSupports->SetGenerateOverlapEvents(false);
-            TrackSupports->SetCanEverAffectNavigation(false);
-            Generator->AddInstanceComponent(TrackSupports);
-            TrackSupports->RegisterComponent();
         }
 
-        const FVector MeshSize = TrackSupports->GetStaticMesh()->GetBoundingBox().GetSize();
+        const FVector MeshSize = ActiveTrackSupportMesh->GetBoundingBox().GetSize();
         if (MeshSize.X <= UE_SMALL_NUMBER || MeshSize.Z <= UE_SMALL_NUMBER)
         {
             return;
@@ -186,14 +194,32 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         const double ScaleXY = Width / MeshSize.X;
         // 층을 이어 높은 조각에서도 가로대 사이 간격과 사선 각도가 과하게 늘어나지 않게 한다.
         const int32 Layers = FMath::Clamp(FMath::RoundToInt(Height / (MeshSize.Z * ScaleXY)), 1, 16);
-        const double Duration = bObservedOpenPlacement ? TrackSupportBuildSeconds : 0.0;
-        PendingSupportBuilds.Add({Piece.PieceId, Top, Across.Rotation().Quaternion(), Height, ScaleXY,
-            GetWorld()->GetTimeSeconds(), Duration, Layers});
+        const double StartedAt = GetWorld()->GetTimeSeconds();
+        const double Duration = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportRevealSeconds) : 0.0;
+        const FRotator Rotation = Across.Rotation();
+        PendingSupportBuilds.Add({Piece.PieceId, Top, Rotation.Quaternion(), Height, ScaleXY, StartedAt, Duration, Layers});
         ResolvedSupportPieces.Add(Piece.PieceId);
+
+        // 도로가 설치되면 섬광을 먼저 재생하고, 연기 사이로 완성된 골조를 내보낸다.
+        UNiagaraComponent* Burst = nullptr;
+        if (bObservedOpenPlacement && !TrackLaidEffect.IsNull())
+        {
+            if (UNiagaraSystem* Effect = TrackLaidEffect.LoadSynchronous())
+            {
+                // 골조 위쪽의 실제 노면에서 재생해 경사에서도 섬광이 도로에 묻히지 않게 한다.
+                Burst = UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, Effect, RoadSurface, Rotation, FVector(ScaleXY));
+                if (Burst)
+                {
+                    ActiveTrackLaidEffects.RemoveAll([](const TWeakObjectPtr<UNiagaraComponent>& Item) { return !Item.IsValid(); });
+                    ActiveTrackLaidEffects.Add(Burst);
+                }
+            }
+        }
         if (VerifySupports())
         {
-            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s duration=%.3f"),
-                *GetWorld()->GetName(), Session.SessionId, Piece.PieceId, Width, Layers, FloorZ, *Top.ToCompactString(), Duration);
+            UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f burst=%d"),
+                *GetWorld()->GetOutermost()->GetName(), Session.SessionId, Piece.PieceId,
+                Width, Layers, FloorZ, *Top.ToCompactString(), Duration, Burst != nullptr);
         }
     }
 
@@ -210,48 +236,40 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
 void UMWEnvironmentGameplay::TickTrackSupportBuilds()
 {
     const double Now = GetWorld()->GetTimeSeconds();
-    const FBox Bounds = TrackSupports->GetStaticMesh()->GetBoundingBox();
-    for (FTrackSupportBuild& Build : PendingSupportBuilds)
+    const FBox Bounds = ActiveTrackSupportMesh->GetBoundingBox();
+    PendingSupportBuilds.RemoveAll([this, Now, &Bounds](const FTrackSupportBuild& Build)
     {
-        const double Progress = Build.Duration > 0.0 ? FMath::Clamp((Now - Build.StartedAt) / Build.Duration, 0.0, 1.0) : 1.0;
-        const double Visible = Build.Height * FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
-        const double HeightPerLayer = Build.Height / Build.Layers;
-        while (Build.FinishedLayers < Build.Layers)
+        const double Elapsed = Now - Build.StartedAt;
+        if (Elapsed < Build.Duration)
         {
-            const double Depth = Build.FinishedLayers * HeightPerLayer;
-            const double LayerHeight = Progress >= 1.0 ? HeightPerLayer : FMath::Min(Visible - Depth, HeightPerLayer);
-            if (LayerHeight <= UE_SMALL_NUMBER)
-            {
-                break;
-            }
-            const double ScaleZ = LayerHeight / Bounds.GetSize().Z;
-            const FVector Anchor = Build.Top - FVector(0, 0, Depth + Bounds.Max.Z * ScaleZ);
-            const FTransform Transform(Build.Rotation, Anchor, FVector(Build.ScaleXY, Build.ScaleXY, ScaleZ));
-            if (Build.ActiveInstance == INDEX_NONE)
-            {
-                Build.ActiveInstance = TrackSupports->AddInstance(Transform, true);
-            }
-            else
-            {
-                TrackSupports->UpdateInstanceTransform(Build.ActiveInstance, Transform, true, true, true);
-            }
-            if (LayerHeight < HeightPerLayer)
-            {
-                break;
-            }
-            ++Build.FinishedLayers;
-            Build.ActiveInstance = INDEX_NONE;
+            return false;
         }
-    }
-    PendingSupportBuilds.RemoveAll([this, Now](const FTrackSupportBuild& Build)
-    {
-        const bool bComplete = Build.FinishedLayers == Build.Layers;
-        if (bComplete && VerifySupports())
+
+        const double HeightPerLayer = Build.Height / Build.Layers;
+        const double ScaleZ = HeightPerLayer / Bounds.GetSize().Z;
+        for (int32 Layer = 0; Layer < Build.Layers; ++Layer)
+        {
+            const FVector Anchor = Build.Top - FVector(0, 0, Layer * HeightPerLayer + Bounds.Max.Z * ScaleZ);
+            const FTransform Transform(Build.Rotation, Anchor, FVector(Build.ScaleXY, Build.ScaleXY, ScaleZ));
+            // 공유 재질에 인스턴싱 사용 플래그가 없어도 일반 메시 렌더링 경로에서 원래 재질을 쓴다.
+            auto* Section = NewObject<UStaticMeshComponent>(Generator, NAME_None, RF_Transient);
+            Section->SetupAttachment(Generator->GetRootComponent());
+            Section->SetStaticMesh(ActiveTrackSupportMesh);
+            Section->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+            Section->SetGenerateOverlapEvents(false);
+            Section->SetCanEverAffectNavigation(false);
+            Section->ComponentTags.Add(TEXT("MWInstalledTrackSupport"));
+            Section->SetWorldTransform(Transform);
+            Generator->AddInstanceComponent(Section);
+            Section->RegisterComponent();
+            TrackSupportComponents.Add(Section);
+        }
+        if (VerifySupports())
         {
             UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] complete world=%s session=%d piece=%d layers=%d elapsed=%.3f"),
-                *GetWorld()->GetName(), SupportSessionId, Build.PieceId, Build.Layers, Now - Build.StartedAt);
+                *GetWorld()->GetOutermost()->GetName(), SupportSessionId, Build.PieceId, Build.Layers, Elapsed);
         }
-        return bComplete;
+        return true;
     });
     if (PendingSupportBuilds.IsEmpty())
     {
@@ -262,12 +280,22 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
 void UMWEnvironmentGameplay::ResetTrackSupports()
 {
     GetWorld()->GetTimerManager().ClearTimer(SupportBuildTimer);
+    for (const TWeakObjectPtr<UNiagaraComponent>& Effect : ActiveTrackLaidEffects)
+    {
+        if (UNiagaraComponent* Component = Effect.Get())
+        {
+            Component->DestroyComponent();
+        }
+    }
+    ActiveTrackLaidEffects.Reset();
     PendingSupportBuilds.Reset();
     ResolvedSupportPieces.Reset();
     SupportSessionId = INDEX_NONE;
     bObservedOpenPlacement = false;
-    if (TrackSupports)
+    for (UStaticMeshComponent* Section : TrackSupportComponents)
     {
-        TrackSupports->ClearInstances();
+        Section->DestroyComponent();
     }
+    TrackSupportComponents.Reset();
+    ActiveTrackSupportMesh = nullptr;
 }
