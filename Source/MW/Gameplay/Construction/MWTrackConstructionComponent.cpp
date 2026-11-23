@@ -1,4 +1,4 @@
-﻿#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
 
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
@@ -196,20 +196,20 @@ bool UMWTrackConstructionComponent::ValidateRequest(APlayerController* Requester
     const AGameStateBase* GS = Cast<AGameStateBase>(GetOwner());
     AMWPlayerState* PS = Requester ? Requester->GetPlayerState<AMWPlayerState>() : nullptr;
     UMWPlayerConstructionComponent* Player = FindPlayerConstruction(Requester);
-	
+
     if (!HasServerAuthority() || !GS || !PS || !Player || Requester->GetWorld() != GetWorld())
     {
         OutReason = EMWTrackSelectionRejectReason::Unavailable;
         return false;
     }
-	
+
     if (SelectionSession.SelectionSessionId != SessionId)
     {
-    	OutReason = EMWTrackSelectionRejectReason::StaleSession;
+        OutReason = EMWTrackSelectionRejectReason::StaleSession;
     }
     else if (SelectionSession.OffersRevision != Revision)
     {
-    	OutReason = EMWTrackSelectionRejectReason::StaleOffers;
+        OutReason = EMWTrackSelectionRejectReason::StaleOffers;
     }
     else if (!SelectionSession.bIsOpen)
     {
@@ -222,29 +222,29 @@ bool UMWTrackConstructionComponent::ValidateRequest(APlayerController* Requester
     {
     	OutReason = EMWTrackSelectionRejectReason::NotParticipant;
     }
-	
+
     if (OutReason != EMWTrackSelectionRejectReason::None) return false;
 
     const FMWPlayerTrackSelection Current = Player->GetSelection();
-	
+
     if (Current.SelectionSessionId != SessionId || Current.OffersRevision != Revision)
     {
         OutReason = EMWTrackSelectionRejectReason::NotParticipant;
         return false;
     }
-	
+
     const bool bValidOffer = (bAllowNone && OfferId == INDEX_NONE)
         || SelectionSession.Offers.ContainsByPredicate([OfferId](const FMWTrackOffer& Offer)
         {
             return Offer.OfferId == OfferId;
         });
-	
+
     if (!bValidOffer)
     {
         OutReason = EMWTrackSelectionRejectReason::InvalidOffer;
         return false;
     }
-	
+
     OutPlayer = Player;
     return true;
 }
@@ -254,7 +254,7 @@ void UMWTrackConstructionComponent::UpdateHover(APlayerController* Requester,
 {
     UMWPlayerConstructionComponent* Player = nullptr;
     EMWTrackSelectionRejectReason Reason;
-	
+
     if (!ValidateRequest(Requester, SessionId, Revision, OfferId, true, Player, Reason))
         return;
 
@@ -267,12 +267,12 @@ void UMWTrackConstructionComponent::UpdateHover(APlayerController* Requester,
     {
         OfferId = INDEX_NONE;
     }
-	
+
     FMWPlayerTrackSelection Current = Player->GetSelection();
-	
+
     if (Current.bConfirmed || Current.HoveredOfferId == OfferId
         || !Player->ConsumeHoverBudgetForServer()) return;
-	
+
     Current.HoveredOfferId = OfferId;
     Player->ApplySelectionForServer(Current);
 }
@@ -282,7 +282,7 @@ void UMWTrackConstructionComponent::UpdateCursor(APlayerController* Requester,
 {
 	UMWPlayerConstructionComponent* Player = nullptr;
 	EMWTrackSelectionRejectReason Reason;
-	
+
 	if (ValidateRequest(Requester, SessionId, Revision, INDEX_NONE, true, Player, Reason))
 	{
 		Player->UpdateCursorForServer(Sequence, bVisible, WorldPosition);
@@ -300,13 +300,13 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 	Reply.RequestId = RequestId;
 
 	UMWPlayerConstructionComponent* Player = FindPlayerConstruction(Requester);
-	
+
 	if (!HasServerAuthority() || !Player)
 	{
 		Reply.Reason = EMWTrackSelectionRejectReason::Unavailable;
 		return Reply;
 	}
-	
+
 	if (RequestId <= 0)
 	{
 		Reply.Reason = EMWTrackSelectionRejectReason::InvalidRequest;
@@ -314,7 +314,7 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 	}
 
 	FMWTrackSelectionReply Cached;
-	
+
 	if (Player->FindCachedReply(SessionId, RequestId, Cached))
 	{
 		if (Cached.OffersRevision == Revision && Cached.OfferId == OfferId)
@@ -324,14 +324,14 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 	}
 
 	UMWPlayerConstructionComponent* ValidatedPlayer = nullptr;
-	
+
 	if (!ValidateRequest(Requester, SessionId, Revision, OfferId, false,
 		ValidatedPlayer, Reply.Reason))
 	{
 		Player->CacheReplyForServer(Reply);
 		return Reply;
 	}
-	
+
 	if (Player->GetCachedReplyCount() >= UMWPlayerConstructionComponent::MaxCachedReplies)
 	{
 		Reply.Reason = EMWTrackSelectionRejectReason::TooManyRequests;
@@ -345,7 +345,7 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 		return Item.OfferId == OfferId;
 	});
 	check(Offer);
-	
+
 	if (Next.bConfirmed && Next.SelectedOfferId != OfferId)
 	{
 		Reply.Reason = EMWTrackSelectionRejectReason::AlreadyConfirmed;
@@ -370,7 +370,7 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 		Reply.Reason = EMWTrackSelectionRejectReason::Unavailable;
 		return Reply;
 	}
-	
+
 	if (Reply.bAccepted && bApplySelection)
 	{
 		// 개인 상태 알림보다 먼저 소유자를 기록해 재진입한 요청도 중복 선택을 거절한다.
@@ -384,6 +384,6 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(
 			OnAllSelectionsConfirmed.Broadcast();
 		}
 	}
-	
+
 	return Reply;
 }

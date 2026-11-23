@@ -1,0 +1,51 @@
+PR #17 트랙 UI 버전 조합 검증 실행 로그
+2026-11-20 KST · UE 5.8 · 설원 L_Dev_Drive · LocalIP · Cua Driver
+Git 0ae39e82b707c32a640f30d758d0e08675f219b8
+운영 WBP_TrackSelectionTest.uasset 원본 SHA-256
+host_cs62=5C646421F2CDA85E90E69869C7B62CD52AC3AF837A8ECC12140DCE252A00BA1B
+guest_cs61=0F1565EAD5F58D1F66BA5DEA8E504EECF4E9F2FF769096E029624D0B76F28813
+
+실행 로그의 시각은 UTC이며 각 행의 앞 숫자는 원본 로그의 줄 번호다.
+
+[cs:62 / cs:62 · 같은 에디터 프로세스의 호스트와 참가자]
+1968:[2026.11.20-01.12.30:156][  2]LogPython: TRACK_PIE_ORIGINAL_ASSET_SHA=5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b
+2231:[2026.11.20-01.14.16:132][739]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=2 Destination=/Game/Levels/L_Dev_Drive
+2250:[2026.11.20-01.14.18:641][864]LogTemp: Display: MWArrival covered attempt=9B575D2B448C0222409C45A9F95F0A9E world=L_Title map=/Game/Levels/L_Dev_Drive t=16866577.118887
+2251:[2026.11.20-01.14.18:653][865]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=1
+2255:[2026.11.20-01.14.18:702][865]LogTemp: Display: MWArrival covered attempt=129D83D345C57755E7CF00A786A0DE29 world=L_Title map=/Game/Levels/L_Dev_Drive t=16866577.120634
+2256:[2026.11.20-01.14.18:714][865]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=0
+2257:[2026.11.20-01.14.18:726][865]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2371:[2026.11.20-01.14.20:968][954]LogTemp: Display: MWArrival reveal attempt=9B575D2B448C0222409C45A9F95F0A9E world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16866579.475218
+2374:[2026.11.20-01.14.20:996][956]LogTemp: Display: MWArrival reveal attempt=129D83D345C57755E7CF00A786A0DE29 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16866579.492064
+2385:[2026.11.20-01.14.53:611][ 55]LogMWServer: [MWTrackPlacement] Opened session=1 players=2
+2395:[2026.11.20-01.15.40:465][912]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+2409:[2026.11.20-01.16.51:629][113]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=1
+2414:[2026.11.20-01.16.51:737][115]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2419:[2026.11.20-01.16.51:797][117]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2422:[2026.11.20-01.16.51:995][125]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+2423:[2026.11.20-01.16.52:003][125]LogPython: NORMAL_PIE_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0
+
+[cs:62 호스트 / cs:61 참가자 · 호스트 PIE]
+1968:[2026.11.20-01.24.22:054][  2]LogPython: TRACK_PIE_ORIGINAL_ASSET_SHA=5c646421f2cda85e90e69869c7b62cd52ac3af837a8ecc12140dce252a00ba1b
+2039:[2026.11.20-01.24.44:144][461]LogNet: Name:GameNetDriver Def:GameNetDriver IpNetDriver_0 IpNetDriver listening on port 17870
+2112:[2026.11.20-01.25.56:481][330]LogNet: Join succeeded: Player
+2150:[2026.11.20-01.26.49:079][686]LogMWServer: [MWTravel] Waiting for vehicle departure. Players=2 Destination=/Game/Levels/L_Dev_Drive
+2163:[2026.11.20-01.26.51:542][793]LogTemp: Display: MWArrival covered attempt=FC0744184D8A2064E5529F97D2E6F84B world=L_Title map=/Game/Levels/L_Dev_Drive t=16867330.023603
+2164:[2026.11.20-01.26.51:556][794]LogMWServer: [MWTravel] Vehicle departure ready. Player=1 Remaining=1
+2165:[2026.11.20-01.26.51:578][795]LogMWServer: [MWTravel] Vehicle departure ready. Player=2 Remaining=0
+2166:[2026.11.20-01.26.51:582][795]LogMWServer: [MWTravel] Vehicle departure complete. ServerTravel Destination=/Game/Levels/L_Dev_Drive
+2202:[2026.11.20-01.26.52:043][798]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2224:[2026.11.20-01.26.55:109][874]LogTemp: Display: MWArrival reveal attempt=FC0744184D8A2064E5529F97D2E6F84B world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16867333.616152
+2233:[2026.11.20-01.27.17:976][986]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2234:[2026.11.20-01.27.17:987][986]LogMWServer: [MWTrackPlacement] Opened session=1 players=2
+2243:[2026.11.20-01.27.43:788][219]LogMWServer: [MWTrackPlacement] Placed piece=2 member=2 target=1/0 source=0
+2247:[2026.11.20-01.28.10:492][586]LogMWServer: [MWTrackPlacement] Placed piece=3 member=1 target=2/1 source=0
+2252:[2026.11.20-01.28.10:606][590]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+2256:[2026.11.20-01.28.10:759][595]LogPython: NORMAL_PIE_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0
+
+[cs:62 호스트 / cs:61 참가자 · 별도 UnrealEditor.exe -game]
+1966:[2026.11.20-01.26.51:615][ 55]LogTemp: Display: MWArrival covered attempt=0306C0AB4B08191975D65B98153997F8 world=L_Title map=/Game/Levels/L_Dev_Drive t=16867330.078418
+2019:[2026.11.20-01.26.52:814][ 89]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::PreparingConstruction CountdownEnd=0.00
+2024:[2026.11.20-01.26.54:402][183]LogTemp: Display: MWArrival reveal attempt=0306C0AB4B08191975D65B98153997F8 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=16867332.908829
+2029:[2026.11.20-01.27.17:993][704]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::TrackPlacement CountdownEnd=0.00
+2064:[2026.11.20-01.28.10:844][143]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00

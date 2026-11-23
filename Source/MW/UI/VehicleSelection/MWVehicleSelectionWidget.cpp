@@ -80,7 +80,7 @@ void UMWVehicleSelectionWidget::NativeConstruct()
 	if (IsValid(LocalPlayerCursor)) LocalPlayerCursor->SetVisibility(ESlateVisibility::Collapsed);
 	if (!IsValid(Button_Confirm) || !IsValid(Button_Reset) || !IsValid(Button_Back) ||
 		!IsValid(Button_Refresh) || !IsValid(Grid_Vehicles) || !IsValid(Box_Players) ||
-		!IsValid(Text_Status) || !IsValid(Text_Error) || !IsValid(Text_RegisteredCount) || !IsValid(PreviewNotice)) return;
+		!IsValid(Text_Status) || !IsValid(Text_Error) || !IsValid(Text_RegisteredCount)) return;
 	for (UButton* Button : {Button_Confirm.Get(), Button_Reset.Get(), Button_Back.Get(), Button_Refresh.Get(),
 		Button_NextPreviewScenario.Get(), Button_NextPreviewLocalPlayer.Get(), Button_SecretVehicle.Get()})
 	{
@@ -371,8 +371,9 @@ void UMWVehicleSelectionWidget::SetWorldPresentationLayout(bool bEnabled, float 
         {
             if (UCanvasPanelSlot* CanvasSlot = Pair.Key.Get())
             {
-                CanvasSlot->SetPosition(Pair.Value.Position);
-                CanvasSlot->SetSize(Pair.Value.Size);
+                // 월드 배치가 바꾼 앵커·정렬·자동 크기까지 되돌려 화면 배치가 밀리지 않게 한다.
+                CanvasSlot->SetLayout(Pair.Value.Layout);
+                CanvasSlot->SetAutoSize(Pair.Value.bAutoSize);
             }
         }
         for (const auto& Pair : SavedWorldRenderScales)
@@ -395,8 +396,7 @@ void UMWVehicleSelectionWidget::SetWorldPresentationLayout(bool bEnabled, float 
     }
 
     if (!FMath::IsFinite(SurfaceScale) || SurfaceScale <= 0.f || WorldCardGroup.IsNone() ||
-        WorldCardPosition.ContainsNaN() || WorldCardSize.ContainsNaN() ||
-        WorldCardSize.X <= 0. || WorldCardSize.Y <= 0. || WorldLegendOffset.ContainsNaN() ||
+        WorldLegendOffset.ContainsNaN() ||
         !FMath::IsFinite(WorldCardMarkerScale) || WorldCardMarkerScale <= 0.f)
     {
         UE_LOG(LogDefault, Warning, TEXT("차량 선택 월드 배치 설정이 유효하지 않아 원래 배치를 유지합니다."));
@@ -415,19 +415,33 @@ void UMWVehicleSelectionWidget::SetWorldPresentationLayout(bool bEnabled, float 
         return;
     }
 
-    SavedWorldCanvasSlots.Add(CardSlot, {CardSlot->GetPosition(), CardSlot->GetSize()});
+    UCanvasPanelSlot* Bounds = FindCanvasSlot(TEXT("WorldCardBounds"));
+    const bool bAuthoredBounds = Bounds && Bounds->Parent == CardSlot->Parent;
+    if (!bAuthoredBounds && (WorldCardPosition.ContainsNaN() || WorldCardSize.ContainsNaN() ||
+        WorldCardSize.X <= 0. || WorldCardSize.Y <= 0.)) return;
+    SavedWorldCanvasSlots.Add(CardSlot, {CardSlot->GetLayout(), CardSlot->GetAutoSize()});
     for (FName Name : WorldShiftedWidgets)
     {
         if (UCanvasPanelSlot* CanvasSlot = FindCanvasSlot(Name))
         {
             // 중복 이름이 있어도 최초 기준을 보존한다.
             if (!SavedWorldCanvasSlots.Contains(CanvasSlot))
-                SavedWorldCanvasSlots.Add(CanvasSlot, {CanvasSlot->GetPosition(), CanvasSlot->GetSize()});
-            CanvasSlot->SetPosition(SavedWorldCanvasSlots.FindChecked(CanvasSlot).Position + WorldLegendOffset);
+                SavedWorldCanvasSlots.Add(CanvasSlot, {CanvasSlot->GetLayout(), CanvasSlot->GetAutoSize()});
+            const FMargin& Offsets = SavedWorldCanvasSlots.FindChecked(CanvasSlot).Layout.Offsets;
+            CanvasSlot->SetPosition(FVector2D(Offsets.Left, Offsets.Top) + WorldLegendOffset);
         }
     }
-    CardSlot->SetPosition(WorldCardPosition);
-    CardSlot->SetSize(WorldCardSize);
+    // 같은 부모의 Designer 슬롯을 월드 배치 정본으로 사용한다. 기존 WBP는 이전 설정을 읽는다.
+    if (bAuthoredBounds)
+    {
+        CardSlot->SetLayout(Bounds->GetLayout());
+        CardSlot->SetAutoSize(Bounds->GetAutoSize());
+    }
+    else
+    {
+        CardSlot->SetPosition(WorldCardPosition);
+        CardSlot->SetSize(WorldCardSize);
+    }
 
     SavedCardMarkerScale = CardMarkerScale;
     if (IsValid(LocalPlayerCursor))
@@ -956,7 +970,7 @@ bool UMWVehicleSelectionWidget::IsSelectionLocked() const
 void UMWVehicleSelectionWidget::RefreshControls()
 {
 	if (!IsValid(Button_Confirm) || !IsValid(Button_Reset) || !IsValid(Button_Back) ||
-		!IsValid(Button_Refresh) || !IsValid(Text_Status) || !IsValid(PreviewNotice)) return;
+		!IsValid(Button_Refresh) || !IsValid(Text_Status)) return;
 	const bool bLocked = IsSelectionLocked() || IsRequestPending();
 	const bool bLocalPreview = !bPreviewOnly || FindLocalPreviewParticipant() != nullptr;
 	const bool bSelected = SelectedCard.IsValid() && SelectedCard->IsAvailable();
@@ -972,16 +986,16 @@ void UMWVehicleSelectionWidget::RefreshControls()
 	Button_Back->SetIsEnabled(bPreviewOnly && !IsRequestPending());
 	Button_Back->SetVisibility(bPreviewOnly ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Button_Refresh->SetIsEnabled(!IsRequestPending());
-	PreviewNotice->SetVisibility(ESlateVisibility::Collapsed);
 	for (UMWVehicleCardWidget* Card : Cards) if (IsValid(Card)) Card->SetInteractionLocked(bLocked || !bLocalPreview);
 	const bool bAllPreviewComplete = AreAllPreviewParticipantsConfirmed();
-	// Preview의 완료는 표시용이며 서버 선택 승인으로 간주하지 않는다.
-	Text_Status->SetText(IsRequestPending() ? RequestPendingText : bAllPreviewComplete ? PreviewLockedText :
-		IsSelectionLocked() ? SelectionCompleteText : Cards.IsEmpty() ? EmptyCatalogText :
-		bSelected && !bPreviewOnly ? ConfirmVehicleText : ChooseVehicleText);
+	// 입력 대기는 버튼에서 처리하고 안내 문구는 실제 확정 상태가 바뀔 때 교체한다.
+	const AMWPlayerState* OwnState = GetOwningPlayerState<AMWPlayerState>();
+	const bool bConfirmed = bPreviewOnly ? IsPreviewLocked() : OwnState && OwnState->GetVehicleAssetID().IsValid();
+	Text_Status->SetText(bAllPreviewComplete ? PreviewLockedText : bConfirmed ? SelectionCompleteText :
+		Cards.IsEmpty() ? EmptyCatalogText : ChooseVehicleText);
 	if (IsValid(Text_SelectionDetail))
 	{
-		Text_SelectionDetail->SetText(IsSelectionLocked() && !bAllPreviewComplete ? WaitingForPlayersText : FText());
+		Text_SelectionDetail->SetText(bConfirmed && !bAllPreviewComplete ? WaitingForPlayersText : FText());
 		Text_SelectionDetail->SetVisibility(Text_SelectionDetail->GetText().IsEmpty()
 			? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	}
@@ -990,7 +1004,7 @@ void UMWVehicleSelectionWidget::RefreshControls()
 		const bool bCanCancel = bPreviewOnly ? bSelected && !bAllPreviewComplete : GetCancelableVehicleId().IsValid();
 		Legend_Cancel->SetVisibility((bPreviewOnly ? !bAllPreviewComplete : bCanCancel)
 			? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
-		Legend_Cancel->SetIsEnabled(bCanCancel && !IsRequestPending());
+		Legend_Cancel->SetIsEnabled(!bPreviewOnly || bCanCancel);
 	}
 	if (IsValid(Text_Error)) Text_Error->SetVisibility(Text_Error->GetText().IsEmpty()
 		? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);

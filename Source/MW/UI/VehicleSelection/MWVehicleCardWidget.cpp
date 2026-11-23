@@ -130,9 +130,8 @@ void UMWVehicleCardWidget::Refresh()
     Button_Vehicle->SetIsEnabled(bAvailable);
     // 선택 입력이 잠겨도 확정한 Preview의 내용은 읽을 수 있게 유지한다.
     Button_Vehicle->SetVisibility(bInteractionLocked ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Visible);
+    // 차량명은 카드에 직접 표시한다. 별도 툴팁이 커서가 가리키는 카드를 덮지 않게 한다.
     Text_Name->SetText(DisplayName);
-    Text_Name->SetToolTipText(DisplayName);
-    Button_Vehicle->SetToolTipText(DisplayName);
     Text_Unavailable->SetText(UnavailableReason);
     Text_Unavailable->SetVisibility(bAvailable ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
     Image_Vehicle->SetBrushFromSoftTexture(Thumbnail, true);

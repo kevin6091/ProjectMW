@@ -152,4 +152,3 @@ struct FMWTrackTrafficModelData
     UPROPERTY(EditAnywhere, Category = "Track")
     int32 Weight = 0;
 };
-

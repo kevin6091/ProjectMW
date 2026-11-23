@@ -9,11 +9,6 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 
-void UMWRaceHUDWidget::SetItemPickupTest(bool bEnabled)
-{
-    bItemPickupTest = bEnabled;
-}
-
 void UMWRaceHUDWidget::NativePreConstruct()
 {
     Super::NativePreConstruct();
@@ -68,11 +63,13 @@ void UMWRaceHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
     const auto* HUD = World ? World->GetSubsystem<UMWGameplayHUDSubsystem>() : nullptr;
     const TOptional<EMWRoomPhase> Phase = HUD ? HUD->GetObservedRoomPhase() : TOptional<EMWRoomPhase>();
     const AMWVehiclePawn* Vehicle = IsValid(PC) ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
-    const bool bDriving = bItemPickupTest || (Phase.IsSet() && Phase.GetValue() == EMWRoomPhase::Racing);
+    const FMWPIEHUDPreview Preview = HUD ? HUD->GetPIEPreview() : FMWPIEHUDPreview{};
+    const bool bDriving = Preview.bSpeedometer || (Phase.IsSet() && Phase.GetValue() == EMWRoomPhase::Racing);
     const bool bShowSpeed = bDriving && IsValid(PC) && PC->IsLocalController() && IsValid(Vehicle);
 
     Panel_Speed->SetVisibility(bShowSpeed ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-    UpdatePhase(bItemPickupTest ? TOptional<EMWRoomPhase>() : Phase);
+    // 개발 맵에서는 아이템 슬롯만 미리 보는 경우에도 실제 경기 단계 배지를 숨긴다.
+    UpdatePhase(Preview.IsEnabled() ? TOptional<EMWRoomPhase>() : Phase);
     SampleSpeed(bShowSpeed ? Vehicle : nullptr, World ? World->GetTimeSeconds() : 0.0);
 
     if (!bShowSpeed)

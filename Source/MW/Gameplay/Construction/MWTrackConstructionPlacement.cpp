@@ -7,6 +7,7 @@
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "LogChannel.h"
+#include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
 
@@ -225,6 +226,8 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FTransform& BuildFrame,
 			Intent.CursorLocation = BuildOrigin + BuildFrame.GetUnitAxis(EAxis::Y) * (600.0 * LayoutScale * ++OffsetIndex);
 			Entry.Value.PreviewTransform = MWTrackSnap::MakeRawTransform(PendingTracks.FindChecked(Entry.Key).Ports, PlacementSession, Intent);
 			PS->GetPlayerConstructionComponent()->SetPlacementForServer(Entry.Value);
+			// 서버가 설치할 조각을 받은 참가자에게만 배치 포인터 전송을 허용한다.
+			PS->GetCursorComponent()->OpenStreamForServer(MWCursorContexts::TrackPlacement, EMWCursorSpace::World);
 		}
 	}
 	EndSelection();
@@ -270,7 +273,7 @@ void UMWTrackConstructionComponent::UpdatePlacementPreview(APlayerController* Re
 	auto Player = Component->GetPlacement();
 	FTransform Display;
 	const bool bSnapped = MWTrackSnap::Resolve(Prepared->Ports, PlacementSession, Intent, Display);
-	
+
 	if (Player.bSnapped != bSnapped || Player.bReversed != Intent.bReversed || !Player.PreviewTransform.Equals(Display))
 	{
 		Player.bSnapped = bSnapped;
@@ -317,6 +320,8 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 	PublishTrack(*Prepared, Transform, Intent.Target, Intent.SourcePort);
 	PlacementSession.OpenEnds[0] = NextEnd;
 	PendingTracks.Remove(TWeakObjectPtr<AMWPlayerState>(PS));
+	// 설치가 끝난 참가자의 포인터는 남은 참가자의 배치 화면에서 제거한다.
+	PS->GetCursorComponent()->CloseStreamForServer();
 	Player.bPlaced = true;
 	Player.PreviewTransform = Transform;
 	Component->SetPlacementForServer(Player);
@@ -357,6 +362,7 @@ void UMWTrackConstructionComponent::RemovePlacementPlayer(AMWPlayerState* Player
 	if (HasServerAuthority() && Player
 		&& PendingTracks.RemoveAndCopyValue(TWeakObjectPtr<AMWPlayerState>(Player), Prepared))
 	{
+		Player->GetCursorComponent()->CloseStreamForServer();
 		Prepared.Destroy();
 		if (PendingTracks.IsEmpty())
 		{
@@ -390,6 +396,7 @@ void UMWTrackConstructionComponent::CancelPlacement()
 	// 이미 설치한 도로는 월드가 정리한다. 취소 시에는 서버의 미확정 Actor만 파괴한다.
 	for (const auto& Entry : PendingTracks)
 	{
+		if (AMWPlayerState* PS = Entry.Key.Get()) PS->GetCursorComponent()->CloseStreamForServer();
 		Entry.Value.Destroy();
 	}
 	PendingTracks.Reset();
