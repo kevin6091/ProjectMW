@@ -1,0 +1,43 @@
+=== Editor Win64 Development ===
+Result: Succeeded
+Total execution time: 52.98 seconds
+=== UI 및 UVCS cs:68 기능 에셋, 클릭과 서버 승인 ===
+[2026.11.23-02.44.25:447][  2]LogPython: PRESENTATION_CS68_ASSET path=Content/Gameplay/Tracks/Art/Supports/M_MW_TrackSupportSteel.uasset sha256=e27a43e1de2fb8442fd2e8aa2aa598dc279368e093e639a8076c3f8bba1d7636
+[2026.11.23-02.44.25:459][  2]LogPython: PRESENTATION_CS68_ASSET path=Content/Gameplay/Tracks/Art/Supports/SM_MW_TrackSupportTower.uasset sha256=5e31b6f69bc816bb9385c1c1108ec73c3de5d5f6855ecc00c73955e0f1e20a2e
+[2026.11.23-02.44.25:471][  3]LogPython: PRESENTATION_CS68_ASSET path=Content/Gameplay/Vehicles/Art/Exhaust/NS_MW_VehicleExhaust.uasset sha256=a3139a914b3151c21d209ee0b4517a9b64195d1889f459b7f869cb525c23ced7
+[2026.11.23-02.44.25:495][  3]LogPython: CS64_SERVER_ORIGINALS_READY files=10 SelectSign=MWGameplaySignWidget BuildSign=MWGameplaySignWidget
+[2026.11.23-02.46.30:679][462]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(159.0,123.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=7684.626 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+[2026.11.23-02.46.30:687][462]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-02.46.45:400][ 27]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=2 target=2:1 source=0 pointer=(485.0,393.0) resolved=(5260.390000000,450.000437114,6000.000000000) quat=(0.000000000,0.000000000,0.707106719,-0.707106843) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000010
+[2026.11.23-02.46.45:418][ 28]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-02.47.01:695][717]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=3 target=3:1 source=0 pointer=(402.0,433.0) resolved=(8088.252704803,-721.336568447,6000.000000000) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.23-02.47.01:714][718]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-02.47.01:847][720]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.47.01:909][721]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.47.01:957][721]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.48.01:077][723]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+[2026.11.23-02.48.50:479][308]LogAutomationController: Display: Test Completed. Result={Success} Name={CheckpointVelocity} Path={MW.Vehicle.CheckpointVelocity}
+[2026.11.23-02.48.50:708][309]LogAutomationController: Error: Test Completed. Result={Fail} Name={CollisionAndGround} Path={MW.Vehicle.CollisionAndGround}
+[2026.11.23-02.48.50:824][311]LogAutomationController: Display: Test Completed. Result={Success} Name={ConfigValidation} Path={MW.Vehicle.ConfigValidation}
+[2026.11.23-02.48.50:938][313]LogAutomationController: Display: Test Completed. Result={Success} Name={FrameRateAndReset} Path={MW.Vehicle.FrameRateAndReset}
+[2026.11.23-02.48.51:062][315]LogAutomationController: Display: Test Completed. Result={Success} Name={LocalControls} Path={MW.Vehicle.LocalControls}
+[2026.11.23-02.48.51:243][317]LogAutomationController: Display: Test Completed. Result={Success} Name={OverspeedRecovery} Path={MW.Vehicle.OverspeedRecovery}
+[2026.11.23-02.48.51:358][319]LogAutomationController: Display: Test Completed. Result={Success} Name={VehicleContact} Path={MW.Vehicle.VehicleContact}
+[2026.11.23-02.48.52:030][321]LogAutomationController: Display: Test Completed. Result={Success} Name={WallBounce} Path={MW.Vehicle.WallBounce}
+[2026.11.23-02.48.52:255][323]LogAutomationController: Display: Test Completed. Result={Success} Name={WallGroundContact} Path={MW.Vehicle.WallGroundContact}
+=== 출발·설치·도착 서버 좌표(cm) ===
+{1: (260.39, 450.0, 6000.0), 2: (260.39, 450.0, 6000.0), 3: (5260.39, 450.000437, 6000.0), 4: (8088.252705, -721.336568, 6000.0), 5: (11526.100309, -4159.18237, 7167.227526)}
+P1 piece 2 clicked-server delta=0.000000000 cm
+P3 piece 3 clicked-server delta=0.000000114 cm
+P2 piece 4 clicked-server delta=0.000000488 cm
+=== 세 창의 실제 출발 시점과 지지대 ===
+{"member": 1, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_FRED_C_0", "location": [-2620.0, 375.0, 6100.592], "supports": [{"xy": [2760.39, 450.0], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [7204.367, 83.885], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [9817.176, -2450.259], "floor": 0.0, "top": 6462.41, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [12409.984, -5043.066], "floor": 0.0, "top": 7046.07, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}]}
+{"member": 2, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_DOUG_C_0", "location": [-2620.0, 525.0, 6054.592], "supports": [{"xy": [2760.39, 450.0], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [7204.367, 83.885], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [9817.176, -2450.26], "floor": 0.0, "top": 6462.41, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [12409.984, -5043.066], "floor": 0.0, "top": 7046.07, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}]}
+{"member": 3, "phase": "<MWRoomPhase.RACING: 9>", "pawn": "BP_MWVehiclePawn_UFOLOGY_C_0", "location": [-2870.0, 375.0, 6084.592], "supports": [{"xy": [2760.39, 450.0], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [7204.367, 83.885], "floor": 0.0, "top": 5878.84, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [9817.176, -2450.26], "floor": 0.0, "top": 6462.41, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}, {"xy": [12409.984, -5043.066], "floor": 0.0, "top": 7046.07, "collision": "<CollisionEnabled.NO_COLLISION: 0>"}]}
+=== 같은 원격/로컬 DOUG의 최종 일반 배기·부스터 표본 ===
+P1 [{'counts': (0, 0), 'offsets': []}, {'counts': (2, 0), 'offsets': [[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]}]
+P2 [{'counts': (0, 0), 'offsets': []}, {'counts': (2, 0), 'offsets': [[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]}]
+P3 [{'counts': (0, 0), 'offsets': []}, {'counts': (2, 0), 'offsets': [[-80.64, -6.8, 4.5], [-80.64, 6.8, 4.5]]}]
+=== 차량 접지 실패의 실제 단언 ===
+[2026.11.23-02.48.50:732][310]LogAutomationController: Error: Expected 'Upward impulse releases ground' to be false. [C:\workspace\UE\ProjectMW\Source\MW\Tests\MWVehicleMovementTests.cpp(213)]
+[2026.11.23-02.48.50:744][310]LogAutomationController: Error: Expected 'Upward impulse is not erased' to be true. [C:\workspace\UE\ProjectMW\Source\MW\Tests\MWVehicleMovementTests.cpp(214)]
