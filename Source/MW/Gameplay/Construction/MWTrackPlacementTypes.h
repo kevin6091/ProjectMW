@@ -2,22 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/NetSerialization.h"
-#include "GameplayTagContainer.h"
 #include "MWTrackPlacementTypes.generated.h"
 
 class AActor;
-
-USTRUCT(BlueprintType)
-struct FMWTrackCourseEnds
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
-	FGameplayTag StartDefinitionId;
-
-	UPROPERTY(EditAnywhere, Category = "Track", meta = (Categories = "Asset.Track"))
-	FGameplayTag EndDefinitionId;
-};
 
 USTRUCT(BlueprintType)
 struct FMWTrackEndId
@@ -50,11 +37,11 @@ struct FMWPlacedTrack
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly) int32 PieceId = 0;
-	UPROPERTY(BlueprintReadOnly) FGameplayTag DefinitionAssetId;
 	UPROPERTY(BlueprintReadOnly) TObjectPtr<AActor> Actor;
 	UPROPERTY(BlueprintReadOnly) FTransform WorldTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) FMWTrackEndId ConnectedTo;
 	UPROPERTY(BlueprintReadOnly) int32 ConnectedPortIndex = INDEX_NONE;
+	UPROPERTY(BlueprintReadOnly) TSoftClassPtr<AActor> TrackClass;
 	// 서버에서 실제 질의 충돌을 가진 조각만 충돌 준비를 요구한다. 장식용 종료 캡도 보존한다.
 	UPROPERTY(BlueprintReadOnly) bool bRequiresCollision = true;
 	UPROPERTY(BlueprintReadOnly) bool bCheckpoint = false;
@@ -83,10 +70,11 @@ struct FMWPlayerTrackPlacement
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly) int32 SessionId = 0;
-	UPROPERTY(BlueprintReadOnly) FGameplayTag DefinitionAssetId;
+	UPROPERTY(BlueprintReadOnly) TSoftClassPtr<AActor> TrackClass;
 	UPROPERTY(BlueprintReadOnly) FTransform PreviewTransform = FTransform::Identity;
 	UPROPERTY(BlueprintReadOnly) bool bSnapped = false;
 	UPROPERTY(BlueprintReadOnly) bool bPlaced = false;
+	UPROPERTY(BlueprintReadOnly) bool bReversed = false;
 };
 
 // 미리보기와 확정 요청에 동일한 입력을 사용한다. 최종 설치 Transform은 서버가 계산한다.

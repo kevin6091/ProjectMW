@@ -1,9 +1,9 @@
 #include "Gameplay/Construction/MWTrackPreviewPreload.h"
 
 #include "Engine/StreamableManager.h"
-#include "Data/MWTrackDefinitionData.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
 #include "Materials/MaterialInterface.h"
+#include "MWGameplayTags.h"
 #include "Player/MWLobbyPlayerController.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/MWAssetManager.h"
@@ -24,40 +24,41 @@ void UMWTrackPreviewPreload::PlayerControllerChanged(APlayerController* NewContr
 		return;
 	}
 
-	if (LoadHandle)
+	if (!CatalogLoadHandle)
 	{
-		return;
-	}
-
-	const FGameplayTag Tracks = FGameplayTag::RequestGameplayTag(TEXT("Asset.Track"));
-	const FGameplayTag Course = FGameplayTag::RequestGameplayTag(TEXT("Asset.Track.Course"), false);
-	const UMWAssetManager& Assets = UMWAssetManager::Get();
-	TArray<FSoftObjectPath> Paths;
-	for (const FGameplayTag Id : Assets.GetAssetIdsUnderRoot(Tracks))
-	{
-		// 출발선·종료 캡은 코스 전용이다. 선택 조각 정의가 참조하는 BP·메시·재질만 함께 읽는다.
-		if (!Id.MatchesTag(Course))
+		const FSoftObjectPath Path = UMWAssetManager::Get().FindAssetPath(MWGameplayTags::Asset_Track_RuntimeCatalog);
+		if (Path.IsValid())
 		{
-			Paths.AddUnique(Assets.FindAssetPath(Id));
+			CatalogLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(Path);
 		}
-	}
-
-	if (!Paths.IsEmpty())
-	{
-		LoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(Paths,
-			FStreamableDelegate::CreateUObject(this, &ThisClass::PrepareMaterials, Paths));
 	}
 }
 
-void UMWTrackPreviewPreload::PrepareMaterials(TArray<FSoftObjectPath> Paths)
+bool UMWTrackPreviewPreload::PrepareCandidates(const TArray<FMWTrackOffer>& Offers)
 {
-	TSet<UMaterialInterface*> Materials;
-	for (const FSoftObjectPath& Path : Paths)
+	// 후보는 경기 서버에서 추첨한다. 카탈로그 전체 BP를 읽지 않고 실제 전시할 조각만 준비한다.
+	TArray<FSoftObjectPath> Paths;
+	for (const FMWTrackOffer& Offer : Offers)
 	{
-		if (const auto* Definition = Cast<UMWTrackDefinitionData>(Path.ResolveObject()))
+		if (Offer.ClaimedByMemberId == INDEX_NONE && !Offer.TrackClass.IsNull())
 		{
-			MWTrackPreview::CollectWireframeMaterials(Definition->GetTrackActorClass(), Materials);
+			Paths.AddUnique(Offer.TrackClass.ToSoftObjectPath());
 		}
+	}
+
+	if (Paths != CandidatePaths)
+	{
+		if (CandidateLoadHandle) CandidateLoadHandle->CancelHandle();
+		CandidatePaths = MoveTemp(Paths);
+		CandidateLoadHandle = CandidatePaths.IsEmpty()
+			? nullptr : UAssetManager::GetStreamableManager().RequestAsyncLoad(CandidatePaths);
+	}
+	if (CandidateLoadHandle && !CandidateLoadHandle->HasLoadCompleted()) return false;
+
+	TSet<UMaterialInterface*> Materials;
+	for (const FSoftObjectPath& Path : CandidatePaths)
+	{
+		MWTrackPreview::CollectWireframeMaterials(Cast<UClass>(Path.ResolveObject()), Materials);
 	}
 
 	// 파일을 읽었더라도 PIE에서는 셰이더가 준비될 때까지 기본 체크 재질이 보일 수 있다.
@@ -68,15 +69,22 @@ void UMWTrackPreviewPreload::PrepareMaterials(TArray<FSoftObjectPath> Paths)
 			Material->CacheShaders(EMaterialShaderPrecompileMode::Background);
 		}
 	}
+	return true;
 }
 
 void UMWTrackPreviewPreload::ReleaseCandidates()
 {
-	if (LoadHandle)
+	if (CandidateLoadHandle)
 	{
-		LoadHandle->CancelHandle();
-		LoadHandle.Reset();
+		CandidateLoadHandle->CancelHandle();
+		CandidateLoadHandle.Reset();
 	}
+	if (CatalogLoadHandle)
+	{
+		CatalogLoadHandle->CancelHandle();
+		CatalogLoadHandle.Reset();
+	}
+	CandidatePaths.Reset();
 }
 
 void UMWTrackPreviewPreload::Deinitialize()

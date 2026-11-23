@@ -4,6 +4,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
@@ -841,9 +842,6 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	Scene.World->SetGameState(State);
 	FindFProperty<FObjectPropertyBase>(Mode->GetClass(), TEXT("GameState"))->SetObjectPropertyValue_InContainer(Mode, State);
 	FindFProperty<FObjectPropertyBase>(Scene.World->GetClass(), TEXT("AuthorityGameMode"))->SetObjectPropertyValue_InContainer(Scene.World, Mode);
-	const FGameplayTag FinishId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.End.WoodenCap")));
-	FindFProperty<FStructProperty>(Mode->GetClass(), TEXT("CourseEnds"))
-		->ContainerPtrToValuePtr<FMWTrackCourseEnds>(Mode)->EndDefinitionId = FinishId;
 	auto* FinishTrack = Scene.World->SpawnActor<AActor>();
 	auto* FinishRoot = NewObject<USceneComponent>(FinishTrack, TEXT("Root"));
 	FinishTrack->SetRootComponent(FinishRoot);
@@ -855,7 +853,7 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	Port->RegisterComponent();
 	auto* TrackComponent = NewObject<UMWTrackRuntimeComponent>(FinishTrack);
 	FinishTrack->AddInstanceComponent(TrackComponent);
-	TrackComponent->Configure(FMWTrackPieceRuntimeData{});
+	TrackComponent->Configure(FMWTrackDefinition{});
 	TrackComponent->RegisterComponent();
 	FinishTrack->DispatchBeginPlay();
 	auto* Runtime = Scene.World->GetSubsystem<UMWTrackRuntimeSubsystem>();
@@ -871,7 +869,7 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	Course.CourseRevision = 3;
 	FMWPlacedTrack Finish;
 	Finish.PieceId = 1;
-	Finish.DefinitionAssetId = FinishId;
+	Finish.TrackClass = GetDefault<UMWTrackRuntimeSettings>()->FinishTrackClass;
 	Finish.Actor = FinishTrack;
 	Finish.WorldTransform = FinishTrack->GetActorTransform();
 	Finish.bRequiresCollision = true;
@@ -1008,10 +1006,6 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < Slots.Num(); ++Index) Slots[Index]->SetRelativeLocation(FVector(-300, Index * 400 - 600, 60));
 	Mode->SelectionBoard = Scene.World->SpawnActor<AMWTrackSelectionBoard>();
 	FindFProperty<FDoubleProperty>(Mode->SelectionBoard->GetClass(), TEXT("LayoutScale"))->SetPropertyValue_InContainer(Mode->SelectionBoard.Get(), 10.0);
-	for (const TCHAR* Tag : {TEXT("Asset.Track.Straight.Test"), TEXT("Asset.Track.Curve.Test"), TEXT("Asset.Track.Placeholder.Test")})
-		Mode->ConstructionTrackDefinitionIds.Add(FGameplayTag::RequestGameplayTag(FName(Tag)));
-	Mode->CourseEnds.StartDefinitionId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.Start.WoodenCapped")));
-	Mode->CourseEnds.EndDefinitionId = FGameplayTag::RequestGameplayTag(FName(TEXT("Asset.Track.Course.End.WoodenCap")));
 	auto* Runtime = Scene.World->GetSubsystem<UMWTrackRuntimeSubsystem>();
 	Runtime->OnWorldBeginPlay(*Scene.World); // 트랙 서비스만 시작한다. 다른 서비스의 테스트용 수명은 만들지 않는다.
 	Scene.World->SetBegunPlay(true);
@@ -1027,18 +1021,32 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	const auto PlaceRound = [&]() -> bool
 	{
 		const auto Selection = Construction->GetSelectionSession();
+		if (!TestEqual(TEXT("The shared catalog offers six slots"), Selection.Offers.Num(), MWTrackSelection::OfferCount)) return false;
+		TSet<FSoftObjectPath> OfferedClasses;
+		for (const auto& Offer : Selection.Offers) OfferedClasses.Add(Offer.TrackClass.ToSoftObjectPath());
+		TestEqual(TEXT("The six offered track classes are distinct"), OfferedClasses.Num(), MWTrackSelection::OfferCount);
 		for (int32 Index = 0; Index < Controllers.Num(); ++Index)
 		{
 			if (!TestTrue(TEXT("Current selection is accepted"), Construction->ConfirmSelection(Controllers[Index], Selection.SelectionSessionId,
 				Selection.OffersRevision, Index + 1, State->GetProgress().RoundEpoch * 10 + Index).bAccepted)) return false;
+			if (Index == 0)
+			{
+				const auto Claimed = Construction->GetSelectionSession();
+				TestEqual(TEXT("Claimed ownership is published without changing the offer revision"), Claimed.OffersRevision, Selection.OffersRevision);
+				TestEqual(TEXT("The claimed slot remains available as placement data"), Claimed.Offers[0].ClaimedByMemberId, Players[0]->GetLobbyMemberId());
+				const auto Duplicate = Construction->ConfirmSelection(Controllers[1], Selection.SelectionSessionId, Selection.OffersRevision,
+					1, State->GetProgress().RoundEpoch * 10 + 9);
+				TestTrue(TEXT("Another player cannot claim the same slot"), !Duplicate.bAccepted && Duplicate.Reason == EMWTrackSelectionRejectReason::OfferTaken);
+				TestFalse(TEXT("Rejected duplicate selection leaves the other player free to choose"), Players[1]->GetPlayerConstructionComponent()->GetSelection().bConfirmed);
+			}
 		}
 		if (!TestTrue(TEXT("All selections enter TrackPlacement"), State->GetRoomPhase() == EMWRoomPhase::TrackPlacement)) return false;
 		for (int32 Index = 0; Index < Controllers.Num(); ++Index)
 		{
-			const auto Id = Players[Index]->GetPlayerConstructionComponent()->GetPlacement().DefinitionAssetId;
-			const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Id);
-			if (!TestNotNull(TEXT("Selected track definition exists"), Definition)) return false;
-			AActor* Probe = Scene.World->SpawnActor<AActor>(Definition->GetTrackActorClass(), FVector(-100000, 0, 0), FRotator::ZeroRotator);
+			const auto TrackClass = Players[Index]->GetPlayerConstructionComponent()->GetPlacement().TrackClass;
+			UClass* Class = TrackClass.LoadSynchronous();
+			if (!TestNotNull(TEXT("Selected track class exists"), Class)) return false;
+			AActor* Probe = Scene.World->SpawnActor<AActor>(Class, FVector(-100000, 0, 0), FRotator::ZeroRotator);
 			FMWTrackPortFrames Ports;
 			if (!TestTrue(TEXT("Selected track has both ports"), Probe && MWTrackSnap::ReadPorts(*Probe, Ports))) return false;
 			Probe->Destroy();

@@ -7,29 +7,71 @@
 #include "Gameplay/Construction/MWTrackPreview.h"
 #include "Gameplay/Construction/MWTrackSnap.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "System/GameMode/MWGameplayGameMode.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
+#include "LogChannel.h"
+#include "MWGameplayTags.h"
+#include "System/MWAssetManager.h"
 #include "TimerManager.h"
-#include "UObject/ConstructorHelpers.h"
 
-namespace
+void UMWTrackRuntimeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-    const FName PreviewTag(TEXT("MWTrackVisualOnly"));
-}
+    Super::Initialize(Collection);
+    // 복제된 트랙 컴포넌트가 초기화될 때 사용할 수 있도록 월드 시작 전에 카탈로그를 준비한다.
+    Catalog = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(MWGameplayTags::Asset_Track_RuntimeCatalog);
+    if (!Catalog)
+    {
+        UE_LOG(LogDefault, Warning, TEXT("[MWTrackRuntime] 공용 에셋 목록에서 트랙 카탈로그를 불러올 수 없습니다."));
+        return;
+    }
 
-UMWTrackRuntimeSubsystem::UMWTrackRuntimeSubsystem()
-{
-    static ConstructorHelpers::FObjectFinderOptional<UMWTrackRuntimeData> RuntimeData(
-        TEXT("/Game/Gameplay/Tracks/Data/DA_TrackRuntime.DA_TrackRuntime"));
-    Catalog = RuntimeData.Get();
+    // 월드 시작 전에 조회 표를 만들어 원격에서 복제된 컴포넌트도 같은 행을 찾게 한다.
+    Pieces.Reserve(Catalog->Pieces.Num());
+    for (const FMWTrackDefinition& Piece : Catalog->Pieces)
+    {
+        if (!Piece.TrackClass.IsNull())
+        {
+            Pieces.Add(Piece.TrackClass.ToSoftObjectPath(), &Piece);
+        }
+    }
 }
 
 // 일반 게임과 PIE 월드만 대상으로 해 에디터 미리보기에서 런타임 기능이 켜지지 않게 한다.
 bool UMWTrackRuntimeSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) const
 {
     return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;
+}
+
+TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
+{
+    TArray<TSoftClassPtr<AActor>> Result;
+    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
+    if (!Catalog)
+    {
+        return Result;
+    }
+
+    // 추첨 전에 전체 BP를 로드하지 않도록 카탈로그의 소프트 참조만 모은다.
+    Result.Reserve(Catalog->Pieces.Num());
+    for (const FMWTrackDefinition& Piece : Catalog->Pieces)
+    {
+        const auto& TrackClass = Piece.TrackClass;
+        if (!TrackClass.IsNull() && TrackClass != Settings->StartTrackClass && TrackClass != Settings->FinishTrackClass
+            && !Settings->CourseOnlyTracks.Contains(TrackClass))
+        {
+            Result.AddUnique(TrackClass);
+        }
+    }
+    return Result;
+}
+
+FText UMWTrackRuntimeSubsystem::GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const
+{
+    const FMWTrackDefinition* const* Definition = Pieces.Find(TrackClass.ToSoftObjectPath());
+    return Definition ? (*Definition)->DisplayName : FText::GetEmpty();
 }
 
 // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.
@@ -41,10 +83,6 @@ void UMWTrackRuntimeSubsystem::OnWorldBeginPlay(UWorld& InWorld)
         return;
     }
 
-    for (const FMWTrackPieceRuntimeData& Piece : Catalog->Pieces)
-    {
-        Pieces.Add(Piece.VisualClass, &Piece);
-    }
     ActorSpawnHandle = InWorld.AddOnActorSpawnedHandler(
         FOnActorSpawned::FDelegate::CreateUObject(this, &UMWTrackRuntimeSubsystem::OnActorSpawned));
     for (TActorIterator<AActor> Actor(&InWorld); Actor; ++Actor)
@@ -60,13 +98,23 @@ void UMWTrackRuntimeSubsystem::Deinitialize()
     {
         GetWorld()->RemoveOnActorSpawnedHandler(ActorSpawnHandle);
     }
+    for (const TWeakObjectPtr<AActor>& Preview : PreviewActors)
+    {
+        if (AActor* Actor = Preview.Get())
+        {
+            Actor->OnEndPlay.RemoveDynamic(this, &ThisClass::OnPreviewActorEndPlay);
+        }
+    }
+    PreviewActors.Reset();
+    Pieces.Reset();
+    Catalog = nullptr;
     Super::Deinitialize();
 }
 
 // 늦게 복제되거나 생성된 트랙에도 기존 카탈로그 연결을 적용한다.
 void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 {
-    if (!Pieces.Contains(Actor->GetClass()->GetFName()))
+    if (!Pieces.Contains(FSoftObjectPath(Actor->GetClass())))
     {
         return;
     }
@@ -81,13 +129,13 @@ void UMWTrackRuntimeSubsystem::OnActorSpawned(AActor* Actor)
 // 카탈로그에 대응하는 트랙에만 런타임을 연결하고 이미 있는 컴포넌트는 중복 생성하지 않는다.
 void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActor)
 {
-    // 선택판과 고스트에는 다음 틱에도 경기용 충돌·트리거를 만들지 않는다.
-    if (!IsValid(Actor) || MWTrackPreview::IsDisplayOnly(*Actor) || !Actor->GetRootComponent() ||
+    // 전시용 액터와 서버가 설치를 보류 중인 조각에는 경기용 충돌·트리거를 만들지 않는다.
+    if (!IsValid(Actor) || MWTrackPreview::IsDisplayOnly(*Actor) || PreviewActors.Contains(Actor) || !Actor->GetRootComponent() ||
         Actor->FindComponentByClass<UMWTrackRuntimeComponent>())
     {
         return;
     }
-    const FMWTrackPieceRuntimeData* const* Data = Pieces.Find(Actor->GetClass()->GetFName());
+    const FMWTrackDefinition* const* Data = Pieces.Find(FSoftObjectPath(Actor->GetClass()));
     if (!Data)
     {
         return;
@@ -98,21 +146,18 @@ void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActo
         {
             return Motion.Type == EMWTrackMotion::Lift;
         });
-    if (GetWorld()->GetNetMode() == NM_Client && bLift && !Actor->ActorHasTag(PreviewTag))
+    if (GetWorld()->GetNetMode() == NM_Client && bLift)
     {
         // 서버가 같은 컴포넌트를 복제하므로 클라이언트에서 별도 생성해 이중 이동시키지 않는다.
         return;
     }
     UMWTrackRuntimeComponent* Runtime = NewObject<UMWTrackRuntimeComponent>(Actor);
     Actor->AddInstanceComponent(Runtime);
-    Runtime->SetPreview(Actor->ActorHasTag(PreviewTag));
     Runtime->Configure(**Data);
-    const bool bReplicatedLift = bLift && !Actor->ActorHasTag(PreviewTag);
-    Runtime->SetIsReplicated(bReplicatedLift);
+    Runtime->SetIsReplicated(bLift);
     Runtime->RegisterComponent();
     // 레벨에 저장된 승강기도 액터 채널이 있어야 작동 시각이 복제된다.
-    // 건설 중인 미확정 트랙은 기존 게시 절차가 끝날 때까지 공개하지 않는다.
-    if (bReplicatedLift && bInitialWorldActor && GetWorld()->GetNetMode() != NM_Client)
+    if (bLift && bInitialWorldActor && GetWorld()->GetNetMode() != NM_Client)
     {
         // 탑승자가 트랙 원점에서 멀어도 발판의 복제가 끊기지 않도록 기존 확정 트랙과 같은 가시성 규칙을 쓴다.
         Actor->bAlwaysRelevant = true;
@@ -124,20 +169,15 @@ void UMWTrackRuntimeSubsystem::AttachTrack(AActor* Actor, bool bInitialWorldActo
 void UMWTrackRuntimeSubsystem::ConfigureRuntimeComponent(UMWTrackRuntimeComponent& Component)
 {
     const AActor* Actor = Component.GetOwner();
-    if (!Catalog || !IsValid(Actor))
+    if (!IsValid(Actor))
     {
         return;
     }
-    // 클라이언트의 월드 초기화보다 먼저 호출될 수 있으므로 아직 완성되지 않은 조회 표에 의존하지 않는다.
-    const FMWTrackPieceRuntimeData* Data = Catalog->Pieces.FindByPredicate(
-        [Actor](const FMWTrackPieceRuntimeData& Entry)
-        {
-            return Entry.VisualClass == Actor->GetClass()->GetFName();
-        });
+    const FMWTrackDefinition* const* Data = Pieces.Find(FSoftObjectPath(Actor->GetClass()));
     if (Data)
     {
-        Component.SetPreview(Actor->ActorHasTag(PreviewTag));
-        Component.Configure(*Data);
+        Component.SetPreview(PreviewActors.Contains(Actor));
+        Component.Configure(**Data);
     }
 }
 
@@ -146,11 +186,14 @@ void UMWTrackRuntimeSubsystem::SetTrackPreview(AActor& Actor, bool bPreview)
 {
     if (bPreview)
     {
-        Actor.Tags.AddUnique(PreviewTag);
+        PreviewActors.Add(&Actor);
+        Actor.OnEndPlay.AddUniqueDynamic(this, &ThisClass::OnPreviewActorEndPlay);
     }
-    else
+    else if (PreviewActors.Remove(&Actor) > 0)
     {
-        Actor.Tags.Remove(PreviewTag);
+        Actor.OnEndPlay.RemoveDynamic(this, &ThisClass::OnPreviewActorEndPlay);
+        // 설치를 보류한 동안 생성하지 않았던 런타임을 확정 시점에 연결한다.
+        AttachTrack(&Actor);
     }
     if (UMWTrackRuntimeComponent* Runtime = Actor.FindComponentByClass<UMWTrackRuntimeComponent>())
     {
@@ -185,9 +228,8 @@ bool UMWTrackRuntimeSubsystem::PrepareCourseCheckpoint(AActor& Track, const FTra
 bool UMWTrackRuntimeSubsystem::IsCheckpointTrack(const AActor& Track) const
 {
     if (const auto* Runtime = Track.FindComponentByClass<UMWTrackRuntimeComponent>(); Runtime && Runtime->HasCheckpointTrigger()) return true;
-    const auto* Data = Catalog ? Catalog->Pieces.FindByPredicate([&Track](const FMWTrackPieceRuntimeData& Entry)
-        { return Entry.VisualClass == Track.GetClass()->GetFName(); }) : nullptr;
-    return Data && Data->Shapes.ContainsByPredicate([](const FMWTrackShapeData& Shape) { return Shape.Trigger == EMWTrackTrigger::Checkpoint; });
+    const FMWTrackDefinition* const* Data = Pieces.Find(FSoftObjectPath(Track.GetClass()));
+    return Data && (*Data)->Shapes.ContainsByPredicate([](const FMWTrackShapeData& Shape) { return Shape.Trigger == EMWTrackTrigger::Checkpoint; });
 }
 
 void UMWTrackRuntimeSubsystem::BeginPlayerRace(AMWVehiclePawn& Vehicle, int32 RoundEpoch)
@@ -201,6 +243,11 @@ void UMWTrackRuntimeSubsystem::BeginPlayerRace(AMWVehiclePawn& Vehicle, int32 Ro
     Racer.RoundEpoch = RoundEpoch;
     Racer.StartTime = GetWorld()->GetTimeSeconds();
     Racer.StartTransform = Vehicle.GetActorTransform();
+}
+
+void UMWTrackRuntimeSubsystem::OnPreviewActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason)
+{
+    PreviewActors.Remove(Actor);
 }
 
 // 서버가 현재 진행과 중복 통과를 검사해 출발·체크포인트·완주 상태를 기록한다.

@@ -91,7 +91,7 @@ void UMWTrackRuntimeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 }
 
 // 복구 데이터의 값과 에셋 참조를 소유한 뒤 충돌·움직임·교통을 구성한다.
-void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& InData)
+void UMWTrackRuntimeComponent::Configure(const FMWTrackDefinition& InData)
 {
     if (bConfigured || !IsValid(GetOwner()) || !GetOwner()->GetRootComponent())
     {
@@ -99,7 +99,7 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackPieceRuntimeData& InData)
     }
     Piece = InData;
     bConfigured = true;
-    const FMWTrackPieceRuntimeData& Data = Piece;
+    const FMWTrackDefinition& Data = Piece;
     AActor& Actor = *GetOwner();
     TInlineComponentArray<UStaticMeshComponent*> Visuals(&Actor);
     Motions.Reserve(Data.Motions.Num());
@@ -659,7 +659,8 @@ void UMWTrackRuntimeComponent::ConfigureTraffic()
     }
 
     AActor& Actor = *GetOwner();
-    FRandomStream Random(FCrc::StrCrc32(*Piece.VisualClass.ToString()));
+    // 기존 교통 조합을 유지하도록 BP 참조에서 이전과 같은 짧은 클래스 이름을 읽는다.
+    FRandomStream Random(FCrc::StrCrc32(*Piece.TrackClass.ToSoftObjectPath().GetAssetName()));
     TrafficLaneStates.SetNum(Piece.TrafficLanes.Num());
     for (int32 LaneIndex = 0; LaneIndex < Piece.TrafficLanes.Num(); ++LaneIndex)
     {

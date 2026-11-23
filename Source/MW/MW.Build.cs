@@ -29,6 +29,7 @@ public class MW : ModuleRules
             "Slate", 
 			"SlateCore",
 			"AssetRegistry", "Renderer", "RenderCore", "RHI", "ApplicationCore",
+			"DeveloperSettings",
 			"LevelSequence", "MovieScene",
 			"NetCore", // 차량 스냅샷의 위치·속도 압축 직렬화
             "EngineSettings",

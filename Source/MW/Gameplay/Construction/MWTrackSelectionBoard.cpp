@@ -1,46 +1,73 @@
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Gameplay/Construction/MWTrackPreviewPreload.h"
-#include "Engine/LocalPlayer.h"
 
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Gameplay/Construction/MWTrackSelectionExposure.h"
 #include "UI/MWTrackSelectionWidget.h"
 #include "UI/Cursor/MWCursorProjection.h"
-#include "Data/MWTrackDefinitionData.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
-#include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
-#include "UnrealClient.h"
+
+namespace
+{
+	constexpr double RowSpacing = 1260.0;
+	constexpr double ColumnSpacing = 1120.0;
+	constexpr double BoardHeight = 80.0;
+	const FVector SlotExtent(410.0, 460.0, 225.0);
+	const FVector SelectionViewDirection(-1.0, 0.0, -1.8);
+
+	void FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction)
+	{
+		View.ProjectionMode = ECameraProjectionMode::Perspective;
+		View.AspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
+		const FRotationMatrix ViewAxes(View.Rotation);
+		const double HorizontalLimit = FMath::Tan(FMath::DegreesToRadians(View.FOV * 0.5)) * ScreenFraction;
+		const double VerticalLimit = HorizontalLimit / Aspect;
+		const FVector Extent = Bounds.GetExtent();
+		double CameraDistance = 0.0;
+		// 원근 카메라에서는 가까운 쪽의 모서리도 화면 안에 들어와야 한다.
+		for (int32 Index = 0; Index < 8; ++Index)
+		{
+			const FVector Corner(
+				(Index & 1) ? Extent.X : -Extent.X,
+				(Index & 2) ? Extent.Y : -Extent.Y,
+				(Index & 4) ? Extent.Z : -Extent.Z);
+			const FVector ViewCorner = ViewAxes.InverseTransformVector(Corner);
+			const double RequiredDepth = FMath::Max(
+				FMath::Abs(ViewCorner.Y) / HorizontalLimit, FMath::Abs(ViewCorner.Z) / VerticalLimit);
+			CameraDistance = FMath::Max(CameraDistance, FMath::Max(RequiredDepth, 100.0) - ViewCorner.X);
+		}
+		View.Location = Bounds.GetCenter() - ViewAxes.GetUnitAxis(EAxis::X) * CameraDistance;
+	}
+}
 
 AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = false;
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
-	for (int32 Index = 0; Index < 3; ++Index)
+	for (int32 Index = 0; Index < MWTrackSelection::OfferCount; ++Index)
 	{
 		auto* Anchor = CreateDefaultSubobject<USceneComponent>(*FString::Printf(TEXT("Anchor%d"), Index));
 		Anchor->SetupAttachment(RootComponent);
-		Anchor->SetRelativeLocation(FVector(0, (Index - 1) * 1100.f, 80));
-		Anchors.Add(Anchor);
+		SlotAnchors.Add(Anchor);
 		auto* Hit = CreateDefaultSubobject<UBoxComponent>(*FString::Printf(TEXT("OfferHit%d"), Index));
 		Hit->SetupAttachment(Anchor);
 		Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Hit->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Hit->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 		Hit->SetGenerateOverlapEvents(false);
-		HitAreas.Add(Hit);
+		SlotHitAreas.Add(Hit);
 	}
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("SelectionCamera"));
 	Camera->SetupAttachment(RootComponent);
@@ -54,9 +81,12 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 void AMWTrackSelectionBoard::BeginPlay()
 {
 	Super::BeginPlay();
-	for (USceneComponent* Anchor : Anchors)
+	for (int32 Index = 0; Index < SlotAnchors.Num(); ++Index)
 	{
-		Anchor->SetRelativeLocation(Anchor->GetRelativeLocation() * LayoutScale);
+		const int32 Row = Index / MWTrackSelection::Columns;
+		const int32 Column = Index % MWTrackSelection::Columns;
+		const FVector Slot((Row - 0.5) * RowSpacing, (1 - Column) * ColumnSpacing, BoardHeight);
+		SlotAnchors[Index]->SetRelativeLocation(Slot * LayoutScale);
 	}
 	Camera->SetRelativeLocation(Camera->GetRelativeLocation() * LayoutScale);
 }
@@ -66,7 +96,31 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	Super::CalcCamera(DeltaTime, OutResult);
 
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!bUseTopDownPlacementCamera || !GS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	if (!GS)
+	{
+		return;
+	}
+
+	int32 Width = 0;
+	int32 Height = 0;
+	if (Viewer.IsValid()) Viewer->GetViewportSize(Width, Height);
+	else if (const auto* PC = GetWorld()->GetFirstPlayerController()) PC->GetViewportSize(Width, Height);
+	const double Aspect = Width > 0 && Height > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
+	if (GS->GetRoomPhase() == EMWRoomPhase::PreparingConstruction)
+	{
+		// 전시 화면은 열을 수평으로 보고, 선택 후 빈 칸이 생겨도 카메라 범위는 고정한다.
+		OutResult.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
+		const FVector Extent = (SlotExtent + FVector(RowSpacing * 0.5, ColumnSpacing, 0.0)) * LayoutScale;
+		const FBox LocalBounds(-Extent, Extent);
+		const FVector Center = GetBuildOrigin();
+		FrameBounds(OutResult, LocalBounds.TransformBy(FTransform(GetActorQuat(), Center)), Aspect, 0.74);
+		// 왼쪽 안내판과 후보가 겹치지 않도록 전시 영역을 화면 오른쪽으로 옮긴다.
+		const double HalfWidth = FVector::Distance(OutResult.Location, Center)
+			* FMath::Tan(FMath::DegreesToRadians(OutResult.FOV * 0.5));
+		OutResult.Location -= FRotationMatrix(OutResult.Rotation).GetUnitAxis(EAxis::Y) * (HalfWidth * 0.24);
+		return;
+	}
+	if (!bUseTopDownPlacementCamera || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
 	{
 		return;
 	}
@@ -83,50 +137,29 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	{
 		Bounds += End.WorldFrame.GetLocation();
 	}
-	const FVector Center = Bounds.GetCenter();
 	// 끝점 너머에도 다음 조각의 중심을 옮겨 놓을 공간을 남긴다.
-	const FVector Extent = Bounds.GetExtent() + FVector(400.0, 400.0, 120.0) * Session.LayoutScale;
-	int32 Width = 0;
-	int32 Height = 0;
-	if (const auto* PC = GetWorld()->GetFirstPlayerController())
-	{
-		PC->GetViewportSize(Width, Height);
-	}
-	const double Aspect = Height > 0 && Width > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
-
-	// 선택 카메라와 같은 각도에서 보고, 시작 트랙의 방향에 맞춰 수평으로만 돌린다.
+	// 기존 배치 카메라 각도를 출발 트랙의 방향에 맞춰 수평으로 돌린다.
 	OutResult.Rotation = Camera->GetRelativeRotation();
 	OutResult.Rotation.Yaw = FRotator::NormalizeAxis(OutResult.Rotation.Yaw + Session.PreviewYaw);
-	OutResult.ProjectionMode = ECameraProjectionMode::Perspective;
-	OutResult.AspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
-
-	const FRotationMatrix ViewAxes(OutResult.Rotation);
-	const double HalfFovTangent = FMath::Tan(FMath::DegreesToRadians(OutResult.FOV * 0.5));
-	const double HorizontalLimit = HalfFovTangent * 0.9;
-	const double VerticalLimit = HalfFovTangent * 0.9 / Aspect;
-	double CameraDistance = 0.0;
-	// 원근 화면에서는 가까운 모서리가 더 크게 보이므로 각 모서리의 깊이를 함께 계산한다.
-	for (int32 CornerIndex = 0; CornerIndex < 8; ++CornerIndex)
-	{
-		const FVector Corner(
-			(CornerIndex & 1) ? Extent.X : -Extent.X,
-			(CornerIndex & 2) ? Extent.Y : -Extent.Y,
-			(CornerIndex & 4) ? Extent.Z : -Extent.Z);
-		const FVector ViewCorner = ViewAxes.InverseTransformVector(Corner);
-		const double RequiredDepth = FMath::Max(
-			FMath::Abs(ViewCorner.Y) / HorizontalLimit, FMath::Abs(ViewCorner.Z) / VerticalLimit);
-		CameraDistance = FMath::Max(CameraDistance, FMath::Max(RequiredDepth, 100.0) - ViewCorner.X);
-	}
-	OutResult.Location = Center - ViewAxes.GetUnitAxis(EAxis::X) * CameraDistance;
+	FrameBounds(OutResult, Bounds.ExpandBy(FVector(400.0, 400.0, 120.0) * Session.LayoutScale), Aspect, 0.9);
 }
 
 bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session)
 {
+	auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer());
+	if (Preload && !Preload->PrepareCandidates(Session.Offers))
+	{
+		return false;
+	}
 	ClearOffers();
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
-		const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Offer.DefinitionAssetId);
-		if (!Definition || !Definition->GetTrackActorClass() || !Anchors.IsValidIndex(Offer.BoardSlotIndex))
+		if (Offer.ClaimedByMemberId != INDEX_NONE)
+		{
+			continue;
+		}
+		UClass* TrackClass = Offer.TrackClass.LoadSynchronous();
+		if (!TrackClass || !SlotAnchors.IsValidIndex(Offer.BoardSlotIndex) || !SlotHitAreas.IsValidIndex(Offer.BoardSlotIndex))
 		{
 			ClearOffers();
 			return false;
@@ -134,10 +167,16 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		FActorSpawnParameters Params;
 		Params.Owner = this;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AActor* Track = GetWorld()->SpawnActor<AActor>(Definition->GetTrackActorClass(), Anchors[Offer.BoardSlotIndex]->GetComponentTransform(), Params);
+		const auto* Anchor = SlotAnchors[Offer.BoardSlotIndex].Get();
+		AActor* Track = GetWorld()->SpawnActor<AActor>(TrackClass, Anchor->GetComponentTransform(), Params);
 		if (!Track) { ClearOffers(); return false; }
 		Track->SetReplicates(false);
 		Track->SetActorTickEnabled(false);
+		Track->SetActorEnableCollision(false);
+		if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+		{
+			Runtime->SetTrackPreview(*Track, true);
+		}
 		// 판정은 전시 영역의 Box에 맡기고 보이는 와이어프레임의 중심을 전시 칸에 맞춘다.
 		const FBox VisualBounds = MWTrackPreview::ShowWireframes(*Track);
 		if (!VisualBounds.IsValid)
@@ -147,16 +186,20 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 			continue;
 		}
 		Offers.Add(Offer.OfferId, Track);
-		const FVector Extent = VisualBounds.GetExtent();
-		Track->AddActorWorldOffset(Anchors[Offer.BoardSlotIndex]->GetComponentLocation() - VisualBounds.GetCenter());
-		HitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent + FVector(20 * LayoutScale));
-		HitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
+		// 큰 트랙도 이 칸 안에서 선택할 수 있도록 전시 Actor의 크기만 조정한다.
+		const FVector Extent = VisualBounds.TransformBy(Anchor->GetComponentTransform().Inverse()).GetExtent();
+		const FVector Fit = SlotExtent * LayoutScale / Extent.ComponentMax(FVector(1.0));
+		const double Scale = FMath::Min(1.0, Fit.GetMin());
+		const FVector VisualOffset = VisualBounds.GetCenter() - Track->GetActorLocation();
+		Track->SetActorScale3D(Track->GetActorScale3D() * Scale);
+		Track->SetActorLocation(Anchor->GetComponentLocation() - VisualOffset * Scale);
+		SlotHitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent * Scale + FVector(20 * LayoutScale));
+		SlotHitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 	SessionId = Session.SelectionSessionId;
 	Revision = Session.OffersRevision;
 	// 이제 각 전시 액터가 메시와 재질을 보관하므로 로비의 선로딩 핸들을 놓는다.
-	if (auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer()))
+	if (Preload)
 	{
 		Preload->ReleaseCandidates();
 	}
@@ -175,10 +218,12 @@ void AMWTrackSelectionBoard::CollectArrivalMaterials(const FMWTrackSelectionSess
     }
     for (const auto& Offer : Session.Offers)
     {
+        // 다른 참가자가 먼저 확정한 후보는 첫 화면에서 이미 숨겨져 있다.
+        if (Offer.ClaimedByMemberId != INDEX_NONE) continue;
         const AActor* Track = Offers.FindRef(Offer.OfferId);
         if (!MWTrackPreview::CollectVisibleMaterials(Track, Materials))
         {
-            Pending = FString::Printf(TEXT("offer %d (%s) mesh/material"), Offer.OfferId, *Offer.DefinitionAssetId.ToString());
+            Pending = FString::Printf(TEXT("offer %d (%s) mesh/material"), Offer.OfferId, *Offer.TrackClass.ToString());
             return;
         }
     }
@@ -188,7 +233,7 @@ void AMWTrackSelectionBoard::ClearOffers()
 {
 	for (const auto& Pair : Offers) if (IsValid(Pair.Value)) Pair.Value->Destroy();
 	Offers.Reset();
-	for (const auto& Hit : HitAreas) Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	for (const auto& Hit : SlotHitAreas) Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SessionId = Revision = 0;
 	LocalHover = SentHover = INDEX_NONE;
 }
@@ -203,12 +248,12 @@ int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 	FVector Cursor;
 	FHitResult Hit;
 	if (!GetCursorPosition(Cursor) || !Viewer->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) return INDEX_NONE;
-	const int32 Slot = HitAreas.IndexOfByPredicate([&Hit](const UBoxComponent* Box) { return Hit.GetComponent() == Box; });
+	const int32 Slot = SlotHitAreas.IndexOfByPredicate([&Hit](const UBoxComponent* Box) { return Hit.GetComponent() == Box; });
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	if (!GS) return INDEX_NONE;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
 	const auto* Offer = Session.Offers.FindByPredicate([Slot](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == Slot; });
-	return Offer ? Offer->OfferId : INDEX_NONE;
+	return Offer && Offer->ClaimedByMemberId == INDEX_NONE ? Offer->OfferId : INDEX_NONE;
 }
 
 void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
@@ -223,6 +268,10 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	{
 		if (Viewer.IsValid())
 		{
+			if (auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer()))
+			{
+				Preload->ReleaseCandidates();
+			}
 			Viewer->SetTrackSelectionBoard(nullptr);
 			Viewer.Reset();
 		}
@@ -281,25 +330,34 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 
 FVector AMWTrackSelectionBoard::GetBuildOrigin() const
 {
-	return Anchors[1]->GetComponentLocation();
+	// 슬롯 수와 관계없이 기존 선택 평면과 테스트 맵의 출발 기준을 유지한다.
+	return GetActorTransform().TransformPosition(FVector(0, 0, BoardHeight * LayoutScale));
 }
 
 void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Session)
 {
 	auto* Widget = Cast<UMWTrackSelectionWidget>(Viewer->TrackSelectionWidget);
-	if (!Widget)
-	{
-		return;
-	}
-
-	// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
-		const AActor* Track = Offers.FindRef(Offer.OfferId);
-		// 액터 생성과 첫 렌더는 다른 프레임일 수 있다. 조각을 한 번 그린 뒤 이름표를 연다.
-		if (Track && Track->GetLastRenderTime() > 0.f && HitAreas.IsValidIndex(Offer.BoardSlotIndex))
+		AActor* Track = Offers.FindRef(Offer.OfferId);
+		if (!IsValid(Track) || !SlotHitAreas.IsValidIndex(Offer.BoardSlotIndex)) continue;
+
+		// 확정된 후보는 기존 칸의 위치를 유지하면서 외형과 클릭 영역을 함께 숨긴다.
+		UBoxComponent* Hit = SlotHitAreas[Offer.BoardSlotIndex];
+		if (Offer.ClaimedByMemberId != INDEX_NONE)
 		{
-			const UBoxComponent* Hit = HitAreas[Offer.BoardSlotIndex];
+			if (!Track->IsHidden())
+			{
+				Track->SetActorHiddenInGame(true);
+				Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
+			continue;
+		}
+
+		// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
+		// 액터 생성과 첫 렌더는 다른 프레임일 수 있다. 조각을 한 번 그린 뒤 이름표를 연다.
+		if (Widget && Track->GetLastRenderTime() > 0.f)
+		{
 			const FVector Top = Hit->GetComponentLocation() + Hit->GetUpVector() * Hit->GetScaledBoxExtent().Z;
 			Widget->PositionOfferLabel(Offer.OfferId, Top, Offer.OfferId == LocalHover);
 		}

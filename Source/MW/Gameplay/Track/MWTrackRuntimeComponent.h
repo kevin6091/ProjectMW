@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Gameplay/Track/MWTrackRuntimeData.h"
+#include "Data/MWTrackDefinitionData.h"
 #include "MWTrackRuntimeComponent.generated.h"
 
 class AMWVehiclePawn;
@@ -22,7 +22,7 @@ public:
     UMWTrackRuntimeComponent();
 
     // 복구 데이터의 값과 에셋 참조를 소유한 뒤 충돌·움직임·교통을 구성한다.
-    void Configure(const FMWTrackPieceRuntimeData& Data);
+    void Configure(const FMWTrackDefinition& Data);
 
     // 코스 종료 캡에 서버 결승 영역을 추가한다. 기존 카탈로그 형상과 감지 경로를 재사용한다.
     bool EnsureCourseFinishTrigger(const FTransform& PortFrame, const FVector& HalfExtent);
@@ -140,7 +140,7 @@ private:
     // 설정 값과 그 안의 에셋 참조는 이 컴포넌트의 수명 동안 보관한다.
     UPROPERTY(Transient)
     // 설정 배열 원소를 가리키는 포인터 대신 값을 보관해 카탈로그 조회 수명과 분리한다.
-    FMWTrackPieceRuntimeData Piece;
+    FMWTrackDefinition Piece;
 
     bool bConfigured = false;
 

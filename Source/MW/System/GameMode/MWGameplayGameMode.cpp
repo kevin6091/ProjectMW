@@ -18,6 +18,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "System/MWAssetManager.h"
 #include "TimerManager.h"
 #include "Algo/Count.h"
@@ -75,7 +76,6 @@ void AMWGameplayGameMode::TryInitializeGameplay()
 	}
 
 	GS->ApplyRoomSettingsFromServer(Settings);
-
 	GameSession->MaxPlayers = Settings.MaxPlayers;
 	GameSession->MaxSpectators = 0;
 
@@ -147,7 +147,7 @@ void AMWGameplayGameMode::TryStartGameplay()
     }
 
     // 건설을 생략하는 경우에도 주행 준비 진입은 EnterPhase가 담당한다.
-    if (ConstructionTrackDefinitionIds.IsEmpty())
+    if (!bEnableTrackConstruction)
     {
         EnterPhase(EMWRoomPhase::PreparingRace);
         return;
@@ -246,7 +246,7 @@ bool AMWGameplayGameMode::IsRaceCourseCurrent() const
 	if (Progress.CourseSessionId == 0 && Progress.CourseRevision == 0)
 	{
 		// 고정 코스 개발 경로만 0/0을 허용한다. 동적 코스 미수신의 일반 예외가 아니다.
-		return ConstructionTrackDefinitionIds.IsEmpty() && Session.SessionId == 0
+		return !bEnableTrackConstruction && Session.SessionId == 0
 			&& !Session.bIsOpen && Session.PlacedTracks.IsEmpty();
 	}
 	return Construction->IsCourseReadyForRace(Progress.CourseSessionId, Progress.CourseRevision);
@@ -318,7 +318,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	{
 	case EMWRoomPhase::PreparingConstruction:
 		{
-			if ((!bInitialEntry && !bNextNormalRound) || ConstructionTrackDefinitionIds.IsEmpty()
+			if ((!bInitialEntry && !bNextNormalRound) || !bEnableTrackConstruction
 				|| (bNextNormalRound && (Current.RaceMode != EMWRaceMode::Normal || CountQualifiedPlayers() != 0)))
 			{
 				return;
@@ -394,7 +394,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 				Current.Phase == EMWRoomPhase::TrackPlacement && Current.RoundEpoch > 0;
 
 			const bool bSkipConstruction =
-				bInitialEntry && ConstructionTrackDefinitionIds.IsEmpty();
+				bInitialEntry && !bEnableTrackConstruction;
 
 			if (!bFromPlacement && !bSkipConstruction && !bStartSuddenDeath)
 			{
@@ -628,7 +628,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 		}
 
 		FText Error;
-		if (!Construction->BeginSelection(ConstructionTrackDefinitionIds, Players, Error))
+		if (!Construction->BeginSelection(Players, Error))
 		{
 			FailGameplay(Error.ToString());
 		}
@@ -699,7 +699,8 @@ void AMWGameplayGameMode::StartTrackPlacement()
 
 	// 선택판의 위치와 독립적으로 출발 그리드의 원점과 전방에 기준 도로를 맞춘다.
 	FText Error;
-	if (!GS->GetConstructionComponent()->BeginPlacement(CourseEnds, StartManager->GetActorTransform(), SelectionBoard->GetLayoutScale(), Error))
+	if (!GS->GetConstructionComponent()->BeginPlacement(StartManager->GetActorTransform(),
+		SelectionBoard->GetLayoutScale(), Error))
 	{
 		FailGameplay(Error.ToString());
 	}
@@ -885,7 +886,7 @@ bool AMWGameplayGameMode::TryFinishPlayerRace(AMWVehiclePawn& Vehicle, AActor& F
 	}
 	const auto& Tracks = Construction->GetPlacementSession().PlacedTracks;
 	if (Tracks.IsEmpty() || Tracks.Last().Actor != &FinishTrack
-		|| Tracks.Last().DefinitionAssetId != CourseEnds.EndDefinitionId || NextFinishOrder == MAX_int32
+		|| Tracks.Last().TrackClass != GetDefault<UMWTrackRuntimeSettings>()->FinishTrackClass || NextFinishOrder == MAX_int32
 		|| PS->GetRoundState().CheckpointsPassed != Algo::CountIf(Tracks, [](const FMWPlacedTrack& Track) { return Track.bCheckpoint; }))
 	{
 		return false;

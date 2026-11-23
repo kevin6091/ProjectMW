@@ -1,10 +1,10 @@
 # 게임플레이 진행 상태와 Phase 단일 전환 설계
 
-- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.4
+- **문서 번호:** MW-GAMEPLAY-FLOW-018 / v1.5
 - **작성:** 2026-11-12 / Client + Server
 - **기준:** fix/Network-Prediction, HEAD 772d2e0, 조사 시작 시 작업 트리 깨끗함
 - **엔진:** 설치 UE 5.8.4 / CL 58902052, MW.uproject의 EngineAssociation은 5.8
-- **상태:** ① 개인 상태, ② 경기 제어, ③ 출발 흐름과 개인 완주에 이어 2026-11-23 확정 규칙의 점수·전원 종료·결과 스냅샷·코스 확장·4000점 종료·서든데스를 기존 클래스에 연결했다. 최신 구현 계약은 0.8~0.9절이다. 아래 772d2e0의 출발점·미구현 표기는 초안 작성 당시 기록이다.
+- **상태:** ① 개인 상태, ② 경기 제어, ③ 출발 흐름과 개인 완주에 이어 2026-11-23 확정 규칙의 점수·전원 종료·결과 스냅샷·코스 확장·4000점 종료·서든데스를 기존 클래스에 연결했다. 최신 구현 계약은 0.8~0.10절이다. 아래 772d2e0의 출발점·미구현 표기는 초안 작성 당시 기록이다.
 
 현재 구현은 사용자의 작은 구조 요구에 따라 검증된 완료 콜백/RPC/타이머에서 곧바로 `EnterPhase`를 호출한다. 초안의 `RequestFlowUpdate`/`TryAdvanceGameplay` 예약 계층과 GameMode의 완료 세션 복사본은 도입하지 않았다. 이후 절에 남은 해당 이름은 초안 제안이며 현재 구현 API가 아니다.
 
@@ -107,6 +107,16 @@ EnvironmentGameplay의 환경 유지 Phase에 RoundResults를 포함한다. HUD�
 - **다음 주행:** 서든데스 자격은 직전 결과에서, 실제 다음 참가자는 남은 MatchMembers에서 가져온다. 둘 이상이 자격을 얻은 뒤 한 명이 나가도 서든데스 경로를 유지하며 남은 자격자가 주행한다. 자격자가 모두 떠나 관전자만 남으면 기존 Failed로 종료한다. 다음 일반 라운드 역시 남은 명단으로 진행하며 준비 중 이탈의 기존 실패 정책은 유지한다.
 - **복사 비용:** Blueprint의 값 반환 GetProgress는 유지하고 C++ 전용 const 참조 GetProgressRef를 추가한다. CanDrive, 차량의 권한/충돌 갱신 및 이동 스냅샷의 Epoch 조회는 참조 경로를 사용한다. EnterPhase의 Current/Next, 타이머의 Expected, 결과 저장은 과거 값을 고정해야 하므로 값 복사를 유지한다. 참조는 멤버로 보관하거나 지연 콜백에 캡처하지 않는다.
 - **검증:** UE 5.8.4 MWEditor/MW Win64 Development 빌드 성공, 자동화 23/23 성공(테스트 경고 0). 기존 RoundLoop 통합 검사에 일시적 코스 미준비 보고 거절→동일 키 재수락, 이전 Epoch 거절, 먼저 보고한 차량의 준비 상태 회복→중복 보고로 Countdown 진입, 단독 도달자/서든데스 완주자의 결과 대기 중 이탈과 PlayerState 제거, 복수 자격자 중 한 명 이탈 후 서든데스 유지, 전원 자격자 이탈 후 Failed를 추가했다. 기존 점수/확장/복제/차량/아이템/HUD/커서 검사도 통과했다. 빌드에는 이번에 수정하지 않은 MWItemComponentVisual.cpp의 GetBindings() C4996 경고가 남아 있다. 결과는 `Saved/Automation/RoundLoopFix/index.json`, `Saved/Logs/RoundLoopFixEditorBuild.log`, `Saved/Logs/RoundLoopFixGameBuild.log`, `Saved/Logs/RoundLoopFixVerification.json`이다. 준비 재보고 검사는 서버 진입점으로 재수신을 주입한 단위/통합 검사이며 실제 클라이언트의 0.5초 주기·패킷 지연/손실·다중 프로세스 실행과 성능 측정, Cook/패키징은 미실행이다.
+
+### 0.10 main의 공용 트랙 카탈로그 통합 · 2026-11-23
+
+- 통합 기준은 GameProgress `46ca5a0`과 main `37be632`다. main의 단일 MWTrackDefinitionData 카탈로그, Asset.Track.RuntimeCatalog 조회, BP 클래스 참조, 2행 3열의 중복 없는 6개 후보, 선점한 후보의 공용 소유 상태와 표시 제거, 늦은 선택 거절을 유지한다. 시작·종료 BP는 MWTrackRuntimeSettings에서 읽고 일반 후보에서 제외한다.
+- 기존 DefinitionAssetId/CourseEnds/ConstructionTrackDefinitionIds는 사용하지 않는다. FMWPlacedTrack는 main의 TrackClass와 기존 bRequiresCollision/bCheckpoint를 함께 보존한다. 결승 승인과 다음 확장의 종료 조각 확인도 같은 FinishTrackClass로 검사하며 PieceId·Actor·확정 Transform은 기존처럼 유지한다. 체크포인트 조회는 카탈로그의 동일 BP 행과 Runtime 트리거를 읽는다.
+- BeginSelection(Players, Error), BeginPlacement(BuildFrame, LayoutScale, Error)를 기존 EnterPhase 진입 작업에서 호출한다. main의 bEnableTrackConstruction은 최초 건설 생략 여부에 적용하지만 GameState의 Phase를 직접 대입하는 레거시 경로는 복구하지 않는다. 선택 완료·코스 완료·준비 보고·결과 타이머는 모두 기존 EnterPhase로 연결한다.
+- 기존 점수/결과 스냅샷/이탈/서든데스/준비 재보고/충돌 복원·예측 경로를 유지한다. main의 프리뷰 수명 정리와 서버 배치 보정도 보존한다. 이전에 삭제한 MWTrackSelectionTestGameMode는 유지하지 않고 새 API의 실제 소비자는 Gameplay GameMode와 기존 자동화에 연결한다.
+- 자동화는 새 BP 참조 API로 실제 카탈로그를 사용하며 6개 클래스의 중복 없는 추첨, 동일 슬롯 선점 거절과 나머지 플레이어 선택 가능 상태를 추가로 확인한다. 최종 MWEditor/MW Win64 Development 빌드와 자동화 23/23을 통과했다. 이전 개발용 태그 누락 실패도 새 카탈로그 계약에서 해소됐다. 테스트에는 EOS SDK Tick 지연 경고 1건, 빌드에는 기존 GetBindings() C4996 경고가 남는다.
+- BP 18개 컴파일, MWTrackDefinitionData 타입의 트랙 114행 로드, 시작·종료 BP 설정, 건설 활성화/목표 4000점/카운트다운 3초/결과 대기 3초를 확인했다. 검사 에셋 21개의 SHA-256이 전후 같으며 에셋을 저장하지 않았다. 차량·Controller·GameState·PlayerState·RoomTypes 소스는 병합 전과 동일하다. 실제 다중 프로세스 주행·지연/손실·Cook/패키징은 이번 검증에 포함하지 않았다.
+- 최종 근거는 Saved/Automation/TrackCatalogMerge/index.json, Saved/Logs/TrackCatalogMergeEditorBuild.log, TrackCatalogMergeGameBuild.log, TrackCatalogMergeAssets.json, TrackCatalogMergeVerification.json이다. 임시 BP 검사 스크립트는 최종 JSON과 로그를 남긴 뒤 삭제한다.
 
 ## 1. 목적과 적용 범위
 

@@ -6,13 +6,12 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
-#include "Data/MWTrackDefinitionData.h"
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
-#include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UI/Cursor/MWPointerCursor.h"
@@ -150,9 +149,12 @@ FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
 	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
 		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
 	if (!Offer) return FText::FromString(TEXT("트랙 조각"));
-	const auto* Definition = UMWAssetManager::Get().LoadAssetSynchronous<UMWTrackDefinitionData>(Offer->DefinitionAssetId);
-	return Definition && !Definition->GetDisplayName().IsEmpty()
-		? Definition->GetDisplayName() : FText::FromString(TEXT("트랙 조각"));
+	if (const auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
+	{
+		const FText Name = Runtime->GetTrackDisplayName(Offer->TrackClass);
+		if (!Name.IsEmpty()) return Name;
+	}
+	return FText::Format(NSLOCTEXT("MWTrackSelection", "UnnamedOffer", "트랙 {0}"), FText::AsNumber(OfferId));
 }
 
 void UMWTrackSelectionWidget::Refresh()
@@ -179,7 +181,6 @@ void UMWTrackSelectionWidget::Refresh()
 		for (APlayerState* State : GS->PlayerArray)
 			if (auto* PS = Cast<AMWPlayerState>(State)) Players.Add(PS);
 	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B) { return A.GetLobbyMemberId() < B.GetLobbyMemberId(); });
-	TMap<int32, TArray<FString>> ConfirmedNames;
 	TArray<FString> Lines;
 	bool bOwnConfirmed = false;
 	for (const auto* PS : Players)
@@ -193,30 +194,31 @@ void UMWTrackSelectionWidget::Refresh()
 		if (!bSame) State = TEXT("참여 준비 중");
 		const FString Name = PS->GetPlayerName();
 		if (bSame && Selection.bConfirmed)
-		{
-			ConfirmedNames.FindOrAdd(Selection.SelectedOfferId).Add(Name);
 			State = TEXT("선택 완료");
-		}
 		Lines.Add(FString::Printf(TEXT("%s%s  ·  %s"), *Name, PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State));
 		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
 	}
 	Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
 
-	// 이름과 확정자는 선택 상태 변경 때만 갱신한다. 매 프레임에는 화면 위치와 호버색만 맞춘다.
+	// 서버가 점유를 확정하면 전시 액터와 함께 이름표도 선택 화면에서 제거한다.
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
+		if (Offer.ClaimedByMemberId != INDEX_NONE)
+		{
+			if (UBorder* Plate = OfferPlates.FindRef(Offer.OfferId))
+			{
+				Plate->RemoveFromParent();
+				OfferPlates.Remove(Offer.OfferId);
+			}
+			continue;
+		}
 		auto& Plate = OfferPlates.FindOrAdd(Offer.OfferId);
 		if (!Plate)
 		{
 			Plate = CreateOfferPlate();
 		}
 		UTextBlock* Label = CastChecked<UTextBlock>(Plate->GetContent());
-		FString Caption = GetOfferName(Offer.OfferId).ToString();
-		if (const auto* Names = ConfirmedNames.Find(Offer.OfferId))
-		{
-			Caption += TEXT("\n") + FString::Join(*Names, TEXT(", ")) + TEXT(" · 선택 완료");
-		}
-		Label->SetText(FText::FromString(Caption));
+		Label->SetText(GetOfferName(Offer.OfferId));
 	}
 	if (bOwnConfirmed) bRequestPending = false;
 	FString Status = Session.bIsOpen ? TEXT("[좌클릭]  트랙 고르기") : TEXT("다른 플레이어를 기다리고 있습니다.");
@@ -286,7 +288,10 @@ void UMWTrackSelectionWidget::ConfirmOffer(int32 OfferId)
 	const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
 	if (!PS || !DisplayedSession.bIsOpen || bRequestPending || AcknowledgedOffer != INDEX_NONE
 		|| PS->GetPlayerConstructionComponent()->GetSelection().bConfirmed) return;
-	if (!DisplayedSession.Offers.ContainsByPredicate([OfferId](const FMWTrackOffer& Offer) { return Offer.OfferId == OfferId; })) return;
+	if (!DisplayedSession.Offers.ContainsByPredicate([OfferId](const FMWTrackOffer& Offer)
+	{
+		return Offer.OfferId == OfferId && Offer.ClaimedByMemberId == INDEX_NONE;
+	})) return;
 	const int32 SessionId = DisplayedSession.SelectionSessionId;
 	const int32 Revision = DisplayedSession.OffersRevision;
 	bRequestPending = true;

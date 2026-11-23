@@ -1,7 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Gameplay/Track/MWTrackRuntimeData.h"
+#include "Engine/EngineTypes.h"
+#include "Data/MWTrackDefinitionData.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "MWTrackRuntimeSubsystem.generated.h"
 
@@ -31,7 +32,7 @@ class MW_API UMWTrackRuntimeSubsystem : public UWorldSubsystem
     GENERATED_BODY()
 
 public:
-    UMWTrackRuntimeSubsystem();
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
     // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.
     virtual void OnWorldBeginPlay(UWorld& InWorld) override;
@@ -57,6 +58,12 @@ public:
     // 서버가 현재 진행과 중복 통과를 검사해 출발·체크포인트·완주 상태를 기록한다.
     void ProcessRaceTrigger(AMWVehiclePawn& Vehicle, AActor& Track, EMWTrackTrigger Trigger,
                             const TArray<FTransform>& RespawnPoints);
+
+    // 복구 카탈로그에 등록된 일반 트랙만 선택 후보로 제공한다.
+    TArray<TSoftClassPtr<AActor>> GetSelectionPool() const;
+
+    // 화면에서 같은 정의의 표시 이름을 읽는다. BP를 새로 로드하지 않는다.
+    FText GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const;
 
     // 배치 미리보기 상태를 실제 트랙 런타임에 전달한다.
     void SetTrackPreview(AActor& Actor, bool bPreview);
@@ -87,10 +94,16 @@ private:
     // 늦게 복제되거나 생성된 트랙에도 기존 카탈로그 연결을 적용한다.
     void OnActorSpawned(AActor* Actor);
 
-    UPROPERTY()
-    TObjectPtr<UMWTrackRuntimeData> Catalog;
+    UFUNCTION()
+    void OnPreviewActorEndPlay(AActor* Actor, EEndPlayReason::Type EndPlayReason);
 
-    TMap<FName, const FMWTrackPieceRuntimeData*> Pieces;
+    UPROPERTY()
+    TObjectPtr<UMWTrackDefinitionData> Catalog;
+
+    TMap<FSoftObjectPath, const FMWTrackDefinition*> Pieces;
+
+    // 미리보기 Actor의 수명과 상태는 이 월드에서 관리한다.
+    TSet<TWeakObjectPtr<AActor>> PreviewActors;
 
     TMap<TWeakObjectPtr<AMWVehiclePawn>, FRacer> Racers;
 
