@@ -249,14 +249,13 @@ void UMWEnvironmentGameplay::CollectFirstView(UWorld& World, TArray<UMaterialInt
 // 현재 생성기를 정리하고 잠시 숨겼던 레벨 배경·조명의 표시 상태를 복원한다.
 void UMWEnvironmentGameplay::StopEnvironment()
 {
+    ResetTrackSupports();
     if (IsValid(Generator))
     {
         Generator->ClearEnvironment();
         Generator->Destroy();
     }
     TrackSupports = nullptr;
-    SupportSessionId = INDEX_NONE;
-    ResolvedSupportPieces.Reset();
     FirstViewMaterialHandle.Reset();
     Generator = nullptr;
     ActiveTheme = NAME_None;

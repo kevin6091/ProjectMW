@@ -1,0 +1,62 @@
+=== Editor Win64 Development ===
+Result: Succeeded
+Total execution time: 44.37 seconds
+=== 3인 설치 전 상태, 골조의 실제 전개 높이 및 도로 폭 ===
+P1 pre-confirm sections=0 assemblies=4
+  center=(2760.39, 450.0) width=2526.78 cm yaw=-90.00 sections=2 underside=5878.84 cm bottom samples(cm) 5357.29,4115.11,2659.29,1786.57,1311.41,550.83,144.05,3.22,0.0 completion from first visible sample=0.399s
+  center=(7204.367, 83.885) width=2326.54 cm yaw=-112.50 sections=3 underside=5878.84 cm bottom samples(cm) 4257.61,3134.41,2169.18,1372.86,751.96,297.8,76.43,-0.0 completion from first visible sample=0.327s
+  center=(9823.684, -2456.767) width=2513.73 cm yaw=-135.00 sections=3 underside=6464.62 cm bottom samples(cm) 3224.9,1597.8,944.5,266.08,0.0 completion from first visible sample=0.630s
+  center=(12409.984, -5043.066) width=2518.33 cm yaw=-135.00 sections=3 underside=7046.07 cm bottom samples(cm) 3514.96,1741.51,1029.46,290.02,-0.0 completion from first visible sample=0.630s
+  Racing pawn=BP_MWVehiclePawn_FRED_C_0 position=[-2620.0, 375.0, 6100.796]
+P2 pre-confirm sections=0 assemblies=4
+  center=(2760.39, 450.0) width=2526.78 cm yaw=-90.00 sections=2 underside=5878.84 cm bottom samples(cm) 5316.91,4127.35,3047.05,1816.4,1110.14,579.11,210.85,9.32,0.0 completion from first visible sample=0.398s
+  center=(7204.367, 83.885) width=2326.54 cm yaw=-112.50 sections=3 underside=5878.84 cm bottom samples(cm) 4392.03,3008.43,2077.96,1308.5,710.27,289.7,47.0,-0.0 completion from first visible sample=0.329s
+  center=(9823.683, -2456.767) width=2513.73 cm yaw=-135.00 sections=3 underside=6464.62 cm bottom samples(cm) 3224.9,1597.8,944.5,266.08,0.0 completion from first visible sample=0.628s
+  center=(12409.984, -5043.066) width=2518.33 cm yaw=-135.00 sections=3 underside=7046.07 cm bottom samples(cm) 3514.96,1741.51,1029.46,290.02,-0.0 completion from first visible sample=0.628s
+  Racing pawn=BP_MWVehiclePawn_DOUG_C_0 position=[-2620.0, 525.0, 6054.796]
+P3 pre-confirm sections=0 assemblies=4
+  center=(2760.39, 450.0) width=2526.78 cm yaw=-90.00 sections=2 underside=5878.84 cm bottom samples(cm) 5316.91,4127.35,3047.05,1816.4,1110.14,579.11,210.85,9.32,0.0 completion from first visible sample=0.398s
+  center=(7204.367, 83.885) width=2326.54 cm yaw=-112.50 sections=3 underside=5878.84 cm bottom samples(cm) 4392.03,3008.43,2077.96,1308.5,710.27,289.7,47.0,-0.0 completion from first visible sample=0.329s
+  center=(9823.683, -2456.767) width=2513.73 cm yaw=-135.00 sections=3 underside=6464.62 cm bottom samples(cm) 3224.9,1597.8,944.5,266.08,0.0 completion from first visible sample=0.628s
+  center=(12409.984, -5043.066) width=2518.33 cm yaw=-135.00 sections=3 underside=7046.07 cm bottom samples(cm) 3514.96,1741.51,1029.46,290.02,-0.0 completion from first visible sample=0.628s
+  Racing pawn=BP_MWVehiclePawn_UFOLOGY_C_0 position=[-2870.0, 375.0, 6084.796]
+=== Unreal logs ===
+[2026.11.23-03.06.04:095][  2]LogPython: TRACK_SCAFFOLD_CS68_ASSET path=Content/Shared/SceneVisuals/Library/Meshes/SM_Library_scaffoldmetalBeamsb199e8eaa6cf_8d1a5db1.uasset sha256=63b349d93dfcdfaee460864ab6952ea1bd8afcca2cc4385677448a4377ad5f13
+[2026.11.23-03.06.04:110][  2]LogPython: TRACK_SCAFFOLD_CS68_ASSET path=Content/Shared/Materials/Instances/MI_MadditionsEditorcf843fd98690_cc75337c.uasset sha256=16c07319fea17862a823d42d047d480dc0376bf33bb64ae35a0eef7fcc3336be
+[2026.11.23-03.06.04:127][  3]LogPython: TRACK_SCAFFOLD_CS68_ASSET path=Content/Gameplay/Vehicles/Art/Exhaust/NS_MW_VehicleExhaust.uasset sha256=a3139a914b3151c21d209ee0b4517a9b64195d1889f459b7f869cb525c23ced7
+[2026.11.23-03.06.04:142][  3]LogPython: TRACK_SCAFFOLD_COOK_REFERENCE map=/Game/Levels/L_Title_UCM_Integration_Dev mesh=/Game/Shared/SceneVisuals/Library/Meshes/SM_Library_scaffoldmetalBeamsb199e8eaa6cf_8d1a5db1
+[2026.11.23-03.06.04:173][  3]LogPython: CS64_SERVER_ORIGINALS_READY files=10 SelectSign=MWGameplaySignWidget BuildSign=MWGameplaySignWidget
+[2026.11.23-03.09.01:999][386]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(159.0,123.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=13221.390 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+[2026.11.23-03.09.02:008][386]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-03.09.02:169][393]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=2 width=2526.78 layers=2 floor=0.00 top=V(X=2760.39, Y=450.00, Z=5878.84) duration=0.380
+[2026.11.23-03.09.02:181][393]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=2 width=2526.78 layers=2 floor=0.00 top=V(X=2760.39, Y=450.00, Z=5878.84) duration=0.380
+[2026.11.23-03.09.02:241][396]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=2 width=2526.78 layers=2 floor=0.00 top=V(X=2760.39, Y=450.00, Z=5878.84) duration=0.380
+[2026.11.23-03.09.02:563][410]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=2 layers=2 elapsed=0.395
+[2026.11.23-03.09.02:573][410]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=2 layers=2 elapsed=0.395
+[2026.11.23-03.09.02:610][412]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=2 layers=2 elapsed=0.399
+[2026.11.23-03.09.31:051][736]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=2 target=2:1 source=0 pointer=(484.0,393.0) resolved=(5260.390000000,450.000437114,6000.000000000) quat=(0.000000000,0.000000000,0.707106719,-0.707106843) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=3697.299 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000010
+[2026.11.23-03.09.31:068][737]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-03.09.31:173][741]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=3 width=2326.54 layers=3 floor=0.00 top=V(X=7204.37, Y=83.88, Z=5878.84) duration=0.380
+[2026.11.23-03.09.31:834][769]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=3 width=2326.54 layers=3 floor=0.00 top=V(X=7204.37, Y=83.88, Z=5878.84) duration=0.380
+[2026.11.23-03.09.31:846][770]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=3 width=2326.54 layers=3 floor=0.00 top=V(X=7204.37, Y=83.89, Z=5878.84) duration=0.380
+[2026.11.23-03.09.31:965][775]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.388
+[2026.11.23-03.09.31:977][775]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.388
+[2026.11.23-03.09.31:989][776]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=3 layers=3 elapsed=0.380
+[2026.11.23-03.10.17:011][848]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=3 target=3:1 source=0 pointer=(418.0,425.0) resolved=(8088.252704803,-721.336568447,6000.000000000) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=18378.591 visual_gap_deg=31.970 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.23-03.10.17:035][849]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-03.10.17:099][851]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=4 width=2513.73 layers=3 floor=0.00 top=V(X=9823.68, Y=-2456.77, Z=6464.62) duration=0.380
+[2026.11.23-03.10.17:110][851]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=12409.98, Y=-5043.07, Z=7046.07) duration=0.380
+[2026.11.23-03.10.17:171][851]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-03.10.17:230][852]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-03.10.17:245][852]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=4 width=2513.73 layers=3 floor=0.00 top=V(X=9823.68, Y=-2456.77, Z=6464.62) duration=0.380
+[2026.11.23-03.10.17:254][852]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=12409.98, Y=-5043.07, Z=7046.07) duration=0.380
+[2026.11.23-03.10.17:302][854]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-03.10.17:314][854]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=4 width=2513.73 layers=3 floor=0.00 top=V(X=9823.68, Y=-2456.77, Z=6464.62) duration=0.380
+[2026.11.23-03.10.17:326][854]LogTemp: Display: [MWTrackSupports] begin world=L_Dev_Drive session=1 piece=5 width=2518.33 layers=3 floor=0.00 top=V(X=12409.98, Y=-5043.07, Z=7046.07) duration=0.380
+[2026.11.23-03.10.17:853][856]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.703
+[2026.11.23-03.10.17:859][856]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.703
+[2026.11.23-03.10.17:871][856]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.703
+[2026.11.23-03.10.17:882][856]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.703
+[2026.11.23-03.10.17:894][857]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=4 layers=3 elapsed=0.703
+[2026.11.23-03.10.17:907][857]LogTemp: Display: [MWTrackSupports] complete world=L_Dev_Drive session=1 piece=5 layers=3 elapsed=0.703
+[2026.11.23-03.11.04:062][418]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}

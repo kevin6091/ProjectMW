@@ -57,6 +57,10 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
     TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
 
+    // 확정된 도로 아래에서 골조가 바닥으로 내려오는 시간이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0"))
+    float TrackSupportBuildSeconds = 0.38f;
+
     UFUNCTION(BlueprintPure, Category = "Environment")
     AMWEnvironmentGenerator* GetGenerator() const
     {
@@ -88,9 +92,28 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UInstancedStaticMeshComponent> TrackSupports;
 
+    struct FTrackSupportBuild
+    {
+        int32 PieceId;
+        FVector Top;
+        FQuat Rotation;
+        double Height;
+        double ScaleXY;
+        double StartedAt;
+        double Duration;
+        int32 Layers;
+        int32 FinishedLayers = 0;
+        int32 ActiveInstance = INDEX_NONE;
+    };
+
     int32 SupportSessionId = INDEX_NONE;
+    bool bObservedOpenPlacement = false;
     TSet<int32> ResolvedSupportPieces;
+    TArray<FTrackSupportBuild> PendingSupportBuilds;
+    FTimerHandle SupportBuildTimer;
     void RefreshTrackSupports();
+    void TickTrackSupportBuilds();
+    void ResetTrackSupports();
 
     UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;
