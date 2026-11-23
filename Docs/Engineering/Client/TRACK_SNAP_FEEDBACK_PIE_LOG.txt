@@ -1,0 +1,38 @@
+=== Editor Win64 Development ===
+Result: Succeeded
+Total execution time: 17.30 seconds
+=== 이전 원격 포트 중심 이동 ===
+P1 "Q" 피벗 이동 최대 1495.279 cm, 포트 중심 기준
+P1 "E" 피벗 이동 최대 1522.826 cm, 포트 중심 기준
+P2 "Q" 피벗 이동 최대 1495.279 cm, 포트 중심 기준
+P2 "E" 피벗 이동 최대 1522.826 cm, 포트 중심 기준
+P3 "Q" 피벗 이동 최대 0.001 cm, 포트 중심 기준
+P3 "E" 피벗 이동 최대 0.001 cm, 포트 중심 기준
+=== 수정 후 원격 포트 중심 이동 ===
+P1 "Q" 피벗 이동 최대 0.002 cm, 포트 중심 기준
+P1 "E" 피벗 이동 최대 0.003 cm, 포트 중심 기준
+P2 "Q" 피벗 이동 최대 0.002 cm, 포트 중심 기준
+P2 "E" 피벗 이동 최대 0.003 cm, 포트 중심 기준
+P3 "Q" 피벗 이동 최대 0.000 cm, 포트 중심 기준
+P3 "E" 피벗 이동 최대 0.001 cm, 포트 중심 기준
+=== 서버 원본 UI 해시 확인, 실제 클릭 및 서버 기록 ===
+[2026.11.23-02.19.46:523][  3]LogPython: CS64_SERVER_ORIGINALS_READY files=10 SelectSign=MWGameplaySignWidget BuildSign=MWGameplaySignWidget
+[2026.11.23-02.24.09:223][927]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(159.0,123.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=13221.390 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+[2026.11.23-02.24.09:229][927]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.23-02.24.46:787][169]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=2 target=2:1 source=0 pointer=(484.0,393.0) resolved=(5260.390000000,450.000437114,6000.000000000) quat=(0.000000000,0.000000000,0.707106719,-0.707106843) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=14090.385 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000010
+[2026.11.23-02.24.46:817][170]LogMWServer: [MWTrackPlacement] Placed piece=3 member=3 target=2/1 source=0
+[2026.11.23-02.25.26:035][435]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=3 target=3:1 source=0 pointer=(418.0,425.0) resolved=(8088.252704803,-721.336568447,6000.000000000) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=15753.433 visual_gap_deg=45.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.23-02.25.26:056][436]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.23-02.25.26:227][439]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.25.26:301][439]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+[2026.11.23-02.25.26:349][440]LogMWServer: [MWRoomState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing CountdownEnd=0.00
+=== 코스별 서버 좌표 ===
+(PieceId=1,DefinitionAssetId=(TagName="Asset.Track.Course.Start.WoodenCapped"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStartCapped.BP_Track_WoodStartCapped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStartCapped_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=0,PortIndex=-1),ConnectedPortIndex=-1)
+(PieceId=2,DefinitionAssetId=(TagName="Asset.Track.Straight.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight.BP_Track_WoodStraight_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.707107,W=-0.707107),Translation=(X=260.390000,Y=450.000000,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=1,PortIndex=0),ConnectedPortIndex=0)
+(PieceId=3,DefinitionAssetId=(TagName="Asset.Track.Curve.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodLeft_45_Medium.BP_Track_WoodLeft_45_Medium_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodLeft_45_Medium_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.707107,W=0.707107),Translation=(X=5260.390000,Y=450.000437,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=2,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=4,DefinitionAssetId=(TagName="Asset.Track.Placeholder.Test"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodStraight_Sloped.BP_Track_WoodStraight_Sloped_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodStraight_Sloped_C_1'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=0.923879,W=-0.382684),Translation=(X=8088.252705,Y=-721.336568,Z=6000.000000),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=3,PortIndex=1),ConnectedPortIndex=0)
+(PieceId=5,DefinitionAssetId=(TagName="Asset.Track.Course.End.WoodenCap"),Actor="/Game/Gameplay/Tracks/BP_Track_WoodFinish.BP_Track_WoodFinish_C'/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive:PersistentLevel.BP_Track_WoodFinish_C_0'",WorldTransform=(Rotation=(X=0.000000,Y=0.000000,Z=-0.923879,W=0.382684),Translation=(X=11526.100309,Y=-4159.182370,Z=7167.227526),Scale3D=(X=1.000000,Y=1.000000,Z=1.000000)),ConnectedTo=(PieceId=4,PortIndex=1),ConnectedPortIndex=0)
+=== 각 창 최초 Racing, 소유 차량 및 위치 ===
+[{"member":1,"pawn":"BP_MWVehiclePawn_FRED_C_0","location":[-2620.0,375.0,6100.592],"possessed":true,"size":[594,322],"dpi":0.4440000057220459},{"member":2,"pawn":"BP_MWVehiclePawn_DOUG_C_0","location":[-2620.0,525.0,6054.592],"possessed":true,"size":[1920,1000],"dpi":0.925777792930603},{"member":3,"pawn":"BP_MWVehiclePawn_UFOLOGY_C_0","location":[-2870.0,375.0,6084.592],"possessed":true,"size":[740,367],"dpi":0.4440000057220459}]
+=== 시작 조각 경계 ===
+{"actor":"BP_Track_WoodStartCapped_C_0","center":[-4239.61,450.014,7259.899],"extent":[4500.0,2463.915,1984.264]}
