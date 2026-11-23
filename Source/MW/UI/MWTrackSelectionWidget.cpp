@@ -15,6 +15,12 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
+#include "Rendering/DrawElements.h"
+
+namespace
+{
+	constexpr float SnapContactPulseSeconds = 0.20f;
+}
 #include "UI/Cursor/MWPointerCursor.h"
 #include "UI/Cursor/MWCursorProjection.h"
 #include "Player/Cursor/MWPlayerCursorComponent.h"
@@ -58,6 +64,8 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	RequestError = FText::GetEmpty();
 	bRequestPending = false;
 	bShowingPlacement = false;
+	PlacementEndpoint.Reset();
+	ContactPulse.Reset();
 	Super::NativeDestruct();
 }
 
@@ -74,6 +82,82 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Status)
 	{
 		Text_SessionStatus->SetText(Status);
 	}
+}
+
+void UMWTrackSelectionWidget::ShowPlacementEndpoint(const FVector* WorldPosition)
+{
+	// 끝점은 로컬 창의 카메라로 매 프레임 투영한다. 설치 판정에는 사용하지 않는다.
+	if (!WorldPosition)
+	{
+		if (PlacementEndpoint.IsSet())
+		{
+			PlacementEndpoint.Reset();
+			Invalidate(EInvalidateWidgetReason::Paint);
+		}
+		return;
+	}
+
+	if (!PlacementEndpoint.IsSet() || !PlacementEndpoint->Equals(*WorldPosition))
+	{
+		PlacementEndpoint = *WorldPosition;
+#if WITH_EDITOR
+		if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		{
+			UE_LOG(LogTemp, Display, TEXT("MWPlacementArrow world=%s tip=%s"),
+				*GetWorld()->GetOutermost()->GetName(), *WorldPosition->ToCompactString());
+		}
+#endif
+	}
+}
+
+void UMWTrackSelectionWidget::PulsePlacementEndpoint(const FVector& WorldPosition)
+{
+	ContactPulse = WorldPosition;
+	ContactPulseAge = 0.0f;
+}
+
+int32 UMWTrackSelectionWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Geometry,
+	const FSlateRect& CullRect, FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style,
+	bool bParentEnabled) const
+{
+	Layer = Super::NativePaint(Args, Geometry, CullRect, Elements, Layer, Style, bParentEnabled);
+	const APlayerController* PC = GetOwningPlayer();
+	const FPaintGeometry PaintGeometry = Geometry.ToPaintGeometry();
+
+	FVector2D Point;
+	if (PlacementEndpoint.IsSet() &&
+		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, *PlacementEndpoint, Point, true))
+	{
+		const FVector2D Tip = Point - FVector2D(0, 8);
+		const FVector2D Top = Tip - FVector2D(0, 27);
+		const TArray<FVector2d> Shaft{Top, Tip};
+		const TArray<FVector2d> Head{Tip + FVector2D(-10, -10), Tip, Tip + FVector2D(10, -10)};
+		const FLinearColor Outline(0.025f, 0.035f, 0.051f, 0.87f);
+		for (const TArray<FVector2d>* Stroke : {&Shaft, &Head})
+		{
+			FSlateDrawElement::MakeLines(Elements, Layer + 1, PaintGeometry, *Stroke, ESlateDrawEffect::None, Outline, true, 8.0f);
+			FSlateDrawElement::MakeLines(Elements, Layer + 2, PaintGeometry, *Stroke, ESlateDrawEffect::None, FLinearColor::White, true, 4.0f);
+		}
+		Layer += 2;
+	}
+
+	if (ContactPulse.IsSet() &&
+		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, *ContactPulse, Point, true))
+	{
+		// 접점 섬광이 퍼지며 사라진다. 설치 불꽃과 구분되도록 연결부에만 짧게 그린다.
+		const float Progress = FMath::Clamp(ContactPulseAge / SnapContactPulseSeconds, 0.0f, 1.0f);
+		const FLinearColor Glow(1.0f, 0.76f, 0.28f, 1.0f - Progress);
+		for (int32 Ray = 0; Ray < 6; ++Ray)
+		{
+			const double Angle = UE_TWO_PI * (Ray + 0.5) / 6.0;
+			const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.6);
+			const double Radius = FMath::Lerp(4.0, 26.0, Progress);
+			const TArray<FVector2d> Line{Point + Direction * (Radius * 0.4), Point + Direction * Radius};
+			FSlateDrawElement::MakeLines(Elements, Layer + 1, PaintGeometry, Line, ESlateDrawEffect::None, Glow, true, 3.0f);
+		}
+		++Layer;
+	}
+	return Layer;
 }
 
 void UMWTrackSelectionWidget::TryBindState()
@@ -283,6 +367,15 @@ void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
 void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
+	if (PlacementEndpoint.IsSet() || ContactPulse.IsSet())
+	{
+		ContactPulseAge += DeltaSeconds;
+		if (ContactPulseAge >= SnapContactPulseSeconds)
+		{
+			ContactPulse.Reset();
+		}
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
 	auto* PC = GetOwningPlayer();
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	if (!PC || !GS || !Canvas_Cursors) return;

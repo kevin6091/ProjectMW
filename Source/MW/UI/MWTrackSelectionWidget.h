@@ -24,11 +24,15 @@ public:
 	void ConfirmOffer(int32 OfferId);
 	void PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered);
 	void ShowPlacementStatus(const FText& Status);
+	void ShowPlacementEndpoint(const FVector* WorldPosition);
+	void PulsePlacementEndpoint(const FVector& WorldPosition);
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& Geometry, float DeltaSeconds) override;
+	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullRect,
+		FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style, bool bParentEnabled) const override;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
 
@@ -60,6 +64,9 @@ private:
 	FText RequestError;
 	bool bRequestPending = false;
 	bool bShowingPlacement = false;
+	TOptional<FVector> PlacementEndpoint;
+	TOptional<FVector> ContactPulse;
+	float ContactPulseAge = 0.0f;
 	int32 AcknowledgedOffer = INDEX_NONE;
 	UPROPERTY(Transient) TObjectPtr<UMWRemoteCursorOverlay> RemoteCursors;
 	UPROPERTY(Transient) TSubclassOf<UMWVehiclePlayerMarkerWidget> PointerClass;

@@ -23,6 +23,9 @@
 namespace
 {
 	constexpr double GhostSnapBlendSeconds = 0.12;
+	constexpr double GhostSnapSettleSeconds = 0.18;
+	constexpr double MaxSnapOvershoot = 38.0;
+	constexpr double SnapContactTolerance = 10.0;
 	constexpr float HeldSwayMaxAngleDegrees = 2.0f;
 	constexpr double HeldSwayDegreesAtOneWidthPerSecond = 4.0;
 	constexpr double HeldSwayMinAngleDegrees = 0.02;
@@ -180,6 +183,9 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{
 		Widget->ShowPlacementStatus(FText::FromString(Status));
+		const bool bNeedsGuide = Session.bIsOpen && bOwnReady && !bOwnPlaced && !bCanPlace && !bWaitingForReply;
+		const FVector Endpoint = Session.OpenEnds.IsEmpty() ? FVector::ZeroVector : Session.OpenEnds[0].WorldFrame.GetLocation();
+		Widget->ShowPlacementEndpoint(bNeedsGuide && !Session.OpenEnds.IsEmpty() ? &Endpoint : nullptr);
 	}
 }
 
@@ -342,7 +348,17 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
 		Blend.Target = Target;
 		Blend.ElapsedSeconds += DeltaSeconds;
-		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / GhostSnapBlendSeconds, 0.0, 1.0);
+		const double Duration = bSnapped ? GhostSnapSettleSeconds : GhostSnapBlendSeconds;
+		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / Duration, 0.0, 1.0);
+		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
+		if (bSnapped)
+		{
+			// 끝점에 빠르게 도달한 뒤 아주 조금 넘어가고 원래 스냅 자세에 정착한다.
+			const double TimeLeft = Progress - 1.0;
+			const double BackOut = 1.0 + TimeLeft * TimeLeft * (2.25 * TimeLeft + 1.25);
+			const double Gap = FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation());
+			Alpha = FMath::Min(BackOut, 1.0 + MaxSnapOvershoot / FMath::Max(Gap, MaxSnapOvershoot));
+		}
 #if WITH_EDITOR
 		if ((bStartBlend || Progress >= 1.0) && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
 		{
@@ -350,19 +366,22 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 				*GetWorld()->GetName(), *Actor.GetName(), bStartBlend ? TEXT("begin") : TEXT("end"),
 				Blend.bRotateAroundCenter ? TEXT("turn") : bChangedTarget ? TEXT("retarget")
 					: bSnapped ? TEXT("snap") : TEXT("release"), Blend.ElapsedSeconds,
-				FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0), FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()));
+				Alpha, FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()));
 		}
 #endif
 		if (Progress >= 1.0)
 		{
 			Ghost.SnapBlend.Reset();
+			if (bSnapped)
+			{
+				PulseSnapContact(Ghost, Target);
+			}
 			return Target;
 		}
 		Start = &Blend.Start;
 		bRotateAroundCenter = Blend.bRotateAroundCenter;
-		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
 	}
-	if (Alpha >= 1.0)
+	else if (Alpha >= 1.0)
 	{
 		return Target;
 	}
@@ -376,6 +395,40 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		Location = Center - Rotation.RotateVector(Target.GetScale3D() * PortCenter);
 	}
 	return FTransform(Rotation, Location, Target.GetScale3D());
+}
+
+void UMWTrackPlacementViewComponent::PulseSnapContact(const FGhost& Ghost, const FTransform& Target) const
+{
+	auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget);
+	if (!GS || !Widget)
+	{
+		return;
+	}
+
+	// 원격 보간이 늦게 끝났을 때 이미 바뀐 끝점에서 섬광을 재생하지 않는다.
+	const auto& Ends = GS->GetConstructionComponent()->GetPlacementSession().OpenEnds;
+	if (Ends.IsEmpty())
+	{
+		return;
+	}
+	const FVector Contact = Ends[0].WorldFrame.GetLocation();
+	const auto ReachesContact = [&Target, &Contact](const FTransform& Port)
+	{
+		return Target.TransformPosition(Port.GetLocation()).Equals(Contact, SnapContactTolerance);
+	};
+	if (ReachesContact(Ghost.Ports[0]) || ReachesContact(Ghost.Ports[1]))
+	{
+		Widget->PulsePlacementEndpoint(Contact);
+#if WITH_EDITOR
+		if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		{
+			UE_LOG(LogTemp, Display, TEXT("MWPlacementContact world=%s ghost=%s point=%s"),
+				*GetWorld()->GetOutermost()->GetName(), *Ghost.Actor->GetName(), *Contact.ToCompactString());
+		}
+#endif
+	}
 }
 
 void UMWTrackPlacementViewComponent::UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const

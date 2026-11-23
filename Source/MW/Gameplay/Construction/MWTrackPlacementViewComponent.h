@@ -70,6 +70,7 @@ private:
 		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped, FPointerSample* OutPointer = nullptr);
 	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds,
 		double FreeMoveAlpha, bool bLocalTurn = false) const;
+	void PulseSnapContact(const FGhost& Ghost, const FTransform& Target) const;
 	void UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
