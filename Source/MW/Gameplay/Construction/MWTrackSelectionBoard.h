@@ -49,10 +49,12 @@ protected:
 	// 레벨에 저장된 이전 3칸 배열이 새 생성자에서 만든 6칸을 덮어쓰지 않게 한다.
 	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> SlotAnchors;
 	UPROPERTY(Transient) TArray<TObjectPtr<UBoxComponent>> SlotHitAreas;
+	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> SlotVisualPivots;
 
 private:
 	bool BuildOffers(const FMWTrackSelectionSession& Session);
 	void ClearOffers();
+	TOptional<double> GetBackdropTop() const;
 	void FrameSelection(FMinimalViewInfo& View, const APlayerController* PC) const;
 	void UpdateSelectionStage(const FMWTrackPlacementSession& Course, const APlayerController& PC);
 	void RefreshOffers(const AMWGameplayGameState& GameState, const FMWTrackSelectionSession& Session, float DeltaSeconds);

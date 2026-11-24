@@ -75,9 +75,12 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 		auto* Anchor = CreateDefaultSubobject<USceneComponent>(*FString::Printf(TEXT("Anchor%d"), Index));
 		Anchor->SetupAttachment(SelectionStage);
 		SlotAnchors.Add(Anchor);
+		auto* VisualPivot = CreateDefaultSubobject<USceneComponent>(*FString::Printf(TEXT("OfferVisualPivot%d"), Index));
+		VisualPivot->SetupAttachment(Anchor);
+		SlotVisualPivots.Add(VisualPivot);
 		auto* Hit = CreateDefaultSubobject<UBoxComponent>(*FString::Printf(TEXT("OfferHit%d"), Index));
 		Hit->SetupAttachment(Anchor);
-		// 호버 확대는 미리보기만 움직이고 클릭 범위의 크기는 바꾸지 않는다.
+		// 기존 클릭 상자의 월드 크기를 보존한다. 확대는 전시 조각에만 적용한다.
 		Hit->SetAbsolute(false, false, true);
 		Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Hit->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -107,6 +110,7 @@ void AMWTrackSelectionBoard::BeginPlay()
 			((MWTrackSelection::Columns - 1) * 0.5 - Column) * ColumnSpacing, BoardHeight);
 		SlotAnchors[Index]->AttachToComponent(SelectionStage, FAttachmentTransformRules::KeepRelativeTransform);
 		SlotAnchors[Index]->SetRelativeLocation(Slot * LayoutScale);
+		SlotVisualPivots[Index]->AttachToComponent(SlotAnchors[Index], FAttachmentTransformRules::KeepRelativeTransform);
 	}
 	Camera->SetRelativeLocation(Camera->GetRelativeLocation() * LayoutScale);
 	if (const UStaticMesh* BackdropMesh = SelectionBackdrop->GetStaticMesh())
@@ -176,6 +180,16 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	FrameBounds(OutResult, Bounds.ExpandBy(FVector(400.0, 400.0, 120.0) * Session.LayoutScale), Aspect, 0.9);
 }
 
+TOptional<double> AMWTrackSelectionBoard::GetBackdropTop() const
+{
+	// 실제 레벨 메시와 트랜스폼에서 전시판 상면을 읽는다. 배경을 사용하지 않는 레벨도 있다.
+	if (const UStaticMesh* Mesh = SelectionBackdrop->GetStaticMesh())
+	{
+		return Mesh->GetBoundingBox().TransformBy(SelectionBackdrop->GetRelativeTransform()).Max.Z;
+	}
+	return {};
+}
+
 void AMWTrackSelectionBoard::FrameSelection(FMinimalViewInfo& View, const APlayerController* PC) const
 {
 	int32 Width = 0, Height = 0;
@@ -183,7 +197,14 @@ void AMWTrackSelectionBoard::FrameSelection(FMinimalViewInfo& View, const APlaye
 	const double Aspect = Width > 0 && Height > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
 	View.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
 	const FVector Extent = SelectionExtent * LayoutScale;
-	const FBox LocalBounds(-Extent, Extent);
+	FBox LocalBounds(-Extent, Extent);
+	if (const TOptional<double> Top = GetBackdropTop(); Top.IsSet())
+	{
+		const double TopFromOrigin = Top.GetValue() - BoardHeight * LayoutScale;
+		const double Peak = FMath::Max(1.0, GetDefault<UMWTrackPresentationSettings>()->CandidateHoverPeakScale);
+		// 확대 피벗과 최대 높이를 포함한 범위로 화면을 맞춘다.
+		LocalBounds.Max.Z = FMath::Max(TopFromOrigin, -Extent.Z / Peak) + 2.0 * Extent.Z;
+	}
 	FrameBounds(View, LocalBounds.TransformBy(FTransform(GetActorQuat(), GetBuildOrigin())), Aspect, 0.74);
 }
 
@@ -223,6 +244,7 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 	ClearOffers();
 	const auto* Settings = GetDefault<UMWTrackPresentationSettings>();
 	auto* SurfaceMaterial = Settings->CandidateSurfaceMaterial.LoadSynchronous();
+	const TOptional<double> BackdropTop = GetBackdropTop();
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
 		if (Offer.ClaimedByMemberId != INDEX_NONE)
@@ -266,10 +288,23 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		const FVector Fit = SlotExtent * LayoutScale / (PeakScale * SweepExtent.ComponentMax(FVector::OneVector));
 		const double Scale = FMath::Min(1.0, Fit.GetMin());
 		const FVector VisualOffset = VisualBounds.GetCenter() - Track->GetActorLocation();
+		const double HalfHeight = Extent.Z * Scale;
+		double CenterHeight = 0.0;
+		double PivotHeight = 0.0;
+		if (BackdropTop.IsSet())
+		{
+			// 조각의 실제 아랫면을 판 위에 두고 그 높이를 확대 피벗으로 쓴다.
+			const double RestBottom = FMath::Max(-HalfHeight, BackdropTop.GetValue() - Anchor->GetRelativeLocation().Z);
+			CenterHeight = RestBottom + HalfHeight;
+			PivotHeight = RestBottom;
+		}
+		auto* VisualPivot = SlotVisualPivots[Offer.BoardSlotIndex].Get();
+		VisualPivot->SetRelativeLocation(FVector::UpVector * PivotHeight);
 		Track->SetActorScale3D(Track->GetActorScale3D() * Scale);
-		Track->SetActorLocation(Anchor->GetComponentLocation() - VisualOffset * Scale);
-		Track->AttachToComponent(Anchor, FAttachmentTransformRules::KeepWorldTransform);
+		Track->SetActorLocation(Anchor->GetComponentTransform().TransformPosition(FVector::UpVector * CenterHeight) - VisualOffset * Scale);
+		Track->AttachToComponent(VisualPivot, FAttachmentTransformRules::KeepWorldTransform);
 		MWTrackPreview::SetWireframeColor(*Track, Settings->CandidateTint);
+		SlotHitAreas[Offer.BoardSlotIndex]->SetRelativeLocation(FVector::UpVector * CenterHeight);
 		SlotHitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent * Scale + FVector(20 * LayoutScale));
 		SlotHitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
@@ -325,7 +360,10 @@ void AMWTrackSelectionBoard::ClearOffers()
 	for (const auto& Anchor : SlotAnchors)
 	{
 		Anchor->SetRelativeRotation(FRotator::ZeroRotator);
-		Anchor->SetRelativeScale3D(FVector::OneVector);
+	}
+	for (const auto& VisualPivot : SlotVisualPivots)
+	{
+		VisualPivot->SetRelativeScale3D(FVector::OneVector);
 	}
 }
 
@@ -533,7 +571,7 @@ void AMWTrackSelectionBoard::RefreshOffers(const AMWGameplayGameState& GameState
 			const double Alpha = FMath::Clamp(*Elapsed / Settings->CandidateHoverSeconds, 0.0, 1.0);
 			const double Pulse = Alpha < 1.0 ? FMath::Sin(UE_DOUBLE_PI * Alpha) : 0.0;
 			const double Scale = FMath::Lerp(1.0, FMath::Max(1.0, Settings->CandidateHoverPeakScale), Pulse);
-			Anchor->SetRelativeScale3D(FVector(Scale));
+			SlotVisualPivots[Offer.BoardSlotIndex]->SetRelativeScale3D(FVector(Scale));
 			if (Alpha >= 1.0)
 			{
 				HoverPulseElapsed.Remove(Offer.OfferId);

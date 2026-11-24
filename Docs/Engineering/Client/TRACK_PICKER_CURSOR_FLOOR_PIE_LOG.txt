@@ -1,0 +1,60 @@
+MWEditor Win64 Development, UE 5.8, isolated ProjectMW copy
+Source, configuration and key content SHA-256 match (12 files)
+MW.uproject  D5CC3D854B2F2DB6A42634008392A6BA0A7538E3A272A719DAB4BB3818C09219
+Config/DefaultGame.ini  EEEF80B24D281580E97307B9FBF6006EA155120DF74DD09A4FE711187BF283F2
+Content/Levels/L_Dev_Drive.umap  8E642CD75FD0DB3A5C5F68F4BD41B06BAAB33DECC442FD234023286D991BD2F9
+Content/Gameplay/Tracks/Art/SelectionBoard/SM_TrackSelectionBoard.uasset  5EF04337CDF714C3F2987DEFBE3C372E77A340424674DCF9F3E7E86687AAADE3
+Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface.uasset  E951FF4A4988A63310E1954324D611EC8E1D4474C891219D52E4F550916917DA
+Source/MW/Gameplay/Construction/MWTrackSelectionBoard.cpp  62F7A5F3601F2647DAF10105A8A6074F1429F067699A301AD2E282EC25619485
+Source/MW/Gameplay/Construction/MWTrackSelectionBoard.h  18A1CF2987449823736FA30CB453000236961D3B19309B8D74983B2875B32F9E
+Source/MW/Player/MWGameplayPlayerController.cpp  C6C42B849933B406D20CBE299348716F0645B0AE9ED0AB4D82291A0A3D119338
+Source/MW/Player/MWGameplayPlayerController.h  F07C0AF35618ACCADC5C3B7A468EECBC9CD79F5808BEA5840DA110A25E60E59B
+Source/MW/UI/Cursor/MWCursorProjection.cpp  298F195390938FB1958DE4CD01A9BC19CEF1BE53759EFB243509B1F3CC425217
+Source/MW/UI/Cursor/MWCursorProjection.h  5D3519BE293414C3CBEB31BFD7C2A5D37D2ABBCB1F129ED37178E8E39C80215A
+Source/MW/UI/MWTrackSelectionWidget.cpp  B4FBE115070E2BA1FB7DEFE540760845395A74D13B3DFB2B56CA35E9B7AB4AB7
+Cua Driver, three-player listen-server PIE, normal speed; QA setup submits lobby readiness and vehicle selections only.
+Bounds below are world-space UStaticMeshComponent bounds in cm.
+member slot track board_top_cm lowest_cm gap_cm peak hit_extent_constant samples
+1 0 BP_Track_WoodElevated_Right_60_Small_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11994497 True 2
+1 1 BP_Track_WoodMotorway_RightToLeft_C_0 5866.888771 6277.029582 410.140810784 1.09702974 True 5
+1 2 BP_Track_WoodCheckpoint_C_0 5866.888771 5977.757073 110.868301739 1.11953664 True 2
+1 3 BP_Track_WoodElevated_Left_300_Long_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11962038 True 5
+1 4 BP_Track_WoodStraight_Camera_C_0 5866.888771 5866.888771 -1.81898940355E-12 1.09610170 True 11
+1 5 BP_Track_WoodAutoExit_Flat_Straight_C_0 5866.888771 6401.832297 534.943526358 1.09212284 True 4
+2 0 BP_Track_WoodElevated_Right_60_Small_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11994497 True 2
+2 1 BP_Track_WoodMotorway_RightToLeft_C_0 5866.888771 6277.029582 410.140810784 1.11936879 True 161
+2 2 BP_Track_WoodCheckpoint_C_0 5866.888771 5977.757073 110.868301739 1.11953664 True 2
+2 3 BP_Track_WoodElevated_Left_300_Long_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11962038 True 5
+2 4 BP_Track_WoodStraight_Camera_C_0 5866.888771 5866.888771 -1.81898940355E-12 1.11984657 True 10
+2 5 BP_Track_WoodAutoExit_Flat_Straight_C_0 5866.888771 6401.832297 534.943526358 1.09212284 True 4
+3 0 BP_Track_WoodElevated_Right_60_Small_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11994497 True 2
+3 1 BP_Track_WoodMotorway_RightToLeft_C_0 5866.888771 6277.029582 410.140810784 1.09702974 True 5
+3 2 BP_Track_WoodCheckpoint_C_0 5866.888771 5977.757073 110.868301739 1.11953664 True 2
+3 3 BP_Track_WoodElevated_Left_300_Long_C_0 5866.888771 5866.888771 -9.09494701773E-13 1.11962038 True 5
+3 4 BP_Track_WoodStraight_Camera_C_0 5866.888771 5866.888771 -1.81898940355E-12 1.11998629 True 10
+3 5 BP_Track_WoodAutoExit_Flat_Straight_C_0 5866.888771 6401.832297 534.943526358 1.11998591 True 3
+
+LOADING, CURSOR RECOVERY AND SELECTION
+[2026.11.24-07.40.03:912][424]LogPython: MW_QA setup only: server lobby ready for three test participants
+[2026.11.24-07.40.06:441][438]LogPython: MW_QA setup only: vehicle choices submitted; track selections and installations require Cua Driver
+[2026.11.24-07.40.18:073][550]LogTemp: Display: MWArrival reveal attempt=438786A34BA4760AD82857B34F4FC713 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17235324.020117
+[2026.11.24-07.40.18:386][555]LogTemp: Display: MWArrival reveal attempt=ADD13BE14A6281D5404250917A0A9922 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17235324.333633
+[2026.11.24-07.40.18:500][556]LogTemp: Display: MWArrival reveal attempt=A0E93D744D082A14CAF2DB93915259AF world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=4 session=1 revision=1 t=17235324.447663
+[2026.11.24-07.41.43:919][  1]LogPython: MW_PICKER_LOCAL forced hidden P1 frame=2717
+[2026.11.24-07.41.43:955][  2]LogPython: MW_PICKER_LOCAL recovered {'player': 1, 'forced_hidden_frame': 2717, 'restored_frame': 2718, 'phase': '<MWRoomPhase.PREPARING_CONSTRUCTION: 4>'}
+[2026.11.24-07.41.53:562][171]LogPython: MW_PICKER_LOCAL forced hidden P2 frame=2887
+[2026.11.24-07.41.53:607][172]LogPython: MW_PICKER_LOCAL recovered {'player': 2, 'forced_hidden_frame': 2887, 'restored_frame': 2888, 'phase': '<MWRoomPhase.PREPARING_CONSTRUCTION: 4>'}
+[2026.11.24-07.42.11:154][493]LogPython: MW_PICKER_LOCAL forced hidden P3 frame=3209
+[2026.11.24-07.42.11:183][494]LogPython: MW_PICKER_LOCAL recovered {'player': 3, 'forced_hidden_frame': 3209, 'restored_frame': 3210, 'phase': '<MWRoomPhase.PREPARING_CONSTRUCTION: 4>'}
+[2026.11.24-07.43.22:434][748]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.40:428][ 51]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.PREPARING_CONSTRUCTION: 4> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.50:325][206]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.50:360][206]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.50:395][207]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.50:723][209]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True) pawn=SpectatorPawn_1
+[2026.11.24-07.43.50:755][209]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True) pawn=SpectatorPawn_1
+
+FINAL PLACEMENT VIEWPORTS
+P1 414x237 DPIScale=0.4440 <MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True (SelectionSessionId=1,OffersRevision=1,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True)
+P2 994x532 DPIScale=0.4921 <MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True (SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True)
+P3 1039x372 DPIScale=0.4440 <MWRoomPhase.TRACK_PLACEMENT: 5> cursor=True (SelectionSessionId=1,OffersRevision=1,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True)
