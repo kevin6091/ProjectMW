@@ -1,5 +1,7 @@
 # 트랙 지면 관통 방지 검증
 
+이 문서는 54c9ade 시점의 검증 기록이다. 현재 재선택 동작은 [트랙 배치 불가 시 전원 재선택](TRACK_PLACEMENT_RESELECTION_VERIFICATION.md)에 기록했다.
+
 2026-11-24 KST · `fix/track-placement-clearance` · 기준 `34136de` · UE 5.8.4
 
 ## 원인과 판정 계약

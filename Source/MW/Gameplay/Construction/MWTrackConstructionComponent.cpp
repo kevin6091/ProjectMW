@@ -1,6 +1,8 @@
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
+#include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 #include "System/MWPlayerState.h"
@@ -40,10 +42,32 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	const TArray<AMWPlayerState*>& SelectionPlayers,
 	FText& OutError)
 {
+	return BeginSelectionInternal(SelectionPlayers, OutError, false);
+}
+
+bool UMWTrackConstructionComponent::IsPlacementReselectionPendingFor(const AMWPlayerState& Player) const
+{
+	if (!PlacementSession.bIsOpen || !SelectionSession.bIsPlacementReselection)
+	{
+		return false;
+	}
+	if (!SelectionSession.ReselectionMemberIds.Contains(Player.GetLobbyMemberId()))
+	{
+		return false;
+	}
+	const auto& Placement = Player.GetPlayerConstructionComponent()->GetPlacement();
+	return SelectionSession.bIsOpen || Placement.SessionId != SelectionSession.SelectionSessionId || Placement.TrackClass.IsNull();
+}
+
+bool UMWTrackConstructionComponent::BeginSelectionInternal(const TArray<AMWPlayerState*>& SelectionPlayers,
+	FText& OutError, bool bPlacementReselection)
+{
 	OutError = FText::GetEmpty();
 	AGameStateBase* GS = Cast<AGameStateBase>(GetOwner());
 	
-	if (!HasServerAuthority() || !GS || bPreparingSelection || SelectionSession.bIsOpen || PlacementSession.bIsOpen)
+	if (!HasServerAuthority() || !GS || bPreparingSelection || SelectionSession.bIsOpen
+		|| bPlacementReselection != PlacementSession.bIsOpen
+		|| (bPlacementReselection && (!RoundStartEnd.Id.IsValid() || PlacementSession.BaseCoursePieceCount <= 0)))
 	{
 		OutError = FText::FromString(TEXT("트랙 선택을 시작할 수 없습니다."));
 		return false;
@@ -90,6 +114,7 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	const auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>();
 	auto Pool = Runtime ? Runtime->GetSelectionPool() : TArray<TSoftClassPtr<AActor>>{};
 	const int32 PoolSize = Pool.Num();
+	TMap<int32, FPreparedTrack> PreparedOffers;
 	while (!Pool.IsEmpty() && NewSession.Offers.Num() < MWTrackSelection::OfferCount)
 	{
 		// 뽑은 항목은 풀에서 제거한다. 여섯 칸의 순서와 클래스는 서버가 한 번만 정한다.
@@ -104,26 +129,51 @@ bool UMWTrackConstructionComponent::BeginSelection(
 		}
 
 		const int32 Slot = NewSession.Offers.Num();
+		if (bPlacementReselection)
+		{
+			// 다시 배치할 지점은 현재 막힌 끝점이 아니라 이번 라운드가 처음 열린 끝점이다.
+			const FTransform& End = RoundStartEnd.WorldFrame;
+			FPreparedTrack Prepared;
+			FText PrepareError;
+			if (!PrepareTrack(TrackClass, End.GetLocation(), false, Prepared, PrepareError)
+				|| !MWTrackPlacementClearance::FitsEitherPort(Prepared.GroundPoints, PlacementSession.Ground, Prepared.Ports, End))
+			{
+				Prepared.Destroy();
+				continue;
+			}
+			PreparedOffers.Add(Slot + 1, MoveTemp(Prepared));
+		}
+
 		FMWTrackOffer& Offer = NewSession.Offers.AddDefaulted_GetRef();
 		Offer.OfferId = Slot + 1;
 		Offer.TrackClass = TrackClass;
 		Offer.BoardSlotIndex = Slot;
 	}
-	if (NewSession.Offers.Num() != MWTrackSelection::OfferCount)
+	const int32 RequiredOffers = bPlacementReselection ? SelectionPlayers.Num() : MWTrackSelection::OfferCount;
+	if (NewSession.Offers.Num() < RequiredOffers)
 	{
-		OutError = FText::FromString(TEXT("선택 가능한 트랙 후보 여섯 개를 준비하지 못했습니다."));
+		for (const auto& Entry : PreparedOffers) Entry.Value.Destroy();
+		OutError = bPlacementReselection
+			? NSLOCTEXT("MWTrackSelection", "NoCompatibleOffers", "다시 배치할 수 있는 트랙 후보가 부족합니다.")
+			: FText::FromString(TEXT("선택 가능한 트랙 후보 여섯 개를 준비하지 못했습니다."));
 		return false;
 	}
 
 	NewSession.SelectionSessionId = ++NextSelectionSessionId;
 	NewSession.OffersRevision = 1;
 	NewSession.bIsOpen = true;
+	NewSession.bIsPlacementReselection = bPlacementReselection;
 
 	Participants.Reset();
 
 	for (AMWPlayerState* PS : SelectionPlayers)
 	{
 		Participants.Add(TWeakObjectPtr<AMWPlayerState>(PS));
+		if (bPlacementReselection)
+		{
+			NewSession.ReselectionMemberIds.Add(PS->GetLobbyMemberId());
+			PS->GetCursorComponent()->CloseStreamForServer();
+		}
 
 		PS->GetPlayerConstructionComponent()->ResetSelectionForServer(
 			NewSession.SelectionSessionId,
@@ -132,7 +182,12 @@ bool UMWTrackConstructionComponent::BeginSelection(
 	
 	// 개인 상태 준비 후 공용 상태를 공개한다.
 	// 실제 클라이언트 수신 순서는 화면 구현에서 따로 처리한다.
-	SelectionSession = NewSession;
+	ReselectionOffers = MoveTemp(PreparedOffers);
+	SelectionSession = MoveTemp(NewSession);
+	if (bPlacementReselection)
+	{
+		RollbackRoundPlacementForReselection(SelectionPlayers);
+	}
 	UE_LOG(LogMWServer, Log, TEXT("[MWTrackSelection] Opened session=%d pool=%d offers=%d"),
 		SelectionSession.SelectionSessionId, PoolSize, SelectionSession.Offers.Num());
 
@@ -151,6 +206,8 @@ void UMWTrackConstructionComponent::EndSelection()
 		if (Participant.IsValid()) Participant->GetPlayerConstructionComponent()->ClearCursorForServer();
 	}
 	Participants.Reset();
+	for (const auto& Entry : ReselectionOffers) Entry.Value.Destroy();
+	ReselectionOffers.Reset();
 	GetOwner()->ForceNetUpdate();
 	OnSelectionSessionChanged.Broadcast();
 	// Offers와 개인 SelectedOfferId는 다음 배치 처리에서 읽도록 보존한다.
@@ -379,7 +436,14 @@ FMWTrackSelectionReply UMWTrackConstructionComponent::ConfirmSelection(APlayerCo
 		OnSelectionSessionChanged.Broadcast();
 		if (IsAllSelectionsConfirmed())
 		{
-			OnAllSelectionsConfirmed.Broadcast(SelectionSession.SelectionSessionId);
+			if (SelectionSession.bIsPlacementReselection)
+			{
+				ResumePlacementAfterReselection();
+			}
+			else
+			{
+				OnAllSelectionsConfirmed.Broadcast(SelectionSession.SelectionSessionId);
+			}
 		}
 	}
 

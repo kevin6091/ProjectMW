@@ -48,7 +48,7 @@ void UMWEnvironmentGameplay::RefreshTrackPlacementPops()
         PresentedPopPieces.Add(Piece.PieceId);
 
         FMWTrackPortFrames Ports;
-        if (!bAnimateNewPieces || !Piece.ConnectedTo.IsValid() || UMWTrackRuntimeSubsystem::IsCourseOnlyTrack(Piece.TrackClass)
+        if (!bAnimateNewPieces || Piece.PieceId <= Session.BaseCoursePieceCount || !Piece.ConnectedTo.IsValid() || UMWTrackRuntimeSubsystem::IsCourseOnlyTrack(Piece.TrackClass)
             || Piece.ConnectedPortIndex < 0 || Piece.ConnectedPortIndex >= Ports.Num()
             || !MWTrackSnap::ReadPorts(*Track, Ports))
         {

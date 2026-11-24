@@ -25,8 +25,4 @@ public:
     // 현재 테마의 평면 바닥과 서버 건설 하한이 같은 월드 높이를 사용한다.
     UPROPERTY(Config, EditAnywhere, Category = "Placement", meta = (Units = "cm"))
     double TrackPlacementFloorZ = 0.0;
-
-    // 열린 끝에 확정 조각의 어느 방향도 들어갈 수 없을 때만 제공한다.
-    UPROPERTY(Config, EditAnywhere, Category = "Placement")
-    TSoftClassPtr<AActor> BlockedPlacementFallbackClass;
 };

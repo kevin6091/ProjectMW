@@ -226,7 +226,8 @@ namespace
                 return;
 
             const bool bHasRoom = GS->GetRoomSettings().MapThemeId.IsValid();
-            const EMWRoomPhase Phase = GS->GetRoomPhase();
+            const auto* GameplayPC = Cast<AMWGameplayPlayerController>(PC);
+            const EMWRoomPhase Phase = GameplayPC ? GameplayPC->GetConstructionPresentationPhase() : GS->GetRoomPhase();
             const bool bCovered = PC->GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered();
             // 가림막 뒤에서 안내의 표시 시간이 소진되지 않도록 화면을 공개할 때부터 시간을 잰다.
             if (bCovered || !LastPhase.IsSet() || Phase != LastPhase.GetValue())

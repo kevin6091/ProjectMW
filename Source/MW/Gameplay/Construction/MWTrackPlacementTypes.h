@@ -71,6 +71,8 @@ struct FMWTrackPlacementSession
 	UPROPERTY(BlueprintReadOnly) double PreviewYaw = 0.0;
 	UPROPERTY(BlueprintReadOnly) double LayoutScale = 1.0;
 	UPROPERTY() FMWTrackPlacementGround Ground;
+	// 이 수 이하의 도로는 이번 라운드의 설치를 되돌려도 유지된다.
+	UPROPERTY() int32 BaseCoursePieceCount = 0;
 	UPROPERTY(BlueprintReadOnly) FBox CourseBounds = FBox(ForceInit);
 	UPROPERTY(BlueprintReadOnly) TArray<FMWOpenTrackEnd> OpenEnds;
 	UPROPERTY(BlueprintReadOnly) TArray<FMWPlacedTrack> PlacedTracks;
@@ -112,5 +114,6 @@ enum class EMWTrackPlacementResult : uint8
 	CourseChanged,
 	NotSnapped,
 	BelowPlacementFloor,
-	ReplacementOffered
+	ReselectionOpened,
+	NoCompatibleTracks
 };

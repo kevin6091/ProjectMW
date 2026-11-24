@@ -259,14 +259,16 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         // 층을 이어 높은 조각에서도 가로대 사이 간격과 사선 각도가 과하게 늘어나지 않게 한다.
         const int32 Layers = FMath::Clamp(FMath::RoundToInt(Height / (MeshSize.Z * ScaleXY)), 1, 16);
         const double StartedAt = GetWorld()->GetTimeSeconds();
-        const double RevealDelay = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportRevealSeconds) : 0.0;
-        const double AssemblyDuration = bObservedOpenPlacement ? FMath::Max(0.0f, TrackSupportAssemblySeconds) : 0.0;
+        // 재선택으로 세션이 바뀌어도 보존된 도로의 골조는 완성 상태로 복원한다.
+        const bool bAnimateSupport = bObservedOpenPlacement && Piece.PieceId > Session.BaseCoursePieceCount;
+        const double RevealDelay = bAnimateSupport ? FMath::Max(0.0f, TrackSupportRevealSeconds) : 0.0;
+        const double AssemblyDuration = bAnimateSupport ? FMath::Max(0.0f, TrackSupportAssemblySeconds) : 0.0;
         const FRotator Rotation = Across.Rotation();
         PendingSupportBuilds.Add({Piece.PieceId, Top, Rotation.Quaternion(), Height, ScaleXY,
             StartedAt, RevealDelay, AssemblyDuration, Layers});
         ResolvedSupportPieces.Add(Piece.PieceId);
 
-        if (bObservedOpenPlacement)
+        if (bAnimateSupport)
         {
             PlayTrackLaidEffects(*Piece.Actor, Piece.PieceId, RoadSurface, Width, StartedAt);
         }

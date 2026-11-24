@@ -138,7 +138,8 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	if (Viewer.IsValid()) Viewer->GetViewportSize(Width, Height);
 	else if (const auto* PC = GetWorld()->GetFirstPlayerController()) PC->GetViewportSize(Width, Height);
 	const double Aspect = Width > 0 && Height > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
-	if (GS->GetRoomPhase() == EMWRoomPhase::PreparingConstruction)
+	const auto* PC = Viewer.IsValid() ? Viewer.Get() : Cast<AMWGameplayPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (PC && PC->GetConstructionPresentationPhase() == EMWRoomPhase::PreparingConstruction)
 	{
 		// 전시 화면은 열을 수평으로 보고, 선택 후 빈 칸이 생겨도 카메라 범위는 고정한다.
 		OutResult.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
@@ -324,7 +325,19 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	if (GS->GetRoomPhase() != EMWRoomPhase::PreparingConstruction)
+	auto* Local = Viewer.Get();
+	if (!Local)
+	{
+		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		{
+			if (auto* PC = Cast<AMWGameplayPlayerController>(It->Get()); PC && PC->IsLocalController())
+			{
+				Local = PC;
+				break;
+			}
+		}
+	}
+	if (!Local || Local->GetConstructionPresentationPhase() != EMWRoomPhase::PreparingConstruction)
 	{
 		// 배치 카메라로 옮겨도 선택 전시 배경은 경기 코스에 남지 않는다.
 		SelectionBackdrop->SetHiddenInGame(true);
@@ -346,24 +359,15 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	}
 	if (!Viewer.IsValid())
 	{
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		Viewer = Local;
+		Local->SetTrackSelectionBoard(this);
+		if (APlayerCameraManager* Manager = Local->PlayerCameraManager;
+			Manager && !Manager->FindCameraModifierByClass(UMWTrackSelectionExposure::StaticClass()))
 		{
-			auto* PC = Cast<AMWGameplayPlayerController>(It->Get());
-			if (PC && PC->IsLocalController())
-			{
-				Viewer = PC;
-				PC->SetTrackSelectionBoard(this);
-				if (APlayerCameraManager* Manager = PC->PlayerCameraManager;
-					Manager && !Manager->FindCameraModifierByClass(UMWTrackSelectionExposure::StaticClass()))
-				{
-					Manager->AddNewCameraModifier(UMWTrackSelectionExposure::StaticClass());
-				}
-				PC->SetViewTarget(this);
-				break;
-			}
+			Manager->AddNewCameraModifier(UMWTrackSelectionExposure::StaticClass());
 		}
+		Local->SetViewTarget(this);
 	}
-	if (!Viewer.IsValid()) return;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
 	if (Session.SelectionSessionId <= 0) return;
 	if ((SessionId != Session.SelectionSessionId || Revision != Session.OffersRevision) && !BuildOffers(Session)) return;

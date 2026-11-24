@@ -76,7 +76,16 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		}
 		return;
 	}
-	const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+	const auto* Construction = GS->GetConstructionComponent();
+	const auto& Session = Construction->GetPlacementSession();
+	if (PC->GetConstructionPresentationPhase() == EMWRoomPhase::PreparingConstruction)
+	{
+		if (SessionId != 0)
+		{
+			ResetView();
+		}
+		return;
+	}
 	if (SessionId != Session.SessionId)
 	{
 		ResetView();
@@ -107,12 +116,8 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		{
 			bOwnReady = true;
 			bOwnPlaced = bPlaced;
-			if (!AwaitedReplacementFor.IsNull() && Player.TrackClass != AwaitedReplacementFor)
-			{
-				AwaitedReplacementFor.Reset();
-			}
 		}
-		if (bPlaced || !Session.bIsOpen)
+		if (bPlaced || !Session.bIsOpen || Construction->IsPlacementReselectionPendingFor(*PS))
 		{
 			continue;
 		}
@@ -194,13 +199,17 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		FText StatusText = FText::FromString(Status);
 		if (Session.bIsOpen && bOwnReady && !bOwnPlaced)
 		{
-			if (!AwaitedReplacementFor.IsNull())
+			if (LastResult == EMWTrackPlacementResult::ReselectionOpened)
 			{
-				StatusText = NSLOCTEXT("MWTrackPlacement", "LoadingReplacement", "대체 트랙을 준비 중입니다.");
+				StatusText = NSLOCTEXT("MWTrackPlacement", "PreparingReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다.");
+			}
+			else if (LastResult == EMWTrackPlacementResult::NoCompatibleTracks)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "NotEnoughReselectionOffers", "다시 배치할 수 있는 트랙 후보가 부족합니다.");
 			}
 			else if (bCanRecoverBlocked)
 			{
-				StatusText = NSLOCTEXT("MWTrackPlacement", "RecoverBlocked", "지면에 걸립니다 · 좌클릭 / Space로 대체 또는 건너뛰기");
+				StatusText = NSLOCTEXT("MWTrackPlacement", "RecoverBlocked", "양쪽 방향이 막혔습니다 · 좌클릭 / Space로 다시 선택");
 			}
 			else if (bBelowFloor || LastResult == EMWTrackPlacementResult::BelowPlacementFloor)
 			{
@@ -292,7 +301,7 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
 	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds, TOptional<FPointerSample>& OutPointer)
 {
-	if (bWaitingForReply || !AwaitedReplacementFor.IsNull())
+	if (bWaitingForReply || LastResult == EMWTrackPlacementResult::ReselectionOpened)
 	{
 		return false;
 	}
@@ -593,7 +602,7 @@ void UMWTrackPlacementViewComponent::HandleTurn()
 
 void UMWTrackPlacementViewComponent::HandleAccept()
 {
-	if (bWaitingForReply || bAccepted || !AwaitedReplacementFor.IsNull())
+	if (bWaitingForReply || bAccepted || LastResult == EMWTrackPlacementResult::ReselectionOpened)
 	{
 		return;
 	}
@@ -601,7 +610,7 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 	auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	const auto* PS = PC->GetPlayerState<AMWPlayerState>();
-	if (!PC->IsLocalController() || !GS || !PS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	if (!PC->IsLocalController() || !GS || !PS || PC->GetConstructionPresentationPhase() != EMWRoomPhase::TrackPlacement)
 	{
 		return;
 	}
@@ -672,17 +681,6 @@ void UMWTrackPlacementViewComponent::HandlePlacementReply(int32 ReplySessionId, 
 	}
 	bWaitingForReply = false;
 	bAccepted = Result == EMWTrackPlacementResult::Accepted;
-	if (Result == EMWTrackPlacementResult::ReplacementOffered)
-	{
-		// 회신이 PlayerState 복제보다 앞서면 옛 고스트에 새 클릭이 들어가지 않게 한다.
-		const auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
-		const auto* PS = PC->GetPlayerState<AMWPlayerState>();
-		const FGhost* Ghost = PS ? Ghosts.Find(PS->GetLobbyMemberId()) : nullptr;
-		if (Ghost && Ghost->Actor.IsValid())
-		{
-			AwaitedReplacementFor = TSoftClassPtr<AActor>(Ghost->Actor->GetClass());
-		}
-	}
 	LastResult = Result;
 }
 
@@ -705,6 +703,5 @@ void UMWTrackPlacementViewComponent::ResetView()
 	bAccepted = false;
 	bBelowFloor = false;
 	bCanRecoverBlocked = false;
-	AwaitedReplacementFor.Reset();
 	LastResult = EMWTrackPlacementResult::Accepted;
 }

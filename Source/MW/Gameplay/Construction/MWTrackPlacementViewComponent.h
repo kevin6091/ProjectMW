@@ -89,6 +89,5 @@ private:
 	bool bAccepted = false;
 	bool bBelowFloor = false;
 	bool bCanRecoverBlocked = false;
-	TSoftClassPtr<AActor> AwaitedReplacementFor;
 	EMWTrackPlacementResult LastResult = EMWTrackPlacementResult::Accepted;
 };

@@ -39,6 +39,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MW|Construction")
 	void RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId);
 	void RestoreArrivalInput();
+	EMWRoomPhase GetConstructionPresentationPhase() const;
 	void SetTrackSelectionBoard(AMWTrackSelectionBoard* Board);
 	void RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId);
 	void RequestTrackCursor(int32 SessionId, int32 Revision, bool bVisible, const FVector& Position);
