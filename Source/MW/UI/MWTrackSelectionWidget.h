@@ -7,7 +7,6 @@
 
 class UMWRemoteCursorOverlay;
 class UMWVehiclePlayerMarkerWidget;
-class UBorder;
 class UTextBlock;
 class UCanvasPanel;
 class UMWTrackConstructionComponent;
@@ -22,7 +21,6 @@ class MW_API UMWTrackSelectionWidget : public UUserWidget
 public:
 	void HandleSelectionReply(const FMWTrackSelectionReply& Reply);
 	void ConfirmOffer(int32 OfferId);
-	void PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered);
 	void ShowPlacementStatus(const FText& Status);
 	void ShowPlacementEndpoint(const FVector* WorldPosition);
 	void PulsePlacementEndpoint(const FVector& WorldPosition);
@@ -36,25 +34,10 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Text_SessionStatus;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
 
-	// 차량 선택 이름표와 같은 판면을 사용한다. 브러시 색은 기본색, 호버 색은 별도로 편집한다.
-	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
-	FSlateBrush OfferPlateBrush;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
-	FMargin OfferPlatePadding = FMargin(12.f, 3.f);
-
-	UPROPERTY(EditDefaultsOnly, Category = "Selection|Appearance")
-	FLinearColor OfferHoverColor = FLinearColor::FromSRGBColor(FColor(77, 204, 255));
-
 private:
-	UPROPERTY(Transient)
-	TMap<int32, TObjectPtr<UBorder>> OfferPlates;
-
-	UBorder* CreateOfferPlate();
 	// Actor마다 복제 도착 순서가 달라 초기 준비 중에만 상태를 재조회한다.
 	void TryBindState();
 	void Refresh();
-	FText GetOfferName(int32 OfferId) const;
 	UFUNCTION() void HandleStateChanged();
 
 	TWeakObjectPtr<UMWTrackConstructionComponent> BoundConstruction;

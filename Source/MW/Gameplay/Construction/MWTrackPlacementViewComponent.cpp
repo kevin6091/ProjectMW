@@ -11,6 +11,7 @@
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPresentationSettings.h"
 #include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "InputMappingContext.h"
 #include "MWGameplayTags.h"
@@ -24,13 +25,7 @@
 
 namespace
 {
-	constexpr double GhostSnapBlendSeconds = 0.12;
-	constexpr double GhostSnapSettleSeconds = 0.18;
-	constexpr double MaxSnapOvershoot = 38.0;
 	constexpr double SnapContactTolerance = 10.0;
-	constexpr float HeldSwayMaxAngleDegrees = 2.0f;
-	constexpr double HeldSwayDegreesAtOneWidthPerSecond = 4.0;
-	constexpr double HeldSwayMinAngleDegrees = 0.02;
 	const FLinearColor LocalColor(0.05f, 0.55f, 1.0f);
 	const FLinearColor SnapColor(0.1f, 1.0f, 0.35f);
 	const FLinearColor RemoteColors[] = {
@@ -135,7 +130,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 				{
 					auto& Previous = Ghost->HeldSway->PreviousPointer;
 					// 포커스·뷰포트 크기가 바뀌거나 스냅으로 이동할 때는 포인터 속도를 새로 잰다.
-					if (Pointer.IsSet() && Previous.IsSet() && Pointer->ViewportWidth == Previous->ViewportWidth
+					if (Pointer.IsSet() && Previous.IsSet() && Pointer->ViewportWidth > 0 && Pointer->ViewportWidth == Previous->ViewportWidth
 						&& !Ghost->bSnapped && !bWasBlending && !Ghost->SnapBlend.IsSet())
 					{
 						ScreenDelta = (Pointer->X - Previous->X) / Pointer->ViewportWidth;
@@ -159,7 +154,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 				}
 				Actor->SetActorLocationAndRotation(Pose.GetLocation(), Pose.GetRotation());
 			}
-			UpdateHeldSway(*Ghost, ScreenDelta, DeltaSeconds);
+			UpdateVisualPose(*Ghost, ScreenDelta, DeltaSeconds);
 		}
 	}
 
@@ -184,7 +179,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		ClearInput();
 	}
 
-	const TCHAR* Status = TEXT("끝점에 가까이 · Q/E 회전");
+	const TCHAR* Status = nullptr;
 	if (SessionId <= 0) Status = TEXT("배치 정보를 준비 중입니다.");
 	else if (!Session.bIsOpen) Status = TEXT("트랙 배치가 끝났습니다.");
 	else if (!bOwnReady) Status = TEXT("참가 정보를 준비 중입니다.");
@@ -196,7 +191,9 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{
-		FText StatusText = FText::FromString(Status);
+		FText StatusText = Status ? FText::FromString(Status)
+            : NSLOCTEXT("MWTrackPlacement", "ApproachAndRotate",
+                "끝점에 가까이 가면 스냅됩니다\nQ/E 키로 트랙을 회전할 수 있습니다");
 		if (Session.bIsOpen && bOwnReady && !bOwnPlaced)
 		{
 			if (LastResult == EMWTrackPlacementResult::ReselectionOpened)
@@ -409,8 +406,9 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
 		Blend.Target = Target;
 		Blend.ElapsedSeconds += DeltaSeconds;
-		const double Duration = bSnapped ? GhostSnapSettleSeconds : GhostSnapBlendSeconds;
-		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / Duration, 0.0, 1.0);
+		const auto* Presentation = GetDefault<UMWTrackPresentationSettings>();
+		const double Duration = bSnapped ? Presentation->SnapSettleSeconds : Presentation->BlendSeconds;
+		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / FMath::Max(Duration, UE_SMALL_NUMBER), 0.0, 1.0);
 		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
 		if (bSnapped)
 		{
@@ -418,7 +416,8 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 			const double TimeLeft = Progress - 1.0;
 			const double BackOut = 1.0 + TimeLeft * TimeLeft * (2.25 * TimeLeft + 1.25);
 			const double Gap = FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation());
-			Alpha = FMath::Min(BackOut, 1.0 + MaxSnapOvershoot / FMath::Max(Gap, MaxSnapOvershoot));
+			const double Overshoot = FMath::Max(0.0, Presentation->SnapOvershoot);
+			Alpha = FMath::Min(BackOut, 1.0 + Overshoot / FMath::Max3(Gap, Overshoot, static_cast<double>(UE_SMALL_NUMBER)));
 		}
 #if WITH_EDITOR
 		if ((bStartBlend || Progress >= 1.0) && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
@@ -492,7 +491,7 @@ void UMWTrackPlacementViewComponent::PulseSnapContact(const FGhost& Ghost, const
 	}
 }
 
-void UMWTrackPlacementViewComponent::UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const
+void UMWTrackPlacementViewComponent::UpdateVisualPose(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const
 {
 	if (!Ghost.HeldSway.IsSet())
 	{
@@ -505,23 +504,41 @@ void UMWTrackPlacementViewComponent::UpdateHeldSway(FGhost& Ghost, double Screen
 		return;
 	}
 
-	// 화면 폭당 이동 속도를 써서 창 크기와 프레임 시간에 따라 기울기가 달라지는 것을 줄인다.
+	const auto* Presentation = GetDefault<UMWTrackPresentationSettings>();
+	// 포인터가 움직인 프레임에만 기울고 멈추면 원래 자세로 돌아온다.
 	const double Speed = DeltaSeconds > UE_SMALL_NUMBER ? ScreenDelta / DeltaSeconds : 0.0;
-	const double DesiredAngle = Speed * HeldSwayDegreesAtOneWidthPerSecond;
-	const float TargetAngle = FMath::Abs(DesiredAngle) < HeldSwayMinAngleDegrees ? 0.0f
-		: static_cast<float>(FMath::Clamp(DesiredAngle, -HeldSwayMaxAngleDegrees, HeldSwayMaxAngleDegrees));
-	const float LastAngle = Sway.AngleDegrees;
-	Sway.AngleDegrees = FMath::FInterpConstantTo(LastAngle, TargetAngle, DeltaSeconds,
-		HeldSwayMaxAngleDegrees / static_cast<float>(GhostSnapBlendSeconds));
-	if (Sway.AngleDegrees == LastAngle)
+	const double DesiredAngle = Speed * Presentation->HeldSwayDegreesPerWidthPerSecond;
+	const float Limit = FMath::Max(0.f, Presentation->HeldSwayMaxDegrees);
+	const float Target = static_cast<float>(FMath::Clamp(DesiredAngle, -static_cast<double>(Limit), static_cast<double>(Limit)));
+	const float Angle = FMath::FInterpConstantTo(Sway.AngleDegrees, Target, DeltaSeconds,
+		Limit / static_cast<float>(FMath::Max(Presentation->BlendSeconds, UE_SMALL_NUMBER)));
+
+	double DisplayScale = 1.0;
+	if (Ghost.SnapBlend.IsSet() && Ghost.PreviousSnapTarget.IsSet() && Presentation->SnapSettleSeconds > 0.0)
+	{
+		const double Progress = FMath::Clamp(Ghost.SnapBlend->ElapsedSeconds / Presentation->SnapSettleSeconds, 0.0, 1.0);
+		const double Pulse = FMath::Sin(UE_PI * Progress);
+		DisplayScale = FMath::Lerp(1.0, FMath::Max(1.0, Presentation->SnapPeakScale), Pulse);
+	}
+	if (Angle == Sway.AngleDegrees && DisplayScale == Sway.DisplayScale)
 	{
 		return;
 	}
+	Sway.AngleDegrees = Angle;
+	Sway.DisplayScale = DisplayScale;
 
-	const FQuat Tilt(Sway.Axis, FMath::DegreesToRadians(Sway.AngleDegrees));
-	// 루트와 소켓은 그대로 두고 와이어프레임의 위치와 회전만 원래 자세에서 계산한다.
-	const FVector Location = Sway.Center + Tilt.RotateVector(Sway.RestPose.GetLocation() - Sway.Center);
-	Wireframes->SetRelativeLocationAndRotation(Location, Tilt * Sway.RestPose.GetRotation());
+	const FQuat Tilt(Sway.Axis, FMath::DegreesToRadians(Angle));
+	// 크기와 기울기는 와이어프레임에만 적용한다. 확정 좌표와 연결점은 고스트의 기존 루트를 사용한다.
+	const FVector Location = Sway.Center + Tilt.RotateVector((Sway.RestPose.GetLocation() - Sway.Center) * DisplayScale);
+	Wireframes->SetRelativeTransform(FTransform(Tilt * Sway.RestPose.GetRotation(), Location,
+		Sway.RestPose.GetScale3D() * DisplayScale));
+#if WITH_EDITOR
+	if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+	{
+		UE_LOG(LogTemp, Display, TEXT("MWTrackGhostVisual world=%s ghost=%s sway_deg=%.2f wire_scale=%.4f"),
+			*GetWorld()->GetOutermost()->GetName(), *GetNameSafe(Ghost.Actor.Get()), Angle, DisplayScale);
+	}
+#endif
 }
 
 void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const

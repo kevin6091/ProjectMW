@@ -7,7 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Gameplay/Construction/MWTrackSelectionExposure.h"
-#include "UI/MWTrackSelectionWidget.h"
+#include "Gameplay/Construction/MWTrackPresentationSettings.h"
 #include "UI/Cursor/MWCursorProjection.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -60,8 +60,10 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = false;
 	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Root")));
+	SelectionStage = CreateDefaultSubobject<USceneComponent>(TEXT("SelectionStage"));
+	SelectionStage->SetupAttachment(RootComponent);
 	SelectionBackdrop = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SelectionBackdrop"));
-	SelectionBackdrop->SetupAttachment(RootComponent);
+	SelectionBackdrop->SetupAttachment(SelectionStage);
 	SelectionBackdrop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SelectionBackdrop->SetGenerateOverlapEvents(false);
 	SelectionBackdrop->SetCanEverAffectNavigation(false);
@@ -71,10 +73,12 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 	for (int32 Index = 0; Index < MWTrackSelection::OfferCount; ++Index)
 	{
 		auto* Anchor = CreateDefaultSubobject<USceneComponent>(*FString::Printf(TEXT("Anchor%d"), Index));
-		Anchor->SetupAttachment(RootComponent);
+		Anchor->SetupAttachment(SelectionStage);
 		SlotAnchors.Add(Anchor);
 		auto* Hit = CreateDefaultSubobject<UBoxComponent>(*FString::Printf(TEXT("OfferHit%d"), Index));
 		Hit->SetupAttachment(Anchor);
+		// 호버 확대는 미리보기만 움직이고 클릭 범위의 크기는 바꾸지 않는다.
+		Hit->SetAbsolute(false, false, true);
 		Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Hit->SetCollisionResponseToAllChannels(ECR_Ignore);
 		Hit->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -93,12 +97,15 @@ AMWTrackSelectionBoard::AMWTrackSelectionBoard()
 void AMWTrackSelectionBoard::BeginPlay()
 {
 	Super::BeginPlay();
+	// 이전 레벨에 저장된 배경 슬롯의 로컬 배치를 새 전시 루트에서도 사용한다.
+	SelectionBackdrop->AttachToComponent(SelectionStage, FAttachmentTransformRules::KeepRelativeTransform);
 	for (int32 Index = 0; Index < SlotAnchors.Num(); ++Index)
 	{
 		const int32 Row = Index / MWTrackSelection::Columns;
 		const int32 Column = Index % MWTrackSelection::Columns;
 		const FVector Slot((Row - (MWTrackSelection::Rows - 1) * 0.5) * RowSpacing,
 			((MWTrackSelection::Columns - 1) * 0.5 - Column) * ColumnSpacing, BoardHeight);
+		SlotAnchors[Index]->AttachToComponent(SelectionStage, FAttachmentTransformRules::KeepRelativeTransform);
 		SlotAnchors[Index]->SetRelativeLocation(Slot * LayoutScale);
 	}
 	Camera->SetRelativeLocation(Camera->GetRelativeLocation() * LayoutScale);
@@ -141,12 +148,8 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	const auto* PC = Viewer.IsValid() ? Viewer.Get() : Cast<AMWGameplayPlayerController>(GetWorld()->GetFirstPlayerController());
 	if (PC && PC->GetConstructionPresentationPhase() == EMWRoomPhase::PreparingConstruction)
 	{
-		// 전시 화면은 열을 수평으로 보고, 선택 후 빈 칸이 생겨도 카메라 범위는 고정한다.
-		OutResult.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
-		const FVector Extent = SelectionExtent * LayoutScale;
-		const FBox LocalBounds(-Extent, Extent);
-		const FVector Center = GetBuildOrigin();
-		FrameBounds(OutResult, LocalBounds.TransformBy(FTransform(GetActorQuat(), Center)), Aspect, 0.74);
+		FrameSelection(OutResult, PC);
+		OutResult.Location += StageOffset;
 		return;
 	}
 	if (!bUseTopDownPlacementCamera || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
@@ -173,6 +176,43 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	FrameBounds(OutResult, Bounds.ExpandBy(FVector(400.0, 400.0, 120.0) * Session.LayoutScale), Aspect, 0.9);
 }
 
+void AMWTrackSelectionBoard::FrameSelection(FMinimalViewInfo& View, const APlayerController* PC) const
+{
+	int32 Width = 0, Height = 0;
+	if (PC) PC->GetViewportSize(Width, Height);
+	const double Aspect = Width > 0 && Height > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
+	View.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
+	const FVector Extent = SelectionExtent * LayoutScale;
+	const FBox LocalBounds(-Extent, Extent);
+	FrameBounds(View, LocalBounds.TransformBy(FTransform(GetActorQuat(), GetBuildOrigin())), Aspect, 0.74);
+}
+
+void AMWTrackSelectionBoard::UpdateSelectionStage(const FMWTrackPlacementSession& Course, const APlayerController& PC)
+{
+	FMinimalViewInfo View;
+	Camera->GetCameraView(0.0f, View);
+	FrameSelection(View, &PC);
+
+	const double BoardWidth = SelectionExtent.Y * LayoutScale * 2.0;
+	double Distance = BoardWidth;
+	if (Course.CourseBounds.IsValid)
+	{
+		FBox CourseBounds = Course.CourseBounds;
+		CourseBounds.Min.Z = FMath::Min(CourseBounds.Min.Z, Course.Ground.FloorZ);
+		const FBox InCamera = CourseBounds.TransformBy(FTransform(View.Rotation, View.Location).Inverse());
+		const double FrustumWidth = FMath::Max(0.0, InCamera.Max.X) * FMath::Tan(FMath::DegreesToRadians(View.FOV * 0.5));
+		// 코스의 가장 먼 깊이까지 포함해서 출발점과 설치된 도로를 전시 카메라의 왼쪽 밖으로 보낸다.
+		Distance = FMath::Max(Distance, InCamera.Max.Y + FrustumWidth + BoardWidth);
+	}
+
+	const FVector Offset = FRotationMatrix(View.Rotation).GetUnitAxis(EAxis::Y) * Distance;
+	if (!Offset.Equals(StageOffset))
+	{
+		StageOffset = Offset;
+		SelectionStage->SetWorldLocation(GetActorLocation() + StageOffset);
+	}
+}
+
 bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session)
 {
 	auto* Preload = ULocalPlayer::GetSubsystem<UMWTrackPreviewPreload>(Viewer->GetLocalPlayer());
@@ -181,6 +221,8 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		return false;
 	}
 	ClearOffers();
+	const auto* Settings = GetDefault<UMWTrackPresentationSettings>();
+	auto* SurfaceMaterial = Settings->CandidateSurfaceMaterial.LoadSynchronous();
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
 		if (Offer.ClaimedByMemberId != INDEX_NONE)
@@ -196,7 +238,7 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		FActorSpawnParameters Params;
 		Params.Owner = this;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		const auto* Anchor = SlotAnchors[Offer.BoardSlotIndex].Get();
+		auto* Anchor = SlotAnchors[Offer.BoardSlotIndex].Get();
 		AActor* Track = GetWorld()->SpawnActor<AActor>(TrackClass, Anchor->GetComponentTransform(), Params);
 		if (!Track) { ClearOffers(); return false; }
 		Track->SetReplicates(false);
@@ -206,22 +248,28 @@ bool AMWTrackSelectionBoard::BuildOffers(const FMWTrackSelectionSession& Session
 		{
 			Runtime->SetTrackPreview(*Track, true);
 		}
-		// 판정은 전시 영역의 Box에 맡기고 보이는 와이어프레임의 중심을 전시 칸에 맞춘다.
-		const FBox VisualBounds = MWTrackPreview::ShowWireframes(*Track);
+		// 판정은 전시 영역의 Box에 맡기고 표면과 와이어프레임 전체를 전시 칸 중앙에 맞춘다.
+		const FBox VisualBounds = MWTrackPreview::ShowSelectionPreview(*Track, SurfaceMaterial);
 		if (!VisualBounds.IsValid)
 		{
-			UE_LOG(LogDefault, Warning, TEXT("%s에 전시할 Wireframes 메시가 없습니다."), *GetNameSafe(Track));
+			UE_LOG(LogDefault, Warning, TEXT("%s에 전시할 메시가 없습니다."), *GetNameSafe(Track));
 			Track->Destroy();
 			continue;
 		}
 		Offers.Add(Offer.OfferId, Track);
 		// 큰 트랙도 이 칸 안에서 선택할 수 있도록 전시 Actor의 크기만 조정한다.
 		const FVector Extent = VisualBounds.TransformBy(Anchor->GetComponentTransform().Inverse()).GetExtent();
-		const FVector Fit = SlotExtent * LayoutScale / Extent.ComponentMax(FVector(1.0));
+		// 한 바퀴를 회전해도 이웃 칸으로 침범하지 않도록 수평 회전 반경으로 크기를 제한한다.
+		const double Radius = Extent.Size2D();
+		const FVector SweepExtent(Radius, Radius, Extent.Z);
+		const double PeakScale = FMath::Max(1.0, Settings->CandidateHoverPeakScale);
+		const FVector Fit = SlotExtent * LayoutScale / (PeakScale * SweepExtent.ComponentMax(FVector::OneVector));
 		const double Scale = FMath::Min(1.0, Fit.GetMin());
 		const FVector VisualOffset = VisualBounds.GetCenter() - Track->GetActorLocation();
 		Track->SetActorScale3D(Track->GetActorScale3D() * Scale);
 		Track->SetActorLocation(Anchor->GetComponentLocation() - VisualOffset * Scale);
+		Track->AttachToComponent(Anchor, FAttachmentTransformRules::KeepWorldTransform);
+		MWTrackPreview::SetWireframeColor(*Track, Settings->CandidateTint);
 		SlotHitAreas[Offer.BoardSlotIndex]->SetBoxExtent(Extent * Scale + FVector(20 * LayoutScale));
 		SlotHitAreas[Offer.BoardSlotIndex]->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
@@ -271,11 +319,25 @@ void AMWTrackSelectionBoard::ClearOffers()
 	for (const auto& Hit : SlotHitAreas) Hit->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SessionId = Revision = 0;
 	LocalHover = SentHover = INDEX_NONE;
+	HoveredOffers.Reset();
+	HoverPulseElapsed.Reset();
+	CandidateYaw = 0.0;
+	for (const auto& Anchor : SlotAnchors)
+	{
+		Anchor->SetRelativeRotation(FRotator::ZeroRotator);
+		Anchor->SetRelativeScale3D(FVector::OneVector);
+	}
 }
 
 bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 {
-	return Viewer.IsValid() && MWCursorProjection::SampleWorldPlane(*Viewer, GetBuildOrigin(), GetActorUpVector(), OutPosition);
+	if (!Viewer.IsValid() || !MWCursorProjection::SampleWorldPlane(*Viewer, GetBuildOrigin() + StageOffset, GetActorUpVector(), OutPosition))
+	{
+		return false;
+	}
+	// 커서의 좌표 계약은 기존 전시 원점을 유지한다. 수신 창이 자기 카메라의 분리 거리만 적용한다.
+	OutPosition -= StageOffset;
+	return true;
 }
 
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const
@@ -357,6 +419,7 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 		// 선택판의 카메라는 배치에서도 쓴다. 카메라와 전시 Actor의 수명을 분리한다.
 		return;
 	}
+	UpdateSelectionStage(GS->GetConstructionComponent()->GetPlacementSession(), *Local);
 	if (!Viewer.IsValid())
 	{
 		Viewer = Local;
@@ -392,7 +455,7 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 			LastCursorTime = Now;
 		}
 	}
-	RefreshMarkers(Session);
+	RefreshOffers(*GS, Session, DeltaSeconds);
 }
 
 FVector AMWTrackSelectionBoard::GetBuildOrigin() const
@@ -401,9 +464,37 @@ FVector AMWTrackSelectionBoard::GetBuildOrigin() const
 	return GetActorTransform().TransformPosition(FVector(0, 0, BoardHeight * LayoutScale));
 }
 
-void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Session)
+FVector AMWTrackSelectionBoard::ProjectSelectionCursor(const FVector& BoardWorldPosition) const
 {
-	auto* Widget = Cast<UMWTrackSelectionWidget>(Viewer->TrackSelectionWidget);
+	return BoardWorldPosition + StageOffset;
+}
+
+void AMWTrackSelectionBoard::RefreshOffers(const AMWGameplayGameState& GameState,
+	const FMWTrackSelectionSession& Session, float DeltaSeconds)
+{
+	const auto* Settings = GetDefault<UMWTrackPresentationSettings>();
+	TSet<int32> CurrentHover;
+	if (Session.bIsOpen && LocalHover != INDEX_NONE)
+	{
+		CurrentHover.Add(LocalHover);
+	}
+	for (const APlayerState* Player : GameState.PlayerArray)
+	{
+		const auto* Remote = Cast<AMWPlayerState>(Player);
+		if (!Session.bIsOpen || !Remote || Remote == Viewer->GetPlayerState<AMWPlayerState>())
+		{
+			continue;
+		}
+		// 원격 커서가 가리킨 후보도 밝힌다. 라운드나 후보가 바뀌면 이전 상태는 무시한다.
+		const auto& Selection = Remote->GetPlayerConstructionComponent()->GetSelection();
+		if (!Selection.bConfirmed && Selection.SelectionSessionId == SessionId &&
+			Selection.OffersRevision == Revision && Selection.HoveredOfferId != INDEX_NONE)
+		{
+			CurrentHover.Add(Selection.HoveredOfferId);
+		}
+	}
+	CandidateYaw = FMath::Fmod(CandidateYaw + DeltaSeconds * FMath::Max(0.0, Settings->CandidateDegreesPerSecond), 360.0);
+	const FRotator Rotation(0.0, CandidateYaw, 0.0);
 	for (const FMWTrackOffer& Offer : Session.Offers)
 	{
 		AActor* Track = Offers.FindRef(Offer.OfferId);
@@ -421,14 +512,35 @@ void AMWTrackSelectionBoard::RefreshMarkers(const FMWTrackSelectionSession& Sess
 			continue;
 		}
 
-		// 같은 전시 칸의 윗면에 이름표를 붙여 카메라와 조각 크기가 변해도 함께 움직이게 한다.
-		// 액터 생성과 첫 렌더는 다른 프레임일 수 있다. 조각을 한 번 그린 뒤 이름표를 연다.
-		if (Widget && Track->GetLastRenderTime() > 0.f)
+		// 조각과 클릭 상자가 같은 전시 앵커를 따라 회전해 선택 범위가 분리되지 않는다.
+		USceneComponent* Anchor = SlotAnchors[Offer.BoardSlotIndex];
+		Anchor->SetRelativeRotation(Rotation);
+		const bool bHovered = CurrentHover.Contains(Offer.OfferId);
+		if (bHovered != HoveredOffers.Contains(Offer.OfferId))
 		{
-			const FVector Top = Hit->GetComponentLocation() + Hit->GetUpVector() * Hit->GetScaledBoxExtent().Z;
-			Widget->PositionOfferLabel(Offer.OfferId, Top, Offer.OfferId == LocalHover);
+			MWTrackPreview::SetWireframeColor(*Track, bHovered
+				? Settings->HoveredCandidateTint : Settings->CandidateTint);
+			if (bHovered && Settings->CandidateHoverSeconds > 0.0)
+			{
+				// 포인터 진입 때만 한 번 커졌다 돌아온다. 계속 가리켜도 박동하지 않는다.
+				HoverPulseElapsed.Add(Offer.OfferId, 0.0);
+			}
+		}
+
+		if (double* Elapsed = HoverPulseElapsed.Find(Offer.OfferId))
+		{
+			*Elapsed += DeltaSeconds;
+			const double Alpha = FMath::Clamp(*Elapsed / Settings->CandidateHoverSeconds, 0.0, 1.0);
+			const double Pulse = Alpha < 1.0 ? FMath::Sin(UE_DOUBLE_PI * Alpha) : 0.0;
+			const double Scale = FMath::Lerp(1.0, FMath::Max(1.0, Settings->CandidateHoverPeakScale), Pulse);
+			Anchor->SetRelativeScale3D(FVector(Scale));
+			if (Alpha >= 1.0)
+			{
+				HoverPulseElapsed.Remove(Offer.OfferId);
+			}
 		}
 	}
+	HoveredOffers = MoveTemp(CurrentHover);
 }
 
 void AMWTrackSelectionBoard::EndPlay(const EEndPlayReason::Type Reason)

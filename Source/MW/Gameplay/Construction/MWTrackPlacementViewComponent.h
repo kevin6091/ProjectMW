@@ -46,6 +46,7 @@ private:
 		FVector Axis;
 		TOptional<FPointerSample> PreviousPointer;
 		float AngleDegrees = 0.0f;
+		double DisplayScale = 1.0;
 	};
 
 	struct FGhost
@@ -73,7 +74,7 @@ private:
 	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds,
 		double FreeMoveAlpha, bool bTurned = false) const;
 	void PulseSnapContact(const FGhost& Ghost, const FTransform& Target) const;
-	void UpdateHeldSway(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const;
+	void UpdateVisualPose(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;

@@ -8,7 +8,9 @@
 class UCameraComponent;
 class UBoxComponent;
 class UStaticMeshComponent;
+class AMWGameplayGameState;
 class AMWGameplayPlayerController;
+struct FMWTrackPlacementSession;
 
 // 실제 트랙 BP를 로컬 월드에 전시한다. 설치된 코스 Actor와는 별도 수명이다.
 UCLASS()
@@ -26,6 +28,7 @@ public:
 	int32 FindHoveredOffer() const;
 	bool GetCursorPosition(FVector& OutPosition) const;
 	FVector GetBuildOrigin() const;
+	FVector ProjectSelectionCursor(const FVector& BoardWorldPosition) const;
 	double GetLayoutScale() const { return LayoutScale; }
 
 protected:
@@ -41,6 +44,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Selection")
 	TObjectPtr<UStaticMeshComponent> SelectionBackdrop;
 
+	UPROPERTY(VisibleAnywhere, Category="Selection") TObjectPtr<USceneComponent> SelectionStage;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UCameraComponent> Camera;
 	// 레벨에 저장된 이전 3칸 배열이 새 생성자에서 만든 6칸을 덮어쓰지 않게 한다.
 	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> SlotAnchors;
@@ -49,12 +53,18 @@ protected:
 private:
 	bool BuildOffers(const FMWTrackSelectionSession& Session);
 	void ClearOffers();
-	void RefreshMarkers(const FMWTrackSelectionSession& Session);
+	void FrameSelection(FMinimalViewInfo& View, const APlayerController* PC) const;
+	void UpdateSelectionStage(const FMWTrackPlacementSession& Course, const APlayerController& PC);
+	void RefreshOffers(const AMWGameplayGameState& GameState, const FMWTrackSelectionSession& Session, float DeltaSeconds);
 	UPROPERTY(Transient) TMap<int32, TObjectPtr<AActor>> Offers;
 	TWeakObjectPtr<AMWGameplayPlayerController> Viewer;
 	int32 SessionId = 0;
 	int32 Revision = 0;
+	FVector StageOffset = FVector::ZeroVector;
+	double CandidateYaw = 0.0;
 	int32 LocalHover = INDEX_NONE;
+	TSet<int32> HoveredOffers;
+	TMap<int32, double> HoverPulseElapsed;
 	int32 SentHover = INDEX_NONE;
 	double LastHoverTime = -1;
 	double LastCursorTime = -1;

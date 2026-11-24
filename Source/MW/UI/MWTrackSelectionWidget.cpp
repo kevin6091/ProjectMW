@@ -1,15 +1,13 @@
 #include "UI/MWTrackSelectionWidget.h"
 
-#include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
-#include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
-#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
@@ -56,7 +54,6 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	}
 	BoundConstruction.Reset();
 	BoundPlayers.Reset();
-	OfferPlates.Reset();
 	RemoteCursors = nullptr;
 	PointerClass = nullptr;
 	if (Canvas_Cursors) Canvas_Cursors->ClearChildren();
@@ -75,8 +72,6 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Status)
 	{
 		bShowingPlacement = true;
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
-		// 선택 후보 이름표만 감춘다. 같은 캔버스의 참가자 포인터는 배치 단계에도 필요하다.
-		for (const auto& Pair : OfferPlates) Pair.Value->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	if (!Text_SessionStatus->GetText().EqualTo(Status))
 	{
@@ -213,30 +208,12 @@ void UMWTrackSelectionWidget::TryBindState()
 	}
 }
 
-FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
-{
-	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
-		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
-	if (!Offer) return FText::FromString(TEXT("트랙 조각"));
-	if (const auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
-	{
-		const FText Name = Runtime->GetTrackDisplayName(Offer->TrackClass);
-		if (!Name.IsEmpty()) return Name;
-	}
-	return FText::Format(NSLOCTEXT("MWTrackSelection", "UnnamedOffer", "트랙 {0}"), FText::AsNumber(OfferId));
-}
-
 void UMWTrackSelectionWidget::Refresh()
 {
 	if (bShowingPlacement) return;
 	const auto Session = BoundConstruction.IsValid() ? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
 	if (Session.SelectionSessionId != DisplayedSession.SelectionSessionId || Session.OffersRevision != DisplayedSession.OffersRevision)
 	{
-		for (const auto& Pair : OfferPlates)
-		{
-			Pair.Value->RemoveFromParent();
-		}
-		OfferPlates.Reset();
 		bRequestPending = false;
 		AcknowledgedOffer = INDEX_NONE;
 		RequestError = FText::GetEmpty();
@@ -250,26 +227,6 @@ void UMWTrackSelectionWidget::Refresh()
 	const bool bOwnConfirmed = OwnSelection.SelectionSessionId == Session.SelectionSessionId
 		&& OwnSelection.OffersRevision == Session.OffersRevision && OwnSelection.bConfirmed;
 
-	// 서버가 점유를 확정하면 전시 액터와 함께 이름표도 선택 화면에서 제거한다.
-	for (const FMWTrackOffer& Offer : Session.Offers)
-	{
-		if (Offer.ClaimedByMemberId != INDEX_NONE)
-		{
-			if (UBorder* Plate = OfferPlates.FindRef(Offer.OfferId))
-			{
-				Plate->RemoveFromParent();
-				OfferPlates.Remove(Offer.OfferId);
-			}
-			continue;
-		}
-		auto& Plate = OfferPlates.FindOrAdd(Offer.OfferId);
-		if (!Plate)
-		{
-			Plate = CreateOfferPlate();
-		}
-		UTextBlock* Label = CastChecked<UTextBlock>(Plate->GetContent());
-		Label->SetText(GetOfferName(Offer.OfferId));
-	}
 	if (bOwnConfirmed) bRequestPending = false;
 	FString Status = Session.bIsOpen ? TEXT("좌클릭 · 트랙 선택") : TEXT("참가자 대기 중");
 	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Failed)
@@ -282,57 +239,6 @@ void UMWTrackSelectionWidget::Refresh()
 		? NSLOCTEXT("MWTrackSelection", "PlacementReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택")
 		: FText::FromString(Status);
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : StatusText);
-}
-
-UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
-{
-	UBorder* Plate = WidgetTree->ConstructWidget<UBorder>();
-	// 판면 색은 한 곳에서만 곱해야 호버 시 원본 텍스처의 명암이 유지된다.
-	FSlateBrush Brush = OfferPlateBrush;
-	Brush.TintColor = FLinearColor::White;
-	Plate->SetBrush(Brush);
-	Plate->SetBrushColor(OfferPlateBrush.TintColor.GetSpecifiedColor());
-	Plate->SetPadding(OfferPlatePadding);
-	Plate->SetVisibility(ESlateVisibility::Collapsed);
-
-	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	Label->SetFont(Text_SessionStatus->GetFont());
-	Label->SetColorAndOpacity(FLinearColor::White);
-	Label->SetJustification(ETextJustify::Center);
-	Plate->SetContent(Label);
-
-	auto* PlateSlot = Canvas_Cursors->AddChildToCanvas(Plate);
-	PlateSlot->SetAlignment(FVector2D(.5, 1));
-	PlateSlot->SetAutoSize(true);
-	return Plate;
-}
-
-void UMWTrackSelectionWidget::PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered)
-{
-	UBorder* Plate = OfferPlates.FindRef(OfferId);
-	if (!Plate || bShowingPlacement)
-	{
-		return;
-	}
-
-	FVector2D Screen;
-	if (!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(GetOwningPlayer(), WorldPosition, Screen, true))
-	{
-		Plate->SetVisibility(ESlateVisibility::Collapsed);
-		return;
-	}
-
-	const FLinearColor Color = bHovered ? OfferHoverColor : OfferPlateBrush.TintColor.GetSpecifiedColor();
-	if (Plate->GetBrushColor() != Color)
-	{
-		Plate->SetBrushColor(Color);
-	}
-	auto* LabelSlot = CastChecked<UCanvasPanelSlot>(Plate->Slot);
-	if (!LabelSlot->GetPosition().Equals(Screen))
-	{
-		LabelSlot->SetPosition(Screen);
-	}
-	Plate->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UMWTrackSelectionWidget::ConfirmOffer(int32 OfferId)
@@ -412,7 +318,9 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 			const auto Sample = PS->GetPlayerConstructionComponent()->GetCursor();
 			if (!Sample.bIsVisible || Sample.SelectionSessionId != DisplayedSession.SelectionSessionId ||
 				Sample.OffersRevision != DisplayedSession.OffersRevision) continue;
-			WorldPosition = Sample.WorldPosition;
+			const auto* Board = Cast<AMWTrackSelectionBoard>(PC->GetViewTarget());
+			if (!Board) continue;
+			WorldPosition = Board->ProjectSelectionCursor(Sample.WorldPosition);
 			StreamId = Sample.SelectionSessionId;
 		}
 		FVector2D Position;
