@@ -439,6 +439,30 @@ bool FMWDriveWallGroundContactTest::RunTest(const FString& Parameters)
 	Scene.Floor->GetOwner()->Destroy();
 	Scene.Step(StepTime, StepTime);
 	TestFalse(TEXT("A wall without a floor does not count as ground"), Scene.Movement->IsGrounded());
+
+	// 안쪽으로 줄인 스윕도 막히지만 차체 아래의 바닥은 이어지는 상황을 만든다.
+	Scene.Floor = Scene.AddBox(FVector(0, 0, -50), FVector(1000, 1000, 50));
+	Scene.Reset(Start);
+	Scene.Step(StepTime, StepTime);
+	UBoxComponent* SideBlocker = Scene.AddBox(FVector(0, 69, 30), FVector(500, 20, 20));
+	SideBlocker->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Scene.Step(StepTime, StepTime);
+	TestTrue(TEXT("Continuous floor supports the vehicle when both box sweeps are blocked"), Scene.Movement->IsGrounded());
+	TestTrue(TEXT("Fallback preserves ground clearance"),
+		FMath::IsNearlyEqual(Scene.Vehicle->GetActorLocation().Z, Start.Z, 0.02));
+
+	// 기존 스윕 거리보다 조금 멀어진 연속 노면까지는 보조 검사로 다시 따라간다.
+	Scene.Floor->GetOwner()->SetActorLocation(FVector(0, 0, -56));
+	Scene.Step(StepTime, StepTime);
+	TestTrue(TEXT("Fallback retains nearby continuous ground beyond the box sweep"), Scene.Movement->IsGrounded());
+	TestTrue(TEXT("Fallback uses the existing downward clearance correction"), Scene.Vehicle->GetActorLocation().Z < Start.Z);
+
+	// 중앙에 틈이 생기면 앞뒤 지점만으로 접지를 이어 가지 않는다.
+	Scene.Floor->GetOwner()->Destroy();
+	Scene.AddBox(FVector(70, 0, -56), FVector(50, 1000, 50));
+	Scene.AddBox(FVector(-70, 0, -56), FVector(50, 1000, 50));
+	Scene.Step(StepTime, StepTime);
+	TestFalse(TEXT("Fallback does not bridge a gap under the vehicle"), Scene.Movement->IsGrounded());
 	return true;
 }
 
