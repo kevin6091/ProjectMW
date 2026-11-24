@@ -290,7 +290,7 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 	if (bShowingPlacement)
 	{
 		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
-		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen)
+		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen && MWCursorProjection::HasActiveViewportPointer(*PC))
 		{
 			// 각 창의 해상도와 카메라가 달라도 같은 트랙 위치에 포인터를 표시하도록 배치 평면의 월드 좌표를 보낸다.
 			FVector Point = FVector::ZeroVector;

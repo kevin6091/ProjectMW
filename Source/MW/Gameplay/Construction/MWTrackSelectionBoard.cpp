@@ -485,7 +485,8 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 			SentHover = LocalHover;
 			LastHoverTime = Now;
 		}
-		if (Now - LastCursorTime >= .05)
+		// 포커스 전환은 송신 공백으로 처리한다. 실제 이탈은 활성 창의 숨김 표본으로 전달한다.
+		if (Now - LastCursorTime >= .05 && MWCursorProjection::HasActiveViewportPointer(*Viewer))
 		{
 			FVector Position = FVector::ZeroVector;
 			const bool bVisible = GetCursorPosition(Position);

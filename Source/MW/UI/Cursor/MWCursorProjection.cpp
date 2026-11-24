@@ -10,12 +10,26 @@
 #include "Slate/SceneViewport.h"
 #include "UnrealClient.h"
 
+namespace
+{
+	const FSceneViewport* FindActivePointerViewport(const APlayerController& PC)
+	{
+		const auto* LP = PC.GetLocalPlayer();
+		const auto* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->GetGameViewport() : nullptr;
+		return PC.bShowMouseCursor && Viewport && Viewport->IsForegroundWindow() ? Viewport : nullptr;
+	}
+}
+
+bool MWCursorProjection::HasActiveViewportPointer(const APlayerController& PC)
+{
+	return FindActivePointerViewport(PC) != nullptr;
+}
+
 bool MWCursorProjection::SampleViewportPointer(const APlayerController& PC, FVector2D& OutPosition)
 {
 	// 로딩 가림 중의 숨은 포인터와 비활성 PIE 창의 포인터는 입력으로 쓰지 않는다.
-	const auto* LP = PC.GetLocalPlayer();
-	const FSceneViewport* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->GetGameViewport() : nullptr;
-	if (!PC.bShowMouseCursor || !Viewport || !Viewport->IsForegroundWindow()) return false;
+	const FSceneViewport* Viewport = FindActivePointerViewport(PC);
+	if (!Viewport) return false;
 
 	const FIntPoint Size = Viewport->GetSizeXY();
 	if (Size.X <= 0 || Size.Y <= 0) return false;
