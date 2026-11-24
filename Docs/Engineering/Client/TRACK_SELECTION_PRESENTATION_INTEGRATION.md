@@ -58,3 +58,13 @@
 - 최종 빌드에서 Cua Driver로 고른 후보 번호는 P1 1번, P2 6번, P3 2번이었다. 서버는 설치 조각 2·3·4를 승인했다. 설치 클릭 시점 재판정 후 끝점 오차가 모두 0cm였고 세 창 모두 실제 출발선에서 Racing에 진입했다. 1라운드 통과는 검증 보조로 실제 체크포인트와 결승 트리거를 거쳤다. 최종 2라운드 선택 화면에서도 시작 조각의 화면 X 최댓값이 −698·−819·−668px로 전부 왼쪽 화면 밖이었다.
 - 한 프레임에 커서를 크게 옮기고 바로 클릭한 실행에서는 시각 보간 중인 고스트와 클릭 시 서버 검사를 통과한 위치 사이 거리가 로그에 남았다. 입력 직후에도 보간 완료를 기다리지 않고 재판정해 설치하는 기존 동작이다. 세 창 동시 실행 중 GPU 메모리 초과 안내가 캡처에 표시됐다. [선택·호버·출발선 비교](Images/TrackSelectionSurfaceHoverAndRacing.jpg) · [정량 검증 로그](TRACK_SELECTION_PRESENTATION_PIE_LOG.txt)
 - 반투명 머티리얼 1개를 UVCS **cs:77**에 별도 체크인했다. `cm cat`으로 받은 서버 파일과 로컬 파일의 SHA-256은 모두 `f942ec4cb059451b6432c91c53eb6e723f39a532b98a62be54e33bcb30859ee3`이다. 팀원은 이 Git 변경과 cs:77의 `Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface.uasset`을 함께 받아야 한다. Git 원격/PR과 패키지에는 변경을 적용하지 않았다.
+
+## 배치 첫 접점에서 섬광을 시작하고 선택 표면을 더 투명하게 조정
+
+- **원본 기준.** Switch 60fps 영상 00:50.8993에서 곡선 고스트가 끝점으로 접근하고 다음 프레임 00:50.9160에서 접점과 불꽃이 함께 보인다. 멀티 60fps 영상에서도 01:28.0833의 자유 고스트가 다음 01:28.1000 프레임에 붙고 불꽃이 보인다. 카메라·각도·투시가 달라 원본의 고스트 배율과 오퍼시티 파라미터는 영상에서 판독할 수 없다.
+- **스냅 타이밍.** [MWTrackPlacementViewComponent](../../../Source/MW/Gameplay/Construction/MWTrackPlacementViewComponent.cpp)의 `BlendGhostPose`가 기존 보간에서 처음 끝점 거리에 도달했을 때 정확한 연결 자세를 반환하고, 이 프레임에 `PulseSnapContact`를 한 번 호출한다. `UpdateVisualPose`는 같은 프레임에 기존 최대 배율을 사용하고 이어서 1.0으로 돌아온다. 현재 접점과 확대 시간은 기존 설정을 사용한다. `HandleAccept`의 클릭 순간 재판정과 서버의 설치 판정은 그대로다.
+- **재질.** `M_TrackSelectionSurface` Material Editor의 `SurfaceOpacity` 기본값만 0.37에서 0.25로 낮췄다. 선택판 3개 창에서 표면 아래의 파란 판이 더 보이고 와이어프레임도 같이 표시됐다. 수정 전후 비교는 같은 테마의 유사한 후보를 사용했으며 랜덤 후보와 회전 자세가 서로 다르다. [원본·0.37·0.25 비교](Images/TrackSelectionSurfaceOpacityComparison.jpg)
+- **정상 속도 3인 PIE.** 뷰포트는 P1 794×514 (0.4755), P2 1099×517 (0.4782), P3 1384×393 (0.4440)이다. P1 곡선이 스냅된 시점에서 세 창 각각 접점, 위치 보간 비율 1.0000, 와이어프레임 크기 1.1000이 같은 게임 프레임에 기록됐다. 보간 경과 시간은 세 창 모두 0.1214초였다.
+- **프레임 비교 캡처.** Cua Driver가 지정한 호스트 창에서 접근과 접점 전후를 연속 캡처했다. 이 캡처에서만 게임 속도를 0.12배로 낮춰 가시 구간을 늘렸다. 원격 두 창에서 0.1159 게임 초에 접점과 1.1000배를 기록했고 0.2615 게임 초에 1.0000배로 돌아왔다. 캡처는 창의 샘플이며 화면에서 접점 섬광 시작 프레임을 단독으로 판독하기 어려워 각 창의 발동은 게임 로그로 확인했다. [Switch·PIE 프레임 비교](Images/TrackSnapContactFrameComparison.jpg)
+- **설치와 출발.** 속도를 1배로 되돌린 뒤 세 창에서 직접 설치를 확정했다. 서버는 조각 2·3·4를 각각 승인했고 세 설치의 클릭 재판정 끝점 오차는 0cm였다. Cua Driver가 커서를 크게 옮긴 직후 클릭한 경우 화면상 고스트는 아직 보간 중이었다. 승인 좌표는 클릭 위치에서 다시 계산한 연결 자세였다. 이후 세 창 모두 실제 출발선에서 본인 차량을 소유한 상태로 Racing에 진입했다. MWEditor Win64 Development 빌드 성공. [게임 로그와 서버 좌표](TRACK_SNAP_CONTACT_TIMING_PIE_LOG.txt)
+- **인계.** UVCS **cs:78**에는 `Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface.uasset` 하나만 체크인했다. 서버 원본, 로컬, PIE가 읽은 파일의 SHA-256은 `e951ff4a4988a63310e1954324d611ec8e1d4474c891219d52e4f550916917da`로 일치한다. 0.25 화면을 재현하려면 cs:78의 재질을 받는다.

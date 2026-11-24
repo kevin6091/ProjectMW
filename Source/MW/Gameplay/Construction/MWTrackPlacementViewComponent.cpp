@@ -386,7 +386,7 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 	if (bStartBlend)
 	{
 		// 스냅 전 Q/E와 연결 자세 전환은 화면에 그린 마지막 자세부터 이어 간다.
-		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target, 0.0, bStartTurn});
+		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target, 0.0, bStartTurn, {}});
 	}
 	if (bSnapped)
 	{
@@ -410,6 +410,7 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 		const double Duration = bSnapped ? Presentation->SnapSettleSeconds : Presentation->BlendSeconds;
 		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / FMath::Max(Duration, UE_SMALL_NUMBER), 0.0, 1.0);
 		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
+		bool bJustReachedContact = false;
 		if (bSnapped)
 		{
 			// 끝점에 빠르게 도달한 뒤 아주 조금 넘어가고 원래 스냅 자세에 정착한다.
@@ -418,24 +419,30 @@ FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const F
 			const double Gap = FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation());
 			const double Overshoot = FMath::Max(0.0, Presentation->SnapOvershoot);
 			Alpha = FMath::Min(BackOut, 1.0 + Overshoot / FMath::Max3(Gap, Overshoot, static_cast<double>(UE_SMALL_NUMBER)));
+			if (!Blend.ContactElapsedSeconds.IsSet() && Alpha >= 1.0)
+			{
+				// 한 프레임에 끝점을 지나친 경우에도 처음 닿는 프레임은 정확한 연결 자세로 그린다.
+				Alpha = 1.0;
+				Blend.ContactElapsedSeconds = Blend.ElapsedSeconds;
+				bJustReachedContact = true;
+				PulseSnapContact(Ghost, Target);
+			}
 		}
 #if WITH_EDITOR
-		if ((bStartBlend || Progress >= 1.0) && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		if ((bStartBlend || bJustReachedContact || Progress >= 1.0) &&
+			FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
 		{
-			UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s %s mode=%s elapsed=%.4f alpha=%.4f gap_cm=%.3f"),
-				*GetWorld()->GetName(), *Actor.GetName(), bStartBlend ? TEXT("begin") : TEXT("end"),
+			const TCHAR* Event = bStartBlend ? TEXT("begin") : Progress >= 1.0 ? TEXT("end") : TEXT("contact");
+			UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s %s mode=%s elapsed=%.4f alpha=%.4f gap_cm=%.3f contact=%d"),
+				*GetWorld()->GetName(), *Actor.GetName(), Event,
 				Blend.bRotateAroundCenter ? TEXT("turn") : bChangedTarget ? TEXT("retarget")
 					: bSnapped ? TEXT("snap") : TEXT("release"), Blend.ElapsedSeconds,
-				Alpha, FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()));
+				Alpha, FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()), bJustReachedContact);
 		}
 #endif
 		if (Progress >= 1.0)
 		{
 			Ghost.SnapBlend.Reset();
-			if (bSnapped)
-			{
-				PulseSnapContact(Ghost, Target);
-			}
 			return Target;
 		}
 		Start = &Blend.Start;
@@ -516,8 +523,17 @@ void UMWTrackPlacementViewComponent::UpdateVisualPose(FGhost& Ghost, double Scre
 	double DisplayScale = 1.0;
 	if (Ghost.SnapBlend.IsSet() && Ghost.PreviousSnapTarget.IsSet() && Presentation->SnapSettleSeconds > 0.0)
 	{
-		const double Progress = FMath::Clamp(Ghost.SnapBlend->ElapsedSeconds / Presentation->SnapSettleSeconds, 0.0, 1.0);
-		const double Pulse = FMath::Sin(UE_PI * Progress);
+		const FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
+		const double Duration = Presentation->SnapSettleSeconds;
+		double Pulse = FMath::Sin(UE_PI * FMath::Clamp(Blend.ElapsedSeconds / Duration, 0.0, 1.0));
+		if (Blend.ContactElapsedSeconds.IsSet())
+		{
+			// 접점에 닿았을 때 가장 크고, 같은 보간의 남은 시간 동안 원래 크기로 돌아온다.
+			const double ContactTime = Blend.ContactElapsedSeconds.GetValue();
+			const double ReturnProgress = (Blend.ElapsedSeconds - ContactTime) /
+				FMath::Max(Duration - ContactTime, UE_SMALL_NUMBER);
+			Pulse = FMath::Cos(UE_HALF_PI * FMath::Clamp(ReturnProgress, 0.0, 1.0));
+		}
 		DisplayScale = FMath::Lerp(1.0, FMath::Max(1.0, Presentation->SnapPeakScale), Pulse);
 	}
 	if (Angle == Sway.AngleDegrees && DisplayScale == Sway.DisplayScale)

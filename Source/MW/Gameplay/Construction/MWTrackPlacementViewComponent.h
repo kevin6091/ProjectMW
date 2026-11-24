@@ -30,6 +30,7 @@ private:
 		FTransform Target;
 		double ElapsedSeconds = 0.0;
 		bool bRotateAroundCenter = false;
+		TOptional<double> ContactElapsedSeconds;
 	};
 
 	struct FPointerSample

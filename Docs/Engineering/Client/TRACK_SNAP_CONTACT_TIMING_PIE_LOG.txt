@@ -1,0 +1,49 @@
+MWEditor Win64 Development
+127:Result: Succeeded
+
+Material Editor scalar readback
+1649:[2026.11.24-04.54.22:665][  0]LogPython: MW_SURFACE_OPACITY /Game/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface 0.37 -> 0.25
+2031:[2026.11.24-04.56.23:504][  2]LogPython: ARRIVAL_REFACTOR_ASSET file=Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface.uasset sha256=e951ff4a4988a63310e1954324d611ec8e1d4474c891219d52e4f550916917da
+
+정상 속도 P1 곡선 / 호스트·두 클라이언트의 접점
+[2026.11.24-04.58.53:235][639]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.24-04.58.53:247][639]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 contact mode=snap elapsed=0.1214 alpha=1.0000 gap_cm=1936.571 contact=1
+[2026.11.24-04.58.53:259][639]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 sway_deg=0.00 wire_scale=1.1000
+[2026.11.24-04.58.53:270][640]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.24-04.58.53:282][640]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 contact mode=snap elapsed=0.1214 alpha=1.0000 gap_cm=2638.793 contact=1
+[2026.11.24-04.58.53:293][640]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.1000
+[2026.11.24-04.58.53:305][641]LogTemp: Display: MWPlacementContact world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 point=V(X=260.39, Y=450.00, Z=6000.00)
+[2026.11.24-04.58.53:317][641]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 contact mode=snap elapsed=0.1214 alpha=1.0000 gap_cm=2638.793 contact=1
+[2026.11.24-04.58.53:330][641]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.1000
+
+느린 화면 캡처 / 원격 두 창의 접점과 복귀
+3780:[2026.11.24-05.00.44:746][312]LogPython: MW_CUA_CAPTURE_TIME_DILATION requested=0.12 wall=1795496444.746145
+3843:[2026.11.24-05.00.58:204][588]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 contact mode=snap elapsed=0.1159 alpha=1.0000 gap_cm=10506.410 contact=1
+3844:[2026.11.24-05.00.58:215][588]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.1000
+3846:[2026.11.24-05.00.58:238][588]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 contact mode=snap elapsed=0.1159 alpha=1.0000 gap_cm=10506.410 contact=1
+3847:[2026.11.24-05.00.58:250][588]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.1000
+3873:[2026.11.24-05.00.58:650][597]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 contact mode=snap elapsed=0.1157 alpha=1.0000 gap_cm=3088.485 contact=1
+3874:[2026.11.24-05.00.58:661][597]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 sway_deg=0.00 wire_scale=1.1000
+3887:[2026.11.24-05.00.58:908][601]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 sway_deg=0.00 wire_scale=1.0000
+3918:[2026.11.24-05.00.59:385][611]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 end mode=snap elapsed=0.2615 alpha=1.0000 gap_cm=10506.410 contact=0
+3919:[2026.11.24-05.00.59:397][611]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_1_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.0000
+3920:[2026.11.24-05.00.59:408][612]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 end mode=snap elapsed=0.2615 alpha=1.0000 gap_cm=10506.410 contact=0
+3921:[2026.11.24-05.00.59:420][612]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_2_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_1 sway_deg=0.00 wire_scale=1.0000
+3930:[2026.11.24-05.00.59:736][619]LogTemp: Display: MWTrackGhostVisual world=/Game/Levels/UEDPIE_0_L_Dev_Drive ghost=BP_Track_WoodLeft_45_Medium_C_2 sway_deg=0.00 wire_scale=1.0000
+3991:[2026.11.24-05.01.24:195][193]LogPython: MW_CUA_CAPTURE_TIME_DILATION requested=1.0 wall=1795496484.195751
+
+정상 속도 입력 복구 후 세 플레이어의 확정 좌표와 서버 승인
+4008:[2026.11.24-05.02.03:210][ 68]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(252.0,254.0) resolved=(260.390000000,450.000000000,6000.000000000) quat=(0.000000000,0.000000000,0.707106750,-0.707106812) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=7097.159 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000004
+4009:[2026.11.24-05.02.03:216][ 68]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+4078:[2026.11.24-05.02.11:708][230]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(186.0,317.0) resolved=(3088.252602402,-721.337252780,6000.000000000) quat=(0.000000000,0.000000000,0.923879499,-0.382683513) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=8233.698 visual_gap_deg=27.685 locked_gap_cm=0.000000 locked_gap_deg=0.000002
+4083:[2026.11.24-05.02.11:785][231]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+4160:[2026.11.24-05.02.43:757][895]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=0 pointer=(450.0,228.0) resolved=(14401.963079538,-12035.043773613,6000.000000000) quat=(0.000000000,0.000000000,0.923879482,-0.382683554) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=19876.702 visual_gap_deg=24.652 locked_gap_cm=0.000000 locked_gap_deg=0.000002
+4183:[2026.11.24-05.02.44:024][897]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+4267:[2026.11.24-05.02.47:206][939]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True) pawn=BP_MWVehiclePawn_FRED_C_0
+4269:[2026.11.24-05.02.47:229][939]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=4,SelectedOfferId=4,bConfirmed=True) pawn=BP_MWVehiclePawn_DOUG_C_0
+4271:[2026.11.24-05.02.47:253][940]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=6,SelectedOfferId=6,bConfirmed=True) pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+Racing P1 viewport=794x514 dpi=0.4755 possessed=True location=-2620,375,6069.2
+Racing P2 viewport=1099x517 dpi=0.4782 possessed=True location=-2620,525,6046.2
+Racing P3 viewport=1384x393 dpi=0.4440 possessed=True location=-2870,375,6054.2
+
+UVCS cs:78 local=server SHA-256 e951ff4a4988a63310e1954324d611ec8e1d4474c891219d52e4f550916917da
