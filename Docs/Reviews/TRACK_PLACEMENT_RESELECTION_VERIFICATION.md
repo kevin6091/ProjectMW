@@ -108,3 +108,24 @@
 - 임시 시험 조건을 제거한 MWEditor Win64 Development 빌드에서 호스트 PID 27072와 새 클라이언트 PID 41440이 각각 실행됐다. 설원 경기로 처음 이동한 클라이언트는 `L_Dev_Drive` 선택 카메라 공개 로그 후 파란 판과 후보 6개를 표시했다. Cua Driver로 클라이언트에서 1번 후보를 클릭했고, 서버가 세션 1·리비전 1의 요청을 승인했다. [독립 클라이언트](Images/TrackReselectionSeparateClient.jpg) · [첫 진입 및 승인 로그](TRACK_RESELECTION_SAME_ROOM_PIE_LOG.txt)
 - 최종 빌드 성공. `MW.Construction`, `MW.Gameplay`, `MW.Vehicle`, `MW.Cursor`의 자동화 23개가 두 프로세스 실행에서 전부 통과했다. 첫 일괄 시도는 기존 가짜 연결의 GC 정리에서 중단됐다. 해당 연결 테스트만 독립 실행하고 나머지 22개를 다시 실행해 모두 통과했다.
 - 로컬 원본은 `work/reselection-exit-2026-11-24/same-room-pie`, `separate-first`, `final-automation.log`, `final-network-test.log`에 있다. Git 커밋은 C++·검증 문서·캡처·로그로 구성한다. UVCS 체크인이나 패키지 실행은 이 작업의 검증에 포함하지 않았다.
+
+
+## 하단 안내의 뷰포트 상대 크기
+
+- 수정 위치는 `Content/UI/Construction/WBP_TrackSelectionTest.uasset` 한 개다. Designer의 `ConstructionStatusSafeZone` 안에서 `ConstructionStatusViewport → ConstructionStatusViewportScale → ConstructionStatusDesignSize → ConstructionStatusFooter`로 연결한다. 새 Canvas의 가로 22–78%, 세로 84–98% 앵커가 안전 영역 안에서 안내판이 들어갈 범위를 잡는다.
+- `ConstructionStatusViewportScale`의 **Scale to Fit**으로 900×152 디자인 면을 맞춘다. 내부 안내판은 그 면의 하단 중앙에 맞추며, 배경과 여백 및 글자가 같이 움직인다. 기존 Noto Sans KR Bold 18, 내용 1.5배, 문장별 줄바꿈, 클릭을 통과하는 가시성 속성은 Designer에서 계속 관리한다.
+- 이전에는 콘텐츠의 1.5배와 전역 UMG 배율만 적용됐다. 이번 비교의 두 뷰포트는 모두 전역 UMG 0.4440이다. 좁아질 때 안내판을 줄이는 값은 전용 ScaleBox의 실제 슬롯 크기에서 나온다. 공용 DPI 설정과 C++ 변경은 없다.
+- Unreal Editor Python 명령렛에서 해당 WBP 컴파일·저장을 확인했다. 같은 소스의 검증 사본에서 Cua Driver로 3인 Listen Server PIE를 실행했다. 첫 실행에서 세 창의 실제 선택 승인과 배치 진입을 확인했다. 해당 실행의 호스트에서는 가장 긴 재선택 문구를 시험 보조로 표시해 이유 한 줄과 클릭 안내 한 줄을 확인했다. 재선택 서버 경로의 검증은 앞 절에 기록했다.
+- 두 번째 실행의 같은 P2 창에서 배치 안내가 표시된 상태로 크기를 바꿨다. 974×462에서 판은 246×57px, 754×356에서는 196×44px이었다. PNG에서 노란 판의 경계를 측정했다. 두 창 크기 모두 중앙 정렬과 배치 지시 두 줄이 보였다. 캡처에는 GPU 메모리 예산 안내가 함께 표시된다. [픽셀 크기를 보존한 비교 캡처](../Engineering/Client/Images/TrackFooterResponsiveResize.jpg)
+
+관측 로그 `work/track-footer-responsive-2026-11-24/pie.log`의 시간은 UTC다.
+
+```text
+08:10:05–08:10:06 P1·P2·P3 TrackPlacement, SelectedOfferId 1·2·5, bConfirmed=True
+08:12:14.559 P2 TrackPlacement viewport=[754,356] dpi=0.4440, 스냅·회전 안내 두 줄
+08:12:31.590 P2 TrackPlacement viewport=[974,462] dpi=0.4440, 같은 두 줄
+```
+
+- 로컬 WBP SHA-256 **`7A3177DEC53287102009CB5381999926204BB8B80670A868B83A0C455EE5A699`**. 공유 기준 에셋은 UVCS `cs:75`의 `75B1798AFBC76A0228EE325362D29E51ACB95D2160A34BDC08FE2683A9548776`다. 이 변경의 WBP는 로컬 에셋이며, Git에는 이 문서와 캡처를 기록했다.
+
+- 원본 에디터가 파일을 사용 중이어서 같은 Designer 편집을 원본 에디터 안에서 다시 적용해 컴파일·저장했다. 검증 사본의 SHA-256은 **716CF7190D0A47640F4EA3BD723C94302EC0763BA362502E185866726923B3A7**다. 두 저장에서 위젯 경로, 디자인 면 크기, 앵커, 글꼴 크기와 문구가 동일하다.
