@@ -72,6 +72,7 @@ private:
 	{
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
+		TArray<FVector> GroundPoints;
 		bool bEnableCollision = false;
 		bool bEnableTick = false;
 		int32 LastPreviewSequence = 0;
@@ -96,6 +97,7 @@ private:
 		FPreparedTrack& OutTrack, FText& OutError);
 	void PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform, FMWTrackEndId ConnectedTo = {}, int32 PortIndex = INDEX_NONE);
 	FPreparedTrack* FindPendingTrack(APlayerController* Requester, int32 SessionId);
+	EMWTrackPlacementResult RecoverBlockedTrack(AMWPlayerState& Player, FPreparedTrack& Prepared);
 	bool PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const;
 	void FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform);
 

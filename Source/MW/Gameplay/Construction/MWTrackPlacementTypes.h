@@ -47,6 +47,17 @@ struct FMWPlacedTrack
 	UPROPERTY(BlueprintReadOnly) bool bCheckpoint = false;
 };
 
+// 클라이언트가 종료 조각의 숨은 서버 액터 없이도 같은 설치 하한을 계산한다.
+USTRUCT()
+struct FMWTrackPlacementGround
+{
+	GENERATED_BODY()
+
+	UPROPERTY() double FloorZ = 0.0;
+	UPROPERTY() FTransform FinishPort = FTransform::Identity;
+	UPROPERTY() TArray<FVector> FinishLocalPoints;
+};
+
 USTRUCT(BlueprintType)
 struct FMWTrackPlacementSession
 {
@@ -59,6 +70,7 @@ struct FMWTrackPlacementSession
 	// 기준 트랙을 출발 슬롯 방향으로 돌린 각도를 공용 미리보기의 기본 방향으로 쓴다.
 	UPROPERTY(BlueprintReadOnly) double PreviewYaw = 0.0;
 	UPROPERTY(BlueprintReadOnly) double LayoutScale = 1.0;
+	UPROPERTY() FMWTrackPlacementGround Ground;
 	UPROPERTY(BlueprintReadOnly) FBox CourseBounds = FBox(ForceInit);
 	UPROPERTY(BlueprintReadOnly) TArray<FMWOpenTrackEnd> OpenEnds;
 	UPROPERTY(BlueprintReadOnly) TArray<FMWPlacedTrack> PlacedTracks;
@@ -87,6 +99,7 @@ struct FMWTrackPlacementIntent
 	UPROPERTY() bool bReversed = false;
 	// 근처 끝점의 각도만 따라가는 상태와 실제 스냅 요청을 구분한다.
 	UPROPERTY() bool bSnapRequested = false;
+	UPROPERTY() bool bRecoverBlocked = false;
 	UPROPERTY() FMWTrackEndId Target;
 	UPROPERTY() int32 SourcePort = INDEX_NONE;
 };
@@ -97,5 +110,7 @@ enum class EMWTrackPlacementResult : uint8
 	Accepted,
 	Unavailable,
 	CourseChanged,
-	NotSnapped
+	NotSnapped,
+	BelowPlacementFloor,
+	ReplacementOffered
 };

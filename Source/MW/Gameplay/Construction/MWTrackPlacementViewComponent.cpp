@@ -11,6 +11,7 @@
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "InputMappingContext.h"
 #include "MWGameplayTags.h"
 #include "Player/MWGameplayPlayerController.h"
@@ -106,6 +107,10 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		{
 			bOwnReady = true;
 			bOwnPlaced = bPlaced;
+			if (!AwaitedReplacementFor.IsNull() && Player.TrackClass != AwaitedReplacementFor)
+			{
+				AwaitedReplacementFor.Reset();
+			}
 		}
 		if (bPlaced || !Session.bIsOpen)
 		{
@@ -186,7 +191,23 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{
-		Widget->ShowPlacementStatus(FText::FromString(Status));
+		FText StatusText = FText::FromString(Status);
+		if (Session.bIsOpen && bOwnReady && !bOwnPlaced)
+		{
+			if (!AwaitedReplacementFor.IsNull())
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "LoadingReplacement", "대체 트랙을 준비 중입니다.");
+			}
+			else if (bCanRecoverBlocked)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "RecoverBlocked", "지면에 걸립니다 · 좌클릭 / Space로 대체 또는 건너뛰기");
+			}
+			else if (bBelowFloor || LastResult == EMWTrackPlacementResult::BelowPlacementFloor)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "TurnAboveFloor", "지면에 걸립니다 · Q/E로 방향 변경");
+			}
+		}
+		Widget->ShowPlacementStatus(StatusText);
 		const bool bNeedsGuide = Session.bIsOpen && bOwnReady && !bOwnPlaced && !bCanPlace && !bWaitingForReply;
 		const FVector Endpoint = Session.OpenEnds.IsEmpty() ? FVector::ZeroVector : Session.OpenEnds[0].WorldFrame.GetLocation();
 		Widget->ShowPlacementEndpoint(bNeedsGuide && !Session.OpenEnds.IsEmpty() ? &Endpoint : nullptr);
@@ -196,9 +217,17 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCreateGhost(
 	int32 PlayerId, const FMWPlayerTrackPlacement& Player, bool bLocal)
 {
-	if (FGhost* Existing = Ghosts.Find(PlayerId); Existing && Existing->Actor.IsValid())
+	if (FGhost* Existing = Ghosts.Find(PlayerId))
 	{
-		return Existing;
+		if (AActor* Actor = Existing->Actor.Get())
+		{
+			if (TSoftClassPtr<AActor>(Actor->GetClass()) == Player.TrackClass)
+			{
+				return Existing;
+			}
+			Actor->Destroy();
+		}
+		Ghosts.Remove(PlayerId);
 	}
 
 	UClass* TrackClass = Player.TrackClass.LoadSynchronous();
@@ -219,7 +248,6 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	}
 
 	Actor->SetReplicates(false);
-	Actor->SetActorEnableCollision(false);
 	Actor->SetActorTickEnabled(false);
 	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
 	{
@@ -236,6 +264,8 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 		return nullptr;
 	}
 
+	Ghost.GroundPoints = MWTrackPlacementClearance::ReadLocalPoints(*Actor, MakeArrayView(&Ghost.Ports[0], 2));
+	Actor->SetActorEnableCollision(false);
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
 	MWTrackPreview::ShowWireframes(*Actor);
 	MWTrackPreview::SetWireframeColor(*Actor, Color);
@@ -262,11 +292,13 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
 	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds, TOptional<FPointerSample>& OutPointer)
 {
-	if (bWaitingForReply)
+	if (bWaitingForReply || !AwaitedReplacementFor.IsNull())
 	{
 		return false;
 	}
 
+	bBelowFloor = false;
+	bCanRecoverBlocked = false;
 	FTransform Target;
 	bool bSnapped;
 	FPointerSample Pointer;
@@ -292,9 +324,17 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 	OutPointer = Pointer;
 	const bool bTurned = Ghost.bLastLocalReversed != Intent.bReversed;
 	Ghost.bLastLocalReversed = Intent.bReversed;
-	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bSnapped, DeltaSeconds, 1.0, bTurned));
-	// 이동하는 고스트가 목표에 닿은 뒤에만 연결 완료 색상과 안내를 표시한다.
-	const bool bVisiblySnapped = bSnapped && !Ghost.SnapBlend.IsSet();
+	if (bSnapped)
+	{
+		bBelowFloor = !MWTrackPlacementClearance::FitsWithFinish(Ghost.GroundPoints, Session.Ground,
+			Target, Ghost.Ports[1 - Intent.SourcePort]);
+		bCanRecoverBlocked = bBelowFloor && !MWTrackPlacementClearance::FitsEitherPort(Ghost.GroundPoints,
+			Session.Ground, Ghost.Ports, Session.OpenEnds[0].WorldFrame);
+	}
+	// 거절된 자세에는 도착 색상과 접점 섬광도 같이 막는다.
+	const bool bValidSnap = bSnapped && !bBelowFloor;
+	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bValidSnap, DeltaSeconds, 1.0, bTurned));
+	const bool bVisiblySnapped = bValidSnap && !Ghost.SnapBlend.IsSet();
 	SetGhostSnapColor(Ghost, bVisiblySnapped);
 
 	const double Now = GetWorld()->GetTimeSeconds();
@@ -553,7 +593,7 @@ void UMWTrackPlacementViewComponent::HandleTurn()
 
 void UMWTrackPlacementViewComponent::HandleAccept()
 {
-	if (bWaitingForReply || bAccepted)
+	if (bWaitingForReply || bAccepted || !AwaitedReplacementFor.IsNull())
 	{
 		return;
 	}
@@ -579,6 +619,19 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 	bool bSnapped;
 	if (!Ghost || !Ghost->Actor.IsValid() || !ResolveGhostFromPointer(*PC, Session, *Ghost, ResolvedTarget, bSnapped) || !bSnapped)
 	{
+		return;
+	}
+
+	FMWTrackPlacementIntent Request = Intent;
+	const bool bFits = MWTrackPlacementClearance::FitsWithFinish(Ghost->GroundPoints, Session.Ground,
+		ResolvedTarget, Ghost->Ports[1 - Intent.SourcePort]);
+	if (!bFits)
+	{
+		Request.bRecoverBlocked = !MWTrackPlacementClearance::FitsEitherPort(Ghost->GroundPoints,
+			Session.Ground, Ghost->Ports, Session.OpenEnds[0].WorldFrame);
+		// 서버도 같은 포트와 지면을 확인한다. 거절될 클릭에는 확정 색상을 표시하지 않는다.
+		bWaitingForReply = true;
+		PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Request);
 		return;
 	}
 
@@ -619,6 +672,17 @@ void UMWTrackPlacementViewComponent::HandlePlacementReply(int32 ReplySessionId, 
 	}
 	bWaitingForReply = false;
 	bAccepted = Result == EMWTrackPlacementResult::Accepted;
+	if (Result == EMWTrackPlacementResult::ReplacementOffered)
+	{
+		// 회신이 PlayerState 복제보다 앞서면 옛 고스트에 새 클릭이 들어가지 않게 한다.
+		const auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
+		const auto* PS = PC->GetPlayerState<AMWPlayerState>();
+		const FGhost* Ghost = PS ? Ghosts.Find(PS->GetLobbyMemberId()) : nullptr;
+		if (Ghost && Ghost->Actor.IsValid())
+		{
+			AwaitedReplacementFor = TSoftClassPtr<AActor>(Ghost->Actor->GetClass());
+		}
+	}
 	LastResult = Result;
 }
 
@@ -639,5 +703,8 @@ void UMWTrackPlacementViewComponent::ResetView()
 	NextPreviewTime = 0.0;
 	bWaitingForReply = false;
 	bAccepted = false;
+	bBelowFloor = false;
+	bCanRecoverBlocked = false;
+	AwaitedReplacementFor.Reset();
 	LastResult = EMWTrackPlacementResult::Accepted;
 }

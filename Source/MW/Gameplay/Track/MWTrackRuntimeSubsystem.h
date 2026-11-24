@@ -68,6 +68,8 @@ public:
     // 화면에서 같은 정의의 표시 이름을 읽는다. BP를 새로 로드하지 않는다.
     FText GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const;
 
+    const FMWTrackDefinition* FindTrackDefinition(const TSoftClassPtr<AActor>& TrackClass) const;
+
     // 배치 미리보기 상태를 실제 트랙 런타임에 전달한다.
     void SetTrackPreview(AActor& Actor, bool bPreview);
     // 복제로 생성된 승강기 컴포넌트에도 기존 카탈로그의 설정을 적용한다.

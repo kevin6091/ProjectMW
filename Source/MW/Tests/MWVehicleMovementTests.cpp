@@ -1002,6 +1002,10 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	FindFProperty<FObjectPropertyBase>(Scene.World->GetClass(), TEXT("AuthorityGameMode"))->SetObjectPropertyValue_InContainer(Scene.World, Mode);
 	Mode->InitGameState();
 	Mode->StartManager = Scene.World->SpawnActor<AMWPlayerStartManager>();
+	// 여러 라운드의 임의 후보가 낮아져도 채점 테스트의 코스에는 충분한 지면 여유를 둔다.
+	constexpr double RoundFixtureClearance = 60000.0;
+	const double FloorZ = GetDefault<UMWTrackRuntimeSettings>()->TrackPlacementFloorZ;
+	Mode->StartManager->SetActorLocation(FVector::UpVector * (FloorZ + RoundFixtureClearance));
 	TInlineComponentArray<UArrowComponent*> Slots(Mode->StartManager.Get());
 	for (int32 Index = 0; Index < Slots.Num(); ++Index) Slots[Index]->SetRelativeLocation(FVector(-300, Index * 400 - 600, 60));
 	Mode->SelectionBoard = Scene.World->SpawnActor<AMWTrackSelectionBoard>();

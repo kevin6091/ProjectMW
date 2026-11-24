@@ -55,6 +55,7 @@ private:
 		TOptional<FTransform> PreviousSnapTarget;
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
+		TArray<FVector> GroundPoints;
 		bool bSnapped = false;
 		bool bLastRemoteReversed = false;
 		bool bLastLocalReversed = false;
@@ -86,5 +87,8 @@ private:
 	bool bTriedLoadingInput = false;
 	bool bWaitingForReply = false;
 	bool bAccepted = false;
+	bool bBelowFloor = false;
+	bool bCanRecoverBlocked = false;
+	TSoftClassPtr<AActor> AwaitedReplacementFor;
 	EMWTrackPlacementResult LastResult = EMWTrackPlacementResult::Accepted;
 };
