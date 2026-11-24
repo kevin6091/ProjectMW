@@ -279,7 +279,7 @@ void UMWTrackSelectionWidget::Refresh()
 	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
 	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 다른 참가자 대기 중");
 	const FText StatusText = Session.bIsOpen && Session.bIsPlacementReselection && !bOwnConfirmed && AcknowledgedOffer == INDEX_NONE
-		? NSLOCTEXT("MWTrackSelection", "PlacementReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다 · 좌클릭으로 선택")
+		? NSLOCTEXT("MWTrackSelection", "PlacementReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택")
 		: FText::FromString(Status);
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : StatusText);
 }

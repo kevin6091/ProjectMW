@@ -69,3 +69,15 @@
 - 세 참가자가 선택판에서 각각 후보 3·1·4를 실제로 클릭해 선택했다. 배치 안내와 설치 완료 대기가 같은 하단 판에서 갱신됐고, 세 명의 설치를 서버가 각각 승인했다. 출발 트랙 `BP_Track_WoodStartCapped_C_0`에서 FRED·DOUG·MAMMOTH가 각각 X=-2620·-2620·-2870cm에 배치돼 `Racing`에 진입했다. 주행에서 하단 판은 사라졌다.
 - WBP 최종 컴파일·저장은 `designer-final.log`의 `MW_FOOTER_STYLE_FINAL`로 확인했다. `pie.log` 2843–2848행은 긴 문구, 2854–2883행은 실제 선택과 배치 문구, 2895·2954·3079행은 서버 설치 승인, 3163·3165·3167행은 3인 `Racing` 진입을 기록한다. 실제 출발 좌표는 `final-racing-state.json`에 남겼다.
 - 남은 화면 확인 사항은 P3처럼 가로가 넓고 높이가 낮은 창에서 긴 영문 후보 이름표끼리 일부 겹치는 경우다. 후보 이름표의 배치·이름 표기 작업에서 따로 확인한다.
+
+## 재선택 안내 문장 단위 줄바꿈
+
+- `MWTrackSelectionWidget.cpp`의 기존 현지화 키 `PlacementReselection`에서 안내를 다음 두 줄로 지정했다. 재선택 상태 판단과 입력 처리에는 변경이 없다.
+
+  배치할 수 있는 트랙이 없어 다시 선택합니다<br>
+  좌클릭으로 선택
+
+- `WBP_TrackSelectionTest` Designer의 문구 줄 폭을 넓혀 첫 문장이 중간에서 꺾이지 않도록 했다. 위치·글꼴·배율은 기존 하단 안내판을 따른다. WBP 컴파일과 `MWEditor Win64 Development` 빌드 성공을 확인했다.
+- Cua Driver 3인 PIE에서 794×514 / 1099×517 / 1384×393, UMG 배율 0.4755 / 0.4782 / 0.4440으로 비교했다. 외부 QA 스크립트가 실제 변경한 현지화 문구를 활성 PIE 위젯에 표시했고, 세 창 모두 이유 한 줄과 클릭 안내 한 줄로 렌더링했다. 이후 세 명의 실제 좌클릭을 서버가 받아 각 후보 1·4·3을 확정했고 전원이 `TrackPlacement`에 들어갔다.
+- 변경 전 `work/track-footer-style-2026-11-24/reselection-style-1.png`, 변경 후 `work/track-footer-line-break-2026-11-24/two-line-1.png`·`two-line-2.png`·`two-line-3.png`. 같은 폴더의 `pie.log` 2804–2809행과 `placement-state.json`에 표시와 입력 결과를 남겼다.
+- 이 줄바꿈에 맞춘 WBP는 **UVCS `cs:75`**다. 이 변경 세트는 `WBP_TrackSelectionTest.uasset`만 포함한다. 내려받은 서버 파일과 PIE 에셋의 SHA-256은 `75B1798AFBC76A0228EE325362D29E51ACB95D2160A34BDC08FE2683A9548776`로 일치한다.
