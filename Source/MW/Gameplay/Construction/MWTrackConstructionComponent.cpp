@@ -115,6 +115,16 @@ bool UMWTrackConstructionComponent::BeginSelectionInternal(const TArray<AMWPlaye
 	auto Pool = Runtime ? Runtime->GetSelectionPool() : TArray<TSoftClassPtr<AActor>>{};
 	const int32 PoolSize = Pool.Num();
 	TMap<int32, FPreparedTrack> PreparedOffers;
+	TArray<TSoftClassPtr<AActor>> LaterPlacementOffers;
+	const auto AddOffer = [&NewSession](const TSoftClassPtr<AActor>& TrackClass)
+	{
+		const int32 Slot = NewSession.Offers.Num();
+		FMWTrackOffer& Offer = NewSession.Offers.AddDefaulted_GetRef();
+		Offer.OfferId = Slot + 1;
+		Offer.TrackClass = TrackClass;
+		Offer.BoardSlotIndex = Slot;
+		return Offer.OfferId;
+	};
 	while (!Pool.IsEmpty() && NewSession.Offers.Num() < MWTrackSelection::OfferCount)
 	{
 		// 뽑은 항목은 풀에서 제거한다. 여섯 칸의 순서와 클래스는 서버가 한 번만 정한다.
@@ -128,31 +138,61 @@ bool UMWTrackConstructionComponent::BeginSelectionInternal(const TArray<AMWPlaye
 			continue;
 		}
 
-		const int32 Slot = NewSession.Offers.Num();
-		if (bPlacementReselection)
+		if (!bPlacementReselection)
 		{
-			// 다시 배치할 지점은 현재 막힌 끝점이 아니라 이번 라운드가 처음 열린 끝점이다.
-			const FTransform& End = RoundStartEnd.WorldFrame;
-			FPreparedTrack Prepared;
-			FText PrepareError;
-			if (!PrepareTrack(TrackClass, End.GetLocation(), false, Prepared, PrepareError)
-				|| !MWTrackPlacementClearance::FitsEitherPort(Prepared.GroundPoints, PlacementSession.Ground, Prepared.Ports, End))
-			{
-				Prepared.Destroy();
-				continue;
-			}
-			PreparedOffers.Add(Slot + 1, MoveTemp(Prepared));
+			AddOffer(TrackClass);
+			continue;
 		}
 
-		FMWTrackOffer& Offer = NewSession.Offers.AddDefaulted_GetRef();
-		Offer.OfferId = Slot + 1;
-		Offer.TrackClass = TrackClass;
-		Offer.BoardSlotIndex = Slot;
+		const FTransform& End = RoundStartEnd.WorldFrame;
+		FPreparedTrack Prepared;
+		FText PrepareError;
+		if (PrepareTrack(TrackClass, End.GetLocation(), false, Prepared, PrepareError))
+		{
+			// 시작점에 바로 붙는 조각을 우선 제공한다. 다음 사람이 설치할 때는 열린 끝점이 달라질 수 있다.
+			if (MWTrackPlacementClearance::FitsEitherPort(Prepared.GroundPoints, PlacementSession.Ground, Prepared.Ports, End))
+			{
+				PreparedOffers.Add(AddOffer(TrackClass), MoveTemp(Prepared));
+				continue;
+			}
+			if (LaterPlacementOffers.Num() < MWTrackSelection::OfferCount)
+			{
+				LaterPlacementOffers.Add(TrackClass);
+			}
+		}
+		Prepared.Destroy();
 	}
+
 	const int32 RequiredOffers = bPlacementReselection ? SelectionPlayers.Num() : MWTrackSelection::OfferCount;
+	const int32 ImmediatelyCompatibleOffers = NewSession.Offers.Num();
+	if (bPlacementReselection && ImmediatelyCompatibleOffers < RequiredOffers)
+	{
+		// 전원이 다시 고를 수 있게 일반 카탈로그 후보를 노출한다. 실제 설치는 새 끝점에서 다시 판정한다.
+		for (const TSoftClassPtr<AActor>& TrackClass : LaterPlacementOffers)
+		{
+			if (NewSession.Offers.Num() == MWTrackSelection::OfferCount) break;
+			FPreparedTrack Prepared;
+			FText PrepareError;
+			if (PrepareTrack(TrackClass, RoundStartEnd.WorldFrame.GetLocation(), false, Prepared, PrepareError))
+			{
+				PreparedOffers.Add(AddOffer(TrackClass), MoveTemp(Prepared));
+			}
+			else
+			{
+				Prepared.Destroy();
+			}
+		}
+		UE_LOG(LogMWServer, Log, TEXT("[MWTrackSelection] Reselection immediate=%d required=%d offered=%d"),
+			ImmediatelyCompatibleOffers, RequiredOffers, NewSession.Offers.Num());
+	}
 	if (NewSession.Offers.Num() < RequiredOffers)
 	{
 		for (const auto& Entry : PreparedOffers) Entry.Value.Destroy();
+		if (bPlacementReselection)
+		{
+			UE_LOG(LogMWServer, Warning, TEXT("[MWTrackSelection] Reselection candidates available=%d required=%d"),
+				NewSession.Offers.Num(), RequiredOffers);
+		}
 		OutError = bPlacementReselection
 			? NSLOCTEXT("MWTrackSelection", "NoCompatibleOffers", "다시 배치할 수 있는 트랙 후보가 부족합니다.")
 			: FText::FromString(TEXT("선택 가능한 트랙 후보 여섯 개를 준비하지 못했습니다."));

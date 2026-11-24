@@ -959,10 +959,17 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWGameplayRoundFlowTest, "MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath",
+IMPLEMENT_COMPLEX_AUTOMATION_TEST(FMWGameplayRoundFlowTest, "MW.Gameplay.RoundLoop",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+void FMWGameplayRoundFlowTest::GetTests(TArray<FString>& OutNames, TArray<FString>& OutCommands) const
+{
+	OutNames.Append({TEXT("ScoringExpansionAndSuddenDeath"), TEXT("ReselectionWithoutInitialFit")});
+	OutCommands.Append({TEXT("Normal"), TEXT("NoInitialFit")});
+}
+
 bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 {
+	const bool bNoInitialFit = Parameters == TEXT("NoInitialFit");
 	MWVehicleTests::FScene Scene(FMWVehicleDriveConfig{}, true);
 	Scene.Controller->UnPossess();
 	Scene.Controller->Destroy();
@@ -1054,6 +1061,7 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 				// P1의 도로를 설치한 뒤 P2의 기존 선택에만 두 방향을 막는 검증용 높이점을 넣는다.
 				auto& Pending = Construction->PendingTracks.FindChecked(TWeakObjectPtr<AMWPlayerState>(Players[Index]));
 				const auto Before = Construction->GetPlacementSession();
+				const auto ProgressBefore = State->GetProgress();
 				const auto& End = Before.OpenEnds[0];
 				FVector Below = End.WorldFrame.GetLocation();
 				Below.Z = Before.Ground.FloorZ - 1.0;
@@ -1070,6 +1078,13 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 				Retry.CursorLocation = MWTrackSnap::AlignPorts(Pending.Ports[0], End.WorldFrame)
 					.TransformPosition((Pending.Ports[0].GetLocation() + Pending.Ports[1].GetLocation()) * .5);
 
+				if (bNoInitialFit)
+				{
+					// 현재 끝점은 유지하고, 2라운드 첫 끝점만 내려서 어떤 후보도 즉시 붙지 않게 한다.
+					Construction->RoundStartEnd.WorldFrame.SetLocation(
+						FVector(End.WorldFrame.GetLocation().X, End.WorldFrame.GetLocation().Y,
+							Before.Ground.FloorZ - RoundFixtureClearance));
+				}
 				if (!TestTrue(TEXT("A blocked piece opens reselection"), Construction->PlaceTrack(Controllers[Index],
 					Before.SessionId, Before.CourseRevision, Retry) == EMWTrackPlacementResult::ReselectionOpened)) return false;
 				const auto OfferSession = Construction->GetSelectionSession();
@@ -1106,6 +1121,12 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 					TestTrue(TEXT("Each player can place a new track in the new placement session"),
 						PlayerPlacement.SessionId == OfferSession.SelectionSessionId && !PlayerPlacement.bPlaced
 						&& !PlayerPlacement.TrackClass.IsNull());
+				}
+				if (bNoInitialFit)
+				{
+					TestEqual(TEXT("The fresh selection offers six actual choices"), OfferSession.Offers.Num(), MWTrackSelection::OfferCount);
+					TestTrue(TEXT("Reselection keeps the same match and round results"), State->GetProgress() == ProgressBefore);
+					return true;
 				}
 				bHasReselected = true;
 				Index = 0;
@@ -1222,7 +1243,9 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Starting a new round preserves the last results"), State->GetProgress().Results == FirstResults);
 	TestEqual(TEXT("New round preserves accumulated score"), Players[0]->GetRoundState().TotalScore,
 		300 + FirstCheckpointCount * 100);
-	if (!PlaceRound() || !StartRace()) return false;
+	if (!PlaceRound()) return false;
+	if (bNoInitialFit) return true;
+	if (!StartRace()) return false;
 	TestTrue(TEXT("Start and previous road actors are preserved"), Construction->GetPlacementSession().PlacedTracks[0].Actor == FirstRoad);
 	TestTrue(TEXT("Previous end cap is removed"), !OldCap.IsValid() || OldCap->IsActorBeingDestroyed());
 	TestEqual(TEXT("Second round appends three road pieces"), Construction->GetPlacementSession().PlacedTracks.Num(), FirstPieceCount + 3);
