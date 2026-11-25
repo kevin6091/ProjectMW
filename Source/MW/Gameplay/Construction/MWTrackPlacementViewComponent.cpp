@@ -1,5 +1,6 @@
 #include "Gameplay/Construction/MWTrackPlacementViewComponent.h"
 
+#include "Components/SceneComponent.h"
 #include "Data/MWInputData.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Engine/GameViewportClient.h"
@@ -10,6 +11,7 @@
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPresentationSettings.h"
 #include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "InputMappingContext.h"
 #include "MWGameplayTags.h"
@@ -18,17 +20,33 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/MWTrackSelectionWidget.h"
+#include "UI/Cursor/MWCursorProjection.h"
 #include "UnrealClient.h"
 
-namespace
+const FLinearColor UMWTrackPlacementViewComponent::LocalColor(0.05f, 0.55f, 1.0f);
+const FLinearColor UMWTrackPlacementViewComponent::SnapColor(0.1f, 1.0f, 0.35f);
+const FLinearColor UMWTrackPlacementViewComponent::RemoteColors[] = {
+	FLinearColor(1.0f, 0.42f, 0.08f),
+	FLinearColor(0.82f, 0.18f, 0.75f),
+	FLinearColor(0.55f, 0.26f, 1.0f)
+};
+
+double UMWTrackPlacementViewComponent::GetProjectedHorizontalDelta(const APlayerController& PC, const FVector& From, const FVector& To)
 {
-	const FLinearColor LocalColor(0.05f, 0.55f, 1.0f);
-	const FLinearColor SnapColor(0.1f, 1.0f, 0.35f);
-	const FLinearColor RemoteColors[] = {
-		FLinearColor(1.0f, 0.42f, 0.08f),
-		FLinearColor(0.82f, 0.18f, 0.75f),
-		FLinearColor(0.55f, 0.26f, 1.0f)
-	};
+	if (From.Equals(To))
+	{
+		return 0.0;
+	}
+
+	int32 ViewportWidth, ViewportHeight;
+	PC.GetViewportSize(ViewportWidth, ViewportHeight);
+	FVector2D FromScreen, ToScreen;
+	if (ViewportWidth <= 0 || !PC.ProjectWorldLocationToScreen(From, FromScreen)
+		|| !PC.ProjectWorldLocationToScreen(To, ToScreen))
+	{
+		return 0.0;
+	}
+	return (ToScreen.X - FromScreen.X) / ViewportWidth;
 }
 
 AActor* UMWTrackPlacementViewComponent::GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const
@@ -41,7 +59,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 {
 	auto* PC = Cast<AMWGameplayPlayerController>(GetOwner());
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!PC || !PC->IsLocalController() || !GS || PC->GetConstructionPresentationPhase() != EMWRoomPhase::TrackPlacement)
+	if (!PC || !PC->IsLocalController() || !GS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
 	{
 		if (SessionId != 0)
 		{
@@ -51,6 +69,14 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 	}
 	const auto* Construction = GS->GetConstructionComponent();
 	const auto& Session = Construction->GetPlacementSession();
+	if (PC->GetConstructionPresentationPhase() == EMWRoomPhase::PreparingConstruction)
+	{
+		if (SessionId != 0)
+		{
+			ResetView();
+		}
+		return;
+	}
 	if (SessionId != Session.SessionId)
 	{
 		ResetView();
@@ -59,7 +85,6 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 
 	const auto* OwnPS = PC->GetPlayerState<AMWPlayerState>();
 	TSet<int32> VisiblePlayers;
-	FString PlayerLines;
 	bool bOwnPlaced = false;
 	bool bOwnReady = false;
 	bool bCanPlace = false;
@@ -78,8 +103,6 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		const bool bLocal = PS == OwnPS;
 		const bool bPlaced = Player.bPlaced || (bLocal && bAccepted);
 		const int32 PlayerId = PS->GetLobbyMemberId();
-		PlayerLines += FString::Printf(TEXT("P%d %s%s · %s\n"), PlayerId, *PS->GetPlayerName(),
-			bLocal ? TEXT(" (나)") : TEXT(""), bPlaced ? TEXT("설치 완료") : TEXT("배치 중"));
 		if (bLocal)
 		{
 			bOwnReady = true;
@@ -93,30 +116,41 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		if (FGhost* Ghost = GetOrCreateGhost(PlayerId, Player, bLocal))
 		{
 			VisiblePlayers.Add(PlayerId);
+			const bool bWasBlending = Ghost->SnapBlend.IsSet();
+			double ScreenDelta = 0.0;
 			if (bLocal)
 			{
-				bCanPlace = UpdateLocalPreview(*PC, Session, *Ghost);
+				TOptional<FPointerSample> Pointer;
+				bCanPlace = UpdateLocalPreview(*PC, Session, *Ghost, DeltaSeconds, Pointer);
+				if (Ghost->HeldSway.IsSet())
+				{
+					auto& Previous = Ghost->HeldSway->PreviousPointer;
+					// 포커스·뷰포트 크기가 바뀌거나 스냅으로 이동할 때는 포인터 속도를 새로 잰다.
+					if (Pointer.IsSet() && Previous.IsSet() && Pointer->ViewportWidth > 0 && Pointer->ViewportWidth == Previous->ViewportWidth
+						&& !Ghost->bSnapped && !bWasBlending && !Ghost->SnapBlend.IsSet())
+					{
+						ScreenDelta = (Pointer->X - Previous->X) / Pointer->ViewportWidth;
+					}
+					Previous = Pointer;
+				}
 			}
 			else if (AActor* Actor = Ghost->Actor.Get())
 			{
-				const FTransform& Target = Player.PreviewTransform;
+				const double FreeMoveAlpha = FMath::Clamp(DeltaSeconds * 16.0, 0.0, 1.0);
+				// 서버의 회전 플래그로 자유 회전 시작을 찾고, 표시 자세만 포트 중심으로 보간한다.
 				const bool bTurned = Ghost->bLastRemoteReversed != Player.bReversed;
-
-				if (bTurned || Player.bSnapped)
-				{
-					Actor->SetActorLocationAndRotation(Target.GetLocation(), Target.GetRotation());
-				}
-				else
-				{
-					const double Alpha = FMath::Clamp(DeltaSeconds * 16.0, 0.0, 1.0);
-					const FVector Location = FMath::Lerp(Actor->GetActorLocation(), Target.GetLocation(), Alpha);
-					const FQuat Rotation = FQuat::Slerp(Actor->GetActorQuat(), Target.GetRotation(), Alpha);
-
-					Actor->SetActorLocationAndRotation(Location, Rotation);
-				}
-
 				Ghost->bLastRemoteReversed = Player.bReversed;
+				const FTransform Pose = BlendGhostPose(*Ghost, Player.PreviewTransform, Player.bSnapped, DeltaSeconds, FreeMoveAlpha, bTurned);
+				if (Ghost->HeldSway.IsSet() && !Player.bSnapped && !bWasBlending && !Ghost->SnapBlend.IsSet())
+				{
+					// 원격 입력은 기존 복제 자세로 표시한다. 두 자세의 포트 중앙을 같은 카메라로 투영한다.
+					const FVector Center = (Ghost->Ports[0].GetLocation() + Ghost->Ports[1].GetLocation()) * 0.5;
+					ScreenDelta = GetProjectedHorizontalDelta(*PC, Actor->GetActorTransform().TransformPosition(Center),
+						Pose.TransformPosition(Center));
+				}
+				Actor->SetActorLocationAndRotation(Pose.GetLocation(), Pose.GetRotation());
 			}
+			UpdateVisualPose(*Ghost, ScreenDelta, DeltaSeconds);
 		}
 	}
 
@@ -141,19 +175,21 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		ClearInput();
 	}
 
-	const TCHAR* Status = TEXT("끝점에 가까이 이동하세요. Q/E로 방향을 바꿉니다.");
+	const TCHAR* Status = nullptr;
 	if (SessionId <= 0) Status = TEXT("배치 정보를 준비 중입니다.");
 	else if (!Session.bIsOpen) Status = TEXT("트랙 배치가 끝났습니다.");
 	else if (!bOwnReady) Status = TEXT("참가 정보를 준비 중입니다.");
-	else if (bOwnPlaced) Status = TEXT("설치했습니다. 다른 플레이어를 기다립니다.");
+	else if (bOwnPlaced) Status = TEXT("설치 완료 · 다른 참가자 대기 중");
 	else if (LastResult == EMWTrackPlacementResult::CourseChanged) Status = TEXT("코스가 바뀌었습니다. 끝점을 다시 확인하세요.");
 	else if (LastResult == EMWTrackPlacementResult::Unavailable) Status = TEXT("설치할 수 없습니다. 위치를 다시 확인하세요.");
 	// 승인 대기에는 스냅 안내를 유지해 요청 순간 문구가 잠깐 교체되는 현상을 막는다.
-	else if (bWaitingForReply || bCanPlace) Status = TEXT("스냅되었습니다. 좌클릭 또는 Space로 설치하세요.");
+	else if (bWaitingForReply || bCanPlace) Status = TEXT("좌클릭 / Space · 설치");
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{
-		FText StatusText = FText::FromString(Status);
+		FText StatusText = Status ? FText::FromString(Status)
+            : NSLOCTEXT("MWTrackPlacement", "ApproachAndRotate",
+                "끝점에 가까이 가면 스냅됩니다\nQ/E 키로 트랙을 회전할 수 있습니다");
 		if (Session.bIsOpen && bOwnReady && !bOwnPlaced)
 		{
 			if (LastResult == EMWTrackPlacementResult::ReselectionOpened)
@@ -173,16 +209,27 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 				StatusText = NSLOCTEXT("MWTrackPlacement", "TurnAboveFloor", "지면에 걸립니다 · Q/E로 방향 변경");
 			}
 		}
-		Widget->ShowPlacementStatus(FText::FromString(PlayerLines), StatusText);
+		Widget->ShowPlacementStatus(StatusText);
+		const bool bNeedsGuide = Session.bIsOpen && bOwnReady && !bOwnPlaced && !bCanPlace && !bWaitingForReply;
+		const FVector Endpoint = Session.OpenEnds.IsEmpty() ? FVector::ZeroVector : Session.OpenEnds[0].WorldFrame.GetLocation();
+		Widget->ShowPlacementEndpoint(bNeedsGuide && !Session.OpenEnds.IsEmpty() ? &Endpoint : nullptr);
 	}
 }
 
 UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCreateGhost(
 	int32 PlayerId, const FMWPlayerTrackPlacement& Player, bool bLocal)
 {
-	if (FGhost* Existing = Ghosts.Find(PlayerId); Existing && Existing->Actor.IsValid())
+	if (FGhost* Existing = Ghosts.Find(PlayerId))
 	{
-		return Existing;
+		if (AActor* Actor = Existing->Actor.Get())
+		{
+			if (TSoftClassPtr<AActor>(Actor->GetClass()) == Player.TrackClass)
+			{
+				return Existing;
+			}
+			Actor->Destroy();
+		}
+		Ghosts.Remove(PlayerId);
 	}
 
 	UClass* TrackClass = Player.TrackClass.LoadSynchronous();
@@ -224,16 +271,73 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
 	MWTrackPreview::ShowWireframes(*Actor);
 	MWTrackPreview::SetWireframeColor(*Actor, Color);
+	if (USceneComponent* Wireframes = MWTrackPreview::FindWireframeGroup(*Actor))
+	{
+		if (const USceneComponent* Parent = Wireframes->GetAttachParent();
+			Parent && !Wireframes->IsUsingAbsoluteLocation() && !Wireframes->IsUsingAbsoluteRotation())
+		{
+			// 표시 그룹의 부모 좌표로 연결점 두 개를 옮겨 트랙 중앙을 지나는 축을 잡는다.
+			const FTransform& ParentWorld = Parent->GetComponentTransform();
+			const FTransform& ActorWorld = Actor->GetActorTransform();
+			const FVector First = ParentWorld.InverseTransformPosition(ActorWorld.TransformPosition(Ghost.Ports[0].GetLocation()));
+			const FVector Last = ParentWorld.InverseTransformPosition(ActorWorld.TransformPosition(Ghost.Ports[1].GetLocation()));
+			const FVector Axis = (Last - First).GetSafeNormal();
+			if (!Axis.IsNearlyZero())
+			{
+				Ghost.HeldSway.Emplace(FHeldSway{Wireframes, Wireframes->GetRelativeTransform(), (First + Last) * 0.5, Axis});
+			}
+		}
+	}
 	return &Ghosts.Add(PlayerId, MoveTemp(Ghost));
 }
 
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, FGhost& Ghost)
+	const FMWTrackPlacementSession& Session, FGhost& Ghost, float DeltaSeconds, TOptional<FPointerSample>& OutPointer)
 {
-	if (bWaitingForReply || LastResult == EMWTrackPlacementResult::ReselectionOpened || !UpdateGhostFromPointer(PC, Session, Ghost))
+	if (bWaitingForReply || LastResult == EMWTrackPlacementResult::ReselectionOpened)
 	{
 		return false;
 	}
+
+	bBelowFloor = false;
+	bCanRecoverBlocked = false;
+	FTransform Target;
+	bool bSnapped;
+	FPointerSample Pointer;
+	if (!ResolveGhostFromPointer(PC, Session, Ghost, Target, bSnapped, &Pointer))
+	{
+		if (Ghost.SnapBlend.IsSet())
+		{
+			// 포인터를 읽을 수 없을 때는 마지막 표시 목표까지 보간만 마치고 입력을 전송하지 않는다.
+			const FTransform LastTarget = Ghost.SnapBlend->Target;
+			const bool bLastTargetSnapped = Ghost.PreviousSnapTarget.IsSet();
+			Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, LastTarget, bLastTargetSnapped, DeltaSeconds, 1.0));
+			SetGhostSnapColor(Ghost, bLastTargetSnapped && !Ghost.SnapBlend.IsSet());
+#if WITH_EDITOR
+			if (!Ghost.SnapBlend.IsSet() && FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+			{
+				UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s completed_without_pointer"),
+					*GetWorld()->GetName(), *Ghost.Actor->GetName());
+			}
+#endif
+		}
+		return false;
+	}
+	OutPointer = Pointer;
+	const bool bTurned = Ghost.bLastLocalReversed != Intent.bReversed;
+	Ghost.bLastLocalReversed = Intent.bReversed;
+	if (bSnapped)
+	{
+		bBelowFloor = !MWTrackPlacementClearance::FitsWithFinish(Ghost.GroundPoints, Session.Ground,
+			Target, Ghost.Ports[1 - Intent.SourcePort]);
+		bCanRecoverBlocked = bBelowFloor && !MWTrackPlacementClearance::FitsEitherPort(Ghost.GroundPoints,
+			Session.Ground, Ghost.Ports, Session.OpenEnds[0].WorldFrame);
+	}
+	// 거절된 자세에는 도착 색상과 접점 섬광도 같이 막는다.
+	const bool bValidSnap = bSnapped && !bBelowFloor;
+	Ghost.Actor->SetActorTransform(BlendGhostPose(Ghost, Target, bValidSnap, DeltaSeconds, 1.0, bTurned));
+	const bool bVisiblySnapped = bValidSnap && !Ghost.SnapBlend.IsSet();
+	SetGhostSnapColor(Ghost, bVisiblySnapped);
 
 	const double Now = GetWorld()->GetTimeSeconds();
 	// 로컬 고스트는 매 프레임 갱신하되 원격 표시용 위치 전송은 초당 20회로 제한한다.
@@ -242,36 +346,211 @@ bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerControl
 		PC.ServerUpdateTrackPlacementPreview(SessionId, ++PreviewSequence, Intent);
 		NextPreviewTime = Now + 0.05;
 	}
-	return Ghost.bSnapped;
+	return bVisiblySnapped;
 }
 
-bool UMWTrackPlacementViewComponent::UpdateGhostFromPointer(const AMWGameplayPlayerController& PC,
-	const FMWTrackPlacementSession& Session, FGhost& Ghost)
+bool UMWTrackPlacementViewComponent::ResolveGhostFromPointer(const AMWGameplayPlayerController& PC,
+	const FMWTrackPlacementSession& Session, const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped,
+	FPointerSample* OutPointer)
 {
-	const auto* LocalPlayer = PC.GetLocalPlayer();
-	const FViewport* Viewport = LocalPlayer && LocalPlayer->ViewportClient ? LocalPlayer->ViewportClient->Viewport : nullptr;
-	float X, Y;
-	if (!Viewport || !Viewport->IsForegroundWindow() || !PC.GetMousePosition(X, Y)
-		|| X < 0 || Y < 0 || X >= Viewport->GetSizeXY().X || Y >= Viewport->GetSizeXY().Y)
-	{
-		return false;
-	}
+	FVector2D Screen;
 	FVector Origin, Ray;
-	if (!PC.DeprojectScreenPositionToWorld(X, Y, Origin, Ray)
+	if (!MWCursorProjection::SampleViewportPointer(PC, Screen) || !PC.DeprojectScreenPositionToWorld(Screen.X, Screen.Y, Origin, Ray)
 		|| !MWTrackSnap::UpdateIntentFromRay(Ghost.Ports, Session, Origin, Ray, Intent))
 	{
 		return false;
 	}
-	FTransform Display;
-	const bool bSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, Display);
-	// 확정 입력도 이 자리에서 같은 포트와 현재 지면으로 다시 검사한다.
-	bBelowFloor = bSnapped && !MWTrackPlacementClearance::FitsWithFinish(Ghost.GroundPoints, Session.Ground,
-		Display, Ghost.Ports[1 - Intent.SourcePort]);
-	bCanRecoverBlocked = bBelowFloor && Session.OpenEnds.Num() == 1
-		&& !MWTrackPlacementClearance::FitsEitherPort(Ghost.GroundPoints, Session.Ground, Ghost.Ports, Session.OpenEnds[0].WorldFrame);
-	Ghost.Actor->SetActorTransform(Display);
-	SetGhostSnapColor(Ghost, bSnapped && !bBelowFloor);
+	if (OutPointer)
+	{
+		int32 Width, Height;
+		PC.GetViewportSize(Width, Height);
+		*OutPointer = {static_cast<float>(Screen.X), Width};
+	}
+	bOutSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, OutTarget);
 	return true;
+}
+
+FTransform UMWTrackPlacementViewComponent::BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped,
+	float DeltaSeconds, double FreeMoveAlpha, bool bTurned) const
+{
+	const AActor& Actor = *Ghost.Actor.Get();
+	const FTransform& Current = Actor.GetActorTransform();
+	const bool bWasSnapped = Ghost.PreviousSnapTarget.IsSet();
+	const bool bChangedTarget = bWasSnapped && bSnapped && !Ghost.PreviousSnapTarget->Equals(Target);
+	const bool bStartTurn = bTurned && !bWasSnapped && !bSnapped;
+	const bool bStartBlend = bWasSnapped != bSnapped || bChangedTarget || bStartTurn;
+	if (bStartBlend)
+	{
+		// 스냅 전 Q/E와 연결 자세 전환은 화면에 그린 마지막 자세부터 이어 간다.
+		Ghost.SnapBlend.Emplace(FGhostSnapBlend{Current, Target, 0.0, bStartTurn, {}});
+	}
+	if (bSnapped)
+	{
+		Ghost.PreviousSnapTarget = Target;
+	}
+	else
+	{
+		Ghost.PreviousSnapTarget.Reset();
+	}
+
+	const FTransform* Start = &Current;
+	double Alpha = bSnapped ? 1.0 : FreeMoveAlpha;
+	// 원격의 자유 자세도 포트 중앙을 따라 보간해 Q/E에서 트랙이 크게 휘돌지 않게 한다.
+	bool bRotateAroundCenter = !bSnapped;
+	if (Ghost.SnapBlend.IsSet())
+	{
+		FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
+		Blend.Target = Target;
+		Blend.ElapsedSeconds += DeltaSeconds;
+		const auto* Presentation = GetDefault<UMWTrackPresentationSettings>();
+		const double Duration = bSnapped ? Presentation->SnapSettleSeconds : Presentation->BlendSeconds;
+		const double Progress = FMath::Clamp(Blend.ElapsedSeconds / FMath::Max(Duration, UE_SMALL_NUMBER), 0.0, 1.0);
+		Alpha = FMath::InterpEaseOut(0.0, 1.0, Progress, 2.0);
+		bool bJustReachedContact = false;
+		if (bSnapped)
+		{
+			// 끝점에 빠르게 도달한 뒤 아주 조금 넘어가고 원래 스냅 자세에 정착한다.
+			const double TimeLeft = Progress - 1.0;
+			const double BackOut = 1.0 + TimeLeft * TimeLeft * (2.25 * TimeLeft + 1.25);
+			const double Gap = FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation());
+			const double Overshoot = FMath::Max(0.0, Presentation->SnapOvershoot);
+			Alpha = FMath::Min(BackOut, 1.0 + Overshoot / FMath::Max3(Gap, Overshoot, static_cast<double>(UE_SMALL_NUMBER)));
+			if (!Blend.ContactElapsedSeconds.IsSet() && Alpha >= 1.0)
+			{
+				// 한 프레임에 끝점을 지나친 경우에도 처음 닿는 프레임은 정확한 연결 자세로 그린다.
+				Alpha = 1.0;
+				Blend.ContactElapsedSeconds = Blend.ElapsedSeconds;
+				bJustReachedContact = true;
+				PulseSnapContact(Ghost, Target);
+			}
+		}
+#if WITH_EDITOR
+		if ((bStartBlend || bJustReachedContact || Progress >= 1.0) &&
+			FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		{
+			const TCHAR* Event = bStartBlend ? TEXT("begin") : Progress >= 1.0 ? TEXT("end") : TEXT("contact");
+			UE_LOG(LogTemp, Display, TEXT("MWTrackSnapBlend world=%s ghost=%s %s mode=%s elapsed=%.4f alpha=%.4f gap_cm=%.3f contact=%d"),
+				*GetWorld()->GetName(), *Actor.GetName(), Event,
+				Blend.bRotateAroundCenter ? TEXT("turn") : bChangedTarget ? TEXT("retarget")
+					: bSnapped ? TEXT("snap") : TEXT("release"), Blend.ElapsedSeconds,
+				Alpha, FVector::Distance(Blend.Start.GetLocation(), Target.GetLocation()), bJustReachedContact);
+		}
+#endif
+		if (Progress >= 1.0)
+		{
+			Ghost.SnapBlend.Reset();
+			return Target;
+		}
+		Start = &Blend.Start;
+		bRotateAroundCenter = Blend.bRotateAroundCenter;
+	}
+	else if (Alpha >= 1.0)
+	{
+		return Target;
+	}
+	const FQuat Rotation = FQuat::Slerp(Start->GetRotation(), Target.GetRotation(), Alpha);
+	FVector Location = FMath::Lerp(Start->GetLocation(), Target.GetLocation(), Alpha);
+	if (bRotateAroundCenter)
+	{
+		// BP 피벗이 도로 밖에 있어도 양쪽 포트의 중앙이 커서에서 벗어나지 않게 회전한다.
+		const FVector PortCenter = (Ghost.Ports[0].GetLocation() + Ghost.Ports[1].GetLocation()) * 0.5;
+		const FVector Center = FMath::Lerp(Start->TransformPosition(PortCenter), Target.TransformPosition(PortCenter), Alpha);
+		Location = Center - Rotation.RotateVector(Target.GetScale3D() * PortCenter);
+	}
+	return FTransform(Rotation, Location, Target.GetScale3D());
+}
+
+void UMWTrackPlacementViewComponent::PulseSnapContact(const FGhost& Ghost, const FTransform& Target) const
+{
+	auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget);
+	if (!GS || !Widget)
+	{
+		return;
+	}
+
+	// 원격 보간이 늦게 끝났을 때 이미 바뀐 끝점에서 섬광을 재생하지 않는다.
+	const auto& Ends = GS->GetConstructionComponent()->GetPlacementSession().OpenEnds;
+	if (Ends.IsEmpty())
+	{
+		return;
+	}
+	const FVector Contact = Ends[0].WorldFrame.GetLocation();
+	const auto ReachesContact = [&Target, &Contact](const FTransform& Port)
+	{
+		return Target.TransformPosition(Port.GetLocation()).Equals(Contact, SnapContactTolerance);
+	};
+	if (ReachesContact(Ghost.Ports[0]) || ReachesContact(Ghost.Ports[1]))
+	{
+		Widget->PulsePlacementEndpoint(Contact);
+#if WITH_EDITOR
+		if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		{
+			UE_LOG(LogTemp, Display, TEXT("MWPlacementContact world=%s ghost=%s point=%s"),
+				*GetWorld()->GetOutermost()->GetName(), *Ghost.Actor->GetName(), *Contact.ToCompactString());
+		}
+#endif
+	}
+}
+
+void UMWTrackPlacementViewComponent::UpdateVisualPose(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const
+{
+	if (!Ghost.HeldSway.IsSet())
+	{
+		return;
+	}
+	FHeldSway& Sway = Ghost.HeldSway.GetValue();
+	USceneComponent* Wireframes = Sway.Wireframes.Get();
+	if (!Wireframes)
+	{
+		return;
+	}
+
+	const auto* Presentation = GetDefault<UMWTrackPresentationSettings>();
+	// 포인터가 움직인 프레임에만 기울고 멈추면 원래 자세로 돌아온다.
+	const double Speed = DeltaSeconds > UE_SMALL_NUMBER ? ScreenDelta / DeltaSeconds : 0.0;
+	const double DesiredAngle = Speed * Presentation->HeldSwayDegreesPerWidthPerSecond;
+	const float Limit = FMath::Max(0.f, Presentation->HeldSwayMaxDegrees);
+	const float Target = static_cast<float>(FMath::Clamp(DesiredAngle, -static_cast<double>(Limit), static_cast<double>(Limit)));
+	const float Angle = FMath::FInterpConstantTo(Sway.AngleDegrees, Target, DeltaSeconds,
+		Limit / static_cast<float>(FMath::Max(Presentation->BlendSeconds, UE_SMALL_NUMBER)));
+
+	double DisplayScale = 1.0;
+	if (Ghost.SnapBlend.IsSet() && Ghost.PreviousSnapTarget.IsSet() && Presentation->SnapSettleSeconds > 0.0)
+	{
+		const FGhostSnapBlend& Blend = Ghost.SnapBlend.GetValue();
+		const double Duration = Presentation->SnapSettleSeconds;
+		double Pulse = FMath::Sin(UE_PI * FMath::Clamp(Blend.ElapsedSeconds / Duration, 0.0, 1.0));
+		if (Blend.ContactElapsedSeconds.IsSet())
+		{
+			// 접점에 닿았을 때 가장 크고, 같은 보간의 남은 시간 동안 원래 크기로 돌아온다.
+			const double ContactTime = Blend.ContactElapsedSeconds.GetValue();
+			const double ReturnProgress = (Blend.ElapsedSeconds - ContactTime) /
+				FMath::Max(Duration - ContactTime, UE_SMALL_NUMBER);
+			Pulse = FMath::Cos(UE_HALF_PI * FMath::Clamp(ReturnProgress, 0.0, 1.0));
+		}
+		DisplayScale = FMath::Lerp(1.0, FMath::Max(1.0, Presentation->SnapPeakScale), Pulse);
+	}
+	if (Angle == Sway.AngleDegrees && DisplayScale == Sway.DisplayScale)
+	{
+		return;
+	}
+	Sway.AngleDegrees = Angle;
+	Sway.DisplayScale = DisplayScale;
+
+	const FQuat Tilt(Sway.Axis, FMath::DegreesToRadians(Angle));
+	// 크기와 기울기는 와이어프레임에만 적용한다. 확정 좌표와 연결점은 고스트의 기존 루트를 사용한다.
+	const FVector Location = Sway.Center + Tilt.RotateVector((Sway.RestPose.GetLocation() - Sway.Center) * DisplayScale);
+	Wireframes->SetRelativeTransform(FTransform(Tilt * Sway.RestPose.GetRotation(), Location,
+		Sway.RestPose.GetScale3D() * DisplayScale));
+#if WITH_EDITOR
+	if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+	{
+		UE_LOG(LogTemp, Display, TEXT("MWTrackGhostVisual world=%s ghost=%s sway_deg=%.2f wire_scale=%.4f"),
+			*GetWorld()->GetOutermost()->GetName(), *GetNameSafe(Ghost.Actor.Get()), Angle, DisplayScale);
+	}
+#endif
 }
 
 void UMWTrackPlacementViewComponent::SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const
@@ -374,29 +653,53 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 
 	// 확정 입력은 미리보기 틱보다 먼저 들어올 수 있으므로 지금 커서 위치로 다시 판정한다.
 	FGhost* Ghost = Ghosts.Find(PS->GetLobbyMemberId());
-	if (!Ghost || !Ghost->Actor.IsValid() || !UpdateGhostFromPointer(*PC, Session, *Ghost) || (!Ghost->bSnapped && !bBelowFloor))
+	FTransform ResolvedTarget;
+	bool bSnapped;
+	if (!Ghost || !Ghost->Actor.IsValid() || !ResolveGhostFromPointer(*PC, Session, *Ghost, ResolvedTarget, bSnapped) || !bSnapped)
 	{
 		return;
 	}
 
+	FMWTrackPlacementIntent Request = Intent;
+	const bool bFits = MWTrackPlacementClearance::FitsWithFinish(Ghost->GroundPoints, Session.Ground,
+		ResolvedTarget, Ghost->Ports[1 - Intent.SourcePort]);
+	if (!bFits)
+	{
+		Request.bRecoverBlocked = !MWTrackPlacementClearance::FitsEitherPort(Ghost->GroundPoints,
+			Session.Ground, Ghost->Ports, Session.OpenEnds[0].WorldFrame);
+		// 서버도 같은 포트와 지면을 확인한다. 거절될 클릭에는 확정 색상을 표시하지 않는다.
+		bWaitingForReply = true;
+		PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Request);
+		return;
+	}
+
+#if WITH_EDITOR
+	const FTransform Visual = Ghost->Actor->GetActorTransform();
+#endif
+	// 확정 입력이 보간보다 먼저 들어오면 클릭으로 판정한 위치에서 서버 응답을 기다린다.
+	Ghost->SnapBlend.Reset();
+	Ghost->PreviousSnapTarget = ResolvedTarget;
+	Ghost->Actor->SetActorTransform(ResolvedTarget);
+	SetGhostSnapColor(*Ghost, true);
+
 #if WITH_EDITOR
 	if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
 	{
-		const FTransform Pose = Ghost->Actor->GetActorTransform();
-		const FVector P = Pose.GetLocation(), Scale = Pose.GetScale3D();
-		const FQuat Q = Pose.GetRotation();
+		const FVector P = ResolvedTarget.GetLocation(), Scale = ResolvedTarget.GetScale3D();
+		const FQuat Q = ResolvedTarget.GetRotation();
 		float X = 0.f, Y = 0.f;
 		PC->GetMousePosition(X, Y);
-		UE_LOG(LogTemp, Display, TEXT("MWPlacement accept world=%s member=%d session=%d revision=%d target=%d:%d source=%d pointer=(%.1f,%.1f) ghost=(%.9f,%.9f,%.9f) quat=(%.9f,%.9f,%.9f,%.9f) scale=(%.9f,%.9f,%.9f)"),
+		UE_LOG(LogTemp, Display, TEXT("MWPlacement accept world=%s member=%d session=%d revision=%d target=%d:%d source=%d pointer=(%.1f,%.1f) resolved=(%.9f,%.9f,%.9f) quat=(%.9f,%.9f,%.9f,%.9f) scale=(%.9f,%.9f,%.9f) visual_gap_cm=%.3f visual_gap_deg=%.3f locked_gap_cm=%.6f locked_gap_deg=%.6f"),
 			*GetWorld()->GetName(), PS->GetLobbyMemberId(), SessionId, Session.CourseRevision,
 			Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort, X, Y,
-			P.X, P.Y, P.Z, Q.X, Q.Y, Q.Z, Q.W, Scale.X, Scale.Y, Scale.Z);
+			P.X, P.Y, P.Z, Q.X, Q.Y, Q.Z, Q.W, Scale.X, Scale.Y, Scale.Z,
+			FVector::Distance(P, Visual.GetLocation()), FMath::RadiansToDegrees(Q.AngularDistance(Visual.GetRotation())),
+			FVector::Distance(P, Ghost->Actor->GetActorLocation()),
+			FMath::RadiansToDegrees(Q.AngularDistance(Ghost->Actor->GetActorQuat())));
 	}
 #endif
-	FMWTrackPlacementIntent Request = Intent;
-	Request.bRecoverBlocked = bCanRecoverBlocked;
 	bWaitingForReply = true;
-	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Request);
+	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Intent);
 }
 
 void UMWTrackPlacementViewComponent::HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result)

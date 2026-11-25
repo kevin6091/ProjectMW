@@ -2,7 +2,9 @@
 
 #include "Engine/StreamableManager.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPresentationSettings.h"
 #include "Materials/MaterialInterface.h"
+#include "MaterialShared.h"
 #include "MWGameplayTags.h"
 #include "Player/MWLobbyPlayerController.h"
 #include "Player/MWGameplayPlayerController.h"
@@ -46,10 +48,18 @@ bool UMWTrackPreviewPreload::PrepareCandidates(const TArray<FMWTrackOffer>& Offe
 		}
 	}
 
+	// 후보가 있을 때 투명 표면 재질도 BP와 같은 로딩 핸들로 준비한다.
+	const auto& CandidateSurface = GetDefault<UMWTrackPresentationSettings>()->CandidateSurfaceMaterial;
+	if (!Paths.IsEmpty() && !CandidateSurface.IsNull())
+	{
+		Paths.AddUnique(CandidateSurface.ToSoftObjectPath());
+	}
+
 	if (Paths != CandidatePaths)
 	{
 		if (CandidateLoadHandle) CandidateLoadHandle->CancelHandle();
 		CandidatePaths = MoveTemp(Paths);
+		RequestedMaterials.Reset();
 		CandidateLoadHandle = CandidatePaths.IsEmpty()
 			? nullptr : UAssetManager::GetStreamableManager().RequestAsyncLoad(CandidatePaths);
 	}
@@ -58,18 +68,45 @@ bool UMWTrackPreviewPreload::PrepareCandidates(const TArray<FMWTrackOffer>& Offe
 	TSet<UMaterialInterface*> Materials;
 	for (const FSoftObjectPath& Path : CandidatePaths)
 	{
-		MWTrackPreview::CollectWireframeMaterials(Cast<UClass>(Path.ResolveObject()), Materials);
+		UObject* Loaded = Path.ResolveObject();
+		if (auto* Material = Cast<UMaterialInterface>(Loaded))
+		{
+			Materials.Add(Material);
+		}
+		else
+		{
+			MWTrackPreview::CollectWireframeMaterials(Cast<UClass>(Loaded), Materials);
+		}
 	}
 
-	// 파일을 읽었더라도 PIE에서는 셰이더가 준비될 때까지 기본 체크 재질이 보일 수 있다.
+	bool bReady = true;
+	TArray<UMaterialInterface*> MaterialsToCache;
 	for (UMaterialInterface* Material : Materials)
 	{
-		if (!Material->IsComplete())
+		if (!Material->IsComplete() || Material->IsCompiling())
 		{
+			bReady = false;
+			// 로드 시 시작된 컴파일은 그대로 기다린다. 누락된 셰이더만 후보당 한 번 요청한다.
+			if (!Material->IsCompiling() && !RequestedMaterials.Contains(Material))
+			{
+				MaterialsToCache.Add(Material);
+			}
+		}
+	}
+	if (!MaterialsToCache.IsEmpty())
+	{
+		// CacheShaders는 Uniform Buffer를 재생성한다. 이미 그리는 재질의 캐시된
+		// draw command도 함께 갱신해야 해제된 버퍼 참조가 남지 않는다.
+		// 엔진의 UMaterialInterface::SubmitRemainingJobsForWorld와 같은 갱신 경로다.
+		FMaterialUpdateContext UpdateContext(FMaterialUpdateContext::EOptions::SyncWithRenderingThread);
+		for (UMaterialInterface* Material : MaterialsToCache)
+		{
+			RequestedMaterials.Add(Material);
+			UpdateContext.AddMaterialInterface(Material);
 			Material->CacheShaders(EMaterialShaderPrecompileMode::Background);
 		}
 	}
-	return true;
+	return bReady;
 }
 
 void UMWTrackPreviewPreload::ReleaseCandidates()
@@ -85,6 +122,7 @@ void UMWTrackPreviewPreload::ReleaseCandidates()
 		CatalogLoadHandle.Reset();
 	}
 	CandidatePaths.Reset();
+	RequestedMaterials.Reset();
 }
 
 void UMWTrackPreviewPreload::Deinitialize()

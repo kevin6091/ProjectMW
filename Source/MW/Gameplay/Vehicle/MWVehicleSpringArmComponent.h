@@ -17,6 +17,9 @@ protected:
 	virtual void UpdateDesiredArmLocation(bool bDoTrace, bool bDoLocationLag, bool bDoRotationLag, float DeltaTime) override;
 
 private:
+	double GetMovingTargetWeight(double TimeScale, double Decay);
+	FQuat ShortestRotation(const FQuat& Rotation);
+
 	FQuat PreviousTargetRotation = FQuat::Identity;
 	bool bHasCameraHistory = false;
 };

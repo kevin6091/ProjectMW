@@ -1,5 +1,6 @@
 #include "System/MWAssetManager.h"
 #if WITH_EDITOR
+#include "Gameplay/Items/MWCoursePickupSettings.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
 
 void UMWAssetManager::ModifyCook(TConstArrayView<const ITargetPlatform*> TargetPlatforms,
@@ -9,6 +10,14 @@ void UMWAssetManager::ModifyCook(TConstArrayView<const ITargetPlatform*> TargetP
     // 로딩 WBP는 설정의 소프트 참조로 읽으므로 설정이 가리키는 패키지를 쿠킹 목록에 넣는다.
     const FName Package = GetDefault<UMWArrivalScreen>()->GetLoadingPackage();
     if (!Package.IsNone()) PackagesToCook.AddUnique(Package);
+
+    // 코스 상자의 소프트 메시도 설정에서 읽으므로 지정한 패키지만 쿠킹 대상에 추가한다.
+    const auto& Pickups = *GetDefault<UMWCoursePickupSettings>();
+    for (const FMWPickupVisualPart* Part : {&Pickups.Body, &Pickups.Lid, &Pickups.Handle})
+    {
+        const FName MeshPackage = Part->Mesh.ToSoftObjectPath().GetLongPackageFName();
+        if (!MeshPackage.IsNone()) PackagesToCook.AddUnique(MeshPackage);
+    }
 }
 #endif
 

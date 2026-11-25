@@ -1,0 +1,42 @@
+[에디터 빌드]
+Result: Succeeded
+[일반 설원 경기 3인 PIE]
+[2026.11.25-02.57.25:253][ 94]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_0 track=BP_Track_WoodStartCapped_C_0 lane=-525.0 location=V(X=-1323.82, Y=-75.00, Z=6040.00)
+[2026.11.25-02.57.25:266][ 94]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_1 track=BP_Track_WoodStartCapped_C_0 lane=0.0 location=V(X=-1323.82, Y=450.00, Z=6040.00)
+[2026.11.25-02.57.25:277][ 94]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_2 track=BP_Track_WoodStartCapped_C_0 lane=525.0 location=V(X=-1323.82, Y=975.00, Z=6040.00)
+[2026.11.25-02.57.25:295][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_3 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=-525.0 location=V(X=8223.75, Y=17438.62, Z=6040.00)
+[2026.11.25-02.57.25:306][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_4 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=0.0 location=V(X=7724.68, Y=17275.64, Z=6040.00)
+[2026.11.25-02.57.25:317][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_5 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=525.0 location=V(X=7225.62, Y=17112.68, Z=6040.00)
+[2026.11.25-02.57.25:328][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_6 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=0.0 location=V(X=7028.08, Y=21252.64, Z=6040.00)
+[2026.11.25-02.57.25:340][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_7 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=525.0 location=V(X=6503.73, Y=21226.54, Z=6040.00)
+[2026.11.25-02.57.25:357][ 95]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_8 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=-525.0 location=V(X=7732.77, Y=25375.43, Z=6040.00)
+[2026.11.25-02.57.25:372][ 96]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_9 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=0.0 location=V(X=7211.73, Y=25439.83, Z=6040.00)
+[2026.11.25-02.57.25:382][ 96]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_10 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=525.0 location=V(X=6690.70, Y=25504.23, Z=6040.00)
+[2026.11.25-02.57.25:398][ 96]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_11 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=-525.0 location=V(X=8479.19, Y=29490.29, Z=6040.00)
+[2026.11.25-02.57.25:413][ 96]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_12 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=0.0 location=V(X=7967.55, Y=29608.00, Z=6040.00)
+[2026.11.25-02.57.25:425][ 97]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_13 track=BP_Track_WoodAutoExit_Flat_Right_45_C_1 lane=525.0 location=V(X=7455.92, Y=29725.72, Z=6040.00)
+[2026.11.25-02.57.25:437][ 97]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_14 track=BP_Track_WoodElevated_Left_60_Medium_C_1 lane=-525.0 location=V(X=9227.34, Y=33420.29, Z=5735.11)
+[2026.11.25-02.57.25:448][ 97]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_15 track=BP_Track_WoodElevated_Left_60_Medium_C_1 lane=0.0 location=V(X=8703.29, Y=33388.68, Z=5734.75)
+[2026.11.25-02.57.25:459][ 97]LogMWServer: [MWCoursePickup] session=1 box=MWPickupBox_16 track=BP_Track_WoodElevated_Left_60_Medium_C_1 lane=525.0 location=V(X=8179.25, Y=33357.07, Z=5741.73)
+[2026.11.25-02.57.25:471][ 98]LogMWServer: [MWCoursePickup] prepared session=1 revision=5 rows=6 boxes=17
+[2026.11.25-02.59.37:876][940]LogPython: MW_COURSE_QA drive member=1 trigger=CuaKey start=[-2620.0, 375.0, 6069.2] target=[-1323.825, 450.0, 6040.0]
+[2026.11.25-02.59.40:065][990]LogMWServer: [MWPickup] box=MWPickupBox_1 vehicle=BP_MWVehiclePawn_FRED_C_0 location=V(X=-1437.04, Y=424.69, Z=6069.20) speed=1399.6
+[2026.11.25-02.59.40:077][990]LogPython: MW_COURSE_QA owner pickup {"member": 1, "start": [-2620.0, 375.0, 6069.2], "at": [-1425.348, 425.508, 6069.2], "target": [-1323.825, 450.0, 6040.0], "speed": 1405.66, "time": 2.157, "travel": 1195.72}
+[2026.11.25-02.59.56:719][561]LogPython: MW_COURSE_QA drive member=2 trigger=CuaKey start=[-2620.0, 525.0, 6046.2] target=[-1323.8, 975.0, 6040.0]
+[2026.11.25-02.59.58:571][622]LogMWServer: [MWPickup] box=MWPickupBox_2 vehicle=BP_MWVehiclePawn_DOUG_C_0 location=V(X=-1378.36, Y=843.00, Z=6046.20) speed=1437.3
+[2026.11.25-02.59.58:598][622]LogPython: MW_COURSE_QA owner pickup {"member": 2, "start": [-2620.0, 525.0, 6046.2], "at": [-1222.076, 916.665, 6046.2], "target": [-1323.8, 975.0, 6040.0], "speed": 1461.46, "time": 1.875, "travel": 1451.76}
+[2026.11.25-03.00.11:477][ 55]LogPython: MW_COURSE_QA drive member=3 trigger=CuaKey start=[-2870.0, 375.0, 6054.2] target=[-1323.8, -75.0, 6040.0]
+[2026.11.25-03.00.13:429][123]LogMWServer: [MWPickup] box=MWPickupBox_0 vehicle=BP_MWVehiclePawn_MAMMOTH_C_0 location=V(X=-1429.04, Y=51.00, Z=6054.20) speed=1551.9
+[2026.11.25-03.00.13:452][123]LogPython: MW_COURSE_QA owner pickup {"member": 3, "start": [-2870.0, 375.0, 6054.2], "at": [-1280.387, -6.35, 6054.2], "target": [-1323.8, -75.0, 6040.0], "speed": 1590.71, "time": 1.985, "travel": 1634.72}
+[기본 설정 자동화]
+[2026.11.25-02.54.52:972][687]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.25-02.54.53:229][786]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.25-02.54.53:638][237]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.25-02.54.53:685][240]LogAutomationController: Display: Test Completed. Result={Success} Name={PickupAndUse} Path={MW.Items.PickupAndUse}
+[RowSpacing=0, 실행 시점에서만 덮어쓴 설정]
+[2026.11.25-03.01.51:800][588]LogMWServer: [MWCoursePickup] prepared session=1 revision=5 rows=1 boxes=3
+[2026.11.25-03.01.52:604][652]LogMWServer: [MWCoursePickup] prepared session=3 revision=12 rows=1 boxes=3
+[2026.11.25-03.01.52:969][716]LogMWServer: [MWCoursePickup] prepared session=4 revision=17 rows=1 boxes=3
+[2026.11.25-03.01.53:009][778]LogMWServer: [MWCoursePickup] prepared session=4 revision=17 rows=1 boxes=3
+[2026.11.25-03.01.53:081][  2]LogMWServer: [MWCoursePickup] prepared session=4 revision=17 rows=1 boxes=3
+[2026.11.25-03.01.53:172][ 37]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}

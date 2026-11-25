@@ -21,6 +21,9 @@ class UMWTrackRuntimeComponent : public UActorComponent
 public:
     UMWTrackRuntimeComponent();
 
+    // 움직이는 발판에 고정 지지대를 달지 않도록 배경 연출에 고정 도로 형상을 표시한다.
+    static inline const FName FixedRoadTag{TEXT("MWTrackFixedRoadCollision")};
+
     // 복구 데이터의 값과 에셋 참조를 소유한 뒤 충돌·움직임·교통을 구성한다.
     void Configure(const FMWTrackDefinition& Data);
 
@@ -50,6 +53,16 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+    static const FName RoadTag;
+    static const FName TriggerTag;
+    static const FName TrainTag;
+    static const FName TrainHitTag;
+    static const FName TrainBellTag;
+    static const FName TrafficTag;
+    static const FName TrafficHitTag;
+
+    void SetTriggerCollision(UPrimitiveComponent& Component);
+
     struct FMovedPart
     {
         TWeakObjectPtr<USceneComponent> Component;

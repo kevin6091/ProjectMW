@@ -1,0 +1,86 @@
+2026-11-25 KST  UE 5.8.4  Win64 Development  Listen Server 1화면, 클라이언트 2화면
+Git main: 1b57b3b9c7781129e850403867b88225b89fe6ba  Git #21: ea98d74fa90690610aa8ee7fa47b6eca3762a821
+격리 검증 코드와 작업 브랜치 파일을 대조했다. 에셋은 UVCS cs:80 서버 원본과 일치했다.
+
+[cs:80 서버 에셋 SHA-256]
+8E642CD75FD0DB3A5C5F68F4BD41B06BAAB33DECC442FD234023286D991BD2F9  Content/Levels/L_Dev_Drive.umap
+5EF04337CDF714C3F2987DEFBE3C372E77A340424674DCF9F3E7E86687AAADE3  Content/Gameplay/Tracks/Art/SelectionBoard/SM_TrackSelectionBoard.uasset
+727AD2EF229CFBBBE066AC4298E6BF579E8D85261AC9C6ACBB9F0F071617772A  Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionBoard.uasset
+E951FF4A4988A63310E1954324D611EC8E1D4474C891219D52E4F550916917DA  Content/Gameplay/Tracks/Art/SelectionBoard/M_TrackSelectionSurface.uasset
+C1DE4ED85D9F9BE7E59B0A8AB172E913F100AE21D9E6EA9D5FD6CCE26EF3A159  Content/Shared/VFX/M_MW_TrackPlacementParticle.uasset
+63B349D93DFCDFAEE460864AB6952EA1BD8AFCCA2CC4385677448A4377AD5F13  Content/Shared/SceneVisuals/Library/Meshes/SM_Library_scaffoldmetalBeamsb199e8eaa6cf_8d1a5db1.uasset
+7A3177DEC53287102009CB5381999926204BB8B80670A868B83A0C455EE5A699  Content/UI/Construction/WBP_TrackSelectionTest.uasset
+
+[에디터 빌드·WBP·회귀]
+C:\Users\user\Documents\Codex\mw-reselection-split-qa\Source\MW\Gameplay\Items\MWItemComponentVisual.cpp(230,58): warning C4996: 'UMovieScene::GetBindings': Getting non-const access to GetBindings is no longer allowed. Please use const GetBindings() - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+Result: Succeeded
+Total execution time: 72.28 seconds
+[2026.11.25-01.09.41:587][  0]LogPython: MW_SPLIT_WBP name=WBP_TrackSelectionTest compiled=True unchanged=True sha256=7a3177dec53287102009cb5381999926204bb8b80670a868b83a0c455ee5a699
+[2026.11.25-01.09.41:643][  0]LogPython: MW_SPLIT_WBP name=BP_MWGameplayPlayerController compiled=True unchanged=True sha256=067dc447427224a7ed9861381604b2b99e56a1ad5faf0d925bea4e5a00b5b850
+[2026.11.25-01.09.41:678][  0]LogPython: MW_SPLIT_WBP name=WBP_MatchPanels compiled=True unchanged=True sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.25-01.09.41:770][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+[2026.11.25-01.10.21:750][578]LogAutomationController: Display: Test Completed. Result={Success} Name={PlacementClearance} Path={MW.Construction.PlacementClearance}
+[2026.11.25-01.10.21:819][580]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+[2026.11.25-01.10.22:225][597]LogAutomationController: Display: Test Completed. Result={Success} Name={ExpiryAndHeartbeat} Path={MW.Cursor.ExpiryAndHeartbeat}
+[2026.11.25-01.10.22:340][599]LogAutomationController: Display: Test Completed. Result={Success} Name={StreamValidation} Path={MW.Cursor.StreamValidation}
+[2026.11.25-01.10.22:457][601]LogAutomationController: Display: Test Completed. Result={Success} Name={WorldWidgetProjection} Path={MW.Cursor.WorldWidgetProjection}
+[2026.11.25-01.10.28:956][699]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.25-01.10.29:970][797]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.25-01.10.32:665][247]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.25-01.10.32:711][253]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 8 tests performed.
+
+[1라운드 결승 트리거를 통한 다음 라운드 준비]
+{"event": "verified real overlap", "epoch": 1, "kind": "finish", "ordinal": 0, "piece": 5, "member": 1, "status": "<MWRaceStatus.FINISHED: 2>", "checkpoints": 0, "checkpoint_score": 0, "finish": 1, "finish_score": 300, "score": 300, "participant": true}
+{"event": "verified real overlap", "epoch": 1, "kind": "finish", "ordinal": 0, "piece": 5, "member": 2, "status": "<MWRaceStatus.FINISHED: 2>", "checkpoints": 0, "checkpoint_score": 0, "finish": 2, "finish_score": 150, "score": 150, "participant": true}
+{"event": "verified real overlap", "epoch": 1, "kind": "finish", "ordinal": 0, "piece": 5, "member": 3, "status": "<MWRaceStatus.FINISHED: 2>", "checkpoints": 0, "checkpoint_score": 0, "finish": 3, "finish_score": 50, "score": 50, "participant": true}
+
+[2라운드 선택판과 기존 코스 투영 AABB]
+P1 viewport=[794, 514] DPI=0.4755 board=[[-2620.001, -43846.408, 5621.471], [6500.0, 10225.601, 245.418]] screen=[124.74, 148.24, 669.26, 424.74]
+  piece=1 BP_Track_WoodStartCapped_C_0 projected=[-914.94, 104.75, -470.48, 337.09] clearXY=31606.91 cm
+  piece=2 BP_Track_WoodBridge_Narrow_C_1 projected=[-1035.17, 327.47, -601.49, 618.0] clearXY=32567.97 cm
+  piece=3 BP_Track_WoodAutoExit_Flat_Right_90_C_1 projected=[-1967.7, 617.38, -884.98, 1251.61] clearXY=32571.83 cm
+  piece=4 BP_Track_WoodElevated_Left_75_Medium_C_1 projected=[-2333.42, 853.46, -1268.91, 1339.39] clearXY=41966.08 cm
+  piece=5 BP_Track_WoodFinish_C_0 projected=[-2076.72, 559.57, -940.69, 985.31] clearXY=44958.29 cm
+P2 viewport=[994, 532] DPI=0.4921 board=[[-2620.001, -45049.822, 5621.471], [6500.0, 10225.601, 245.418]] screen=[181.62, 137.98, 812.38, 460.57]
+  piece=1 BP_Track_WoodStartCapped_C_0 projected=[-1055.62, 88.04, -554.16, 359.39] clearXY=32810.32 cm
+  piece=2 BP_Track_WoodBridge_Narrow_C_2 projected=[-1183.71, 347.97, -703.26, 680.47] clearXY=33771.39 cm
+  piece=3 BP_Track_WoodAutoExit_Flat_Right_90_C_2 projected=[-2169.59, 678.79, -1015.67, 1362.66] clearXY=33775.24 cm
+  piece=4 BP_Track_WoodElevated_Left_75_Medium_C_2 projected=[-2560.4, 946.82, -1448.4, 1453.68] clearXY=43169.50 cm
+  piece=5 BP_Track_WoodFinish_C_0 projected=[-2315.49, 612.06, -1097.03, 1078.05] clearXY=46161.70 cm
+P3 viewport=[1039, 372] DPI=0.4440 board=[[-2620.001, -53237.055, 5621.471], [6500.0, 10225.601, 245.418]] screen=[300.9, 90.87, 738.1, 321.62]
+  piece=1 BP_Track_WoodStartCapped_C_0 projected=[-719.66, 57.84, -413.05, 252.58] clearXY=40997.55 cm
+  piece=2 BP_Track_WoodBridge_Narrow_C_2 projected=[-778.64, 243.82, -507.17, 467.08] clearXY=41958.62 cm
+  piece=3 BP_Track_WoodAutoExit_Flat_Right_90_C_2 projected=[-1252.04, 457.46, -677.8, 818.87] clearXY=41962.48 cm
+  piece=4 BP_Track_WoodElevated_Left_75_Medium_C_2 projected=[-1454.32, 630.01, -946.12, 860.61] clearXY=51356.73 cm
+  piece=5 BP_Track_WoodFinish_C_0 projected=[-1387.76, 413.85, -782.36, 672.69] clearXY=54348.94 cm
+
+[선택판 숨김·스냅·확정 재판정·설치 연출]
+[2026.11.25-01.07.48:075][795]LogPython: MW_SELECTION_BOARD_OBS member=1 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> hidden=True collision=<CollisionEnabled.NO_COLLISION: 0> mesh=<Object '/Game/Gameplay/Tracks/Art/SelectionBoard/SM_TrackSelectionBoard.SM_TrackSelectionBoard' (0x00000215ABB14800) Class 'StaticMesh'>
+[2026.11.25-01.07.48:111][796]LogPython: MW_SELECTION_BOARD_OBS member=2 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> hidden=True collision=<CollisionEnabled.NO_COLLISION: 0> mesh=<Object '/Game/Gameplay/Tracks/Art/SelectionBoard/SM_TrackSelectionBoard.SM_TrackSelectionBoard' (0x00000215ABB14800) Class 'StaticMesh'>
+[2026.11.25-01.07.48:145][797]LogPython: MW_SELECTION_BOARD_OBS member=3 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> hidden=True collision=<CollisionEnabled.NO_COLLISION: 0> mesh=<Object '/Game/Gameplay/Tracks/Art/SelectionBoard/SM_TrackSelectionBoard.SM_TrackSelectionBoard' (0x00000215ABB14800) Class 'StaticMesh'>
+[2026.11.25-01.07.03:131][819]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodBridge_Narrow_C_1 contact mode=snap elapsed=0.1299 alpha=1.0000 gap_cm=997.516 contact=1
+[2026.11.25-01.07.03:311][823]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodBridge_Narrow_C_2 contact mode=snap elapsed=0.1323 alpha=1.0000 gap_cm=997.743 contact=1
+[2026.11.25-01.07.03:345][823]LogTemp: Display: MWTrackSnapBlend world=L_Dev_Drive ghost=BP_Track_WoodBridge_Narrow_C_1 contact mode=snap elapsed=0.1323 alpha=1.0000 gap_cm=997.743 contact=1
+[2026.11.25-01.07.52:670][897]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=2 revision=6 target=4:0 source=1 pointer=(411.0,345.0) resolved=(9926.129950282,15527.266053081,2893.840000000) quat=(0.000000000,0.000000000,-0.793379051,0.608727920) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.25-01.07.56:745][985]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=2 revision=7 target=5:0 source=1 pointer=(439.0,344.0) resolved=(6891.426734084,15127.998915181,2893.840000000) quat=(0.000000000,0.000000000,0.500036539,-0.866004307) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.25-01.08.05:734][161]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=2 revision=8 target=6:0 source=0 pointer=(457.0,207.0) resolved=(6891.426734084,15127.998915181,2893.840000000) quat=(0.000000000,0.000000000,0.866004329,0.500036501) scale=(1.000000000,1.000000000,1.000000000) visual_gap_cm=0.000 visual_gap_deg=0.000 locked_gap_cm=0.000000 locked_gap_deg=0.000000
+[2026.11.25-01.07.03:902][841]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 meshes=16 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -89.999995 Roll 0.000000
+[2026.11.25-01.07.04:020][842]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 meshes=16 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -90.000000 Roll 0.000000
+[2026.11.25-01.07.04:112][845]LogTemp: Display: MWPlacementPop begin world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 meshes=16 pivot=V(X=260.39, Y=450.00, Z=6000.00) actor=Rotation: Pitch 0.000000 Yaw -90.000000 Roll 0.000000
+[2026.11.25-01.07.04:216][847]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 elapsed=0.134 scale=1.0558
+[2026.11.25-01.07.04:229][847]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 elapsed=0.113 scale=1.0680
+[2026.11.25-01.07.04:240][848]LogTemp: Display: MWPlacementPop turn world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 elapsed=0.113 scale=1.0680
+[2026.11.25-01.07.04:251][849]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_0_L_Dev_Drive piece=2 elapsed=0.270
+[2026.11.25-01.07.04:263][849]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_1_L_Dev_Drive piece=2 elapsed=0.249
+[2026.11.25-01.07.04:276][849]LogTemp: Display: MWPlacementPop end world=/Game/Levels/UEDPIE_2_L_Dev_Drive piece=2 elapsed=0.249
+[2026.11.25-01.07.04:362][851]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layer=1/2 elapsed=0.450 bottom=2939.42
+[2026.11.25-01.07.04:382][852]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layer=1/2 elapsed=0.447 bottom=2939.42
+[2026.11.25-01.07.04:389][852]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layer=1/2 elapsed=0.447 bottom=2939.42
+[2026.11.25-01.07.04:641][858]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_0_L_Dev_Drive session=1 piece=2 layer=2/2 elapsed=0.729 bottom=0.00
+[2026.11.25-01.07.04:662][858]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_1_L_Dev_Drive session=1 piece=2 layer=2/2 elapsed=0.708 bottom=0.00
+[2026.11.25-01.07.04:685][859]LogTemp: Display: [MWTrackSupports] layer world=/Game/Levels/UEDPIE_2_L_Dev_Drive session=1 piece=2 layer=2/2 elapsed=0.708 bottom=0.00
+
+[2라운드 Racing]
+P1 <MWRoomPhase.RACING: 9> round=2 positioned=[-5618.708, 11925.384, 2962.641] pawn=BP_MWVehiclePawn_FRED_C_0 board_hidden=true pieces=8
+P2 <MWRoomPhase.RACING: 9> round=2 positioned=[-1331.703, 525.0, 6045.8] pawn=BP_MWVehiclePawn_DOUG_C_0 board_hidden=true pieces=8
+P3 <MWRoomPhase.RACING: 9> round=2 positioned=[-2870.0, 375.0, 6053.8] pawn=BP_MWVehiclePawn_MAMMOTH_C_0 board_hidden=true pieces=8

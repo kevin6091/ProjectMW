@@ -8,190 +8,244 @@
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "CollisionQueryParams.h"
 #include "Engine/HitResult.h"
 #include "Engine/World.h"
 #include "Engine/ScopedMovementUpdate.h"
 #include "CollisionShape.h"
 #include "Math/RotationMatrix.h"
-#include "HAL/IConsoleManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogMWVehicleSupport, Log, All);
 
-namespace
+// 접지 검사마다 기록하므로 평소에는 끄고 재현 테스트에서만 활성화한다.
+TAutoConsoleVariable<int32> UMWVehicleMovementComponent::CVarVehicleSupportLog(
+	TEXT("mw.Vehicle.SupportLog"), 0,
+	TEXT("Vehicle ground support diagnostics: 0=off, 1=log every ground query."));
+
+// 각 Box 축이 노면 법선 방향으로 차지하는 길이를 합한다.
+double UMWVehicleMovementComponent::CalculateBoxSupportRadius(const FVector& Extent, const FQuat& Rotation,
+	const FVector& Normal) const
 {
-	constexpr ECollisionChannel VehicleGroundChannel = ECC_GameTraceChannel1;
-	// 접지 검사마다 기록하므로 평소에는 끄고 재현 테스트에서만 활성화한다.
-	static TAutoConsoleVariable<int32> CVarVehicleSupportLog(
-		TEXT("mw.Vehicle.SupportLog"), 0,
-		TEXT("Vehicle ground support diagnostics: 0=off, 1=log every ground query."));
+	return Extent.X * FMath::Abs(FVector::DotProduct(Rotation.GetAxisX(), Normal))
+		+ Extent.Y * FMath::Abs(FVector::DotProduct(Rotation.GetAxisY(), Normal))
+		+ Extent.Z * FMath::Abs(FVector::DotProduct(Rotation.GetAxisZ(), Normal));
 }
 
-namespace
+// 차체 좌표의 바퀴 위치와 현재 압축량으로 자세에 필요한 앞뒤·좌우 기울기를 구한다.
+FVector UMWVehicleMovementComponent::FitWheelSupportNormal(TConstArrayView<FVector> Samples, const FQuat& Rotation,
+	const FVector& RoadNormal, double MaxAngle) const
 {
-	constexpr float MaxImpactYawRate = 150.f;
-	constexpr float ImpactYawDamping = MWVehicleImpactYawDamping;
-	constexpr double ImpactYawScale = 0.35;
-
-	struct FContactResponse
+	const FVector LocalRoad = Rotation.UnrotateVector(RoadNormal);
+	if (Samples.Num() < 2 || LocalRoad.Z <= UE_KINDA_SMALL_NUMBER)
 	{
-		FVector DeltaA = FVector::ZeroVector;
-		FVector DeltaB = FVector::ZeroVector;
-		double Impulse = 0.0;
+		return RoadNormal;
+	}
+
+	FVector Center = FVector::ZeroVector;
+	for (const FVector& Sample : Samples)
+	{
+		Center += Sample;
+	}
+	Center /= Samples.Num();
+
+	double XX = 0.0, XY = 0.0, YY = 0.0, XZ = 0.0, YZ = 0.0;
+	for (const FVector& Sample : Samples)
+	{
+		const FVector Spread = Sample - Center;
+		XX += Spread.X * Spread.X;
+		XY += Spread.X * Spread.Y;
+		YY += Spread.Y * Spread.Y;
+		XZ += Spread.X * Spread.Z;
+		YZ += Spread.Y * Spread.Z;
+	}
+
+	const double Span = XX + YY;
+	if (Span <= UE_KINDA_SMALL_NUMBER)
+	{
+		return RoadNormal;
+	}
+
+	const double Determinant = XX * YY - XY * XY;
+	FVector2D Slope(-LocalRoad.X / LocalRoad.Z, -LocalRoad.Y / LocalRoad.Z);
+	if (Determinant > Span * Span * UE_KINDA_SMALL_NUMBER)
+	{
+		Slope.X = (YY * XZ - XY * YZ) / Determinant;
+		Slope.Y = (XX * YZ - XY * XZ) / Determinant;
+	}
+	else
+	{
+		// 한 축만 닿았으면 측정 가능한 방향만 보정하고 나머지는 실제 노면 기울기를 따른다.
+		const FVector2D HeightMoment(XZ, YZ);
+		const FVector2D RoadMoment(XX * Slope.X + XY * Slope.Y, XY * Slope.X + YY * Slope.Y);
+		Slope += (HeightMoment - RoadMoment) / Span;
+	}
+
+	const FVector Fitted = Rotation.RotateVector(FVector(-Slope.X, -Slope.Y, 1.0).GetSafeNormal());
+	const double Dot = FMath::Clamp(FVector::DotProduct(RoadNormal, Fitted), -1.0, 1.0);
+	if (Dot >= FMath::Cos(MaxAngle))
+	{
+		return Fitted;
+	}
+
+	// 한 바퀴가 큰 단차를 건드려도 실제 노면에서 허용하는 자세 범위를 넘지 않는다.
+	const FQuat Tilt = FQuat::FindBetweenNormals(RoadNormal, Fitted);
+	return FQuat::Slerp(FQuat::Identity, Tilt, MaxAngle / FMath::Acos(Dot)).RotateVector(RoadNormal);
+}
+
+UMWVehicleMovementComponent::FContactResponse UMWVehicleMovementComponent::CalculateContactResponse(
+	const FVector& VelocityA, const FVector& VelocityB, const FVector& Normal,
+	const FMWVehicleContactTuning& A, const FMWVehicleContactTuning& B)
+{
+	// 떨어지는 중인 차량은 다시 밀지 않는다. 반발은 최소 접근 속도 이상에서만 적용한다.
+	const double SpeedA = FVector::DotProduct(VelocityA, Normal);
+	const double SpeedB = FVector::DotProduct(VelocityB, Normal);
+	const double ClosingSpeed = SpeedB - SpeedA;
+	if (ClosingSpeed <= KINDA_SMALL_NUMBER)
+	{
+		return {};
+	}
+	const double Restitution = ClosingSpeed >= FMath::Max(A.MinBounceSpeed, B.MinBounceSpeed)
+		? FMath::Min(A.Restitution, B.Restitution) : 0.0;
+	const double InvMassA = 1.0 / A.Mass;
+	const double InvMassB = 1.0 / B.Mass;
+	const double Impulse = (1.0 + Restitution) * ClosingSpeed / (InvMassA + InvMassB);
+	const double CommonSpeed = (SpeedA * A.Mass + SpeedB * B.Mass) / (A.Mass + B.Mass);
+	const double MaxLoss = ClosingSpeed * 0.5;
+	const double Loss = FMath::Clamp(CommonSpeed, -MaxLoss, MaxLoss)
+		* (1.0 - FMath::Min(A.MomentumRetention, B.MomentumRetention));
+	return {Normal * (Impulse * InvMassA - Loss), -Normal * (Impulse * InvMassB + Loss), Impulse};
+}
+
+double UMWVehicleMovementComponent::ProjectBoxRadius(const FVector& Axis, const FQuat& Rotation, const FVector& Extent) const
+{
+	return FMath::Abs(Axis | Rotation.GetAxisX()) * Extent.X
+		+ FMath::Abs(Axis | Rotation.GetAxisY()) * Extent.Y
+		+ FMath::Abs(Axis | Rotation.GetAxisZ()) * Extent.Z;
+}
+
+void UMWVehicleMovementComponent::GetContactArms(const FVector& Normal, const FVector& CenterOffset, const FQuat& RotationA,
+	const FVector& ExtentA, const FQuat& RotationB, const FVector& ExtentB, FVector& OutA, FVector& OutB)
+{
+	// 면 전체가 맞닿으면 접촉 구간의 가운데를 쓴다. 정중앙 추돌이 모서리 한 점을 기준으로 회전하는 것을 막는다.
+	const FVector Tangent(-Normal.Y, Normal.X, 0.0);
+	const double RadiusA = ProjectBoxRadius(Tangent, RotationA, ExtentA);
+	const double RadiusB = ProjectBoxRadius(Tangent, RotationB, ExtentB);
+	const double CenterB = CenterOffset | Tangent;
+	const double Contact = 0.5 * (FMath::Max(-RadiusA, CenterB - RadiusB) + FMath::Min(RadiusA, CenterB + RadiusB));
+	OutA = Tangent * FMath::Clamp(Contact, -RadiusA, RadiusA);
+	OutB = Tangent * FMath::Clamp(Contact - CenterB, -RadiusB, RadiusB);
+}
+
+void UMWVehicleMovementComponent::ApplyContactYaw(float& Rate, const FVector& Offset, const FVector& Impulse,
+	double Mass, const FVector& Extent)
+{
+	const double RadiusSquared = Extent.SizeSquared2D();
+	const double Inertia = Mass * RadiusSquared / 3.0;
+	if (Inertia > UE_SMALL_NUMBER)
+	{
+		const FVector Arm = FVector(Offset.X, Offset.Y, 0.0).GetClampedToMaxSize(FMath::Sqrt(RadiusSquared));
+		const double DeltaYawRate = FMath::RadiansToDegrees(FVector::CrossProduct(Arm, Impulse).Z / Inertia) * ImpactYawScale;
+		Rate = FMath::Clamp(Rate + DeltaYawRate, -MaxImpactYawRate, MaxImpactYawRate);
+	}
+}
+
+bool UMWVehicleMovementComponent::SweepContactBoxes(const FVector& Location, const FQuat& Rotation, const FVector& Extent,
+	const FMWVehicleContactSample& Other, const FVector& RelativeDelta, double& OutTime, FVector& OutNormal) const
+{
+	const FVector CenterOffset = Other.Location - Location;
+	const FVector OwnAxes[] = {Rotation.GetAxisX(), Rotation.GetAxisY(), Rotation.GetAxisZ()};
+	const FVector OtherAxes[] = {Other.Rotation.GetAxisX(), Other.Rotation.GetAxisY(), Other.Rotation.GetAxisZ()};
+	double EnterTime = 0.0;
+	double ExitTime = 1.0;
+	double MinPenetration = TNumericLimits<double>::Max();
+	FVector EnterNormal = FVector::ZeroVector;
+	FVector OverlapNormal = FVector::ZeroVector;
+
+	// 각 축에 투영한 두 박스가 겹치는 시간 구간을 구한다. 모든 축에서 겹치는 첫 시각이 접촉이다.
+	const auto TestAxis = [&](const FVector& Axis)
+	{
+		const double Offset = CenterOffset | Axis;
+		const double Radius = ProjectBoxRadius(Axis, Rotation, Extent) + ProjectBoxRadius(Axis, Other.Rotation, Other.Extent);
+		const double Penetration = Radius - FMath::Abs(Offset);
+		if (Penetration < MinPenetration)
+		{
+			MinPenetration = Penetration;
+			OverlapNormal = Offset >= 0.0 ? -Axis : Axis;
+		}
+
+		const double Travel = RelativeDelta | Axis;
+		if (FMath::IsNearlyZero(Travel))
+		{
+			return Penetration >= 0.0;
+		}
+		const double Start = (Offset - Radius) / Travel;
+		const double End = (Offset + Radius) / Travel;
+		const double AxisEnter = FMath::Min(Start, End);
+		if (AxisEnter > EnterTime)
+		{
+			EnterTime = AxisEnter;
+			EnterNormal = Travel > 0.0 ? -Axis : Axis;
+		}
+		ExitTime = FMath::Min(ExitTime, FMath::Max(Start, End));
+		return EnterTime <= ExitTime;
 	};
 
-	FContactResponse CalculateContactResponse(const FVector& VelocityA, const FVector& VelocityB,
-		const FVector& Normal, const FMWVehicleContactTuning& A, const FMWVehicleContactTuning& B)
+	for (int32 Axis = 0; Axis < 3; ++Axis)
 	{
-		// 떨어지는 중인 차량은 다시 밀지 않는다. 반발은 최소 접근 속도 이상에서만 적용한다.
-		const double SpeedA = FVector::DotProduct(VelocityA, Normal);
-		const double SpeedB = FVector::DotProduct(VelocityB, Normal);
-		const double ClosingSpeed = SpeedB - SpeedA;
-		if (ClosingSpeed <= KINDA_SMALL_NUMBER)
+		if (!TestAxis(OwnAxes[Axis]) || !TestAxis(OtherAxes[Axis]))
 		{
-			return {};
-		}
-		const double Restitution = ClosingSpeed >= FMath::Max(A.MinBounceSpeed, B.MinBounceSpeed)
-			? FMath::Min(A.Restitution, B.Restitution) : 0.0;
-		const double InvMassA = 1.0 / A.Mass;
-		const double InvMassB = 1.0 / B.Mass;
-		const double Impulse = (1.0 + Restitution) * ClosingSpeed / (InvMassA + InvMassB);
-		const double CommonSpeed = (SpeedA * A.Mass + SpeedB * B.Mass) / (A.Mass + B.Mass);
-		const double MaxLoss = ClosingSpeed * 0.5;
-		const double Loss = FMath::Clamp(CommonSpeed, -MaxLoss, MaxLoss)
-			* (1.0 - FMath::Min(A.MomentumRetention, B.MomentumRetention));
-		return {Normal * (Impulse * InvMassA - Loss), -Normal * (Impulse * InvMassB + Loss), Impulse};
-	}
-
-	double ProjectBoxRadius(const FVector& Axis, const FQuat& Rotation, const FVector& Extent)
-	{
-		return FMath::Abs(Axis | Rotation.GetAxisX()) * Extent.X
-			+ FMath::Abs(Axis | Rotation.GetAxisY()) * Extent.Y
-			+ FMath::Abs(Axis | Rotation.GetAxisZ()) * Extent.Z;
-	}
-
-	void GetContactArms(const FVector& Normal, const FVector& CenterOffset, const FQuat& RotationA,
-		const FVector& ExtentA, const FQuat& RotationB, const FVector& ExtentB, FVector& OutA, FVector& OutB)
-	{
-		// 면 전체가 맞닿으면 접촉 구간의 가운데를 쓴다. 정중앙 추돌이 모서리 한 점을 기준으로 회전하는 것을 막는다.
-		const FVector Tangent(-Normal.Y, Normal.X, 0.0);
-		const double RadiusA = ProjectBoxRadius(Tangent, RotationA, ExtentA);
-		const double RadiusB = ProjectBoxRadius(Tangent, RotationB, ExtentB);
-		const double CenterB = CenterOffset | Tangent;
-		const double Contact = 0.5 * (FMath::Max(-RadiusA, CenterB - RadiusB) + FMath::Min(RadiusA, CenterB + RadiusB));
-		OutA = Tangent * FMath::Clamp(Contact, -RadiusA, RadiusA);
-		OutB = Tangent * FMath::Clamp(Contact - CenterB, -RadiusB, RadiusB);
-	}
-
-	void ApplyContactYaw(float& Rate, const FVector& Offset, const FVector& Impulse, double Mass, const FVector& Extent)
-	{
-		const double RadiusSquared = Extent.SizeSquared2D();
-		const double Inertia = Mass * RadiusSquared / 3.0;
-		if (Inertia > UE_SMALL_NUMBER)
-		{
-			const FVector Arm = FVector(Offset.X, Offset.Y, 0.0).GetClampedToMaxSize(FMath::Sqrt(RadiusSquared));
-			const double DeltaYawRate = FMath::RadiansToDegrees(FVector::CrossProduct(Arm, Impulse).Z / Inertia) * ImpactYawScale;
-			Rate = FMath::Clamp(Rate + DeltaYawRate, -MaxImpactYawRate, MaxImpactYawRate);
+			return false;
 		}
 	}
-
-	bool SweepContactBoxes(const FVector& Location, const FQuat& Rotation, const FVector& Extent,
-		const FMWVehicleContactSample& Other, const FVector& RelativeDelta, double& OutTime, FVector& OutNormal)
+	for (const FVector& OwnAxis : OwnAxes)
 	{
-		const FVector CenterOffset = Other.Location - Location;
-		const FVector OwnAxes[] = {Rotation.GetAxisX(), Rotation.GetAxisY(), Rotation.GetAxisZ()};
-		const FVector OtherAxes[] = {Other.Rotation.GetAxisX(), Other.Rotation.GetAxisY(), Other.Rotation.GetAxisZ()};
-		double EnterTime = 0.0;
-		double ExitTime = 1.0;
-		double MinPenetration = TNumericLimits<double>::Max();
-		FVector EnterNormal = FVector::ZeroVector;
-		FVector OverlapNormal = FVector::ZeroVector;
-
-		// 각 축에 투영한 두 박스가 겹치는 시간 구간을 구한다. 모든 축에서 겹치는 첫 시각이 접촉이다.
-		const auto TestAxis = [&](const FVector& Axis)
+		for (const FVector& OtherAxis : OtherAxes)
 		{
-			const double Offset = CenterOffset | Axis;
-			const double Radius = ProjectBoxRadius(Axis, Rotation, Extent) + ProjectBoxRadius(Axis, Other.Rotation, Other.Extent);
-			const double Penetration = Radius - FMath::Abs(Offset);
-			if (Penetration < MinPenetration)
-			{
-				MinPenetration = Penetration;
-				OverlapNormal = Offset >= 0.0 ? -Axis : Axis;
-			}
-
-			const double Travel = RelativeDelta | Axis;
-			if (FMath::IsNearlyZero(Travel))
-			{
-				return Penetration >= 0.0;
-			}
-			const double Start = (Offset - Radius) / Travel;
-			const double End = (Offset + Radius) / Travel;
-			const double AxisEnter = FMath::Min(Start, End);
-			if (AxisEnter > EnterTime)
-			{
-				EnterTime = AxisEnter;
-				EnterNormal = Travel > 0.0 ? -Axis : Axis;
-			}
-			ExitTime = FMath::Min(ExitTime, FMath::Max(Start, End));
-			return EnterTime <= ExitTime;
-		};
-
-		for (int32 Axis = 0; Axis < 3; ++Axis)
-		{
-			if (!TestAxis(OwnAxes[Axis]) || !TestAxis(OtherAxes[Axis]))
+			const FVector CrossAxis = FVector::CrossProduct(OwnAxis, OtherAxis).GetSafeNormal();
+			if (!CrossAxis.IsZero() && !TestAxis(CrossAxis))
 			{
 				return false;
 			}
 		}
-		for (const FVector& OwnAxis : OwnAxes)
-		{
-			for (const FVector& OtherAxis : OtherAxes)
-			{
-				const FVector CrossAxis = FVector::CrossProduct(OwnAxis, OtherAxis).GetSafeNormal();
-				if (!CrossAxis.IsZero() && !TestAxis(CrossAxis))
-				{
-					return false;
-				}
-			}
-		}
-		OutTime = EnterTime;
-		OutNormal = EnterTime > 0.0 ? EnterNormal : OverlapNormal;
-		return true;
 	}
+	OutTime = EnterTime;
+	OutNormal = EnterTime > 0.0 ? EnterNormal : OverlapNormal;
+	return true;
+}
 
-	const FMWVehicleContactSample* FindPredictedContact(const FVector& Location, const FQuat& Rotation,
-		const FVector& Extent, const FVector& MoveDelta, float DeltaTime, TArrayView<const FMWVehicleContactSample> Contacts,
-		double& OutFraction, FVector& OutNormal)
+const FMWVehicleContactSample* UMWVehicleMovementComponent::FindPredictedContact(const FVector& Location, const FQuat& Rotation,
+	const FVector& Extent, const FVector& MoveDelta, float DeltaTime, TArrayView<const FMWVehicleContactSample> Contacts,
+	double& OutFraction, FVector& OutNormal) const
+{
+	const FMWVehicleContactSample* Closest = nullptr;
+	OutFraction = 1.0;
+	for (const FMWVehicleContactSample& Other : Contacts)
 	{
-		const FMWVehicleContactSample* Closest = nullptr;
-		OutFraction = 1.0;
-		for (const FMWVehicleContactSample& Other : Contacts)
+		// 상대 차량도 이 스텝 동안 움직인다고 보고 두 박스를 상대 이동량으로 검사한다.
+		const FVector RelativeDelta = MoveDelta - Other.Velocity * DeltaTime - Other.CorrectionDelta;
+		const double Length = RelativeDelta.Size();
+		if (Length <= UE_KINDA_SMALL_NUMBER ||
+			FVector::DistSquared(Location, Other.Location) > FMath::Square(Extent.Size() + Other.Extent.Size() + Length))
 		{
-			// 상대 차량도 이 스텝 동안 움직인다고 보고 두 박스를 상대 이동량으로 검사한다.
-			const FVector RelativeDelta = MoveDelta - Other.Velocity * DeltaTime - Other.CorrectionDelta;
-			const double Length = RelativeDelta.Size();
-			if (Length <= UE_KINDA_SMALL_NUMBER ||
-				FVector::DistSquared(Location, Other.Location) > FMath::Square(Extent.Size() + Other.Extent.Size() + Length))
-			{
-				continue;
-			}
-			double Fraction = 0.0;
-			FVector Normal;
-			if (!SweepContactBoxes(Location, Rotation, Extent, Other, RelativeDelta, Fraction, Normal))
-			{
-				continue;
-			}
-			const FVector HorizontalNormal = Normal.GetSafeNormal2D();
-			if (!HorizontalNormal.IsNearlyZero() && (RelativeDelta | HorizontalNormal) < -UE_KINDA_SMALL_NUMBER
-				&& (!Closest || Fraction < OutFraction))
-			{
-				Closest = &Other;
-				OutFraction = Fraction;
-				OutNormal = HorizontalNormal;
-			}
+			continue;
 		}
-		return Closest;
+		double Fraction = 0.0;
+		FVector Normal;
+		if (!SweepContactBoxes(Location, Rotation, Extent, Other, RelativeDelta, Fraction, Normal))
+		{
+			continue;
+		}
+		const FVector HorizontalNormal = Normal.GetSafeNormal2D();
+		if (!HorizontalNormal.IsNearlyZero() && (RelativeDelta | HorizontalNormal) < -UE_KINDA_SMALL_NUMBER
+			&& (!Closest || Fraction < OutFraction))
+		{
+			Closest = &Other;
+			OutFraction = Fraction;
+			OutNormal = HorizontalNormal;
+		}
 	}
+	return Closest;
 }
 
 UMWVehicleMovementComponent::UMWVehicleMovementComponent()
@@ -269,21 +323,15 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 		StopMovementImmediately();
 		return;
 	}
-	FHitResult Contact;
-	UpdateGroundState(&Contact);
+	FVector OrientationNormal;
+	UpdateGroundState(&OrientationNormal);
 
-	GroundOrientationNormal = GroundNormal.GetSafeNormal();
+	// 접지 판정에서 얻은 평면을 재사용한다. 평면을 구하지 못한 경우 접촉 법선을 사용한다.
+	const bool bHasGroundPlane = !OrientationNormal.IsNearlyZero();
+	GroundOrientationNormal = bHasGroundPlane ? OrientationNormal : GroundNormal.GetSafeNormal();
 
 	if (bGrounded)
 	{
-		FVector OrientationNormal;
-		const bool bHasGroundPlane = TryCalculateGroundOrientation(Contact, OrientationNormal);
-
-		if (bHasGroundPlane)
-		{
-			GroundOrientationNormal = OrientationNormal;
-		}
-
 		// 기존 접지 로그와 같은 스텝의 목표 자세를 기록한다. 진단을 위한 추가 Trace는 하지 않는다.
 		if (CVarVehicleSupportLog.GetValueOnGameThread() != 0)
 		{
@@ -343,6 +391,8 @@ void UMWVehicleMovementComponent::CaptureDriveSnapshot(FMWVehicleDriveSnapshot& 
 	OutSnapshot.Velocity = Velocity;
 	OutSnapshot.bGrounded = bGrounded;
 	OutSnapshot.ImpactYawRate = ImpactYawRate;
+	// 보정 이후 같은 스프링 상태에서 재실행해야 높이가 튀지 않는다.
+	OutSnapshot.SuspensionSpeed = SuspensionSpeed;
 	OutSnapshot.GroundNormal = GroundNormal.GetSafeNormal();
 }
 
@@ -353,6 +403,9 @@ void UMWVehicleMovementComponent::ApplyDriveSnapshot(const FMWVehicleDriveSnapsh
 	Velocity = Snapshot.Velocity;
 	bGrounded = Snapshot.bGrounded;
 	ImpactYawRate = Snapshot.ImpactYawRate;
+	SuspensionSpeed = Snapshot.bGrounded ? Snapshot.SuspensionSpeed : 0.f;
+	// 실제 지지 여부는 다음 스텝에서 복원한 차체 위치로 다시 검사한다.
+	bHasWheelSupport = false;
 	// 압축 전송된 법선은 정규화해서 계산에 사용한다.
 	GroundNormal = FVector(Snapshot.GroundNormal).GetSafeNormal();
 
@@ -522,6 +575,9 @@ FTransform UMWVehicleMovementComponent::ConstrainContactPresentation(const FTran
 void UMWVehicleMovementComponent::StopMovementImmediately()
 {
 	Super::StopMovementImmediately();
+	// 정지나 초기 배치 후에 이전 압축 속도를 이어 쓰지 않는다.
+	SuspensionSpeed = 0.f;
+	bHasWheelSupport = false;
 	ImpactYawRate = 0.f;
 	TargetRotation = UpdatedComponent ? UpdatedComponent->GetComponentQuat() : FQuat::Identity;
 }
@@ -540,6 +596,8 @@ void UMWVehicleMovementComponent::OnTeleported()
 	TrackSurfaceEndTime = -1.0;
 	ResetDriveInput();
 	bGrounded = false;
+	SuspensionSpeed = 0.f;
+	bHasWheelSupport = false;
 	ImpactYawRate = 0.f;
 	GroundNormal = FVector::UpVector;
 	GroundDistance = 0.f;
@@ -842,16 +900,8 @@ FVector UMWVehicleMovementComponent::CalculateRotationGroundOffset(const FQuat& 
 	// 실제 충돌체 크기를 사용하므로 BP에서 조정한 크기도 반영된다.
 	const FVector Extent = Shape.GetBox();
 
-	const auto GetSupportDistance = [&](const FQuat& Rotation) -> double
-	{
-		// 각 Box 축이 노면 법선 방향으로 차지하는 길이를 합한다.
-		return Extent.X * FMath::Abs(FVector::DotProduct(Rotation.GetAxisX(), Normal))
-			+ Extent.Y * FMath::Abs(FVector::DotProduct(Rotation.GetAxisY(), Normal))
-			+ Extent.Z * FMath::Abs(FVector::DotProduct(Rotation.GetAxisZ(), Normal));
-	};
-
-	const double Before = GetSupportDistance(FromRotation);
-	const double After = GetSupportDistance(ToRotation);
+	const double Before = CalculateBoxSupportRadius(Extent, FromRotation, Normal);
+	const double After = CalculateBoxSupportRadius(Extent, ToRotation, Normal);
 
 	return Normal * (After - Before);
 }
@@ -1026,16 +1076,17 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 	Velocity = VelocityWithoutDrive + DriveDirection * FMath::Min(AppliedDriveSpeedIncrease, AllowedDriveSpeedIncrease);
 }
 
-void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
+void UMWVehicleMovementComponent::UpdateGroundState(FVector* OutOrientationNormal)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(MWVehicle_UpdateGroundState);
 
-	if (OutAcceptedHit)
+	if (OutOrientationNormal)
 	{
-		OutAcceptedHit->Reset();
+		*OutOrientationNormal = FVector::ZeroVector;
 	}
 
 	const bool bWasGrounded = bGrounded;
+	bHasWheelSupport = false;
 	const FVector PreviousNormal = GroundNormal.GetSafeNormal();
 	FGroundSupportDiagnostics Diagnostics;
 
@@ -1046,12 +1097,14 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 	GroundNormalLoadAcceleration = 0.0;
 
 	FHitResult Candidate;
-	
-	if (!FindGroundCandidate(Candidate, bWasGrounded))
+	FVector OrientationNormal = FVector::ZeroVector;
+	bool bWheelCandidate = false;
+	if (!FindGroundCandidate(Candidate, PreviousNormal, bWasGrounded, OrientationNormal, bWheelCandidate))
 	{
 		LogGroundSupport(TEXT("NoCandidate"), bWasGrounded, nullptr, Diagnostics);
 		return;
 	}
+	Diagnostics.bUsedGroundPlane = !OrientationNormal.IsNearlyZero();
 
 	const FVector CandidateNormal = FVector(Candidate.ImpactNormal).GetSafeNormal();
 
@@ -1144,6 +1197,8 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 	// 모든 검사가 끝난 뒤 상태와 속도를 함께 확정한다.
 	Velocity = AcceptedVelocity;
 	bGrounded = true;
+	// 후보가 모든 접지 조건을 통과했을 때만 서스펜션 보정을 켠다.
+	bHasWheelSupport = bWheelCandidate;
 	GroundNormal = Candidate.ImpactNormal;
 	GroundDistance = Candidate.Distance;
 
@@ -1151,9 +1206,14 @@ void UMWVehicleMovementComponent::UpdateGroundState(FHitResult* OutAcceptedHit)
 	LogGroundSupport(Diagnostics.CrestSupportAcceleration > 0.0 ? TEXT("AcceptedCrestSupport") : TEXT("Accepted"),
 		bWasGrounded, &Candidate, Diagnostics);
 
-	if (OutAcceptedHit)
+	if (OutOrientationNormal)
 	{
-		*OutAcceptedHit = Candidate;
+		// 접지가 확정된 평면만 이번 스텝의 차체 정렬에 전달한다.
+		if (OrientationNormal.IsNearlyZero())
+		{
+			TryCalculateGroundPlane(Candidate, CandidateNormal, OrientationNormal);
+		}
+		*OutOrientationNormal = OrientationNormal;
 	}
 }
 
@@ -1244,7 +1304,9 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 		&& !ReferenceUp.IsNearlyZero()
 		&& FVector::DotProduct(SurfaceNormal, ReferenceUp) >= MinGroundDot;
 
-	FVector ResponseNormal = CollisionNormal;
+	// 바퀴가 노면을 지지할 때는 박스 모서리 법선 대신 실제 노면 법선으로 속도를 보정한다.
+	const bool bWheelSupportedRoadContact = bSupportContact && bHasWheelSupport;
+	FVector ResponseNormal = bWheelSupportedRoadContact ? SurfaceNormal : CollisionNormal;
 	double Restitution = 0.0;
 	// 다른 차량의 상대 속도와 질량은 서버의 전용 경로에서 처리한다.
 	// 소유 클라이언트에서 그 접촉을 고정된 벽처럼 반사하지 않는다.
@@ -1294,8 +1356,12 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 
 	if (bSupportContact)
 	{
-		// 도로면을 따라가도록 접촉 속도를 보정한다.
 		Velocity += DeltaVelocity;
+		if (bWheelSupportedRoadContact)
+		{
+			// 경사 접합에서 보정된 속도를 이전 면의 법선으로 다시 이탈 판정하지 않는다.
+			GroundNormal = SurfaceNormal;
+		}
 	}
 	else
 	{
@@ -1304,9 +1370,101 @@ void UMWVehicleMovementComponent::ResolveContactVelocity(const FHitResult& Hit)
 	}
 }
 
-bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool bWasGrounded) const
+bool UMWVehicleMovementComponent::TraceSuspensionWheel(const USphereComponent& Wheel, FHitResult& OutHit, double& OutOffset) const
+{
+	const UWorld* World = GetWorld();
+	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	if (!World || !Vehicle || !UpdatedComponent || !bDriveConfigReady)
+	{
+		return false;
+	}
+
+	const FVector Up = GetGroundProbeUp();
+	const FVector Center = Wheel.GetComponentLocation();
+	const double Scale = Vehicle->AppliedDriveVehicleScale * Vehicle->GetActorScale3D().GetAbsMax();
+	const double Radius = Wheel.GetScaledSphereRadius();
+	const double Compression = DriveConfig.SuspensionCompressionTravel * Scale;
+	const double Rebound = DriveConfig.SuspensionReboundTravel * Scale;
+	const double MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(VehicleWheelGround), false, Vehicle);
+
+	const auto Sweep = [&](double SweepRadius) -> bool
+	{
+		// 보조 구체도 같은 타이어 밑면을 사용해 벽 가장자리가 노면 검사를 가리지 않게 한다.
+		const FVector RestCenter = Center - Up * (Radius - SweepRadius);
+		OutHit.Reset();
+		if (!World->SweepSingleByChannel(OutHit, RestCenter + Up * Compression, RestCenter - Up * Rebound,
+			FQuat::Identity, VehicleGroundChannel, FCollisionShape::MakeSphere(SweepRadius), Params)
+			|| !OutHit.IsValidBlockingHit() || FVector::DotProduct(OutHit.ImpactNormal, Up) < MinGroundDot)
+		{
+			return false;
+		}
+		OutOffset = FVector::DotProduct(OutHit.Location - RestCenter, Up);
+		return true;
+	};
+
+	return Sweep(Radius) || (OutHit.bBlockingHit && Sweep(Radius * 0.7));
+}
+
+bool UMWVehicleMovementComponent::FindWheelGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal,
+	bool bWasGrounded, FVector& OutOrientationNormal) const
+{
+	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	if (!Vehicle || Vehicle->WheelSuspensionCollisions.IsEmpty())
+	{
+		return false;
+	}
+
+	double BestScore = TNumericLimits<double>::Max();
+	double OffsetSum = 0.0;
+	FVector NormalSum = FVector::ZeroVector;
+	TArray<FVector, TInlineAllocator<4>> WheelSamples;
+	const FVector ChassisLocation = UpdatedComponent->GetComponentLocation();
+	const FQuat ChassisRotation = UpdatedComponent->GetComponentQuat();
+	const double LandingReach = DriveConfig.GroundProbeDistance * Vehicle->AppliedDriveVehicleScale;
+	for (const USphereComponent* Wheel : Vehicle->WheelSuspensionCollisions)
+	{
+		FHitResult Contact;
+		double Offset = 0.0;
+		if (!IsValid(Wheel) || !TraceSuspensionWheel(*Wheel, Contact, Offset)
+			|| (!bWasGrounded && Offset < -LandingReach))
+		{
+			continue;
+		}
+
+		// 접선 속도에는 실제 접촉 법선을 유지하고, 자세에는 바퀴마다 얻은 압축 높이를 사용한다.
+		// 이미 접지할 때는 이전 면에 가까운 후보를 우선해 접합부에서 법선이 왕복하지 않게 한다.
+		const double Alignment = bWasGrounded ? FVector::DotProduct(Contact.ImpactNormal, PreviousNormal) : 1.0;
+		const double Score = FMath::Abs(Offset) + 8.0 * (1.0 - Alignment);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			OutHit = Contact;
+		}
+		OffsetSum += Offset;
+		NormalSum += Contact.ImpactNormal;
+		const FVector LocalCenter = ChassisRotation.UnrotateVector(Wheel->GetComponentLocation() - ChassisLocation);
+		WheelSamples.Emplace(LocalCenter.X, LocalCenter.Y, Offset);
+	}
+
+	if (WheelSamples.IsEmpty())
+	{
+		OutHit.Reset();
+		return false;
+	}
+	// 두 수평 면에 축이 나뉘어 올라가도 그 높이 차이는 차체의 피치·롤에 반영한다.
+	OutOrientationNormal = FitWheelSupportNormal(WheelSamples, ChassisRotation, NormalSum.GetSafeNormal(),
+		FMath::DegreesToRadians(DriveConfig.GroundPlaneMaxNormalAngle));
+	// 기존 높이 보정과 같은 거리 기준으로 변환한다. 타이어 압축이 클수록 차체를 올린다.
+	OutHit.Distance = DriveConfig.GroundClearance - OffsetSum / WheelSamples.Num();
+	return true;
+}
+
+bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal,
+	bool bWasGrounded, FVector& OutOrientationNormal, bool& bOutWheelSupport) const
 {
 	OutHit.Reset();
+	bOutWheelSupport = false;
 
 	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent)
 	{
@@ -1320,6 +1478,13 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool b
 	if (!World || !Collision)
 	{
 		return false;
+	}
+
+	// 바퀴가 있는 차량은 주행 가능한 타이어 접촉을 먼저 찾고, 차체에는 기존 안전 검사를 사용한다.
+	bOutWheelSupport = FindWheelGroundCandidate(OutHit, PreviousNormal, bWasGrounded, OutOrientationNormal);
+	if (bOutWheelSupport)
+	{
+		return true;
 	}
 
 	const FVector ProbeUp = GetGroundProbeUp();
@@ -1346,13 +1511,10 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool b
 			QueryParams);
 	};
 
-	if (!SweepGround(Shape))
-	{
-		return false;
-	}
+	bool bBlockingHit = SweepGround(Shape);
 
 	// 이미 접지한 차량은 박스 가장자리가 노면을 가리는 경우에도 안쪽으로 다시 검사한다.
-	if (Shape.IsBox() && (OutHit.bStartPenetrating || bWasGrounded) &&
+	if (bBlockingHit && Shape.IsBox() && (OutHit.bStartPenetrating || bWasGrounded) &&
 		FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) < MinGroundDot)
 	{
 		constexpr double SideInset = 0.5;
@@ -1364,19 +1526,19 @@ bool UMWVehicleMovementComponent::FindGroundCandidate(FHitResult& OutHit, bool b
 
 		OutHit.Reset();
 
-		if (!SweepGround(FCollisionShape::MakeBox(ProbeExtent)))
-		{
-			return false;
-		}
+		bBlockingHit = SweepGround(FCollisionShape::MakeBox(ProbeExtent));
 	}
 
-	if (!OutHit.IsValidBlockingHit())
+	// 스윕이 주행 가능한 면에 닿으면 실제 박스 접촉을 우선한다.
+	if (bBlockingHit && OutHit.IsValidBlockingHit() && FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) >= MinGroundDot)
 	{
-		return false;
+		return true;
 	}
 
-	// 차량의 검사 방향에서 도로 후보로 인정할 수 있는 면인지 확인한다.
-	return FVector::DotProduct(OutHit.ImpactNormal, ProbeUp) >= MinGroundDot;
+	// 기존 접지를 잃은 경우에만 차체 아래의 연속된 면으로 후보를 복원한다.
+	// 공중에서의 첫 착지는 박스 충돌을 기준으로 처리한다.
+	OutHit.Reset();
+	return bWasGrounded && TryCalculateGroundPlane(OutHit, PreviousNormal, OutOrientationNormal);
 }
 
 bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts)
@@ -1575,22 +1737,17 @@ bool UMWVehicleMovementComponent::TryTransportGroundTangentVelocity(
 	return !OutTangentVelocity.ContainsNaN();
 }
 
-bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult& Contact, FVector& OutNormal) const
+bool UMWVehicleMovementComponent::TryCalculateGroundPlane(FHitResult& InOutContact, const FVector& ReferenceNormal,
+	FVector& OutNormal) const
 {
-	const FVector ContactNormal = FVector(Contact.ImpactNormal).GetSafeNormal();
-
-	// 추가 조사가 실패하면 기존 접촉 법선으로 돌아간다.
-	OutNormal = ContactNormal;
-
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 
 	if (!bDriveConfigReady ||
 		!World ||
 		!PawnOwner ||
 		!UpdatedPrimitive ||
 		!UpdatedComponent ||
-		!Contact.IsValidBlockingHit() ||
-		ContactNormal.IsNearlyZero())
+		ReferenceNormal.IsNearlyZero())
 	{
 		return false;
 	}
@@ -1604,31 +1761,24 @@ bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult
 
 	const FVector Extent = Shape.GetBox();
 	const FQuat Rotation = UpdatedComponent->GetComponentQuat();
-	const FVector Forward = FVector::VectorPlaneProject(Rotation.GetAxisX(), ContactNormal).GetSafeNormal();
-	const FVector Right = FVector::CrossProduct(ContactNormal, Forward).GetSafeNormal();
+	const FVector Forward = FVector::VectorPlaneProject(Rotation.GetAxisX(), ReferenceNormal).GetSafeNormal();
+	const FVector Right = FVector::CrossProduct(ReferenceNormal, Forward).GetSafeNormal();
 
 	if (Forward.IsNearlyZero() || Right.IsNearlyZero())
 	{
 		return false;
 	}
 
-	const double SupportRadius =
-		Extent.X * FMath::Abs(
-			FVector::DotProduct(
-				Rotation.GetAxisX(), ContactNormal))
-		+ Extent.Y * FMath::Abs(
-			FVector::DotProduct(
-				Rotation.GetAxisY(), ContactNormal))
-		+ Extent.Z * FMath::Abs(
-			FVector::DotProduct(
-				Rotation.GetAxisZ(), ContactNormal));
+	const bool bHasBoxContact = InOutContact.IsValidBlockingHit();
+	const FVector Location = UpdatedComponent->GetComponentLocation();
+	const double SupportRadius = CalculateBoxSupportRadius(Extent, Rotation, ReferenceNormal);
+	const FVector FootCenter = Location - ReferenceNormal * SupportRadius;
 
-	const FVector FootCenter = UpdatedComponent->GetComponentLocation() - ContactNormal * SupportRadius;
-
-	// Box는 바닥 기준 위치를 구하는 데만 사용한다.
-	// 자세 조사 범위는 독립된 거리로 정해, 작은 Box가 면 경계를 순간적으로 통과하는 문제를 줄인다.
-	const double X = DriveConfig.GroundPlaneProbeHalfLength;
-	const double Y = DriveConfig.GroundPlaneProbeHalfWidth;
+	// 자세 조사에는 기존 범위를 사용한다. 지지를 복원할 때는 실제 차체 아래만 검사한다.
+	const double X = bHasBoxContact ? DriveConfig.GroundPlaneProbeHalfLength
+		: FMath::Min<double>(DriveConfig.GroundPlaneProbeHalfLength, Extent.X);
+	const double Y = bHasBoxContact ? DriveConfig.GroundPlaneProbeHalfWidth
+		: FMath::Min<double>(DriveConfig.GroundPlaneProbeHalfWidth, Extent.Y);
 
 	// 앞왼쪽, 앞오른쪽, 뒤왼쪽, 뒤오른쪽.
 	const FVector2D Offsets[] =
@@ -1639,31 +1789,64 @@ bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult
 		FVector2D(-X,  Y)
 	};
 
-	FCollisionQueryParams Params(
-		SCENE_QUERY_STAT(VehicleGroundPlane),
-		true,
-		PawnOwner);
+	// 보조 지지 검사에는 박스 스윕과 같은 충돌 형상을 사용한다.
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(VehicleGroundPlane), bHasBoxContact, PawnOwner);
+	const FVector ProbeOffset = ReferenceNormal * DriveConfig.GroundPlaneProbeHalfHeight;
+	const auto TraceGround = [&](const FVector& Center, FHitResult& OutHit)
+	{
+		return World->LineTraceSingleByChannel(OutHit, Center + ProbeOffset, Center - ProbeOffset,
+			VehicleGroundChannel, Params) && OutHit.IsValidBlockingHit();
+	};
+
+	FHitResult Support = InOutContact;
+	const FVector ProbeUp = Rotation.GetAxisZ();
+	if (!bHasBoxContact)
+	{
+		// 중앙 지지가 있어야 한다. 양끝 샘플만으로 틈이나 낭떠러지를 연결하지 않는다.
+		if (!TraceGround(FootCenter, Support))
+		{
+			return false;
+		}
+
+		const FVector SupportNormal = FVector(Support.ImpactNormal).GetSafeNormal();
+		const double ProbeDot = FVector::DotProduct(ProbeUp, SupportNormal);
+		const double MinGroundDot = FMath::Cos(FMath::DegreesToRadians(static_cast<double>(DriveConfig.MaxGroundAngle)));
+		if (ProbeDot < MinGroundDot || FVector::DotProduct(ReferenceNormal, SupportNormal) < MinGroundDot)
+		{
+			return false;
+		}
+
+		// 선 검사에서 확인한 평면까지 박스가 아래로 이동할 거리를 계산한다.
+		const double Radius = CalculateBoxSupportRadius(Extent, Rotation, SupportNormal);
+		const double Distance = (FVector::DotProduct(Location - Support.ImpactPoint, SupportNormal) - Radius) / ProbeDot;
+		// 자세가 바뀐 직후에는 연속된 노면이 스윕 거리 밖으로 조금 밀릴 수 있다.
+		// 보조 검사에만 노면 높이 오차만큼 여유를 두고 간격 보정은 기존 한계를 사용한다.
+		const double MaxDistance = static_cast<double>(DriveConfig.GroundProbeDistance) + DriveConfig.GroundPlaneMaxHeightError;
+		if (Distance < -DriveConfig.GroundPlaneMaxFitError || Distance > MaxDistance)
+		{
+			return false;
+		}
+
+		Support.Distance = FMath::Max(0.0, Distance);
+		Support.Location = Location - ProbeUp * Support.Distance;
+		Support.TraceStart = Location;
+		Support.TraceEnd = Location - ProbeUp * MaxDistance;
+		Support.Time = Support.Distance / MaxDistance;
+	}
+
+	const FVector ContactNormal = FVector(Support.ImpactNormal).GetSafeNormal();
 
 	TArray<FVector, TInlineAllocator<4>> Points;
+	int32 FrontPointCount = 0;
 
 	const double MinNormalDot = FMath::Cos(FMath::DegreesToRadians(static_cast<double>(DriveConfig.GroundPlaneMaxNormalAngle)));
 
 	for (const FVector2D& Offset : Offsets)
 	{
 		const FVector Center = FootCenter + Forward * Offset.X + Right * Offset.Y;
-		const FVector Start = Center + ContactNormal * DriveConfig.GroundPlaneProbeHalfHeight;
-		const FVector End = Center - ContactNormal * DriveConfig.GroundPlaneProbeHalfHeight;
-
 		FHitResult Hit;
 
-		const bool bHit = World->LineTraceSingleByChannel(
-			Hit,
-			Start,
-			End,
-			VehicleGroundChannel,
-			Params);
-
-		if (!bHit || !Hit.IsValidBlockingHit())
+		if (!TraceGround(Center, Hit))
 		{
 			continue;
 		}
@@ -1680,7 +1863,7 @@ bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult
 			continue;
 		}
 
-		const double HeightError = FMath::Abs(FVector::DotProduct(Hit.ImpactPoint - Contact.ImpactPoint, ContactNormal));
+		const double HeightError = FMath::Abs(FVector::DotProduct(Hit.ImpactPoint - Support.ImpactPoint, ContactNormal));
 
 		// 가까운 다른 높이의 면을 무리하게 함께 사용하지 않는다.
 		if (HeightError > DriveConfig.GroundPlaneMaxHeightError)
@@ -1689,6 +1872,20 @@ bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult
 		}
 
 		Points.Add(Hit.ImpactPoint);
+		FrontPointCount += Offset.X > 0.0 ? 1 : 0;
+	}
+
+	if (!bHasBoxContact)
+	{
+		// 중앙과 앞뒤 양쪽이 같은 주행면에 있어야 보조 접지를 허용한다.
+		if (FrontPointCount == 0 || FrontPointCount == Points.Num())
+		{
+			return false;
+		}
+		if (Points.Num() == 2)
+		{
+			Points.Add(Support.ImpactPoint);
+		}
 	}
 
 	if (Points.Num() < 3)
@@ -1734,14 +1931,28 @@ bool UMWVehicleMovementComponent::TryCalculateGroundOrientation(const FHitResult
 
 	Center /= Points.Num();
 
+	// 이어지는 곡면에는 평면 맞춤 오차보다 큰 편차가 생길 수 있다.
+	// 보조 접지에서는 기존 높이 오차 범위까지 허용한다.
+	const double MaxFitError = bHasBoxContact ? DriveConfig.GroundPlaneMaxFitError : DriveConfig.GroundPlaneMaxHeightError;
 	for (const FVector& Point : Points)
 	{
 		const double FitError = FMath::Abs(FVector::DotProduct(Point - Center, Normal));
 
-		if (FitError > DriveConfig.GroundPlaneMaxFitError)
+		if (FitError > MaxFitError)
 		{
 			return false;
 		}
+	}
+
+	// 중앙의 지지가 앞뒤에서 구한 평면과 일치할 때만 접촉을 확정한다.
+	if (!bHasBoxContact)
+	{
+		const double CenterError = FMath::Abs(FVector::DotProduct(Support.ImpactPoint - Center, Normal));
+		if (CenterError > MaxFitError)
+		{
+			return false;
+		}
+		InOutContact = Support;
 	}
 
 	OutNormal = Normal;
@@ -1907,7 +2118,7 @@ void UMWVehicleMovementComponent::LogGroundSupport(const TCHAR* Decision, bool b
 		TEXT("WasGrounded=%d Grounded=%d Evaluated=%d Curvature=%s Speed=%.6f Required=%.6f ")
 		TEXT("GravityNormal=%.6f Downforce=%.6f Load=%.6f Limit=%.6f Distance=%.6f SampleDistance=%.6f ")
 		TEXT("PX=%.6f PY=%.6f PZ=%.6f NX=%.6f NY=%.6f NZ=%.6f ")
-		TEXT("AheadNX=%.6f AheadNY=%.6f AheadNZ=%.6f VX=%.6f VY=%.6f VZ=%.6f"),
+		TEXT("AheadNX=%.6f AheadNY=%.6f AheadNZ=%.6f VX=%.6f VY=%.6f VZ=%.6f Candidate=%s"),
 		++QuerySequence, World ? World->GetTimeSeconds() : 0.0, GFrameCounter,
 		static_cast<int32>(GetNetMode()), PawnOwner ? static_cast<int32>(PawnOwner->GetLocalRole()) : -1,
 		*GetPathNameSafe(PawnOwner), Decision, bWasGrounded, bGrounded, Diagnostics.bEvaluated,
@@ -1916,7 +2127,8 @@ void UMWVehicleMovementComponent::LogGroundSupport(const TCHAR* Decision, bool b
 		Diagnostics.NormalLoadAcceleration, Limit, Candidate ? Candidate->Distance : -1.0,
 		Diagnostics.SampleDistance, Position.X, Position.Y, Position.Z, Normal.X, Normal.Y, Normal.Z,
 		Diagnostics.AheadNormal.X, Diagnostics.AheadNormal.Y, Diagnostics.AheadNormal.Z,
-		Velocity.X, Velocity.Y, Velocity.Z);
+		Velocity.X, Velocity.Y, Velocity.Z,
+		Candidate ? (Diagnostics.bUsedGroundPlane ? TEXT("GroundPlane") : TEXT("BoxSweep")) : TEXT("None"));
 }
 
 void UMWVehicleMovementComponent::MoveVehicle(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts,
@@ -2012,6 +2224,11 @@ bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, f
 		}
 		RemainingTime *= 1.f - Hit.Time;
 		const FVector PreviousMoveVelocity = Velocity + SurfaceVelocity;
+		// 바퀴가 실제로 밟을 수 있는 단차에는 벽 반발을 적용하기 전에 안전한 통과 경로를 확인한다.
+		if (TryStepOverWheelContact(Hit, PreviousMoveVelocity * RemainingTime))
+		{
+			return false;
+		}
 		ResolveContactVelocity(Hit);
 		const double SurfaceSpeedAlongNormal = FVector::DotProduct(SurfaceVelocity, Hit.Normal);
 		if (SurfaceSpeedAlongNormal < 0.0)
@@ -2088,6 +2305,129 @@ bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit
 	return true;
 }
 
+bool UMWVehicleMovementComponent::TryStepOverWheelContact(const FHitResult& Hit, const FVector& RemainingDelta)
+{
+	const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(PawnOwner);
+	const UPrimitiveComponent* Obstacle = Hit.GetComponent();
+	const UWorld* World = GetWorld();
+	if (!bHasWheelSupport || !Vehicle || !World || !UpdatedComponent || !Obstacle
+		|| !Hit.GetActor() || Hit.GetActor()->IsA<AMWVehiclePawn>()
+		|| Obstacle->GetCollisionResponseToChannel(VehicleGroundChannel) != ECR_Block)
+	{
+		return false;
+	}
+
+	const FVector Up = GetGroundProbeUp();
+	const FVector Forward = FVector::VectorPlaneProject(RemainingDelta, Up).GetSafeNormal();
+	const double MinGroundDot = FMath::Cos(FMath::DegreesToRadians(DriveConfig.MaxGroundAngle));
+	if (Forward.IsNearlyZero() || FVector::DotProduct(Hit.ImpactNormal, Up) >= MinGroundDot
+		|| FVector::DotProduct(Hit.ImpactNormal, Forward) >= -KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(VehicleWheelStep), false, Vehicle);
+	const double Scale = Vehicle->AppliedDriveVehicleScale * Vehicle->GetActorScale3D().GetAbsMax();
+	const FVector Start = UpdatedComponent->GetComponentLocation();
+	double Rise = 0.0;
+	for (const USphereComponent* Wheel : Vehicle->WheelSuspensionCollisions)
+	{
+		FHitResult Floor;
+		double Offset = 0.0;
+		if (!IsValid(Wheel) || !TraceSuspensionWheel(*Wheel, Floor, Offset))
+		{
+			continue;
+		}
+
+		const double Radius = Wheel->GetScaledSphereRadius();
+		// 작은 턱만 허용하고 해당 바퀴의 반지름과 남아 있는 압축 여유 안으로 제한한다.
+		const double MaxStep = FMath::Min(Radius * 0.55, DriveConfig.SuspensionCompressionTravel * Scale - Offset);
+		if (MaxStep <= DriveConfig.GroundClearance)
+		{
+			continue;
+		}
+		const FVector Center = Wheel->GetComponentLocation();
+		const double WheelLead = FVector::DotProduct(Center - Start, Forward);
+		const double FaceDistance = FVector::DotProduct(Hit.ImpactPoint - Center, Forward);
+		if (WheelLead < -Radius * 0.5 || FaceDistance < -Radius * 0.5)
+		{
+			continue;
+		}
+
+		// 막힌 면 바로 뒤에서 해당 바퀴의 진행선을 조사한다. 실제 윗면과 압축 여유가 있어야 넘는다.
+		FVector Sample = Center + Forward * (FaceDistance + Radius * 0.25);
+		Sample += Up * FVector::DotProduct(Floor.ImpactPoint - Sample, Up);
+		FHitResult Top;
+		if (World->LineTraceSingleByChannel(Top, Sample + Up * MaxStep, Sample - Up * DriveConfig.GroundClearance,
+			VehicleGroundChannel, Params) && Top.IsValidBlockingHit() && Top.GetActor() == Hit.GetActor()
+			&& FVector::DotProduct(Top.ImpactNormal, Up) >= MinGroundDot)
+		{
+			const double Height = FVector::DotProduct(Top.ImpactPoint - Sample, Up);
+			Rise = FMath::Max(Rise, Height);
+		}
+	}
+	if (Rise <= UE_KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	// 들어 올리기와 남은 전진을 둘 다 통과해야 한다. 실패하면 원래 위치에서 기존 충돌 응답을 실행한다.
+	FScopedMovementUpdate Step(UpdatedComponent, EScopedUpdate::DeferredUpdates);
+	const FQuat Rotation = UpdatedComponent->GetComponentQuat();
+	FHitResult ClearanceHit;
+	const FVector Lift = Up * (Rise + DriveConfig.GroundClearance);
+	SafeMoveUpdatedComponent(Lift, Rotation, true, ClearanceHit);
+	if (ClearanceHit.bBlockingHit || ClearanceHit.bStartPenetrating
+		|| !UpdatedComponent->GetComponentLocation().Equals(Start + Lift, 0.1))
+	{
+		Step.RevertMove();
+		return false;
+	}
+
+	const FVector ForwardDelta = FVector::VectorPlaneProject(RemainingDelta, Up);
+	SafeMoveUpdatedComponent(ForwardDelta, Rotation, true, ClearanceHit);
+	if (ClearanceHit.bBlockingHit || ClearanceHit.bStartPenetrating
+		|| !UpdatedComponent->GetComponentLocation().Equals(Start + Lift + ForwardDelta, 0.1))
+	{
+		Step.RevertMove();
+		return false;
+	}
+
+	SuspensionSpeed = 0.f;
+	if (CVarVehicleSupportLog.GetValueOnGameThread() != 0)
+	{
+		UE_LOG(LogMWVehicleSupport, Log, TEXT("VehicleWheelStep Actor=%s HitActor=%s Height=%.3f"),
+			*GetPathNameSafe(PawnOwner), *GetPathNameSafe(Hit.GetActor()), Rise);
+	}
+	return true;
+}
+
+void UMWVehicleMovementComponent::AdjustSuspensionHeight(float DeltaTime)
+{
+	// 주행 속도와 분리된 스프링·댐퍼로 차체 높이를 작은 스텝씩 조정한다.
+	// 바퀴 압축을 차체의 점프 속도로 바꾸지 않고, 높이 이동도 기존 박스 Sweep으로 막는다.
+	const double Error = DriveConfig.GroundClearance - GroundDistance;
+	const double Response = DriveConfig.SuspensionResponse;
+	const double Damping = 2.0 * Response * DriveConfig.SuspensionDampingRatio;
+	const double Acceleration = Response * Response * Error - Damping * SuspensionSpeed;
+	const double MaxSpeed = FMath::Max(DriveConfig.SuspensionCompressionTravel, DriveConfig.SuspensionReboundTravel) * Response;
+	SuspensionSpeed = FMath::Clamp(SuspensionSpeed + Acceleration * DeltaTime, -MaxSpeed, MaxSpeed);
+
+	const FVector Move = GetGroundProbeUp() * SuspensionSpeed * DeltaTime;
+	if (Move.IsNearlyZero())
+	{
+		return;
+	}
+
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(Move, UpdatedComponent->GetComponentQuat(), true, Hit);
+	if (Hit.bBlockingHit)
+	{
+		SuspensionSpeed = 0.f;
+	}
+	UpdateGroundState();
+}
+
 void UMWVehicleMovementComponent::AdjustGroundHeight(float DeltaTime)
 {
 	if (!bDriveConfigReady ||
@@ -2097,8 +2437,16 @@ void UMWVehicleMovementComponent::AdjustGroundHeight(float DeltaTime)
 		!FMath::IsFinite(DeltaTime) ||
 		DeltaTime <= 0.f)
 	{
+		SuspensionSpeed = 0.f;
 		return;
 	}
+
+	if (bHasWheelSupport)
+	{
+		AdjustSuspensionHeight(DeltaTime);
+		return;
+	}
+	SuspensionSpeed = 0.f;
 
 	const double Distance = GroundDistance;
     const double Target = DriveConfig.GroundClearance;
@@ -2147,7 +2495,7 @@ void UMWVehicleMovementComponent::AdjustGroundHeight(float DeltaTime)
 		return;
 	}
 
-	// GroundDistance를 측정한 Sweep과 같은 방향을 사용한다.
+	// 스윕과 보조 지지 검사에서 GroundDistance를 계산한 방향과 일치시킨다.
 	const FVector ProbeUp = GetGroundProbeUp();
 
 	FHitResult Hit(1.f);

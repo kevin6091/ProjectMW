@@ -19,23 +19,20 @@
 #include "Net/UnrealNetwork.h"
 #include "PhysicsEngine/BodySetup.h"
 
-namespace
-{
-    const FName RoadTag(TEXT("MWTrackDriveCollision"));
-    const FName TriggerTag(TEXT("MWTrackRaceTrigger"));
-    const FName TrainTag(TEXT("MWTrackTrain"));
-    const FName TrainHitTag(TEXT("MWTrackTrainHit"));
-    const FName TrainBellTag(TEXT("MWTrackTrainBell"));
-    const FName TrafficTag(TEXT("MWTrackTraffic"));
-    const FName TrafficHitTag(TEXT("MWTrackTrafficHit"));
+const FName UMWTrackRuntimeComponent::RoadTag(TEXT("MWTrackDriveCollision"));
+const FName UMWTrackRuntimeComponent::TriggerTag(TEXT("MWTrackRaceTrigger"));
+const FName UMWTrackRuntimeComponent::TrainTag(TEXT("MWTrackTrain"));
+const FName UMWTrackRuntimeComponent::TrainHitTag(TEXT("MWTrackTrainHit"));
+const FName UMWTrackRuntimeComponent::TrainBellTag(TEXT("MWTrackTrainBell"));
+const FName UMWTrackRuntimeComponent::TrafficTag(TEXT("MWTrackTraffic"));
+const FName UMWTrackRuntimeComponent::TrafficHitTag(TEXT("MWTrackTrafficHit"));
 
-    void SetTriggerCollision(UPrimitiveComponent& Component)
-    {
-        Component.SetCollisionObjectType(ECC_WorldDynamic);
-        Component.SetCollisionResponseToAllChannels(ECR_Ignore);
-        Component.SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-        Component.SetGenerateOverlapEvents(true);
-    }
+void UMWTrackRuntimeComponent::SetTriggerCollision(UPrimitiveComponent& Component)
+{
+    Component.SetCollisionObjectType(ECC_WorldDynamic);
+    Component.SetCollisionResponseToAllChannels(ECR_Ignore);
+    Component.SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    Component.SetGenerateOverlapEvents(true);
 }
 
 UMWTrackRuntimeComponent::UMWTrackRuntimeComponent()
@@ -307,6 +304,10 @@ UPrimitiveComponent* UMWTrackRuntimeComponent::CreateShape(const FMWTrackShapeDa
         Component->SetCollisionResponseToAllChannels(ECR_Block);
         Component->SetGenerateOverlapEvents(false);
         Component->ComponentTags.Add(RoadTag);
+        if (Shape.MotionIndex == INDEX_NONE)
+        {
+            Component->ComponentTags.Add(FixedRoadTag);
+        }
         RoadCollision.Add(Component);
     }
     else

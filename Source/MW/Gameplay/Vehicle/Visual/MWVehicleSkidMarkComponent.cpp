@@ -8,14 +8,6 @@
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
-namespace
-{
-    constexpr int32 MaxMarksPerVehicle = 384;
-    constexpr double PlaneSizeCm = 100.0;
-    constexpr double SurfaceLiftCm = 0.8;
-    constexpr double MaxGapCm = 160.0;
-}
-
 UMWVehicleSkidMarkComponent::UMWVehicleSkidMarkComponent()
 {
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Plane(TEXT("/Engine/BasicShapes/Plane.Plane"));

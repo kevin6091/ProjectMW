@@ -45,6 +45,8 @@ public:
 	void HandleVehicleDepartureReady(AMWLobbyPlayerController* Controller);
 	
 private:
+	static constexpr float VehicleDepartureTimeoutSeconds = 12.f;
+
 	// 이 값들은 서버만 사용합니다. 클라이언트가 표시할 결과는 GameState/PlayerState에 둡니다.
 	bool bAcceptingPlayers = false;
 	bool bRoomSettingsApplied = false;

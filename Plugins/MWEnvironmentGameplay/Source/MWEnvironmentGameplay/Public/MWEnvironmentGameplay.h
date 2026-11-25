@@ -7,7 +7,13 @@ class AMWEnvironmentGenerator;
 class AMWGameplayGameState;
 class AMWLobbyGameState;
 class UMWEnvironmentTheme;
+class UPrimitiveComponent;
 class USceneComponent;
+class UStaticMeshComponent;
+class UStaticMesh;
+class UMaterialBillboardComponent;
+class UMaterialInstanceDynamic;
+class UMWTrackConstructionComponent;
 
 USTRUCT()
 struct FMWEnvironmentBinding
@@ -51,6 +57,37 @@ public:
     UPROPERTY(Config, EditAnywhere, Category = "Environment")
     TArray<FString> HiddenBackdropActorPaths;
 
+    // 설치한 트랙을 받치는 로컬 렌더링 메시다. 미지정 시 지지대를 표시하지 않는다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
+    TSoftObjectPtr<UStaticMesh> TrackSupportMesh;
+
+    // 설치가 승인된 직후 노면 표시가 커졌다 돌아오는 시간과 최대 확대량이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackPlacementPopSeconds = 0.23f;
+
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", ClampMax = "0.15"))
+    float TrackPlacementPopScale = 0.075f;
+
+    // 설치 섬광과 연기를 한 번 재생하는 카메라 방향 머티리얼이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track")
+    TSoftObjectPtr<UMaterialInterface> TrackLaidParticleMaterial;
+
+    // 곡선 안쪽의 빈 공간을 피하면서 설치 효과 사이에 확보할 최소 거리다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "1.0", Units = "cm"))
+    float TrackLaidEffectSpacing = 1700.0f;
+
+    // 지지대 폭에 비례하는 효과 판의 반폭이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.01"))
+    float TrackLaidParticleSizeFraction = 0.63f;
+
+    // 설치 섬광이 먼저 보인 뒤 골조 첫 층이 드러날 때까지의 시간이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackSupportRevealSeconds = 0.40f;
+
+    // 골조 첫 층부터 바닥에 닿는 마지막 층이 드러날 때까지의 시간이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Environment|Track", meta = (ClampMin = "0.0", Units = "s"))
+    float TrackSupportAssemblySeconds = 0.22f;
+
     UFUNCTION(BlueprintPure, Category = "Environment")
     AMWEnvironmentGenerator* GetGenerator() const
     {
@@ -73,6 +110,21 @@ protected:
     virtual bool DoesSupportWorldType(EWorldType::Type Type) const override;
 
 private:
+    static constexpr double PeakTimeFraction = 0.35;
+
+    // 와이어프레임 받침과 비슷하게 양쪽 도로 가장자리보다 조금 안쪽에 세운다.
+    static constexpr double RoadWidthFraction = 0.85;
+    static constexpr int32 WidthMeasurements = 7;
+    static constexpr double TrackLaidSpriteLifeSeconds = 1.0;
+    static const FName ParticleAgeParameter;
+    static const FName ParticleSeedParameter;
+
+    bool IsTrackPlacementVerificationEnabled();
+    bool TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow = true);
+    double RoadHalfWidth(UPrimitiveComponent& Road, const FVector& Center, const FVector& Across);
+    bool FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth,
+        FVector& OutRoadSurface);
+    TArray<FVector> SampleTrackSurfaces(const AActor& Piece, const FVector& Center, double Spacing);
 
     UPROPERTY(Transient)
     TObjectPtr<AMWEnvironmentGenerator> Generator;
@@ -80,9 +132,77 @@ private:
     TSharedPtr<struct FStreamableHandle> FirstViewMaterialHandle;
 
     UPROPERTY(Transient)
+    TObjectPtr<UStaticMesh> ActiveTrackSupportMesh;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UStaticMeshComponent>> TrackSupportComponents;
+
+    struct FTrackSupportBuild
+    {
+        int32 PieceId;
+        FVector Top;
+        FQuat Rotation;
+        double Height;
+        double ScaleXY;
+        double StartedAt;
+        double RevealDelay;
+        double AssemblyDuration;
+        int32 Layers;
+        int32 RevealedLayers = 0;
+    };
+
+    struct FTrackLaidSprite
+    {
+        TWeakObjectPtr<UMaterialBillboardComponent> Component;
+        TWeakObjectPtr<UMaterialInstanceDynamic> Material;
+        FVector Surface;
+        float RiseHeight;
+        double StartedAt;
+    };
+
+    struct FTrackPopSurface
+    {
+        TWeakObjectPtr<UStaticMeshComponent> Original;
+        TWeakObjectPtr<UStaticMeshComponent> Visual;
+        FTransform RestTransform;
+    };
+
+    struct FTrackPlacementPop
+    {
+        int32 PieceId = 0;
+        FVector ContactPoint = FVector::ZeroVector;
+        double StartedAt = 0.0;
+        bool bLoggedPeak = false;
+        TArray<FTrackPopSurface> Surfaces;
+    };
+
+    int32 PlacementPopSessionId = INDEX_NONE;
+    bool bSawOpenPlacementForPop = false;
+    TSet<int32> PresentedPopPieces;
+    TArray<FTrackPlacementPop> TrackPlacementPops;
+    FTimerHandle PlacementPopTimer;
+    void RefreshTrackPlacementPops();
+    void TickTrackPlacementPops();
+    void RestoreTrackPopSurfaces(const FTrackPlacementPop& Pop) const;
+    void ResetTrackPlacementPops();
+
+    int32 SupportSessionId = INDEX_NONE;
+    bool bObservedOpenPlacement = false;
+    TSet<int32> ResolvedSupportPieces;
+    TArray<FTrackSupportBuild> PendingSupportBuilds;
+    TArray<FTrackLaidSprite> TrackLaidSprites;
+    FTimerHandle SupportBuildTimer;
+    void RefreshTrackSupports();
+    void PlayTrackLaidEffects(const AActor& Piece, int32 PieceId, const FVector& CenterSurface,
+        double Width, double StartedAt);
+    void TickTrackSupportBuilds();
+    void ResetTrackSupports();
+
+    UPROPERTY(Transient)
     TObjectPtr<AMWGameplayGameState> State;
 
     TWeakObjectPtr<AMWLobbyGameState> LobbyState;
+    TWeakObjectPtr<UMWTrackConstructionComponent> BoundConstruction;
     const FMWEnvironmentBinding* FindBinding(FName ThemeId) const;
 
     UFUNCTION()

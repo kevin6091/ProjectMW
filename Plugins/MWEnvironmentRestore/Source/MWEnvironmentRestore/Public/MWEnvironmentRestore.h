@@ -224,6 +224,9 @@ public:
     void AllowInitialControllerView() { bAllowInitialControllerView = true; }
     bool IsViewPrepared(const AActor* Target) const { return Target && PreparedView.Get() == Target; }
 
+    // 실제 바닥 렌더러와 동일한 평면 높이를 설치 트랙 연출에서 사용한다.
+    bool TryGetFloorZ(double& OutZ) const;
+
 protected:
     // 지정된 테마 입력이 준비된 뒤 배경을 초기화하고 설정된 가시성 갱신을 시작한다.
     virtual void BeginPlay() override;
@@ -231,6 +234,21 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+    static constexpr double CmPerUnityUnit = 100;
+    static constexpr double TileUnity = 500;
+    static constexpr double TileCm = TileUnity * CmPerUnityUnit;
+    static constexpr double TileBoundsRadiusCm = TileCm * 0.72;
+    static constexpr float MaxSunShadowDistanceCm = 120000.0f;
+    static constexpr int32 MaxTiles = 1024;
+    static constexpr int32 BuildBudget = 3;
+    static constexpr int32 InitialBuildBudget = 40;
+    static constexpr int32 MaxPrewarmTiles = 16;
+    static constexpr double PrewarmMarginCm = TileCm * 0.4;
+    static constexpr double TurnPrewarmDistanceCm = 110000.0;
+    static constexpr int32 MaxPlacementAttempts = 100;
+    static constexpr int32 RandomMax = MAX_int32;
+    static const FIntPoint Neighbors[];
+
     struct FPlacement
     {
         int32 Feature;

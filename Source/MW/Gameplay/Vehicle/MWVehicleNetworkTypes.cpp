@@ -32,6 +32,8 @@ bool FMWVehicleDriveSnapshot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool&
 	bool bGroundNormalSuccess = false;
 	GroundNormal.NetSerialize(Ar, Map, bGroundNormalSuccess);
 	Ar << ImpactYawRate;
+	// 소유자의 재실행이 같은 높이 감쇠에서 시작하도록 전달한다.
+	Ar << SuspensionSpeed;
 	Ar << ServerTimeSeconds;
 	bOutSuccess = bLocationSuccess && bVelocitySuccess && bGroundNormalSuccess && !Ar.IsError();
 	return true;

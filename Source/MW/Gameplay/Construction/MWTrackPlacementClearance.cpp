@@ -5,22 +5,19 @@
 #include "Engine/World.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 
-namespace
+void MWTrackPlacementClearance::AddCorners(const FBox& Box, const FTransform& Local, TArray<FVector>& OutPoints)
 {
-	void AddCorners(const FBox& Box, const FTransform& Local, TArray<FVector>& OutPoints)
+	if (!Box.IsValid)
 	{
-		if (!Box.IsValid)
+		return;
+	}
+	for (const double X : {Box.Min.X, Box.Max.X})
+	{
+		for (const double Y : {Box.Min.Y, Box.Max.Y})
 		{
-			return;
-		}
-		for (const double X : {Box.Min.X, Box.Max.X})
-		{
-			for (const double Y : {Box.Min.Y, Box.Max.Y})
+			for (const double Z : {Box.Min.Z, Box.Max.Z})
 			{
-				for (const double Z : {Box.Min.Z, Box.Max.Z})
-				{
-					OutPoints.Add(Local.TransformPosition(FVector(X, Y, Z)));
-				}
+				OutPoints.Add(Local.TransformPosition(FVector(X, Y, Z)));
 			}
 		}
 	}

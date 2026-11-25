@@ -1,19 +1,19 @@
 #include "UI/MWTrackSelectionWidget.h"
 
-#include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
-#include "Blueprint/WidgetTree.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
-#include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
+#include "Rendering/DrawElements.h"
+
 #include "UI/Cursor/MWPointerCursor.h"
 #include "UI/Cursor/MWCursorProjection.h"
 #include "Player/Cursor/MWPlayerCursorComponent.h"
@@ -24,10 +24,6 @@ void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SetVisibility(ESlateVisibility::HitTestInvisible);
-	if (PlacementStatusSpace)
-	{
-		PlacementStatusSpace->SetVisibility(ESlateVisibility::Collapsed);
-	}
 	RemoteCursors = CreateWidget<UMWRemoteCursorOverlay>(GetOwningPlayer(), UMWRemoteCursorOverlay::StaticClass());
 	PointerClass = GetDefault<UMWRemoteCursorOverlay>()->PointerWidgetClass.LoadSynchronous();
 	if (RemoteCursors)
@@ -53,7 +49,6 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	}
 	BoundConstruction.Reset();
 	BoundPlayers.Reset();
-	OfferPlates.Reset();
 	RemoteCursors = nullptr;
 	PointerClass = nullptr;
 	if (Canvas_Cursors) Canvas_Cursors->ClearChildren();
@@ -61,35 +56,98 @@ void UMWTrackSelectionWidget::NativeDestruct()
 	RequestError = FText::GetEmpty();
 	bRequestPending = false;
 	bShowingPlacement = false;
+	PlacementEndpoint.Reset();
+	ContactPulse.Reset();
 	Super::NativeDestruct();
 }
 
-void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FText& Status)
+void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Status)
 {
 	if (!bShowingPlacement)
 	{
 		bShowingPlacement = true;
-		// 배치 문구가 바뀌어도 참가자 목록이 밀리지 않도록 디자이너에서 지정한 공간을 확보한다.
-		if (PlacementStatusSpace)
-		{
-			PlacementStatusSpace->SetVisibility(ESlateVisibility::Hidden);
-		}
 		GetWorld()->GetTimerManager().ClearTimer(BindRetryTimer);
-		// 선택 후보 이름표만 감춘다. 같은 캔버스의 참가자 포인터는 배치 단계에도 필요하다.
-		for (const auto& Pair : OfferPlates) Pair.Value->SetVisibility(ESlateVisibility::Collapsed);
-		if (Text_Title)
-		{
-			Text_Title->SetText(FText::FromString(TEXT("트랙 배치")));
-		}
-	}
-	if (Text_Players && !Text_Players->GetText().EqualTo(Players))
-	{
-		Text_Players->SetText(Players);
 	}
 	if (!Text_SessionStatus->GetText().EqualTo(Status))
 	{
 		Text_SessionStatus->SetText(Status);
 	}
+}
+
+void UMWTrackSelectionWidget::ShowPlacementEndpoint(const FVector* WorldPosition)
+{
+	// 끝점은 로컬 창의 카메라로 매 프레임 투영한다. 설치 판정에는 사용하지 않는다.
+	if (!WorldPosition)
+	{
+		if (PlacementEndpoint.IsSet())
+		{
+			PlacementEndpoint.Reset();
+			Invalidate(EInvalidateWidgetReason::Paint);
+		}
+		return;
+	}
+
+	if (!PlacementEndpoint.IsSet() || !PlacementEndpoint->Equals(*WorldPosition))
+	{
+		PlacementEndpoint = *WorldPosition;
+#if WITH_EDITOR
+		if (FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement")))
+		{
+			UE_LOG(LogTemp, Display, TEXT("MWPlacementArrow world=%s tip=%s"),
+				*GetWorld()->GetOutermost()->GetName(), *WorldPosition->ToCompactString());
+		}
+#endif
+	}
+}
+
+void UMWTrackSelectionWidget::PulsePlacementEndpoint(const FVector& WorldPosition)
+{
+	ContactPulse = WorldPosition;
+	ContactPulseAge = 0.0f;
+}
+
+int32 UMWTrackSelectionWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Geometry,
+	const FSlateRect& CullRect, FSlateWindowElementList& Elements, int32 Layer, const FWidgetStyle& Style,
+	bool bParentEnabled) const
+{
+	Layer = Super::NativePaint(Args, Geometry, CullRect, Elements, Layer, Style, bParentEnabled);
+	const APlayerController* PC = GetOwningPlayer();
+	const FPaintGeometry PaintGeometry = Geometry.ToPaintGeometry();
+
+	FVector2D Point;
+	if (PlacementEndpoint.IsSet() &&
+		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, *PlacementEndpoint, Point, true))
+	{
+		const FVector2D Tip = Point - FVector2D(0, 8);
+		const FVector2D Top = Tip - FVector2D(0, 27);
+		const TArray<FVector2d> Shaft{Top, Tip};
+		const TArray<FVector2d> Head{Tip + FVector2D(-10, -10), Tip, Tip + FVector2D(10, -10)};
+		const FLinearColor Outline(0.025f, 0.035f, 0.051f, 0.87f);
+		for (const TArray<FVector2d>* Stroke : {&Shaft, &Head})
+		{
+			FSlateDrawElement::MakeLines(Elements, Layer + 1, PaintGeometry, *Stroke, ESlateDrawEffect::None, Outline, true, 8.0f);
+			FSlateDrawElement::MakeLines(Elements, Layer + 2, PaintGeometry, *Stroke, ESlateDrawEffect::None, FLinearColor::White, true, 4.0f);
+		}
+		Layer += 2;
+	}
+
+	if (ContactPulse.IsSet() &&
+		UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(PC, *ContactPulse, Point, true))
+	{
+		// 접점 섬광이 퍼지며 사라진다. 설치 불꽃과 구분되도록 연결부에만 짧게 그린다.
+		const float Progress = FMath::Clamp(ContactPulseAge / SnapContactPulseSeconds, 0.0f, 1.0f);
+		const FLinearColor Glow(1.0f, 0.76f, 0.28f, 1.0f - Progress);
+		for (int32 Ray = 0; Ray < 6; ++Ray)
+		{
+			const double Angle = UE_TWO_PI * (Ray + 0.5) / 6.0;
+			const FVector2D Direction(FMath::Cos(Angle), FMath::Sin(Angle) * 0.6);
+			const double Radius = FMath::Lerp(4.0, 26.0, Progress);
+			const TArray<FVector2d> Line{Point + Direction * (Radius * 0.4), Point + Direction * Radius};
+			FSlateDrawElement::MakeLines(Elements, Layer + 1, PaintGeometry, Line, ESlateDrawEffect::None, Glow, true, 3.0f);
+		}
+		++Layer;
+	}
+	return Layer;
 }
 
 void UMWTrackSelectionWidget::TryBindState()
@@ -145,30 +203,12 @@ void UMWTrackSelectionWidget::TryBindState()
 	}
 }
 
-FText UMWTrackSelectionWidget::GetOfferName(int32 OfferId) const
-{
-	const auto* Offer = DisplayedSession.Offers.FindByPredicate(
-		[OfferId](const FMWTrackOffer& Item) { return Item.OfferId == OfferId; });
-	if (!Offer) return FText::FromString(TEXT("트랙 조각"));
-	if (const auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
-	{
-		const FText Name = Runtime->GetTrackDisplayName(Offer->TrackClass);
-		if (!Name.IsEmpty()) return Name;
-	}
-	return FText::Format(NSLOCTEXT("MWTrackSelection", "UnnamedOffer", "트랙 {0}"), FText::AsNumber(OfferId));
-}
-
 void UMWTrackSelectionWidget::Refresh()
 {
 	if (bShowingPlacement) return;
 	const auto Session = BoundConstruction.IsValid() ? BoundConstruction->GetSelectionSession() : FMWTrackSelectionSession{};
 	if (Session.SelectionSessionId != DisplayedSession.SelectionSessionId || Session.OffersRevision != DisplayedSession.OffersRevision)
 	{
-		for (const auto& Pair : OfferPlates)
-		{
-			Pair.Value->RemoveFromParent();
-		}
-		OfferPlates.Reset();
 		bRequestPending = false;
 		AcknowledgedOffer = INDEX_NONE;
 		RequestError = FText::GetEmpty();
@@ -177,63 +217,19 @@ void UMWTrackSelectionWidget::Refresh()
 	const auto* PC = GetOwningPlayer<AMWGameplayPlayerController>();
 	const auto* OwnPS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	TArray<AMWPlayerState*> Players;
-	if (GS)
-		for (APlayerState* State : GS->PlayerArray)
-			if (auto* PS = Cast<AMWPlayerState>(State)) Players.Add(PS);
-	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B) { return A.GetLobbyMemberId() < B.GetLobbyMemberId(); });
-	TArray<FString> Lines;
-	bool bOwnConfirmed = false;
-	for (const auto* PS : Players)
-	{
-		const auto Selection = PS->GetPlayerConstructionComponent()->GetSelection();
-		const bool bSame = Selection.SelectionSessionId == Session.SelectionSessionId && Selection.OffersRevision == Session.OffersRevision;
-		const int32 OfferId = Selection.bConfirmed ? Selection.SelectedOfferId : Selection.HoveredOfferId;
-		FString State = TEXT("선택 중");
-		if (bSame && !Selection.bConfirmed && OfferId != INDEX_NONE)
-			State = GetOfferName(OfferId).ToString();
-		if (!bSame) State = TEXT("참여 준비 중");
-		const FString Name = PS->GetPlayerName();
-		if (bSame && Selection.bConfirmed)
-			State = TEXT("선택 완료");
-		Lines.Add(FString::Printf(TEXT("%s%s  ·  %s"), *Name, PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State));
-		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
-	}
-	if (Text_Players)
-	{
-		Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
-	}
+	const auto* OwnConstruction = OwnPS ? OwnPS->GetPlayerConstructionComponent() : nullptr;
+	const FMWPlayerTrackSelection OwnSelection = OwnConstruction ? OwnConstruction->GetSelection() : FMWPlayerTrackSelection{};
+	const bool bOwnConfirmed = OwnSelection.SelectionSessionId == Session.SelectionSessionId
+		&& OwnSelection.OffersRevision == Session.OffersRevision && OwnSelection.bConfirmed;
 
-	// 이름표 브러시를 지정한 구형 WBP만 판을 그린다. cs:80은 후보명 판을 사용하지 않는다.
-	const TConstArrayView<FMWTrackOffer> NamedOffers = OfferPlateBrush.GetResourceObject() ? MakeArrayView(Session.Offers) : TConstArrayView<FMWTrackOffer>{};
-	// 점유를 확정하면 전시 액터와 함께 이름표도 제거한다.
-	for (const FMWTrackOffer& Offer : NamedOffers)
-	{
-		if (Offer.ClaimedByMemberId != INDEX_NONE)
-		{
-			if (UBorder* Plate = OfferPlates.FindRef(Offer.OfferId))
-			{
-				Plate->RemoveFromParent();
-				OfferPlates.Remove(Offer.OfferId);
-			}
-			continue;
-		}
-		auto& Plate = OfferPlates.FindOrAdd(Offer.OfferId);
-		if (!Plate)
-		{
-			Plate = CreateOfferPlate();
-		}
-		UTextBlock* Label = CastChecked<UTextBlock>(Plate->GetContent());
-		Label->SetText(GetOfferName(Offer.OfferId));
-	}
 	if (bOwnConfirmed) bRequestPending = false;
-	FString Status = Session.bIsOpen ? TEXT("[좌클릭]  트랙 고르기") : TEXT("다른 플레이어를 기다리고 있습니다.");
+	FString Status = Session.bIsOpen ? TEXT("좌클릭 · 트랙 선택") : TEXT("참가자 대기 중");
 	if (GS && GS->GetRoomPhase() == EMWRoomPhase::Failed)
 	{
 		Status = TEXT("게임을 계속 진행할 수 없습니다.");
 	}
 	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
-	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 참가자 대기 중");
+	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 다른 참가자 대기 중");
 	if (Session.IsWaitingForReselectionOffers())
 	{
 		Text_SessionStatus->SetText(NSLOCTEXT("MWTrackSelection", "RetryPlacementOffers",
@@ -244,58 +240,6 @@ void UMWTrackSelectionWidget::Refresh()
 		? NSLOCTEXT("MWTrackSelection", "PlacementReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택")
 		: FText::FromString(Status);
 	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : StatusText);
-}
-
-UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
-{
-	UBorder* Plate = WidgetTree->ConstructWidget<UBorder>();
-	// 판면 색은 한 곳에서만 곱해야 호버 시 원본 텍스처의 명암이 유지된다.
-	FSlateBrush Brush = OfferPlateBrush;
-	Brush.TintColor = FLinearColor::White;
-	Plate->SetBrush(Brush);
-	Plate->SetBrushColor(OfferPlateBrush.TintColor.GetSpecifiedColor());
-	Plate->SetPadding(OfferPlatePadding);
-	Plate->SetVisibility(ESlateVisibility::Collapsed);
-
-	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	// 공용 WBP에서 참가자 목록을 숨겨도 후보 이름표는 기존 글꼴로 그린다.
-	Label->SetFont(Text_Players ? Text_Players->GetFont() : Text_SessionStatus->GetFont());
-	Label->SetColorAndOpacity(FLinearColor::White);
-	Label->SetJustification(ETextJustify::Center);
-	Plate->SetContent(Label);
-
-	auto* PlateSlot = Canvas_Cursors->AddChildToCanvas(Plate);
-	PlateSlot->SetAlignment(FVector2D(.5, 1));
-	PlateSlot->SetAutoSize(true);
-	return Plate;
-}
-
-void UMWTrackSelectionWidget::PositionOfferLabel(int32 OfferId, const FVector& WorldPosition, bool bHovered)
-{
-	UBorder* Plate = OfferPlates.FindRef(OfferId);
-	if (!Plate || bShowingPlacement)
-	{
-		return;
-	}
-
-	FVector2D Screen;
-	if (!UWidgetLayoutLibrary::ProjectWorldLocationToWidgetPosition(GetOwningPlayer(), WorldPosition, Screen, true))
-	{
-		Plate->SetVisibility(ESlateVisibility::Collapsed);
-		return;
-	}
-
-	const FLinearColor Color = bHovered ? OfferHoverColor : OfferPlateBrush.TintColor.GetSpecifiedColor();
-	if (Plate->GetBrushColor() != Color)
-	{
-		Plate->SetBrushColor(Color);
-	}
-	auto* LabelSlot = CastChecked<UCanvasPanelSlot>(Plate->Slot);
-	if (!LabelSlot->GetPosition().Equals(Screen))
-	{
-		LabelSlot->SetPosition(Screen);
-	}
-	Plate->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UMWTrackSelectionWidget::ConfirmOffer(int32 OfferId)
@@ -331,6 +275,15 @@ void UMWTrackSelectionWidget::HandleStateChanged() { TryBindState(); }
 void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaSeconds)
 {
 	Super::NativeTick(Geometry, DeltaSeconds);
+	if (PlacementEndpoint.IsSet() || ContactPulse.IsSet())
+	{
+		ContactPulseAge += DeltaSeconds;
+		if (ContactPulseAge >= SnapContactPulseSeconds)
+		{
+			ContactPulse.Reset();
+		}
+		Invalidate(EInvalidateWidgetReason::Paint);
+	}
 	auto* PC = GetOwningPlayer();
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	if (!PC || !GS || !Canvas_Cursors) return;
@@ -338,7 +291,7 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 	if (bShowingPlacement)
 	{
 		const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
-		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen)
+		if (auto* Own = PC->GetPlayerState<AMWPlayerState>(); Own && Session.bIsOpen && MWCursorProjection::HasActiveViewportPointer(*PC))
 		{
 			// 각 창의 해상도와 카메라가 달라도 같은 트랙 위치에 포인터를 표시하도록 배치 평면의 월드 좌표를 보낸다.
 			FVector Point = FVector::ZeroVector;
@@ -366,7 +319,9 @@ void UMWTrackSelectionWidget::NativeTick(const FGeometry& Geometry, float DeltaS
 			const auto Sample = PS->GetPlayerConstructionComponent()->GetCursor();
 			if (!Sample.bIsVisible || Sample.SelectionSessionId != DisplayedSession.SelectionSessionId ||
 				Sample.OffersRevision != DisplayedSession.OffersRevision) continue;
-			WorldPosition = Sample.WorldPosition;
+			const auto* Board = Cast<AMWTrackSelectionBoard>(PC->GetViewTarget());
+			if (!Board) continue;
+			WorldPosition = Board->ProjectSelectionCursor(Sample.WorldPosition);
 			StreamId = Sample.SelectionSessionId;
 		}
 		FVector2D Position;

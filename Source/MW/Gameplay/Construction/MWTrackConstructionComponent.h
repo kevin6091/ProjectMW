@@ -75,6 +75,9 @@ private:
 #if WITH_DEV_AUTOMATION_TESTS
 	friend class FMWGameplayRoundFlowTest;
 #endif
+
+	UMWPlayerConstructionComponent* FindPlayerConstruction(APlayerController* PC) const;
+
 	struct FPreparedTrack
 	{
 		TWeakObjectPtr<AActor> Actor;

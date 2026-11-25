@@ -48,7 +48,6 @@ bool UMWTrackRuntimeSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) 
 TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
 {
     TArray<TSoftClassPtr<AActor>> Result;
-    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
     if (!Catalog)
     {
         return Result;
@@ -59,13 +58,19 @@ TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
     for (const FMWTrackDefinition& Piece : Catalog->Pieces)
     {
         const auto& TrackClass = Piece.TrackClass;
-        if (!TrackClass.IsNull() && TrackClass != Settings->StartTrackClass && TrackClass != Settings->FinishTrackClass
-            && !Settings->CourseOnlyTracks.Contains(TrackClass))
+        if (!TrackClass.IsNull() && !IsCourseOnlyTrack(TrackClass))
         {
             Result.AddUnique(TrackClass);
         }
     }
     return Result;
+}
+
+bool UMWTrackRuntimeSubsystem::IsCourseOnlyTrack(const TSoftClassPtr<AActor>& TrackClass)
+{
+    const auto& Settings = *GetDefault<UMWTrackRuntimeSettings>();
+    return TrackClass == Settings.StartTrackClass || TrackClass == Settings.FinishTrackClass
+        || Settings.CourseOnlyTracks.Contains(TrackClass);
 }
 
 FText UMWTrackRuntimeSubsystem::GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const

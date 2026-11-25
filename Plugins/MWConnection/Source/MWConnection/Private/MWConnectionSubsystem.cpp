@@ -23,22 +23,25 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogMWConnection, Log, All);
 
-namespace
+/** All provider pointers, callback identities, recovery and world handling are hidden here. */
+class FMWConnectionImpl
 {
-    const FName NameKey(TEXT("MWC_ROOM_NAME"));
-    const FName ProtocolKey(TEXT("MWC_PROTOCOL"));
-    const FName StatusKey(TEXT("MWC_STATUS"));
+    friend class UMWConnectionSubsystem;
+
+    static const FName NameKey;
+    static const FName ProtocolKey;
+    static const FName StatusKey;
     // Provider's wire key, private to this module; no EOS headers or link dependency.
-    const FName BucketKey(TEXT("OSSEOS_BUCKET_ID_ATTRIBUTE_KEY"));
-    const FString PropertyPrefix(TEXT("MWC_GAME_"));
+    static const FName BucketKey;
+    static const FString PropertyPrefix;
     enum class EApi : uint8 { None, Login, Create, Find, Join, Update, Destroy };
 
-    FName PackageName(const UWorld* World)
+    static FName PackageName(const UWorld* World)
     {
         return World ? FName(*UWorld::RemovePIEPrefix(World->GetOutermost()->GetName())) : NAME_None;
     }
 
-    FMWConnectionResult Outcome(bool Success, EMWConnectionError Code = EMWConnectionError::None, const FString& Message = {})
+    static FMWConnectionResult Outcome(bool Success, EMWConnectionError Code = EMWConnectionError::None, const FString& Message = {})
     {
         FMWConnectionResult Result;
         Result.bSuccess = Success;
@@ -47,16 +50,12 @@ namespace
         return Result;
     }
 
-    FString PlayerOnlineKey(const APlayerState* Player)
+    static FString PlayerOnlineKey(const APlayerState* Player)
     {
         const auto Id = Player ? Player->GetUniqueId().GetUniqueNetId() : nullptr;
         return Id.IsValid() ? Id->ToString() : FString();
     }
-}
 
-/** All provider pointers, callback identities, recovery and world handling are hidden here. */
-class FMWConnectionImpl
-{
 public:
     explicit FMWConnectionImpl(UMWConnectionSubsystem& InOwner) : Owner(InOwner) {}
     UMWConnectionSubsystem& Owner;
@@ -819,6 +818,12 @@ public:
     }
 };
 
+const FName FMWConnectionImpl::NameKey(TEXT("MWC_ROOM_NAME"));
+const FName FMWConnectionImpl::ProtocolKey(TEXT("MWC_PROTOCOL"));
+const FName FMWConnectionImpl::StatusKey(TEXT("MWC_STATUS"));
+const FName FMWConnectionImpl::BucketKey(TEXT("OSSEOS_BUCKET_ID_ATTRIBUTE_KEY"));
+const FString FMWConnectionImpl::PropertyPrefix(TEXT("MWC_GAME_"));
+
 UMWConnectionSubsystem::UMWConnectionSubsystem() = default;
 UMWConnectionSubsystem::~UMWConnectionSubsystem() = default;
 void FMWConnectionImplDeleter::operator()(FMWConnectionImpl* Pointer) const { delete Pointer; }
@@ -907,7 +912,7 @@ void UMWConnectionSubsystem::HandlePlayerEntered(AGameModeBase* M, APlayerContro
 void UMWConnectionSubsystem::HandlePlayerExited(AGameModeBase* M, AController* P)
 {
     if (!Impl || !M || !P || !Impl->OwnWorld(M->GetWorld())) return;
-    if (P->PlayerState) Impl->RegisteredUsers.Remove(PlayerOnlineKey(P->PlayerState));
+    if (P->PlayerState) Impl->RegisteredUsers.Remove(FMWConnectionImpl::PlayerOnlineKey(P->PlayerState));
     Impl->UpdateRoomComponent();
 }
 void UMWConnectionSubsystem::HandleRoomInfoChanged() { if (Impl) Impl->CheckWorldReady(); }

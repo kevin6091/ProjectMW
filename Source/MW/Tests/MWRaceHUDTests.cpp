@@ -87,8 +87,76 @@ bool FMWRaceHUDStateLifetimeTest::RunTest(const FString& Parameters)
     return true;
 }
 
-namespace
+// 이 검사는 사용자가 준비한 PIE의 단계를 바꾼다. 일반 무인 회귀 검사와 분리한다.
+IMPLEMENT_COMPLEX_AUTOMATION_TEST(FMWRaceHUDPIEPhaseTest, "MW.UI.RaceHUD.PIEPhase",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::RequiresUser)
+
+class FMWWaitForPIEPhase : public IAutomationLatentCommand
 {
+public:
+    FMWWaitForPIEPhase(FAutomationTestBase* InTest, EMWRoomPhase InPhase, const FString& InName)
+        : Test(InTest)
+        , Phase(InPhase)
+        , Name(InName)
+        , StartedAt(FPlatformTime::Seconds())
+    {
+    }
+
+    virtual bool Update() override
+    {
+        const double Now = FPlatformTime::Seconds();
+        if (AppliedAt.IsSet())
+        {
+            // 다음 Slate 프레임이 실제 문구를 그린 뒤 캡처하고 검사를 끝낸다.
+            if (!bCaptured && Now - AppliedAt.GetValue() >= 0.2)
+            {
+                FString Directory;
+                if (FParse::Value(FCommandLine::Get(), TEXT("MWRaceHUDCaptureDir="), Directory))
+                {
+                    FScreenshotRequest::RequestScreenshot(FPaths::Combine(Directory, Name + TEXT(".png")), true, false);
+                }
+                bCaptured = true;
+            }
+            return Now - AppliedAt.GetValue() >= 0.5;
+        }
+
+        // Editor 자동화 준비가 기존 PIE를 종료할 수 있어 새 PIE 준비까지 기다린다.
+        for (const FWorldContext& Context : GEngine->GetWorldContexts())
+        {
+            UWorld* World = Context.World();
+            AMWGameplayGameState* State = World ? World->GetGameState<AMWGameplayGameState>() : nullptr;
+            if (Context.WorldType != EWorldType::PIE || !IsValid(State) || !State->HasAuthority())
+            {
+                continue;
+            }
+
+            const UMWGameplayHUDSubsystem* HUD = World->GetSubsystem<UMWGameplayHUDSubsystem>();
+            if (!HUD || !HUD->GetObservedRoomPhase().IsSet())
+            {
+                continue;
+            }
+
+            {
+                FMWGameplayProgress Progress = State->GetProgress();
+                Progress.Phase = Phase;
+                State->ApplyProgressFromServer(Progress);
+            }
+            Test->TestTrue(TEXT("실제 PIE 상태 이벤트 수신"), HUD->GetObservedRoomPhase() == Phase);
+            AppliedAt = Now;
+            return false;
+        }
+
+        if (Now - StartedAt >= 15.0)
+        {
+            Test->AddError(TEXT("15초 안에 MWGameplayGameState와 HUD가 준비된 PIE를 시작하지 못했습니다."));
+            return true;
+        }
+        return false;
+    }
+
+private:
+    friend class FMWRaceHUDPIEPhaseTest;
+
     struct FMWRaceHUDPhaseCase
     {
         const TCHAR* Name;
@@ -96,7 +164,7 @@ namespace
         EMWRoomPhase Phase;
     };
 
-    constexpr FMWRaceHUDPhaseCase PhaseCases[] =
+    static constexpr FMWRaceHUDPhaseCase PhaseCases[] =
     {
         { TEXT("SelectingTrack"), EMWRoomPhase::PreparingConstruction },
         { TEXT("PlacingTrack"), EMWRoomPhase::TrackPlacement },
@@ -107,105 +175,33 @@ namespace
         { TEXT("Failed"), EMWRoomPhase::Failed },
         { TEXT("LobbyHidden"), EMWRoomPhase::Lobby },
     };
-}
 
-// 이 검사는 사용자가 준비한 PIE의 단계를 바꾼다. 일반 무인 회귀 검사와 분리한다.
-IMPLEMENT_COMPLEX_AUTOMATION_TEST(FMWRaceHUDPIEPhaseTest, "MW.UI.RaceHUD.PIEPhase",
-    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter | EAutomationTestFlags::RequiresUser)
+    // 프레임워크가 잠재 명령 실행 동안 소유하는 검사 객체이며 UObject 참조가 아니다.
+    FAutomationTestBase* Test;
+
+    EMWRoomPhase Phase;
+
+    FString Name;
+
+    double StartedAt;
+
+    TOptional<double> AppliedAt;
+
+    bool bCaptured = false;
+};
 
 void FMWRaceHUDPIEPhaseTest::GetTests(TArray<FString>& Names, TArray<FString>& Commands) const
 {
-    for (const FMWRaceHUDPhaseCase& TestCase : PhaseCases)
+    for (const auto& TestCase : FMWWaitForPIEPhase::PhaseCases)
     {
         Names.Add(TestCase.Name);
         Commands.Add(TestCase.Name);
     }
 }
 
-namespace
-{
-    class FMWWaitForPIEPhase : public IAutomationLatentCommand
-    {
-    public:
-        FMWWaitForPIEPhase(FAutomationTestBase* InTest, EMWRoomPhase InPhase, const FString& InName)
-            : Test(InTest)
-            , Phase(InPhase)
-            , Name(InName)
-            , StartedAt(FPlatformTime::Seconds())
-        {
-        }
-
-        virtual bool Update() override
-        {
-            const double Now = FPlatformTime::Seconds();
-            if (AppliedAt.IsSet())
-            {
-                // 다음 Slate 프레임이 실제 문구를 그린 뒤 캡처하고 검사를 끝낸다.
-                if (!bCaptured && Now - AppliedAt.GetValue() >= 0.2)
-                {
-                    FString Directory;
-                    if (FParse::Value(FCommandLine::Get(), TEXT("MWRaceHUDCaptureDir="), Directory))
-                    {
-                        FScreenshotRequest::RequestScreenshot(FPaths::Combine(Directory, Name + TEXT(".png")), true, false);
-                    }
-                    bCaptured = true;
-                }
-                return Now - AppliedAt.GetValue() >= 0.5;
-            }
-
-            // Editor 자동화 준비가 기존 PIE를 종료할 수 있어 새 PIE 준비까지 기다린다.
-            for (const FWorldContext& Context : GEngine->GetWorldContexts())
-            {
-                UWorld* World = Context.World();
-                AMWGameplayGameState* State = World ? World->GetGameState<AMWGameplayGameState>() : nullptr;
-                if (Context.WorldType != EWorldType::PIE || !IsValid(State) || !State->HasAuthority())
-                {
-                    continue;
-                }
-
-                const UMWGameplayHUDSubsystem* HUD = World->GetSubsystem<UMWGameplayHUDSubsystem>();
-                if (!HUD || !HUD->GetObservedRoomPhase().IsSet())
-                {
-                    continue;
-                }
-
-                {
-                    FMWGameplayProgress Progress = State->GetProgress();
-                    Progress.Phase = Phase;
-                    State->ApplyProgressFromServer(Progress);
-                }
-                Test->TestTrue(TEXT("실제 PIE 상태 이벤트 수신"), HUD->GetObservedRoomPhase() == Phase);
-                AppliedAt = Now;
-                return false;
-            }
-
-            if (Now - StartedAt >= 15.0)
-            {
-                Test->AddError(TEXT("15초 안에 MWGameplayGameState와 HUD가 준비된 PIE를 시작하지 못했습니다."));
-                return true;
-            }
-            return false;
-        }
-
-    private:
-        // 프레임워크가 잠재 명령 실행 동안 소유하는 검사 객체이며 UObject 참조가 아니다.
-        FAutomationTestBase* Test;
-
-        EMWRoomPhase Phase;
-
-        FString Name;
-
-        double StartedAt;
-
-        TOptional<double> AppliedAt;
-
-        bool bCaptured = false;
-    };
-}
-
 bool FMWRaceHUDPIEPhaseTest::RunTest(const FString& Parameters)
 {
-    for (const FMWRaceHUDPhaseCase& TestCase : PhaseCases)
+    for (const auto& TestCase : FMWWaitForPIEPhase::PhaseCases)
     {
         if (Parameters == TestCase.Name)
         {

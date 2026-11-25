@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "HAL/IConsoleManager.h"
 #include "MWVehicleNetworkTypes.h"
 #include "MWVehicleDriveInput.h"
 #include "Data/MWVehicleDriveData.h"
@@ -12,6 +14,7 @@
 class AMWVehiclePawn;
 class UMWItemComponent;
 class UMWTrackRuntimeComponent;
+class USphereComponent;
 
 /**
  *
@@ -70,6 +73,34 @@ protected:
 private:
 	friend class AMWVehiclePawn;
 
+	static constexpr ECollisionChannel VehicleGroundChannel = ECC_GameTraceChannel1;
+	static constexpr float MaxImpactYawRate = 150.f;
+	static constexpr float ImpactYawDamping = MWVehicleImpactYawDamping;
+	static constexpr double ImpactYawScale = 0.35;
+	static TAutoConsoleVariable<int32> CVarVehicleSupportLog;
+
+	struct FContactResponse
+	{
+		FVector DeltaA = FVector::ZeroVector;
+		FVector DeltaB = FVector::ZeroVector;
+		double Impulse = 0.0;
+	};
+
+	double CalculateBoxSupportRadius(const FVector& Extent, const FQuat& Rotation, const FVector& Normal) const;
+	FVector FitWheelSupportNormal(TConstArrayView<FVector> Samples, const FQuat& Rotation,
+		const FVector& RoadNormal, double MaxAngle) const;
+	FContactResponse CalculateContactResponse(const FVector& VelocityA, const FVector& VelocityB,
+		const FVector& Normal, const FMWVehicleContactTuning& A, const FMWVehicleContactTuning& B);
+	double ProjectBoxRadius(const FVector& Axis, const FQuat& Rotation, const FVector& Extent) const;
+	void GetContactArms(const FVector& Normal, const FVector& CenterOffset, const FQuat& RotationA,
+		const FVector& ExtentA, const FQuat& RotationB, const FVector& ExtentB, FVector& OutA, FVector& OutB);
+	void ApplyContactYaw(float& Rate, const FVector& Offset, const FVector& Impulse, double Mass, const FVector& Extent);
+	bool SweepContactBoxes(const FVector& Location, const FQuat& Rotation, const FVector& Extent,
+		const FMWVehicleContactSample& Other, const FVector& RelativeDelta, double& OutTime, FVector& OutNormal) const;
+	const FMWVehicleContactSample* FindPredictedContact(const FVector& Location, const FQuat& Rotation,
+		const FVector& Extent, const FVector& MoveDelta, float DeltaTime, TArrayView<const FMWVehicleContactSample> Contacts,
+		double& OutFraction, FVector& OutNormal) const;
+
 	void SimulateDriveStep(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts = {},
 		FMWVehiclePredictedImpact* OutImpact = nullptr);
 	void CaptureDriveSnapshot(FMWVehicleDriveSnapshot& OutSnapshot) const;
@@ -112,9 +143,12 @@ private:
 	FVector GroundOrientationNormal = FVector::UpVector;
 	// 이번 이동 단계에서 적용할 회전
 	FQuat TargetRotation = FQuat::Identity;
-	// 아래 방향 Sweep으로 구한 접촉까지의 이동 거리
+	// 차체의 아래 방향에서 지지면까지의 이동 거리.
 	float GroundDistance = 0.f;
 	float ImpactYawRate = 0.f;
+	// 높이 보정에만 쓰는 서스펜션 속도(cm/s)다. 차체의 충돌 반발과 분리한다.
+	float SuspensionSpeed = 0.f;
+	bool bHasWheelSupport = false;
 	// 접지 검사에서 다시 계산하는 값. 단위: cm/s²
 	double GroundNormalLoadAcceleration = 0.0;
 
@@ -140,9 +174,15 @@ private:
 
 	// 기하학적으로 유효한 도로 후보를 찾는다.
 	// 접지 상태나 속도는 변경하지 않는다.
-	// 반환값이 true일 때만 OutHit을 사용한다.
-	bool FindGroundCandidate(FHitResult& OutHit, bool bWasGrounded) const;
-	void UpdateGroundState(FHitResult* OutAcceptedHit = nullptr);
+	// 박스 스윕을 보완할 때는 확인한 평면의 법선도 반환한다.
+	bool FindGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal, bool bWasGrounded,
+		FVector& OutOrientationNormal, bool& bOutWheelSupport) const;
+
+	// 바퀴 구체를 압축·신장 범위 안에서 검사한다. Offset은 기본 중심에서 위쪽이 양수다.
+	bool TraceSuspensionWheel(const USphereComponent& Wheel, FHitResult& OutHit, double& OutOffset) const;
+	bool FindWheelGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal, bool bWasGrounded,
+		FVector& OutOrientationNormal) const;
+	void UpdateGroundState(FVector* OutOrientationNormal = nullptr);
 	// 예측 접촉을 포함해 노면 정렬과 조향을 적용하고, 실제 충돌체를 움직였는지 반환한다.
 	bool UpdateGroundRotation(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts);
 	
@@ -154,10 +194,9 @@ private:
 		const FVector& ToNormal,
 		FVector& OutTangentVelocity);
 
-	// 승인된 접촉 주변을 조사해 차체 정렬 방향을 계산한다.
-	// 실제 접지 상태, 속도, 위치는 변경하지 않는다.
-	// 실패하면 OutNormal에는 기존 접촉 법선이 남는다.
-	bool TryCalculateGroundOrientation(const FHitResult& Contact, FVector& OutNormal) const;
+	// 차체 아래의 접촉을 조사해 정렬 평면을 계산한다.
+	// 기존 접촉이 없으면 검증된 평면 위의 접촉으로 지지 후보도 복원한다.
+	bool TryCalculateGroundPlane(FHitResult& InOutContact, const FVector& ReferenceNormal, FVector& OutNormal) const;
 
 	// 다운포스 계산
 	// 한 번의 접지 평가에서만 사용하는 진단 값이다. 예측/복제 상태에는 포함하지 않는다.
@@ -165,6 +204,8 @@ private:
 	{
 		bool bEvaluated = false;
 		bool bSameTrackAhead = false;
+		// 실제 접지 검사에서 박스 스윕 대신 노면 평면을 사용했는지 기록한다.
+		bool bUsedGroundPlane = false;
 		const TCHAR* CurvatureResult = TEXT("NotEvaluated");
 		double TangentSpeed = 0.0;
 		double RequiredAcceleration = 0.0;
@@ -190,4 +231,7 @@ private:
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
 	void AdjustGroundHeight(float DeltaTime);
+	// 차체에 걸린 낮은 단차는 바퀴가 위쪽 노면을 찾고 올라갈 공간이 있을 때만 넘는다.
+	bool TryStepOverWheelContact(const FHitResult& Hit, const FVector& RemainingDelta);
+	void AdjustSuspensionHeight(float DeltaTime);
 };
