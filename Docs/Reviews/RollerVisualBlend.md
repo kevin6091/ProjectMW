@@ -26,3 +26,11 @@
 차체 Z 표시값의 연속 관측 차이를 비교한다. 65ms 이내에 실제 차량 위치가 300cm 이하로 이동한 샘플만 포함했으며, 실제 차량 Z 차이도 함께 기록했다. 주행은 기존 개발맵에서 같은 시작 위치와 무조향 가속을 사용했다.
 
 캡처·빌드·주행 로그는 로컬 검증 폴더 `work/roller-pivot-audit/visual-blend-fix`에 있다. 수치 원본은 `visual-blend-comparison.json`이다.
+
+## 차량 이동 병합 후 Editor 빌드 복구
+
+- `90aa952` 병합에서 `UMWVehicleMovementComponent::FindGroundCandidate`가 인수 다섯 개를 받는 차량 이동 쪽 선언을 사용하게 됐다. `MWVehiclePawn.cpp`의 `UpdateRollerBodyPresentation`에는 인수 두 개를 전달하는 호출이 남아 `C2660`이 발생했다.
+- 롤러 표시에서도 현재 접지 법선을 정규화해 전달하고, 바퀴 지지 여부와 차체 정렬 법선을 받을 지역 변수를 제공한다. 롤러 높이 샘플을 조회할 때는 결과에서 접지 액터를 사용한다. 수정 범위는 롤러 표시의 접지 조회다.
+- 최초 재빌드에서 UBT의 Hot Reload 출력 이름이 충돌했다. 별도 프로젝트의 Live Coding 세션이 같은 엔진 실행 파일을 사용 중이어서 `-NoHotReload -NoHotReloadFromIDE`로 일반 빌드를 실행했다.
+- 컴파일 후 `FTriangleMeshImplicitObject::Raycast` 링크 오류 `LNK2019`가 발생했다. `MW.Build.cs`와 엔진 임포트 라이브러리에 필요한 의존성과 심볼이 있었지만 로컬 `UnrealEditor-MW.dll.rsp`에는 `UnrealEditor-Chaos.lib`가 빠져 있었다. 생성된 응답 파일을 백업하고 UBT로 재생성해 해당 라이브러리가 포함되는 것을 확인했다.
+- UE 5.8.4 `MWEditor Win64 Development`에서 수정한 C++ 컴파일과 Editor DLL 링크가 통과했다. 같은 대상으로 실행한 후속 증분 빌드도 통과했다. 이번 검증 범위는 빌드다. 로그는 로컬 검증 폴더 `work/roller-pivot-audit/ground-candidate-build-fix`의 `Build-Editor.log`와 `Build-Editor-Repeat.log`에 있다.

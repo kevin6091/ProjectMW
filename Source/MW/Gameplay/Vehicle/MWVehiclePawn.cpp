@@ -861,8 +861,13 @@ void AMWVehiclePawn::UpdateRollerBodyPresentation(float DeltaTime)
 		}
 	}
 
+	// 표시에 필요한 접지 액터를 주행과 같은 바퀴·차체 검사로 찾는다.
 	FHitResult Support;
-	const AActor* SupportActor = bNearRoller && VehicleMovement->FindGroundCandidate(Support, true)
+	FVector SupportOrientation = FVector::UpVector;
+	bool bWheelSupport = false;
+	const AActor* SupportActor = bNearRoller &&
+		VehicleMovement->FindGroundCandidate(Support, VehicleMovement->GroundNormal.GetSafeNormal(), true,
+			SupportOrientation, bWheelSupport)
 		? Support.GetActor() : nullptr;
 	const UMWTrackRuntimeComponent* Roller = SupportActor
 		? SupportActor->FindComponentByClass<UMWTrackRuntimeComponent>() : nullptr;
