@@ -39,6 +39,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MW|Construction")
 	void RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId);
 	void RestoreArrivalInput();
+	EMWRoomPhase GetConstructionPresentationPhase() const;
 	void SetTrackSelectionBoard(AMWTrackSelectionBoard* Board);
 	void RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId);
 	void RequestTrackCursor(int32 SessionId, int32 Revision, bool bVisible, const FVector& Position);
@@ -60,7 +61,7 @@ protected:
 private:
 	friend class UMWTrackPlacementViewComponent;
 
-	void ApplyGameplayInputMode();
+	void ApplyGameplayInputMode(bool bRestoreConstructionFocus = false);
 	void UpdateRaceViewTarget();
 	void RefreshDrivingInput();
 	void ClearDrivingInput();
@@ -71,6 +72,9 @@ private:
 	// Construction
 	UFUNCTION(Server, Reliable)
 	void ServerConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId, int32 RequestId);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRetryTrackSelection(int32 SessionId, int32 Revision);
 
 	UFUNCTION(Client, Reliable)
 	void ClientTrackSelectionReply(const FMWTrackSelectionReply& Reply);

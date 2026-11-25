@@ -8,6 +8,7 @@
 #include "MWGameplayGameMode.generated.h"
 
 class AMWGameplayPlayerController;
+class UMWCoursePickupComponent;
 class AMWPlayerStartManager;
 class AMWTrackSelectionBoard;
 class AMWVehiclePawn;
@@ -64,6 +65,9 @@ private:
 	// 건설 단계 사용 여부는 시작·종료 BP의 설정과 별개다.
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Construction")
 	bool bEnableTrackConstruction = true;
+
+	UPROPERTY()
+	TObjectPtr<UMWCoursePickupComponent> CoursePickups;
 
 	TWeakObjectPtr<AMWPlayerStartManager> StartManager;
 	TWeakObjectPtr<AMWTrackSelectionBoard> SelectionBoard;

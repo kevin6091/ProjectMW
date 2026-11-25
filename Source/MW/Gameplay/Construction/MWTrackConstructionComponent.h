@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -31,6 +31,9 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "MW|Construction")
 	FMWTrackSelectionSession GetSelectionSession() const { return SelectionSession; }
+
+	bool IsPlacementReselectionOpen() const { return SelectionSession.bIsOpen && SelectionSession.bIsPlacementReselection; }
+	bool IsPlacementReselectionPendingFor(const AMWPlayerState& Player) const;
 	
 	UPROPERTY(BlueprintAssignable, Category = "MW|Construction")
 	FMWTrackConstructionSessionChanged OnSelectionSessionChanged;
@@ -40,10 +43,13 @@ public:
 		const TArray<AMWPlayerState*>& SelectionPlayers, 
 		FText& OutError);
 	void EndSelection();
+	void RetryPlacementReselection(APlayerController* Requester, int32 SessionId, int32 Revision);
 	// Hover와 커서 갱신에는 호출되지 않는 서버 진행 이벤트다.
 	FMWAllSelectionsConfirmed OnAllSelectionsConfirmed;
 	FMWPlacementFinished OnPlacementFinished;
 	FMWConstructionFailed OnConstructionFailed;
+	// 호스트 설치와 원격 복제에서 로컬 표현이 같은 확정 목록을 읽는다.
+	FSimpleMulticastDelegate OnPlacementSessionChanged;
 	
 	// 소유 PlayerController의 서버 RPC에서만 요청자를 넘긴다.
 	void UpdateHover(APlayerController* Requester, int32 SessionId, int32 Revision, int32 OfferId);
@@ -66,10 +72,14 @@ public:
 	bool IsCourseReadyForRace(int32 SessionId, int32 CourseRevision) const;
 	
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FMWGameplayRoundFlowTest;
+#endif
 	struct FPreparedTrack
 	{
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
+		TArray<FVector> GroundPoints;
 		bool bEnableCollision = false;
 		bool bEnableTick = false;
 		int32 LastPreviewSequence = 0;
@@ -83,6 +93,12 @@ private:
 	FMWTrackPlacementSession PlacementSession;
 	TMap<TWeakObjectPtr<AMWPlayerState>, FPreparedTrack> PendingTracks;
 	FPreparedTrack PendingEndCap;
+	// 이미 선택을 마친 참가자도 같은 라운드를 처음부터 다시 배치할 수 있도록 명단과 시작점을 보관한다.
+	TSet<TWeakObjectPtr<AMWPlayerState>> PlacementParticipants;
+	FMWOpenTrackEnd RoundStartEnd;
+	FBox RoundStartCourseBounds = FBox(ForceInit);
+	// 확인된 후보를 선택 화면 수명 동안 숨겨 보관한다.
+	TMap<int32, FPreparedTrack> ReselectionOffers;
 	// 종료 캡 직전 도로의 열린 끝. 다음 라운드에 종료 캡만 제거하고 여기부터 확장한다.
 	FMWOpenTrackEnd NextRoundEnd;
 	bool bCommittingPlacement = false;
@@ -94,6 +110,9 @@ private:
 		FPreparedTrack& OutTrack, FText& OutError);
 	void PublishTrack(const FPreparedTrack& Prepared, const FTransform& Transform, FMWTrackEndId ConnectedTo = {}, int32 PortIndex = INDEX_NONE);
 	FPreparedTrack* FindPendingTrack(APlayerController* Requester, int32 SessionId);
+	EMWTrackPlacementResult OpenPlacementReselection(int32 RequestingMemberId);
+	void RollbackRoundPlacementForReselection(const TArray<AMWPlayerState*>& Players);
+	void ResumePlacementAfterReselection();
 	bool PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const;
 	void FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform);
 
@@ -103,6 +122,7 @@ private:
 	UFUNCTION()
 	void OnRep_SelectionSession();
 
+	bool BeginSelectionInternal(const TArray<AMWPlayerState*>& SelectionPlayers, FText& OutError, bool bPlacementReselection);
 	bool HasServerAuthority() const;
 	bool ValidateRequest(APlayerController* Requester,
 		int32 SessionId, int32 Revision, int32 OfferId, bool bAllowNone,
@@ -111,5 +131,6 @@ private:
 
 	int32 NextSelectionSessionId = 0;
 	bool bPreparingSelection = false;
+	double NextReselectionRetryTime = 0.0;
 	TSet<TWeakObjectPtr<AMWPlayerState>> Participants;
 };

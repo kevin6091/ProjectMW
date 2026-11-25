@@ -25,6 +25,7 @@
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackSnap.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "Data/MWTrackDefinitionData.h"
 #include "System/MWAssetManager.h"
 #include "Components/ArrowComponent.h"
@@ -982,10 +983,18 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWGameplayRoundFlowTest, "MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath",
+IMPLEMENT_COMPLEX_AUTOMATION_TEST(FMWGameplayRoundFlowTest, "MW.Gameplay.RoundLoop",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+void FMWGameplayRoundFlowTest::GetTests(TArray<FString>& OutNames, TArray<FString>& OutCommands) const
+{
+	OutNames.Append({TEXT("ScoringExpansionAndSuddenDeath"), TEXT("ReselectionWithoutInitialFit"), TEXT("ReselectionWithTwoPreparedOffers")});
+	OutCommands.Append({TEXT("Normal"), TEXT("NoInitialFit"), TEXT("TwoPreparedOffers")});
+}
+
 bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 {
+	const bool bNoInitialFit = Parameters == TEXT("NoInitialFit");
+	const bool bShortPool = Parameters == TEXT("TwoPreparedOffers");
 	MWVehicleTests::FScene Scene(FMWVehicleDriveConfig{}, true);
 	Scene.Controller->UnPossess();
 	Scene.Controller->Destroy();
@@ -1026,6 +1035,10 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	FindFProperty<FObjectPropertyBase>(Scene.World->GetClass(), TEXT("AuthorityGameMode"))->SetObjectPropertyValue_InContainer(Scene.World, Mode);
 	Mode->InitGameState();
 	Mode->StartManager = Scene.World->SpawnActor<AMWPlayerStartManager>();
+	// 여러 라운드의 임의 후보가 낮아져도 채점 테스트의 코스에는 충분한 지면 여유를 둔다.
+	constexpr double RoundFixtureClearance = 60000.0;
+	const double FloorZ = GetDefault<UMWTrackRuntimeSettings>()->TrackPlacementFloorZ;
+	Mode->StartManager->SetActorLocation(FVector::UpVector * (FloorZ + RoundFixtureClearance));
 	TInlineComponentArray<UArrowComponent*> Slots(Mode->StartManager.Get());
 	for (int32 Index = 0; Index < Slots.Num(); ++Index) Slots[Index]->SetRelativeLocation(FVector(-300, Index * 400 - 600, 60));
 	Mode->SelectionBoard = Scene.World->SpawnActor<AMWTrackSelectionBoard>();
@@ -1065,8 +1078,117 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 			}
 		}
 		if (!TestTrue(TEXT("All selections enter TrackPlacement"), State->GetRoomPhase() == EMWRoomPhase::TrackPlacement)) return false;
+		bool bHasReselected = false;
 		for (int32 Index = 0; Index < Controllers.Num(); ++Index)
 		{
+			if (Index == 1 && State->GetProgress().RoundIndex == 2 && !bHasReselected)
+			{
+				// P1의 도로를 설치한 뒤 P2의 기존 선택에만 두 방향을 막는 검증용 높이점을 넣는다.
+				auto& Pending = Construction->PendingTracks.FindChecked(TWeakObjectPtr<AMWPlayerState>(Players[Index]));
+				const auto Before = Construction->GetPlacementSession();
+				const auto ProgressBefore = State->GetProgress();
+				const auto& End = Before.OpenEnds[0];
+				FVector Below = End.WorldFrame.GetLocation();
+				Below.Z = Before.Ground.FloorZ - 1.0;
+				for (int32 Port = 0; Port < 2; ++Port)
+				{
+					const FTransform Aligned = MWTrackSnap::AlignPorts(Pending.Ports[Port], End.WorldFrame);
+					Pending.GroundPoints.Add(Aligned.InverseTransformPosition(Below));
+				}
+				FMWTrackPlacementIntent Retry;
+				Retry.Target = End.Id;
+				Retry.SourcePort = 0;
+				Retry.bSnapRequested = true;
+				Retry.bRecoverBlocked = true;
+				Retry.CursorLocation = MWTrackSnap::AlignPorts(Pending.Ports[0], End.WorldFrame)
+					.TransformPosition((Pending.Ports[0].GetLocation() + Pending.Ports[1].GetLocation()) * .5);
+
+				const FMWOpenTrackEnd OriginalRoundStart = Construction->RoundStartEnd;
+				if (bNoInitialFit)
+				{
+					// 현재 끝점은 유지하고, 2라운드 첫 끝점만 내려서 어떤 후보도 즉시 붙지 않게 한다.
+					Construction->RoundStartEnd.WorldFrame.SetLocation(
+						FVector(End.WorldFrame.GetLocation().X, End.WorldFrame.GetLocation().Y,
+							Before.Ground.FloorZ - RoundFixtureClearance));
+				}
+				{
+					auto& Excluded = GetMutableDefault<UMWTrackRuntimeSettings>()->CourseOnlyTracks;
+					const TGuardValue<TArray<TSoftClassPtr<AActor>>> RestoreCatalog(Excluded, Excluded);
+					if (bShortPool)
+					{
+						// 추첨 수만 속이지 않고 실제로 선택할 수 있는 카탈로그 클래스를 두 개로 제한한다.
+						const auto Pool = Runtime->GetSelectionPool();
+						for (int32 Piece = 2; Piece < Pool.Num(); ++Piece) Excluded.AddUnique(Pool[Piece]);
+					}
+					if (!TestTrue(TEXT("A blocked piece opens reselection"), Construction->PlaceTrack(Controllers[Index],
+						Before.SessionId, Before.CourseRevision, Retry) == EMWTrackPlacementResult::ReselectionOpened)) return false;
+				}
+				auto OfferSession = Construction->GetSelectionSession();
+				TestTrue(TEXT("Reselection opens for everyone, including the player who placed a track"),
+					OfferSession.bIsOpen && OfferSession.bIsPlacementReselection
+					&& Algo::AllOf(Players, [Construction](const AMWPlayerState* Player)
+						{ return Construction->IsPlacementReselectionPendingFor(*Player); }));
+				const auto AfterRollback = Construction->GetPlacementSession();
+				TestTrue(TEXT("Old requests cannot use the new placement session"), AfterRollback.SessionId != Before.SessionId);
+				TestTrue(TEXT("Rollback publishes a new course revision"), AfterRollback.CourseRevision > Before.CourseRevision);
+				TestEqual(TEXT("Only the current round's placed track is removed"), AfterRollback.PlacedTracks.Num(), Before.PlacedTracks.Num() - 1);
+				for (int32 PieceIndex = 0; PieceIndex < AfterRollback.PlacedTracks.Num(); ++PieceIndex)
+				{
+					TestTrue(TEXT("Previous roads keep their actor and transform"),
+						Before.PlacedTracks[PieceIndex].Actor == AfterRollback.PlacedTracks[PieceIndex].Actor
+						&& Before.PlacedTracks[PieceIndex].WorldTransform.Equals(AfterRollback.PlacedTracks[PieceIndex].WorldTransform));
+				}
+				TestTrue(TEXT("The current round track actor is removed"),
+					!IsValid(Before.PlacedTracks.Last().Actor) || Before.PlacedTracks.Last().Actor->IsActorBeingDestroyed());
+				TestTrue(TEXT("Installation stays blocked while players reselect"), Construction->PlaceTrack(Controllers[Index],
+					Before.SessionId, Before.CourseRevision, Retry) == EMWTrackPlacementResult::Unavailable);
+				if (bNoInitialFit || bShortPool)
+				{
+					if (!TestTrue(TEXT("Everyone can see that the same reselection is waiting"), OfferSession.IsWaitingForReselectionOffers())) return false;
+					Construction->RetryPlacementReselection(Controllers[0], OfferSession.SelectionSessionId, OfferSession.OffersRevision - 1);
+					TestEqual(TEXT("A stale retry is ignored"), Construction->GetSelectionSession().OffersRevision, OfferSession.OffersRevision);
+					if (bNoInitialFit)
+					{
+						Construction->RetryPlacementReselection(Controllers[1], OfferSession.SelectionSessionId, OfferSession.OffersRevision);
+						OfferSession = Construction->GetSelectionSession();
+						TestTrue(TEXT("A genuinely impossible endpoint continues to wait after retry"), OfferSession.IsWaitingForReselectionOffers());
+						Construction->RetryPlacementReselection(Controllers[2], OfferSession.SelectionSessionId, OfferSession.OffersRevision);
+						TestEqual(TEXT("A second immediate retry is rate limited"), Construction->GetSelectionSession().OffersRevision, OfferSession.OffersRevision);
+						// 테스트가 만든 잘못된 시작 끝점을 풀어 실제 재준비 성공 경로도 이어서 검사한다.
+						Construction->RoundStartEnd = OriginalRoundStart;
+						Construction->PlacementSession.OpenEnds[0] = OriginalRoundStart;
+						Construction->NextReselectionRetryTime = 0.0;
+					}
+					const int32 WaitingId = OfferSession.SelectionSessionId;
+					Construction->RetryPlacementReselection(Controllers[2], WaitingId, OfferSession.OffersRevision);
+					OfferSession = Construction->GetSelectionSession();
+					if (!TestTrue(TEXT("Retry publishes choices for all players in the same session"),
+						OfferSession.SelectionSessionId == WaitingId && !OfferSession.IsWaitingForReselectionOffers()
+						&& OfferSession.Offers.Num() >= Controllers.Num())) return false;
+					TestEqual(TEXT("Retry does not roll the round back a second time"),
+						Construction->GetPlacementSession().CourseRevision, AfterRollback.CourseRevision);
+					TestTrue(TEXT("Retry preserves scores and the match round"), State->GetProgress() == ProgressBefore);
+				}
+				for (int32 PlayerIndex = 0; PlayerIndex < Controllers.Num(); ++PlayerIndex)
+				{
+					if (!TestTrue(TEXT("Everyone can pick again"), Construction->ConfirmSelection(Controllers[PlayerIndex],
+						OfferSession.SelectionSessionId, OfferSession.OffersRevision, OfferSession.Offers[PlayerIndex].OfferId,
+						400 + PlayerIndex).bAccepted)) return false;
+				}
+				TestTrue(TEXT("Reselection closes and returns to placement in the same round"),
+					!Construction->GetSelectionSession().bIsOpen && State->GetRoomPhase() == EMWRoomPhase::TrackPlacement
+					&& State->GetProgress().RoundIndex == 2);
+				for (const auto* Player : Players)
+				{
+					const auto& PlayerPlacement = Player->GetPlayerConstructionComponent()->GetPlacement();
+					TestTrue(TEXT("Each player can place a new track in the new placement session"),
+						PlayerPlacement.SessionId == OfferSession.SelectionSessionId && !PlayerPlacement.bPlaced
+						&& !PlayerPlacement.TrackClass.IsNull());
+				}
+				bHasReselected = true;
+				Index = 0;
+			}
+
 			const auto TrackClass = Players[Index]->GetPlayerConstructionComponent()->GetPlacement().TrackClass;
 			UClass* Class = TrackClass.LoadSynchronous();
 			if (!TestNotNull(TEXT("Selected track class exists"), Class)) return false;
@@ -1078,9 +1200,13 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 			const auto End = Session.OpenEnds[0];
 			FMWTrackPlacementIntent Intent;
 			Intent.Target = End.Id;
-			Intent.SourcePort = 0;
+			const auto& Prepared = Construction->PendingTracks.FindChecked(TWeakObjectPtr<AMWPlayerState>(Players[Index]));
+			const bool bFitsFirst = MWTrackPlacementClearance::FitsWithFinish(Prepared.GroundPoints, Session.Ground,
+				MWTrackSnap::AlignPorts(Ports[0], End.WorldFrame), Ports[1]);
+			Intent.SourcePort = bFitsFirst ? 0 : 1;
 			Intent.bSnapRequested = true;
-			Intent.CursorLocation = MWTrackSnap::AlignPorts(Ports[0], End.WorldFrame).TransformPosition((Ports[0].GetLocation() + Ports[1].GetLocation()) * .5);
+			Intent.CursorLocation = MWTrackSnap::AlignPorts(Ports[Intent.SourcePort], End.WorldFrame)
+				.TransformPosition((Ports[0].GetLocation() + Ports[1].GetLocation()) * .5);
 			if (!TestTrue(TEXT("Server accepts a real socket placement"), Construction->PlaceTrack(Controllers[Index], Session.SessionId,
 				Session.CourseRevision, Intent) == EMWTrackPlacementResult::Accepted)) return false;
 		}
@@ -1145,6 +1271,11 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 		for (const auto& Track : Construction->GetPlacementSession().PlacedTracks)
 			if (Track.bCheckpoint) Runtime->ProcessRaceTrigger(*Vehicles[Index], *Track.Actor, EMWTrackTrigger::Checkpoint, {});
 	};
+	const auto CountCheckpoints = [Construction]
+	{
+		return Algo::CountIf(Construction->GetPlacementSession().PlacedTracks,
+			[](const FMWPlacedTrack& Track) { return Track.bCheckpoint; });
+	};
 	const auto FinishAll = [&]() -> bool
 	{
 		for (int32 Index = 0; Index < 3; ++Index)
@@ -1152,7 +1283,11 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 		return TestTrue(TEXT("All racers enter RoundResults once"), State->GetRoomPhase() == EMWRoomPhase::RoundResults);
 	};
 	Mode->EnterPhase(EMWRoomPhase::PreparingConstruction);
-	if (!PlaceRound() || !StartRace() || !FinishAll()) return false;
+	if (!PlaceRound() || !StartRace()) return false;
+	// 무작위 카탈로그에서 자체 체크포인트 조각이 뽑힐 수 있어 코스의 실제 체크포인트를 통과한다.
+	const int32 FirstCheckpointCount = CountCheckpoints();
+	for (int32 Index = 0; Index < Players.Num(); ++Index) PassCheckpoints(Index);
+	if (!FinishAll()) return false;
 	TestEqual(TEXT("First place receives 300"), Players[0]->GetRoundState().FinishScore, 300);
 	TestEqual(TEXT("Second place receives 150"), Players[1]->GetRoundState().FinishScore, 150);
 	TestEqual(TEXT("Third place receives 50"), Players[2]->GetRoundState().FinishScore, 50);
@@ -1163,8 +1298,11 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	Advance(3.2);
 	TestEqual(TEXT("Next normal round issues exactly one new epoch"), State->GetProgress().RoundEpoch, 2);
 	TestTrue(TEXT("Starting a new round preserves the last results"), State->GetProgress().Results == FirstResults);
-	TestEqual(TEXT("New round preserves accumulated score"), Players[0]->GetRoundState().TotalScore, 300);
-	if (!PlaceRound() || !StartRace()) return false;
+	TestEqual(TEXT("New round preserves accumulated score"), Players[0]->GetRoundState().TotalScore,
+		300 + FirstCheckpointCount * 100);
+	if (!PlaceRound()) return false;
+	if (!StartRace()) return false;
+	if (bNoInitialFit || bShortPool) return true;
 	TestTrue(TEXT("Start and previous road actors are preserved"), Construction->GetPlacementSession().PlacedTracks[0].Actor == FirstRoad);
 	TestTrue(TEXT("Previous end cap is removed"), !OldCap.IsValid() || OldCap->IsActorBeingDestroyed());
 	TestEqual(TEXT("Second round appends three road pieces"), Construction->GetPlacementSession().PlacedTracks.Num(), FirstPieceCount + 3);
@@ -1175,12 +1313,15 @@ bool FMWGameplayRoundFlowTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Server fall detection restores the vehicle before any checkpoint"), Vehicles[0]->GetActorLocation().Z > FallZ + 500);
 	TestFalse(TEXT("A recovered fall invalidates only the current segment"), Players[0]->GetRoundState().bCheckpointEligible);
 	for (int32 Index = 0; Index < 3; ++Index) PassCheckpoints(Index);
-	TestEqual(TEXT("Failed segment awards no checkpoint points"), Players[0]->GetRoundState().CheckpointScore, 0);
-	TestEqual(TEXT("Clean segment awards 100 checkpoint points"), Players[1]->GetRoundState().CheckpointScore, 100);
+	const int32 SecondCheckpointCount = CountCheckpoints();
+	TestEqual(TEXT("Only the failed segment awards no checkpoint points"), Players[0]->GetRoundState().CheckpointScore,
+		FMath::Max(0, SecondCheckpointCount - 1) * 100);
+	TestEqual(TEXT("Each clean segment awards 100 checkpoint points"), Players[1]->GetRoundState().CheckpointScore, SecondCheckpointCount * 100);
 	PassCheckpoints(1);
-	TestEqual(TEXT("Checkpoint cannot award twice"), Players[1]->GetRoundState().CheckpointScore, 100);
+	TestEqual(TEXT("Checkpoint cannot award twice"), Players[1]->GetRoundState().CheckpointScore, SecondCheckpointCount * 100);
 	if (!FinishAll()) return false;
-	TestEqual(TEXT("Round and cumulative scoring remain separate"), Players[1]->GetRoundState().TotalScore, 400);
+	TestEqual(TEXT("Round and cumulative scoring remain separate"), Players[1]->GetRoundState().TotalScore,
+		300 + (FirstCheckpointCount + SecondCheckpointCount) * 100);
 	Advance(3.2);
 	if (!PlaceRound() || !StartRace()) return false;
 	for (int32 Index = 0; Index < 2; ++Index)

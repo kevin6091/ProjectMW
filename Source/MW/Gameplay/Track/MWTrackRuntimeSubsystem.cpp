@@ -48,7 +48,6 @@ bool UMWTrackRuntimeSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) 
 TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
 {
     TArray<TSoftClassPtr<AActor>> Result;
-    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
     if (!Catalog)
     {
         return Result;
@@ -59,8 +58,7 @@ TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
     for (const FMWTrackDefinition& Piece : Catalog->Pieces)
     {
         const auto& TrackClass = Piece.TrackClass;
-        if (!TrackClass.IsNull() && TrackClass != Settings->StartTrackClass && TrackClass != Settings->FinishTrackClass
-            && !Settings->CourseOnlyTracks.Contains(TrackClass))
+        if (!TrackClass.IsNull() && !IsCourseOnlyTrack(TrackClass))
         {
             Result.AddUnique(TrackClass);
         }
@@ -68,10 +66,22 @@ TArray<TSoftClassPtr<AActor>> UMWTrackRuntimeSubsystem::GetSelectionPool() const
     return Result;
 }
 
+bool UMWTrackRuntimeSubsystem::IsCourseOnlyTrack(const TSoftClassPtr<AActor>& TrackClass)
+{
+    const auto& Settings = *GetDefault<UMWTrackRuntimeSettings>();
+    return TrackClass == Settings.StartTrackClass || TrackClass == Settings.FinishTrackClass
+        || Settings.CourseOnlyTracks.Contains(TrackClass);
+}
+
 FText UMWTrackRuntimeSubsystem::GetTrackDisplayName(const TSoftClassPtr<AActor>& TrackClass) const
 {
-    const FMWTrackDefinition* const* Definition = Pieces.Find(TrackClass.ToSoftObjectPath());
-    return Definition ? (*Definition)->DisplayName : FText::GetEmpty();
+    const FMWTrackDefinition* Definition = FindTrackDefinition(TrackClass);
+    return Definition ? Definition->DisplayName : FText::GetEmpty();
+}
+
+const FMWTrackDefinition* UMWTrackRuntimeSubsystem::FindTrackDefinition(const TSoftClassPtr<AActor>& TrackClass) const
+{
+    return Pieces.FindRef(TrackClass.ToSoftObjectPath());
 }
 
 // 기존 배치 트랙을 연결하고 이후 생성 이벤트도 등록해 늦게 도착한 조각을 놓치지 않는다.

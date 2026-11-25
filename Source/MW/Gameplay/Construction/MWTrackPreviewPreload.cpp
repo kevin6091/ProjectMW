@@ -2,6 +2,7 @@
 
 #include "Engine/StreamableManager.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPresentationSettings.h"
 #include "Materials/MaterialInterface.h"
 #include "MaterialShared.h"
 #include "MWGameplayTags.h"
@@ -47,6 +48,13 @@ bool UMWTrackPreviewPreload::PrepareCandidates(const TArray<FMWTrackOffer>& Offe
 		}
 	}
 
+	// 후보가 있을 때 투명 표면 재질도 BP와 같은 로딩 핸들로 준비한다.
+	const auto& CandidateSurface = GetDefault<UMWTrackPresentationSettings>()->CandidateSurfaceMaterial;
+	if (!Paths.IsEmpty() && !CandidateSurface.IsNull())
+	{
+		Paths.AddUnique(CandidateSurface.ToSoftObjectPath());
+	}
+
 	if (Paths != CandidatePaths)
 	{
 		if (CandidateLoadHandle) CandidateLoadHandle->CancelHandle();
@@ -60,7 +68,15 @@ bool UMWTrackPreviewPreload::PrepareCandidates(const TArray<FMWTrackOffer>& Offe
 	TSet<UMaterialInterface*> Materials;
 	for (const FSoftObjectPath& Path : CandidatePaths)
 	{
-		MWTrackPreview::CollectWireframeMaterials(Cast<UClass>(Path.ResolveObject()), Materials);
+		UObject* Loaded = Path.ResolveObject();
+		if (auto* Material = Cast<UMaterialInterface>(Loaded))
+		{
+			Materials.Add(Material);
+		}
+		else
+		{
+			MWTrackPreview::CollectWireframeMaterials(Cast<UClass>(Loaded), Materials);
+		}
 	}
 
 	bool bReady = true;

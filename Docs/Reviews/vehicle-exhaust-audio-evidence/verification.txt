@@ -1,0 +1,91 @@
+2026-11-25 KST  UE 5.8.4  Win64 Development  Listen Server + 2 clients
+Git main: 1b57b3b9c7781129e850403867b88225b89fe6ba
+선택 WBP: cs:62, SHA-256 5C646421F2CDA85E90E69869C7B62CD52AC3AF837A8ECC12140DCE252A00BA1B
+나머지 시험 구성: cs:80 서버 차량 연출 에셋과 기존 경기 코스
+A3139A914B3151C21D209EE0B4517A9B64195D1889F459B7F869CB525C23CED7  Content/Gameplay/Vehicles/Art/Exhaust/NS_MW_VehicleExhaust.uasset
+553C6988784DC8124B03D192CAE7A823994E9A31AB6E8C0BCC4C446FC1331040  Content/Gameplay/Vehicles/Art/EngineAudio/SW_MW_EngineExhaustLoop.uasset
+
+[main + cs:80 선택 WBP의 기존 호환 문제]
+[2026.11.25-01.23.23:003][310]LogWindows: Error: Unhandled Exception: EXCEPTION_ACCESS_VIOLATION reading address 0x0000000000000000
+[2026.11.25-01.23.23:026][310]LogWindows: Error: [Callstack] 0x0000013929e0bdbb UnrealEditor-MW.dll!UMWTrackSelectionWidget::Refresh() [C:\Users\user\Documents\Codex\mw-reselection-split-qa\Source\MW\UI\MWTrackSelectionWidget.cpp:201]
+
+[빌드·자동화 14개]
+C:\Users\user\Documents\Codex\mw-reselection-split-qa\Source\MW\Gameplay\Items\MWItemComponentVisual.cpp(231,58): warning C4996: 'UMovieScene::GetBindings': Getting non-const access to GetBindings is no longer allowed. Please use const GetBindings() - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+Result: Succeeded
+Total execution time: 140.36 seconds
+[2026.11.25-01.25.27:812][535]LogAutomationController: Display: Test Completed. Result={Success} Name={PermissionAndHold} Path={MW.Gameplay.DriveControl.PermissionAndHold}
+[2026.11.25-01.25.28:180][538]LogAutomationController: Display: Test Completed. Result={Success} Name={PersonalFinish} Path={MW.Gameplay.DriveControl.PersonalFinish}
+[2026.11.25-01.25.28:264][542]LogAutomationController: Display: Test Completed. Result={Success} Name={SnapshotSerialization} Path={MW.Gameplay.DriveControl.SnapshotSerialization}
+[2026.11.25-01.25.28:581][543]LogAutomationController: Display: Test Completed. Result={Success} Name={StreamAndPrediction} Path={MW.Gameplay.DriveControl.StreamAndPrediction}
+[2026.11.25-01.25.28:812][546]LogAutomationController: Display: Test Completed. Result={Success} Name={PickupAndUse} Path={MW.Items.PickupAndUse}
+[2026.11.25-01.25.28:946][549]LogAutomationController: Display: Test Completed. Result={Success} Name={CheckpointVelocity} Path={MW.Vehicle.CheckpointVelocity}
+[2026.11.25-01.25.29:074][550]LogAutomationController: Display: Test Completed. Result={Success} Name={CollisionAndGround} Path={MW.Vehicle.CollisionAndGround}
+[2026.11.25-01.25.29:158][553]LogAutomationController: Display: Test Completed. Result={Success} Name={ConfigValidation} Path={MW.Vehicle.ConfigValidation}
+[2026.11.25-01.25.29:288][556]LogAutomationController: Display: Test Completed. Result={Success} Name={FrameRateAndReset} Path={MW.Vehicle.FrameRateAndReset}
+[2026.11.25-01.25.29:439][559]LogAutomationController: Display: Test Completed. Result={Success} Name={LocalControls} Path={MW.Vehicle.LocalControls}
+[2026.11.25-01.25.29:669][562]LogAutomationController: Display: Test Completed. Result={Success} Name={OverspeedRecovery} Path={MW.Vehicle.OverspeedRecovery}
+[2026.11.25-01.25.29:809][564]LogAutomationController: Display: Test Completed. Result={Success} Name={VehicleContact} Path={MW.Vehicle.VehicleContact}
+[2026.11.25-01.25.30:672][566]LogAutomationController: Display: Test Completed. Result={Success} Name={WallBounce} Path={MW.Vehicle.WallBounce}
+[2026.11.25-01.25.30:932][568]LogAutomationController: Display: Test Completed. Result={Success} Name={WallGroundContact} Path={MW.Vehicle.WallGroundContact}
+[2026.11.25-01.25.30:980][575]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 14 tests performed.
+
+[설원 코스 및 차량 입력]
+[2026.11.25-01.27.03:317][227]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(200.0,214.0) ghost=(260.390000000,450.000000000,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.27.14:022][465]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(309.0,192.0) ghost=(8313.460000001,449.990704022,7804.090000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.27.23:510][694]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=0 pointer=(373.0,128.0) ghost=(9312.749953184,717.750878743,7804.090000000) quat=(-0.000000000,0.000000000,-0.499994351,0.866028665) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.27.32:641][844]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=baseline t=0.047 longitudinal_speed=0.00 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.27.33:497][860]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=accelerate t=0.906 longitudinal_speed=0.00 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.27.35:302][892]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=brake t=2.703 longitudinal_speed=1830.40 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.27.36:757][922]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=release t=4.156 longitudinal_speed=-0.00 target=BP_MWVehiclePawn_DOUG_C_0
+P1 phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0 location=[-2620.0, 375.0, 6069.2] course=5
+P2 phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0 location=[-2620.0, 525.0, 6046.2] course=5
+P3 phase=<MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_MAMMOTH_C_0 location=[-2870.0, 375.0, 6054.2] course=5
+
+[같은 DOUG의 상태]
+[2026.11.25-01.28.10:614][724]LogPython: [MWBoosterQA] final camera pass, extra native pickup at <Struct 'Vector' (0x000002B8E18C7A30) {x: -2180.000000, y: 525.000000, z: 6047.000000}>, same race and original course
+[2026.11.25-01.28.11:560][747]LogPython: [MWBoosterQA] final camera pass: real pickup overlap granted Booster to P2
+P1: active booster samples=49; overlap=0
+  before t=207.937 active_exhaust=2 booster_jet=0 speed_cm/s=290.45
+  during t=208.047 active_exhaust=0 booster_jet=1 speed_cm/s=373.5
+  after t=216.453 active_exhaust=2 booster_jet=0 speed_cm/s=4077.66
+  exhaust=[{'at': [-80.64, -6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}, {'at': [-80.64, 6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}]
+  baseline audio pitch=0.82 gain=0.1 components=1
+  peak audio pitch=1.23937 gain=0.23343 components=1
+  settle audio pitch=0.82279 gain=0.10089 components=1
+P2: active booster samples=49; overlap=0
+  before t=207.937 active_exhaust=2 booster_jet=0 speed_cm/s=294.42
+  during t=208.047 active_exhaust=0 booster_jet=1 speed_cm/s=638.71
+  after t=216.453 active_exhaust=2 booster_jet=0 speed_cm/s=4045.11
+  exhaust=[{'at': [-80.64, -6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}, {'at': [-80.64, 6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}]
+  baseline audio pitch=0.82 gain=0.1 components=1
+  peak audio pitch=1.31624 gain=0.25789 components=1
+  settle audio pitch=0.82467 gain=0.10149 components=1
+P3: active booster samples=49; overlap=0
+  before t=207.937 active_exhaust=2 booster_jet=0 speed_cm/s=293.93
+  during t=208.047 active_exhaust=0 booster_jet=1 speed_cm/s=289.19
+  after t=216.453 active_exhaust=2 booster_jet=0 speed_cm/s=3113.51
+  exhaust=[{'at': [-80.64, -6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}, {'at': [-80.64, 6.8, 4.5], 'scale': [0.32, 0.32, 0.32]}]
+  baseline audio pitch=0.82 gain=0.1 components=1
+  peak audio pitch=1.23601 gain=0.23237 components=1
+  settle audio pitch=0.82324 gain=0.10103 components=1
+
+[Unreal 오디오 디버거의 거리 감쇠 후 웨이브 볼륨]
+[2026.11.25-01.27.41:813][ 10]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=near distance_cm=200.0 component_volume=0.10000
+[2026.11.25-01.27.41:922][ 12]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0302
+[2026.11.25-01.27.41:947][ 12]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.1
+[2026.11.25-01.27.41:971][ 12]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0203
+[2026.11.25-01.27.43:778][ 39]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=middle distance_cm=2200.0 component_volume=0.10000
+[2026.11.25-01.27.43:847][ 39]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.27.43:871][ 40]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.05
+[2026.11.25-01.27.43:899][ 40]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.27.45:797][ 71]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=outside distance_cm=4800.0 component_volume=0.10000
+[2026.11.25-01.27.45:868][ 71]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.27.45:892][ 72]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.27.45:915][ 73]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.27.47:851][117]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=return distance_cm=200.0 component_volume=0.10000
+[2026.11.25-01.27.47:922][118]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0302
+[2026.11.25-01.27.47:945][119]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.1
+[2026.11.25-01.27.47:970][120]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0203
+
+[PIE 종료]
+[2026.11.25-01.33.22:078][348]LogAudio: Display: Shutting down audio device while 1 references to it are still alive. For more information, compile with INSTRUMENT_AUDIODEVICE_HANDLES.

@@ -112,15 +112,23 @@ void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReas
 	Super::EndPlay(EndPlayReason);
 }
 
-void AMWGameplayPlayerController::ApplyGameplayInputMode()
+EMWRoomPhase AMWGameplayPlayerController::GetConstructionPresentationPhase() const
+{
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	const auto* PS = GetPlayerState<AMWPlayerState>();
+	return Phase == EMWRoomPhase::TrackPlacement && PS && GS->GetConstructionComponent()->IsPlacementReselectionPendingFor(*PS)
+		? EMWRoomPhase::PreparingConstruction : Phase;
+}
+
+void AMWGameplayPlayerController::ApplyGameplayInputMode(bool bRestoreConstructionFocus)
 {
 	if (!IsLocalController() || !HasActorBegunPlay())
 	{
 		return;
 	}
 
-	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	const EMWRoomPhase Phase = GetConstructionPresentationPhase();
 	// 실패 단계의 안내는 경기 HUD가 소유한다. 종료된 건설판이 오류 배지를 덮지 않게 한다.
 	const bool bShowConstruction = TrackSelectionWidgetClass &&
 		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement);
@@ -152,25 +160,34 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 		if (!IsValid(TrackSelectionWidget))
 		{
 			TrackSelectionWidget = CreateWidget<UUserWidget>(this, TrackSelectionWidgetClass);
+		}
 
-			if (IsValid(TrackSelectionWidget))
+		if (IsValid(TrackSelectionWidget))
+		{
+			const bool bAttached = !TrackSelectionWidget->IsInViewport();
+			if (bAttached)
 			{
 				TrackSelectionWidget->AddToViewport();
+			}
+			if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
+			{
+				SetInputMode(FInputModeUIOnly());
+				bShowMouseCursor = false;
+			}
+			else if (bAttached || !bShowMouseCursor || bRestoreConstructionFocus)
+			{
+				// 가림막 뒤에서 만든 위젯도 공개 상태에 들어오면 입력과 커서를 함께 복구한다.
 				FInputModeGameAndUI Mode;
+				if (bRestoreConstructionFocus)
+				{
+					TrackSelectionWidget->SetIsFocusable(true);
+					Mode.SetWidgetToFocus(TrackSelectionWidget->TakeWidget());
+				}
 				Mode.SetHideCursorDuringCapture(false);
 				Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 				SetInputMode(Mode);
 				bShowMouseCursor = true;
 			}
-		}
-
-		if (IsValid(TrackSelectionWidget))
-		{
-            if (GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered())
-            {
-                SetInputMode(FInputModeUIOnly());
-                bShowMouseCursor = false;
-            }
 			return;
 		}
 	}
@@ -208,18 +225,8 @@ void AMWGameplayPlayerController::UpdateRaceViewTarget()
 
 void AMWGameplayPlayerController::RestoreArrivalInput()
 {
-    // 가림 해제 시 현재 경기 단계의 입력 모드를 먼저 복구하고 건설 화면이 있으면 포커스를 되돌린다.
-    ApplyGameplayInputMode();
-    if (IsValid(TrackSelectionWidget) && TrackSelectionWidget->IsInViewport())
-    {
-        FInputModeGameAndUI Mode;
-        TrackSelectionWidget->SetIsFocusable(true);
-        Mode.SetWidgetToFocus(TrackSelectionWidget->TakeWidget());
-        Mode.SetHideCursorDuringCapture(false);
-        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-        SetInputMode(Mode);
-        bShowMouseCursor = true;
-    }
+	// 가림 해제와 단계 변경은 같은 커서·입력 경로를 사용한다.
+	ApplyGameplayInputMode(true);
 }
 
 void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
@@ -230,7 +237,10 @@ void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
 		return;
 	}
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (GS && GS->GetRoomPhase() != PresentedPhase)
+	// 같은 건설 단계에서 가림이 풀렸거나 표시 플래그가 다시 꺼져도 다음 프레임에 복구한다.
+	const bool bConstructionCursorHidden = !bShowMouseCursor && IsValid(TrackSelectionWidget)
+		&& !GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered();
+	if (GS && (GetConstructionPresentationPhase() != PresentedPhase || bConstructionCursorHidden))
 	{
 		ApplyGameplayInputMode();
 	}
@@ -528,8 +538,25 @@ void AMWGameplayPlayerController::SetTrackSelectionBoard(AMWTrackSelectionBoard*
 
 void AMWGameplayPlayerController::HandleTrackSelectPressed()
 {
-	if (SelectionBoard.IsValid())
-		if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget)) Widget->ConfirmOffer(SelectionBoard->FindHoveredOffer());
+	if (!SelectionBoard.IsValid() || GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered()) return;
+	if (const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+	{
+		const auto Session = GS->GetConstructionComponent()->GetSelectionSession();
+		if (Session.IsWaitingForReselectionOffers())
+		{
+			ServerRetryTrackSelection(Session.SelectionSessionId, Session.OffersRevision);
+			return;
+		}
+	}
+	if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget)) Widget->ConfirmOffer(SelectionBoard->FindHoveredOffer());
+}
+
+void AMWGameplayPlayerController::ServerRetryTrackSelection_Implementation(int32 SessionId, int32 Revision)
+{
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>(); GS && GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement)
+	{
+		GS->GetConstructionComponent()->RetryPlacementReselection(this, SessionId, Revision);
+	}
 }
 
 void AMWGameplayPlayerController::RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId)

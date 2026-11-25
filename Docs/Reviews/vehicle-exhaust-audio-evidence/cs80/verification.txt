@@ -1,0 +1,106 @@
+2026-11-25 KST | UVCS cs:80 | UE 5.8.4 | Listen server + 2 clients
+PR #21 ea98d74fa90690610aa8ee7fa47b6eca3762a821
+PR #23 ef8b3185be42f5581f6767aaaf6a25bdc6daa0bf
+검증 Git 트리 6d497980187b92670779b8a5ef242fc1f485fcf9
+
+[서버 cs:80 SHA-256]
+7A3177DEC53287102009CB5381999926204BB8B80670A868B83A0C455EE5A699  Content/UI/Construction/WBP_TrackSelectionTest.uasset
+6FA01454BDF2B6151588BD1D6DE38105CE1AAC22705CC9C13654B15A33C1DD89  Content/UI/Race/WBP_MatchPanels.uasset
+8E642CD75FD0DB3A5C5F68F4BD41B06BAAB33DECC442FD234023286D991BD2F9  Content/Levels/L_Dev_Drive.umap
+9F6E010E9FDCEDD258BB78C94615DC7B8B6D3A266B1B4E3301F6FA6B88EA39B6  Content/Gameplay/Tracks/Data/DA_TrackRuntime.uasset
+A3139A914B3151C21D209EE0B4517A9B64195D1889F459B7F869CB525C23CED7  Content/Gameplay/Vehicles/Art/Exhaust/NS_MW_VehicleExhaust.uasset
+553C6988784DC8124B03D192CAE7A823994E9A31AB6E8C0BCC4C446FC1331040  Content/Gameplay/Vehicles/Art/EngineAudio/SW_MW_EngineExhaustLoop.uasset
+
+[에디터·BP 컴파일]
+Result: Succeeded
+Total execution time: 96.12 seconds
+[2026.11.25-01.39.59:523][  0]LogPython: MW_SPLIT_WBP name=WBP_TrackSelectionTest compiled=True unchanged=True sha256=7a3177dec53287102009cb5381999926204bb8b80670a868b83a0c455ee5a699
+[2026.11.25-01.39.59:567][  0]LogPython: MW_SPLIT_WBP name=BP_MWGameplayPlayerController compiled=True unchanged=True sha256=067dc447427224a7ed9861381604b2b99e56a1ad5faf0d925bea4e5a00b5b850
+[2026.11.25-01.39.59:622][  0]LogPython: MW_SPLIT_WBP name=WBP_MatchPanels compiled=True unchanged=True sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.25-01.39.59:715][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+
+[3인 실제 경기]
+[2026.11.25-01.42.21:972][  4]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=1 revision=1 target=1:0 source=0 pointer=(129.0,209.0) ghost=(260.390000000,450.000000000,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.42.32:458][247]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=1 revision=2 target=2:1 source=0 pointer=(257.0,203.0) ghost=(16660.390000000,450.001433734,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.42.42:432][271]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=1 revision=3 target=3:1 source=1 pointer=(387.0,121.0) ghost=(19488.252091905,7277.064219168,6000.000000000) quat=(-0.000000000,0.000000000,-0.923879661,0.382683123) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-01.42.55:735][294]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=3,SelectedOfferId=3,bConfirmed=True) pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.25-01.42.55:747][294]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=2,SelectedOfferId=2,bConfirmed=True) pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.42.55:758][294]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=1,OffersRevision=1,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True) pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+[2026.11.25-01.42.55:833][295]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=baseline t=0.047 longitudinal_speed=0.00 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.42.56:803][301]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=accelerate t=1.015 longitudinal_speed=0.00 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.42.58:519][315]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=brake t=2.734 longitudinal_speed=1284.80 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.42.59:897][326]LogPython: MW_EXHAUST_AUDIO_DRIVE phase=release t=4.109 longitudinal_speed=-0.00 target=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-01.43.12:331][425]LogPython: [MWBoosterQA] final camera pass, extra native pickup at <Struct 'Vector' (0x000001EE4B99BC60) {x: -2180.000000, y: 525.000000, z: 6047.000000}>, same race and original course
+[2026.11.25-01.43.13:504][435]LogPython: [MWBoosterQA] final camera pass: real pickup overlap granted Booster to P2
+
+[세 창에서 같은 P2 DOUG의 일반 배기 / 부스터 / 엔진음]
+P1: boost active samples=64, overlap=0
+  before: t=202.984, smoke=2, jet=0, speed=307.8cm/s
+  during: t=203.172, smoke=0, jet=1, speed=321.42cm/s
+  after: t=212.578, smoke=2, jet=0, speed=4492.0cm/s
+  baseline: pitch=0.82, gain=0.1, loops=1
+  peak: pitch=1.12356, gain=0.19659, loops=1
+  settle: pitch=0.82441, gain=0.1014, loops=1
+P2: boost active samples=64, overlap=0
+  before: t=202.984, smoke=2, jet=0, speed=295.8cm/s
+  during: t=203.172, smoke=0, jet=1, speed=309.4cm/s
+  after: t=212.578, smoke=2, jet=0, speed=4480.0cm/s
+  baseline: pitch=0.82, gain=0.1, loops=1
+  peak: pitch=1.2185, gain=0.22679, loops=1
+  settle: pitch=0.82383, gain=0.10122, loops=1
+P3: boost active samples=64, overlap=0
+  before: t=202.984, smoke=2, jet=0, speed=301.2cm/s
+  during: t=203.172, smoke=0, jet=1, speed=295.2cm/s
+  after: t=212.578, smoke=2, jet=0, speed=3818.69cm/s
+  baseline: pitch=0.82, gain=0.1, loops=1
+  peak: pitch=1.12381, gain=0.19667, loops=1
+  settle: pitch=0.82161, gain=0.10051, loops=1
+
+[거리 적용 뒤 엔진 웨이브 볼륨]
+[2026.11.25-01.43.03:077][350]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=near distance_cm=200.0 component_volume=0.10000
+[2026.11.25-01.43.03:143][350]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0806
+[2026.11.25-01.43.03:168][350]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.1
+[2026.11.25-01.43.03:191][350]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0707
+[2026.11.25-01.43.05:128][366]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=middle distance_cm=2200.0 component_volume=0.10000
+[2026.11.25-01.43.05:381][368]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.000813
+[2026.11.25-01.43.05:405][368]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.05
+[2026.11.25-01.43.05:429][368]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.43.07:122][382]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=outside distance_cm=4800.0 component_volume=0.10000
+[2026.11.25-01.43.07:186][382]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.43.07:210][382]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.43.07:233][383]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0
+[2026.11.25-01.43.09:104][399]LogPython: MW_EXHAUST_AUDIO_DISTANCE stage=return distance_cm=200.0 component_volume=0.10000
+[2026.11.25-01.43.09:169][399]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0806
+[2026.11.25-01.43.09:193][400]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.1
+[2026.11.25-01.43.09:215][400]LogAudio: Display:    SW_MW_EngineExhaustLoop (1e+04) (4284) - 0.0707
+
+[하나의 자동화 프로세스에서 엔진 정리 오류]
+[2026.11.25-01.41.23:088][841]LogWindows: Error: Unhandled Exception: EXCEPTION_ACCESS_VIOLATION reading address 0x00000000000009d8
+[2026.11.25-01.41.23:113][841]LogWindows: Error: [Callstack] 0x00007ffc151a4d49 UnrealEditor-Engine.dll!UNetConnection::SetClientLoginState() [D:\build\++UE5\Sync\Engine\Source\Runtime\Engine\Private\NetConnection.cpp:5810]
+[2026.11.25-01.41.23:206][841]LogWindows: Error: [Callstack] 0x000001c19051e46f UnrealEditor-MW.dll!FMWGameplayRoundFlowTest::RunTest() [C:\Users\user\Documents\Codex\mw-reselection-split-qa\Source\MW\Tests\MWVehicleMovementTests.cpp:1274]
+
+[분리 프로세스 자동화 14 + 8]
+[2026.11.25-01.45.24:231][349]LogAutomationController: Display: Test Completed. Result={Success} Name={PermissionAndHold} Path={MW.Gameplay.DriveControl.PermissionAndHold}
+[2026.11.25-01.45.24:630][351]LogAutomationController: Display: Test Completed. Result={Success} Name={PersonalFinish} Path={MW.Gameplay.DriveControl.PersonalFinish}
+[2026.11.25-01.45.24:722][354]LogAutomationController: Display: Test Completed. Result={Success} Name={SnapshotSerialization} Path={MW.Gameplay.DriveControl.SnapshotSerialization}
+[2026.11.25-01.45.25:133][356]LogAutomationController: Display: Test Completed. Result={Success} Name={StreamAndPrediction} Path={MW.Gameplay.DriveControl.StreamAndPrediction}
+[2026.11.25-01.45.25:408][358]LogAutomationController: Display: Test Completed. Result={Success} Name={PickupAndUse} Path={MW.Items.PickupAndUse}
+[2026.11.25-01.45.25:575][360]LogAutomationController: Display: Test Completed. Result={Success} Name={CheckpointVelocity} Path={MW.Vehicle.CheckpointVelocity}
+[2026.11.25-01.45.25:747][363]LogAutomationController: Display: Test Completed. Result={Success} Name={CollisionAndGround} Path={MW.Vehicle.CollisionAndGround}
+[2026.11.25-01.45.25:836][365]LogAutomationController: Display: Test Completed. Result={Success} Name={ConfigValidation} Path={MW.Vehicle.ConfigValidation}
+[2026.11.25-01.45.26:068][369]LogAutomationController: Display: Test Completed. Result={Success} Name={FrameRateAndReset} Path={MW.Vehicle.FrameRateAndReset}
+[2026.11.25-01.45.26:239][371]LogAutomationController: Display: Test Completed. Result={Success} Name={LocalControls} Path={MW.Vehicle.LocalControls}
+[2026.11.25-01.45.26:501][373]LogAutomationController: Display: Test Completed. Result={Success} Name={OverspeedRecovery} Path={MW.Vehicle.OverspeedRecovery}
+[2026.11.25-01.45.26:687][375]LogAutomationController: Display: Test Completed. Result={Success} Name={VehicleContact} Path={MW.Vehicle.VehicleContact}
+[2026.11.25-01.45.27:886][377]LogAutomationController: Display: Test Completed. Result={Success} Name={WallBounce} Path={MW.Vehicle.WallBounce}
+[2026.11.25-01.45.28:213][380]LogAutomationController: Display: Test Completed. Result={Success} Name={WallGroundContact} Path={MW.Vehicle.WallGroundContact}
+[2026.11.25-01.45.28:269][384]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 14 tests performed.
+[2026.11.25-01.45.23:684][344]LogAutomationController: Display: Test Completed. Result={Success} Name={PlacementClearance} Path={MW.Construction.PlacementClearance}
+[2026.11.25-01.45.23:787][347]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+[2026.11.25-01.45.24:247][365]LogAutomationController: Display: Test Completed. Result={Success} Name={ExpiryAndHeartbeat} Path={MW.Cursor.ExpiryAndHeartbeat}
+[2026.11.25-01.45.24:412][369]LogAutomationController: Display: Test Completed. Result={Success} Name={StreamValidation} Path={MW.Cursor.StreamValidation}
+[2026.11.25-01.45.24:565][372]LogAutomationController: Display: Test Completed. Result={Success} Name={WorldWidgetProjection} Path={MW.Cursor.WorldWidgetProjection}
+[2026.11.25-01.45.28:456][470]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.25-01.45.29:847][567]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.25-01.45.33:489][ 17]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.25-01.45.33:564][ 24]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 8 tests performed.
