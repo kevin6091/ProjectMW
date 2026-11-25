@@ -48,143 +48,132 @@
 
 IMPLEMENT_MODULE(FDefaultModuleImpl, MWUCMFrontend)
 
-namespace
+class AMWUCMTitleFlow::SMWHostLeaveConfirmation : public SCompoundWidget
 {
-    class SMWHostLeaveConfirmation : public SCompoundWidget
+public:
+    SLATE_BEGIN_ARGS(SMWHostLeaveConfirmation)
     {
-    public:
-        SLATE_BEGIN_ARGS(SMWHostLeaveConfirmation)
-        {
-        }
-        SLATE_EVENT(FSimpleDelegate, OnConfirm)
-        SLATE_EVENT(FSimpleDelegate, OnCancel)
-        SLATE_END_ARGS()
+    }
+    SLATE_EVENT(FSimpleDelegate, OnConfirm)
+    SLATE_EVENT(FSimpleDelegate, OnCancel)
+    SLATE_END_ARGS()
 
-        // 호스트 종료 안내와 확인·취소 버튼을 기준 디자인 비율로 배치한다.
-        void Construct(const FArguments& Args)
-        {
-            OnConfirm = Args._OnConfirm;
-            OnCancel = Args._OnCancel;
-            const auto* Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
-            const auto Action = [this](const FText& Key, const FText& Text, bool bConfirmed)
-            {
-                return SNew(SButton)
-                    .IsFocusable(false)
-                    .ButtonStyle(FCoreStyle::Get(), TEXT("NoBorder"))
-                    .ContentPadding(FMargin(16.f, 2.f))
-                    .OnClicked(
-                        this, &SMWHostLeaveConfirmation::Choose,
-                        bConfirmed)[SNew(SHorizontalBox) +
-                                    SHorizontalBox::Slot().AutoWidth().VAlign(
-                                        VAlign_Center)[SNew(SBox).WidthOverride(66.f).HeightOverride(
-                                        54.f)[SNew(SBorder)
-                                                  .BorderImage(&Keycap)
-                                                  .HAlign(HAlign_Center)
-                                                  .VAlign(VAlign_Center)
-                                                  .Padding(0.f)[SNew(STextBlock)
-                                                                    .Text(Key)
-                                                                    .Font(Art.Font(14.f))
-                                                                    .ColorAndOpacity(FLinearColor::White)]]] +
-                                    SHorizontalBox::Slot()
-                                        .AutoWidth()
-                                        .VAlign(VAlign_Center)
-                                        .Padding(13.f, 0.f, 0.f, 0.f)[SNew(STextBlock)
-                                                                          .Text(Text)
-                                                                          .Font(Art.Font(36.f))
-                                                                          .ColorAndOpacity(FLinearColor::White)]];
-            };
-
-            ChildSlot
-                [SNew(SBorder)
-                     .BorderImage(Brush)
-                     .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, .77f))
-                     .Padding(0.f)[MWGameplayUI::FitDesignCanvas(
-                         SNew(SOverlay) +
-                         SOverlay::Slot()
-                             .HAlign(HAlign_Center)
-                             .VAlign(VAlign_Center)
-                                 [SNew(SMWGameplayPanel)
-                                      .Size(FVector2D(960.f, 432.f))
-                                      .Fill(FLinearColor::FromSRGBColor(FColor(16, 162, 220)))
-                                      .Border(FLinearColor::FromSRGBColor(FColor(9, 46, 68)))
-                                      .BorderWidth(6.f)
-                                          [SNew(SVerticalBox) +
-                                           SVerticalBox::Slot().AutoHeight().Padding(70.f, 86.f, 70.f, 20.f)
-                                               [SNew(STextBlock)
-                                                    .Text(NSLOCTEXT(
-                                                        "MWLobby", "HostLeaveWarning",
-                                                        "방을 종료하면 다른 모든 플레이어가\n로비에서 나갑니다. 정말 계속할까요?"))
-                                                    .Justification(ETextJustify::Center)
-                                                    .Font(Art.Font(32.f))
-                                                    .ColorAndOpacity(FLinearColor::White)] +
-                                           SVerticalBox::Slot()
-                                               .AutoHeight()
-                                               .HAlign(HAlign_Center)
-                                               .Padding(0.f, 0.f, 0.f, 7.f)[Action(
-                                                   NSLOCTEXT("MWLobby", "ConfirmKey", "SPACE"),
-                                                   NSLOCTEXT("MWLobby", "ConfirmHostLeave", "확인"), true)] +
-                                           SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[Action(
-                                               NSLOCTEXT("MWLobby", "CancelKey", "Esc"),
-                                               NSLOCTEXT("MWLobby", "CancelHostLeave", "취소"), false)]]])]];
-        }
-
-        virtual bool SupportsKeyboardFocus() const override
-        {
-            return true;
-        }
-
-        // 확인·취소 입력만 이 대화상자에서 처리해 뒤쪽 메뉴로 전달되지 않게 한다.
-        virtual FReply OnKeyDown(const FGeometry&, const FKeyEvent& Event) override
-        {
-            if (Event.IsRepeat())
-                return FReply::Handled();
-            if (Event.GetKey() == EKeys::SpaceBar)
-                return Choose(true);
-            if (Event.GetKey() == EKeys::Escape)
-                return Choose(false);
-            return FReply::Handled();
-        }
-
-        virtual FReply OnMouseButtonDown(const FGeometry&, const FPointerEvent&) override
-        {
-            return FReply::Handled();
-        }
-
-        virtual FReply OnMouseButtonUp(const FGeometry&, const FPointerEvent&) override
-        {
-            return FReply::Handled();
-        }
-
-    private:
-        // 현재 선택한 확인 또는 취소 콜백을 한 경로로 전달한다.
-        FReply Choose(bool bConfirmed)
-        {
-            const FSimpleDelegate Action = bConfirmed ? OnConfirm : OnCancel;
-            Action.ExecuteIfBound();
-            return FReply::Handled();
-        }
-
-        FSimpleDelegate OnConfirm;
-        FSimpleDelegate OnCancel;
-        FMWGameplayUIArt Art;
-        FSlateRoundedBoxBrush Keycap{FLinearColor(.015f, .020f, .025f), 6.f};
-    };
-}
-
-namespace
-{
-    constexpr double ReturnSessionWarningSeconds = 6.;
-    constexpr double ReturnPreparationTimeoutSeconds = 8.;
-    constexpr float VehiclePreviewBoardScale = 1.33f;
-
-    // 실제 경과 시간과 렌더 프레임으로 복귀 지점을 기록한다. 캡처 간격을 프레임 시간으로 대신하지 않는다.
-    void RecordRoomReturn(const TCHAR* Event)
+    // 호스트 종료 안내와 확인·취소 버튼을 기준 디자인 비율로 배치한다.
+    void Construct(const FArguments& Args)
     {
-        CSV_EVENT_GLOBAL_NOLOG(TEXT("MW_RETURN_%s"), Event);
-        UE_LOG(LogTemp, Display, TEXT("MW_RETURN %s MS=%.3f FRAME=%llu"), Event, FPlatformTime::Seconds() * 1000.,
-               GFrameCounter);
+        OnConfirm = Args._OnConfirm;
+        OnCancel = Args._OnCancel;
+        const auto* Brush = FCoreStyle::Get().GetBrush(TEXT("WhiteBrush"));
+        const auto Action = [this](const FText& Key, const FText& Text, bool bConfirmed)
+        {
+            return SNew(SButton)
+                .IsFocusable(false)
+                .ButtonStyle(FCoreStyle::Get(), TEXT("NoBorder"))
+                .ContentPadding(FMargin(16.f, 2.f))
+                .OnClicked(
+                    this, &SMWHostLeaveConfirmation::Choose,
+                    bConfirmed)[SNew(SHorizontalBox) +
+                                SHorizontalBox::Slot().AutoWidth().VAlign(
+                                    VAlign_Center)[SNew(SBox).WidthOverride(66.f).HeightOverride(
+                                    54.f)[SNew(SBorder)
+                                              .BorderImage(&Keycap)
+                                              .HAlign(HAlign_Center)
+                                              .VAlign(VAlign_Center)
+                                              .Padding(0.f)[SNew(STextBlock)
+                                                                .Text(Key)
+                                                                .Font(Art.Font(14.f))
+                                                                .ColorAndOpacity(FLinearColor::White)]]] +
+                                SHorizontalBox::Slot()
+                                    .AutoWidth()
+                                    .VAlign(VAlign_Center)
+                                    .Padding(13.f, 0.f, 0.f, 0.f)[SNew(STextBlock)
+                                                                      .Text(Text)
+                                                                      .Font(Art.Font(36.f))
+                                                                      .ColorAndOpacity(FLinearColor::White)]];
+        };
+
+        ChildSlot
+            [SNew(SBorder)
+                 .BorderImage(Brush)
+                 .BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, .77f))
+                 .Padding(0.f)[MWGameplayUI::FitDesignCanvas(
+                     SNew(SOverlay) +
+                     SOverlay::Slot()
+                         .HAlign(HAlign_Center)
+                         .VAlign(VAlign_Center)
+                             [SNew(SMWGameplayPanel)
+                                  .Size(FVector2D(960.f, 432.f))
+                                  .Fill(FLinearColor::FromSRGBColor(FColor(16, 162, 220)))
+                                  .Border(FLinearColor::FromSRGBColor(FColor(9, 46, 68)))
+                                  .BorderWidth(6.f)
+                                      [SNew(SVerticalBox) +
+                                       SVerticalBox::Slot().AutoHeight().Padding(70.f, 86.f, 70.f, 20.f)
+                                           [SNew(STextBlock)
+                                                .Text(NSLOCTEXT(
+                                                    "MWLobby", "HostLeaveWarning",
+                                                    "방을 종료하면 다른 모든 플레이어가\n로비에서 나갑니다. 정말 계속할까요?"))
+                                                .Justification(ETextJustify::Center)
+                                                .Font(Art.Font(32.f))
+                                                .ColorAndOpacity(FLinearColor::White)] +
+                                       SVerticalBox::Slot()
+                                           .AutoHeight()
+                                           .HAlign(HAlign_Center)
+                                           .Padding(0.f, 0.f, 0.f, 7.f)[Action(
+                                               NSLOCTEXT("MWLobby", "ConfirmKey", "SPACE"),
+                                               NSLOCTEXT("MWLobby", "ConfirmHostLeave", "확인"), true)] +
+                                       SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)[Action(
+                                           NSLOCTEXT("MWLobby", "CancelKey", "Esc"),
+                                           NSLOCTEXT("MWLobby", "CancelHostLeave", "취소"), false)]]])]];
     }
 
+    virtual bool SupportsKeyboardFocus() const override
+    {
+        return true;
+    }
+
+    // 확인·취소 입력만 이 대화상자에서 처리해 뒤쪽 메뉴로 전달되지 않게 한다.
+    virtual FReply OnKeyDown(const FGeometry&, const FKeyEvent& Event) override
+    {
+        if (Event.IsRepeat())
+            return FReply::Handled();
+        if (Event.GetKey() == EKeys::SpaceBar)
+            return Choose(true);
+        if (Event.GetKey() == EKeys::Escape)
+            return Choose(false);
+        return FReply::Handled();
+    }
+
+    virtual FReply OnMouseButtonDown(const FGeometry&, const FPointerEvent&) override
+    {
+        return FReply::Handled();
+    }
+
+    virtual FReply OnMouseButtonUp(const FGeometry&, const FPointerEvent&) override
+    {
+        return FReply::Handled();
+    }
+
+private:
+    // 현재 선택한 확인 또는 취소 콜백을 한 경로로 전달한다.
+    FReply Choose(bool bConfirmed)
+    {
+        const FSimpleDelegate Action = bConfirmed ? OnConfirm : OnCancel;
+        Action.ExecuteIfBound();
+        return FReply::Handled();
+    }
+
+    FSimpleDelegate OnConfirm;
+    FSimpleDelegate OnCancel;
+    FMWGameplayUIArt Art;
+    FSlateRoundedBoxBrush Keycap{FLinearColor(.015f, .020f, .025f), 6.f};
+};
+
+// 실제 경과 시간과 렌더 프레임으로 복귀 지점을 기록한다. 캡처 간격을 프레임 시간으로 대신하지 않는다.
+void UMWUCMIntroSession::RecordRoomReturn(const TCHAR* Event)
+{
+    CSV_EVENT_GLOBAL_NOLOG(TEXT("MW_RETURN_%s"), Event);
+    UE_LOG(LogTemp, Display, TEXT("MW_RETURN %s MS=%.3f FRAME=%llu"), Event, FPlatformTime::Seconds() * 1000.,
+           GFrameCounter);
 }
 
 // 기존 세션 상태와 맵 로드 이벤트를 구독하고 복귀 상태 점검을 등록한다.
@@ -782,7 +771,7 @@ bool AMWUCMTitleFlow::IsMenuReady(bool bLoggedIn)
                 AcceptPreviewInput();
             }
             if (Session->IsReturnWorldReady(GetWorld()))
-                RecordRoomReturn(TEXT("UCM_DOLLY_STARTED"));
+                UMWUCMIntroSession::RecordRoomReturn(TEXT("UCM_DOLLY_STARTED"));
             UE_LOG(LogTemp, Display, TEXT("MW_UCM SESSION_RETURN_NO_INTRO"));
         }
         else
@@ -1519,12 +1508,12 @@ void AMWUCMTitleFlow::Tick(float DeltaTime)
         if (bRoomBrowser)
         {
             RootWidget->RestoreRoomBrowser();
-            RecordRoomReturn(TEXT("ROOM_BROWSER_RESTORED"));
+            UMWUCMIntroSession::RecordRoomReturn(TEXT("ROOM_BROWSER_RESTORED"));
         }
         else
         {
             RootWidget->RestoreCreateRoomForm();
-            RecordRoomReturn(TEXT("CREATE_ROOM_FORM_RESTORED"));
+            UMWUCMIntroSession::RecordRoomReturn(TEXT("CREATE_ROOM_FORM_RESTORED"));
         }
     }
 }

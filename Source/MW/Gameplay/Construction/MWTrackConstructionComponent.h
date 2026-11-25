@@ -66,6 +66,8 @@ public:
 	bool IsCourseReadyForRace(int32 SessionId, int32 CourseRevision) const;
 	
 private:
+	UMWPlayerConstructionComponent* FindPlayerConstruction(APlayerController* PC) const;
+
 	struct FPreparedTrack
 	{
 		TWeakObjectPtr<AActor> Actor;

@@ -7,17 +7,14 @@
 #include "Engine/World.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 
-namespace
-{
-    const FName TrackNormalTag(TEXT("MWTrackNormal"));
-    const FName TrackWireframeTag(TEXT("MWTrackWireframe"));
-    const FName TrackSourceDisabledTag(TEXT("MWTrackSourceDisabled"));
+const FName UMWTrackVisualLibrary::TrackNormalTag(TEXT("MWTrackNormal"));
+const FName UMWTrackVisualLibrary::TrackWireframeTag(TEXT("MWTrackWireframe"));
+const FName UMWTrackVisualLibrary::TrackSourceDisabledTag(TEXT("MWTrackSourceDisabled"));
 
-    void SetTrackMeshVisible(UStaticMeshComponent& Mesh, bool bVisible)
-    {
-        Mesh.SetVisibility(bVisible);
-        Mesh.SetHiddenInGame(!bVisible);
-    }
+void UMWTrackVisualLibrary::SetTrackMeshVisible(UStaticMeshComponent& Mesh, bool bVisible)
+{
+    Mesh.SetVisibility(bVisible);
+    Mesh.SetHiddenInGame(!bVisible);
 }
 
 // 기존 외형 그룹의 표시만 바꾸고 설치 승인이나 트랙 정의를 수정하지 않는다.

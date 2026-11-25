@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "HAL/IConsoleManager.h"
 #include "MWVehicleNetworkTypes.h"
 #include "MWVehicleDriveInput.h"
 #include "Data/MWVehicleDriveData.h"
@@ -70,6 +72,34 @@ protected:
 
 private:
 	friend class AMWVehiclePawn;
+
+	static constexpr ECollisionChannel VehicleGroundChannel = ECC_GameTraceChannel1;
+	static constexpr float MaxImpactYawRate = 150.f;
+	static constexpr float ImpactYawDamping = MWVehicleImpactYawDamping;
+	static constexpr double ImpactYawScale = 0.35;
+	static TAutoConsoleVariable<int32> CVarVehicleSupportLog;
+
+	struct FContactResponse
+	{
+		FVector DeltaA = FVector::ZeroVector;
+		FVector DeltaB = FVector::ZeroVector;
+		double Impulse = 0.0;
+	};
+
+	double CalculateBoxSupportRadius(const FVector& Extent, const FQuat& Rotation, const FVector& Normal) const;
+	FVector FitWheelSupportNormal(TConstArrayView<FVector> Samples, const FQuat& Rotation,
+		const FVector& RoadNormal, double MaxAngle) const;
+	FContactResponse CalculateContactResponse(const FVector& VelocityA, const FVector& VelocityB,
+		const FVector& Normal, const FMWVehicleContactTuning& A, const FMWVehicleContactTuning& B);
+	double ProjectBoxRadius(const FVector& Axis, const FQuat& Rotation, const FVector& Extent) const;
+	void GetContactArms(const FVector& Normal, const FVector& CenterOffset, const FQuat& RotationA,
+		const FVector& ExtentA, const FQuat& RotationB, const FVector& ExtentB, FVector& OutA, FVector& OutB);
+	void ApplyContactYaw(float& Rate, const FVector& Offset, const FVector& Impulse, double Mass, const FVector& Extent);
+	bool SweepContactBoxes(const FVector& Location, const FQuat& Rotation, const FVector& Extent,
+		const FMWVehicleContactSample& Other, const FVector& RelativeDelta, double& OutTime, FVector& OutNormal) const;
+	const FMWVehicleContactSample* FindPredictedContact(const FVector& Location, const FQuat& Rotation,
+		const FVector& Extent, const FVector& MoveDelta, float DeltaTime, TArrayView<const FMWVehicleContactSample> Contacts,
+		double& OutFraction, FVector& OutNormal) const;
 
 	void SimulateDriveStep(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts = {},
 		FMWVehiclePredictedImpact* OutImpact = nullptr);

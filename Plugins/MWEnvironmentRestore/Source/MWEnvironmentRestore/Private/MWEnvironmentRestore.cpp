@@ -25,23 +25,7 @@
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
-namespace
-{
-    constexpr double CmPerUnityUnit = 100;
-    constexpr double TileUnity = 500;
-    constexpr double TileCm = TileUnity * CmPerUnityUnit;
-    constexpr double TileBoundsRadiusCm = TileCm * 0.72;
-    constexpr float MaxSunShadowDistanceCm = 120000.0f;
-    constexpr int32 MaxTiles = 1024;
-    constexpr int32 BuildBudget = 3;
-    constexpr int32 InitialBuildBudget = 40;
-    constexpr int32 MaxPrewarmTiles = 16;
-    constexpr double PrewarmMarginCm = TileCm * 0.4;
-    constexpr double TurnPrewarmDistanceCm = 110000.0;
-    constexpr int32 MaxPlacementAttempts = 100;
-    constexpr int32 RandomMax = MAX_int32;
-    const FIntPoint Neighbors[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-}
+const FIntPoint AMWEnvironmentGenerator::Neighbors[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
 AMWEnvironmentGenerator::AMWEnvironmentGenerator()
 {

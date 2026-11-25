@@ -50,6 +50,7 @@ protected:
     virtual bool DoesSupportWorldType(EWorldType::Type Type) const override;
 
 private:
+    static constexpr float PlayerReadinessInterval = 0.15f;
 
     UPROPERTY(Config)
     TSoftObjectPtr<USoundWave> MenuTrack;

@@ -167,6 +167,8 @@ protected:
     virtual void Deinitialize() override;
 
 private:
+    class SMWGameplayHUD;
+
     FMWPIEHUDPreview PIEPreview;
     UPROPERTY(Transient) TObjectPtr<UUserWidget> MatchPanels;
 

@@ -173,6 +173,36 @@ protected:
 	TObjectPtr<UMWVehiclePresentationComponent> PresentationTick;
 
 private:
+	bool IsVisualBranch(USceneComponent* Component);
+
+	static constexpr float DriveStep = 1.f / 120.f;
+	static constexpr float MaxDriveStepTime = 12.f * DriveStep;
+	static constexpr float SnapshotInterval = 1.f / 20.f;
+	static constexpr float GroundNormalTolerance = 0.001f;
+	static constexpr float SendInterval = 1.f / 30.f;
+	static constexpr float RemoteInputTimeout = 1.f;
+	static constexpr int32 MaxMovesPerPacket = 32;
+
+	// 120Hz에서 1.5초 분량. 지연된 ACK와 짧은 손실이 겹쳐도 소유자 예측 이력을 유지한다.
+	static constexpr int32 MaxPendingMoves = 180;
+
+	static constexpr int32 MaxProxySnapshots = 12;
+	static constexpr double ProxyBufferTime = 0.075;
+	static constexpr double MaxProxyExtrapolation = 0.05;
+	static constexpr double MaxContactExtrapolation = 0.25;
+	static constexpr double MaxContactSampleAge = 0.35;
+	static constexpr float PredictedContactLifetime = 0.25f;
+	static constexpr float PresentationHalfLife = 0.055f;
+	static constexpr double MaxVisualCorrectionDistance = 150.0;
+	static constexpr double MaxVisualCorrectionAngle = 45.0;
+	static constexpr double MinProxyCorrectionSpeed = 120.0;
+	static constexpr double ProxyCorrectionSpeedFraction = 0.15;
+	static constexpr float ProxyCorrectionHalfLife = 0.08f;
+
+	bool IsNewerSequence(uint32 Candidate, uint32 Previous);
+	bool NeedsDriveCorrection(const FMWVehicleDriveSnapshot& Prediction, const FMWVehicleDriveSnapshot& Server);
+	bool IsValidDriveInput(const FMWVehicleDriveInput& Input);
+
     bool bRespawningAtCheckpoint = false;
 	double NextRaceFailureCheck = 0.0;
 

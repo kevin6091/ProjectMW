@@ -53,6 +53,8 @@ public:
 	static constexpr int32 MaxCachedReplies = 32;
 
 private:
+	bool IsSameSelection(const FMWPlayerTrackSelection& A, const FMWPlayerTrackSelection& B);
+
 	UPROPERTY(Replicated)
 	FMWPlayerTrackPlacement Placement;
 

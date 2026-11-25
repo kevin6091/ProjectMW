@@ -9,6 +9,7 @@
 class ALevelSequenceActor;
 class AMWGameplayGameState;
 class ULevelSequence;
+class USceneComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
 class USoundBase;
@@ -109,6 +110,22 @@ protected:
     float BoosterExhaustLengthScale = 6.2f;
 
 private:
+    static constexpr double BoosterDurationSeconds = 2.0;
+    static const FName BoosterBaseTag;
+    static const FName BoosterBodyTag;
+    static const FName BoosterNozzleTag;
+
+    USceneComponent* FindVisualNode(const AActor& Visual, FName NodeTag);
+    FBox GetLocalMeshBounds(const AActor& Actor);
+
+    struct FBoosterMount
+    {
+        FTransform Transform;
+        double ExhaustLengthScale = 6.2;
+    };
+
+    FBoosterMount GetBoosterMount(const AActor& Vehicle, const AActor& Booster);
+
     // 예측과 권한 시뮬레이션이 같은 값을 사용해야 하므로 서버·클라이언트에 동일한 Config를 배포한다.
     UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Items|Booster", meta = (ClampMin = "1"))
     float BoosterSpeedMultiplier = 1.25f;

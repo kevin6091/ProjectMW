@@ -28,26 +28,23 @@
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 
-namespace
+bool AMWVehiclePawn::IsVisualBranch(USceneComponent* Component)
 {
-	bool IsVisualBranch(USceneComponent* Component)
-	{
-		TArray<USceneComponent*> Parts;
-		Component->GetChildrenComponents(true, Parts);
-		Parts.Add(Component);
+	TArray<USceneComponent*> Parts;
+	Component->GetChildrenComponents(true, Parts);
+	Parts.Add(Component);
 
-		bool bHasMesh = false;
-		for (const USceneComponent* Part : Parts)
+	bool bHasMesh = false;
+	for (const USceneComponent* Part : Parts)
+	{
+		const UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Part);
+		if (Part->GetOwner() != Component->GetOwner() || (Primitive && Primitive->IsCollisionEnabled()))
 		{
-			const UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Part);
-			if (Part->GetOwner() != Component->GetOwner() || (Primitive && Primitive->IsCollisionEnabled()))
-			{
-				return false;
-			}
-			bHasMesh |= Part->IsA<UMeshComponent>();
+			return false;
 		}
-		return bHasMesh;
+		bHasMesh |= Part->IsA<UMeshComponent>();
 	}
+	return bHasMesh;
 }
 
 // 충돌 루트와 Pawn 전용 이동 컴포넌트를 연결한다.
