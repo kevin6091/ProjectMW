@@ -33,7 +33,7 @@ public class MW : ModuleRules
 			"LevelSequence", "MovieScene",
 			"NetCore", // 차량 스냅샷의 위치·속도 압축 직렬화
             "EngineSettings",
-            "MWConnection"
+            "MWConnection", "Niagara"
         });
 		
 		// 온라인 서비스 구현은 MWConnection 내부에 둡니다.
