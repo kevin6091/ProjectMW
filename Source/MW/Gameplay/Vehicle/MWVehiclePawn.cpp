@@ -24,6 +24,8 @@
 #include "System/MWDriveTestGameMode.h"
 #include "System/GameMode/MWGameplayGameMode.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Engine/OverlapResult.h"
 #include "LogChannel.h"
 
 namespace
@@ -76,6 +78,8 @@ AMWVehiclePawn::AMWVehiclePawn()
 
 	DrivePresentation = CreateDefaultSubobject<USceneComponent>(TEXT("DrivePresentation"));
 	DrivePresentation->SetupAttachment(VisualRoot);
+	BodyPresentation = CreateDefaultSubobject<USceneComponent>(TEXT("BodyPresentation"));
+	BodyPresentation->SetupAttachment(DrivePresentation);
 	PresentationTick = CreateDefaultSubobject<UMWVehiclePresentationComponent>(TEXT("PresentationTick"));
 	PresentationTick->AddTickPrerequisiteComponent(VehicleMovement);
 
@@ -182,6 +186,7 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
 	}
     // main의 차체 완충을 먼저 계산한 뒤 바퀴·자국 표시를 갱신한다.
     UpdateGroundVisual(DeltaSeconds);
+    UpdateRollerBodyPresentation();
     UpdateWheelVisuals(DeltaSeconds);
     UpdateExhaustEffect();
     UpdateEngineAudio(DeltaSeconds);
@@ -285,12 +290,15 @@ void AMWVehiclePawn::UpdateSkidMarks(bool bResetTrail, double ActorScale)
         return;
     }
 
+    const FVector RollerVisualOffset = BodyPresentation->GetComponentLocation() - DrivePresentation->GetComponentLocation();
     for (int32 Index = 0; Index < CachedVisualWheels.Num(); ++Index)
     {
         const FCachedVisualWheel& Wheel = CachedVisualWheels[Index];
         if (const UStaticMeshComponent* Mesh = Wheel.Mesh.Get(); Mesh && (!bHasRearSkidWheels || !Wheel.bSteers))
         {
-            SkidMarks->SampleWheel(Index, Mesh->GetComponentLocation(), Wheel.RadiusCm * ActorScale, *DriveCollision);
+            const FVector WheelLocation = Mesh->IsAttachedTo(BodyPresentation)
+                ? Mesh->GetComponentLocation() - RollerVisualOffset : Mesh->GetComponentLocation();
+            SkidMarks->SampleWheel(Index, WheelLocation, Wheel.RadiusCm * ActorScale, *DriveCollision);
         }
     }
 }
@@ -583,14 +591,17 @@ void AMWVehiclePawn::BeginPlay()
 		// 외형 그룹을 통째로 옮겨 바퀴·차체의 상대 위치를 유지한다. 충돌을 가진 그룹은 그대로 둔다.
 		TArray<TObjectPtr<USceneComponent>> RootChildren = CollisionRoot->GetAttachChildren();
 		RootChildren.Append(VisualRoot->GetAttachChildren());
+		RootChildren.Append(DrivePresentation->GetAttachChildren());
 		for (USceneComponent* Child : RootChildren)
 		{
-			if (IsValid(Child) && Child != DrivePresentation && Child != VisualRoot && IsVisualBranch(Child))
+			if (IsValid(Child) && Child != DrivePresentation && Child != VisualRoot &&
+				Child != BodyPresentation && Child != CameraBoom && IsVisualBranch(Child))
 			{
-				Child->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
+				Child->AttachToComponent(BodyPresentation, FAttachmentTransformRules::KeepWorldTransform);
 			}
 		}
-		if (CameraBoom->GetAttachParent() == CollisionRoot || CameraBoom->GetAttachParent() == VisualRoot)
+		if (CameraBoom->GetAttachParent() == CollisionRoot || CameraBoom->GetAttachParent() == VisualRoot ||
+			CameraBoom->IsAttachedTo(BodyPresentation))
 		{
 			CameraBoom->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
 		}
@@ -642,6 +653,7 @@ void AMWVehiclePawn::ResetGroundVisual()
 	SmoothedVisualUp = CollisionTransform.GetRotation().GetAxisZ();
 
 	VisualHeightOffset = 0.0;
+	BodyPresentation->SetRelativeLocation(FVector::ZeroVector);
 
 	PreviousCollisionTransform = CollisionTransform;
 
@@ -750,4 +762,73 @@ void AMWVehiclePawn::UpdateGroundVisual(float DeltaTime)
 	// 다음 표시 프레임에서 사용할 상태.
 	PreviousVisualWorldLocation = VisualLocation;
 	PreviousCollisionTransform = CollisionTransform;
+}
+
+void AMWVehiclePawn::UpdateRollerBodyPresentation()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	double Lift = 0.0;
+	bool bNearRoller = false;
+	if (VehicleMovement->IsGrounded())
+	{
+		// 기존 트리거 중첩으로 후보를 좁힌 뒤 실제 접지 검사를 재사용한다.
+		for (const FOverlapInfo& Overlap : CollisionRoot->GetOverlapInfos())
+		{
+			const AActor* Actor = Overlap.OverlapInfo.GetActor();
+			const UMWTrackRuntimeComponent* Track = Actor ? Actor->FindComponentByClass<UMWTrackRuntimeComponent>() : nullptr;
+			if (Track && Track->HasRollerVisuals())
+			{
+				bNearRoller = true;
+				break;
+			}
+		}
+	}
+
+	FHitResult Support;
+	const AActor* SupportActor = bNearRoller && VehicleMovement->FindGroundCandidate(Support, true)
+		? Support.GetActor() : nullptr;
+	const UMWTrackRuntimeComponent* Roller = SupportActor
+		? SupportActor->FindComponentByClass<UMWTrackRuntimeComponent>() : nullptr;
+	if (Roller && Roller->HasRollerVisuals())
+	{
+		const FVector AppliedOffset = BodyPresentation->GetComponentLocation() - DrivePresentation->GetComponentLocation();
+		const double PawnScale = GetActorScale3D().GetAbsMax();
+		bool bHasVisualTire = false;
+		for (const FCachedVisualWheel& Wheel : CachedVisualWheels)
+		{
+			if (const UStaticMeshComponent* Mesh = Wheel.Mesh.Get(); Mesh && Mesh->IsAttachedTo(BodyPresentation))
+			{
+				bHasVisualTire = true;
+				const FVector Tire = Mesh->GetComponentLocation() - AppliedOffset -
+					FVector::UpVector * (Wheel.RadiusCm * PawnScale);
+				double Height;
+				if (Roller->TryGetRollerVisualHeight(Tire, Height))
+				{
+					Lift = FMath::Max(Lift, Height - Tire.Z);
+				}
+			}
+		}
+		// 표시 바퀴가 정의되지 않은 차종은 기존 충돌 치수로 발밑을 구한다.
+		if (!bHasVisualTire)
+		{
+			const FVector Contact = DrivePresentation->GetComponentLocation() -
+				DrivePresentation->GetUpVector() * CollisionRoot->GetScaledBoxExtent().Z;
+			double Height;
+			if (Roller->TryGetRollerVisualHeight(Contact, Height))
+			{
+				Lift = FMath::Max(0.0, Height - Contact.Z);
+			}
+		}
+	}
+
+	// 렌더 가지에만 높이를 합성한다. 카메라와 이동·복제 상태는 기존 부모의 변환을 사용한다.
+	const FVector Offset = DrivePresentation->GetComponentTransform().InverseTransformVector(FVector::UpVector * Lift);
+	if (!BodyPresentation->GetRelativeLocation().Equals(Offset, UE_KINDA_SMALL_NUMBER))
+	{
+		BodyPresentation->SetRelativeLocation(Offset);
+	}
 }

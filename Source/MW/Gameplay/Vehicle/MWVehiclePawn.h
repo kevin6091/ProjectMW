@@ -168,7 +168,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="MW|Drive")
 	TObjectPtr<USceneComponent> DrivePresentation;
 
-
+	// 화면의 차량 외형에만 롤러 접촉 높이를 합성한다.
+	UPROPERTY(VisibleAnywhere, Category="MW|Visual")
+	TObjectPtr<USceneComponent> BodyPresentation;
 
 	UPROPERTY(VisibleAnywhere, Category="MW|Drive")
 	TObjectPtr<UMWVehiclePresentationComponent> PresentationTick;
@@ -339,6 +341,7 @@ private:
 
 	void ResetGroundVisual();
 	void UpdateGroundVisual(float DeltaTime);
+	void UpdateRollerBodyPresentation();
 
 	// 표시 상태가 초기화됐는지.
 	bool bGroundVisualInitialized = false;

@@ -2,6 +2,7 @@
 
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
 
+#include "Chaos/TriangleMeshImplicitObject.h"
 #include "Components/BoxComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -16,6 +17,7 @@
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Sound/SoundBase.h"
 #include "Net/UnrealNetwork.h"
+#include "PhysicsEngine/BodySetup.h"
 
 namespace
 {
@@ -117,6 +119,17 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackDefinition& InData)
             {
                 Visual->SetMobility(EComponentMobility::Movable);
                 Entry.Parts.Add({Visual, Visual->GetRelativeTransform()});
+                if (Motion.Type == EMWTrackMotion::Roller && GetNetMode() != NM_DedicatedServer)
+                {
+                    if (UBodySetup* Body = Visual->GetBodySetup())
+                    {
+                        Body->CreatePhysicsMeshes();
+                        if (!Body->TriMeshGeometries.IsEmpty())
+                        {
+                            RollerVisuals.AddUnique(Visual);
+                        }
+                    }
+                }
             }
         }
     }
@@ -818,6 +831,59 @@ void UMWTrackRuntimeComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     UpdateLift(Time, DeltaTime);
     ApplyMotions(Time, GateAlpha);
     ApplyRollers();
+}
+
+bool UMWTrackRuntimeComponent::TryGetRollerVisualHeight(const FVector& WorldPoint, double& OutHeight) const
+{
+    if (!HasRollerVisuals())
+    {
+        return false;
+    }
+
+    bool bFound = false;
+    for (const TWeakObjectPtr<UStaticMeshComponent>& Part : RollerVisuals)
+    {
+        UStaticMeshComponent* Visual = Part.Get();
+        const UBodySetup* Body = Visual ? Visual->GetBodySetup() : nullptr;
+        if (!Body)
+        {
+            continue;
+        }
+
+        const FTransform& Transform = Visual->GetComponentTransform();
+        const FBox Bounds = Visual->CalcBounds(Transform).GetBox();
+        if (!Bounds.IsInsideOrOnXY(WorldPoint))
+        {
+            continue;
+        }
+
+        // 원본 메시의 쿠킹된 삼각형만 직접 쿼리한다. 월드에 새 충돌체를 등록하지 않는다.
+        const FVector LocalStart = Transform.InverseTransformPosition(
+            FVector(WorldPoint.X, WorldPoint.Y, Bounds.Max.Z + UE_KINDA_SMALL_NUMBER));
+        const FVector LocalEnd = Transform.InverseTransformPosition(
+            FVector(WorldPoint.X, WorldPoint.Y, Bounds.Min.Z - UE_KINDA_SMALL_NUMBER));
+        const FVector Delta = LocalEnd - LocalStart;
+        const double Length = Delta.Size();
+        if (Length <= UE_SMALL_NUMBER)
+        {
+            continue;
+        }
+
+        for (const Chaos::FTriangleMeshImplicitObjectPtr& TriangleMesh : Body->TriMeshGeometries)
+        {
+            Chaos::FReal Distance;
+            Chaos::FVec3 HitPosition, HitNormal;
+            int32 FaceIndex;
+            if (TriangleMesh && TriangleMesh->Raycast(LocalStart, Delta / Length, Length, 0,
+                Distance, HitPosition, HitNormal, FaceIndex))
+            {
+                const double Height = Transform.TransformPosition(HitPosition).Z;
+                OutHeight = bFound ? FMath::Max(OutHeight, Height) : Height;
+                bFound = true;
+            }
+        }
+    }
+    return bFound;
 }
 
 // 실제 롤러에 닿은 차량에 기존 표면 속도 API로 이동 효과를 전달한다.

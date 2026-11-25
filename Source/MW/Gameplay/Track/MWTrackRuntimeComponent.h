@@ -35,6 +35,10 @@ public:
     // 로컬 이동축과 현재 높이로 발판의 월드 이동량을 조회한다.
     FVector GetLiftWorldOffset() const;
 
+    bool HasRollerVisuals() const { return !bPreview && !RollerVisuals.IsEmpty(); }
+    // 접지한 차량의 표시를 위해 원본 롤러 외형의 월드 높이만 조회한다.
+    bool TryGetRollerVisualHeight(const FVector& WorldPoint, double& OutHeight) const;
+
     // 설정된 실제 트랙에만 원본 시간 기반 움직임·기차·롤러·교통을 갱신한다.
     virtual void TickComponent(float DeltaTime, ELevelTick TickType,
                                FActorComponentTickFunction* ThisTickFunction) override;
@@ -159,6 +163,8 @@ private:
     TArray<TWeakObjectPtr<UPrimitiveComponent>> RoadCollision;
 
     TArray<FMotion> Motions;
+
+    TArray<TWeakObjectPtr<UStaticMeshComponent>> RollerVisuals;
 
     TArray<TWeakObjectPtr<UStaticMeshComponent>> Train;
 
