@@ -8,6 +8,7 @@
 class AMWGameplayPlayerController;
 class UEnhancedInputComponent;
 class UMWInputData;
+class USceneComponent;
 
 // 소유 Controller에서만 입력을 받고, 현재 화면의 미리보기 Actor를 관리한다.
 UCLASS()
@@ -23,13 +24,43 @@ public:
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
+	struct FGhostSnapBlend
+	{
+		FTransform Start;
+		FTransform Target;
+		double ElapsedSeconds = 0.0;
+		bool bRotateAroundCenter = false;
+		TOptional<double> ContactElapsedSeconds;
+	};
+
+	struct FPointerSample
+	{
+		float X = 0.0f;
+		int32 ViewportWidth = 0;
+	};
+
+	struct FHeldSway
+	{
+		TWeakObjectPtr<USceneComponent> Wireframes;
+		FTransform RestPose;
+		FVector Center;
+		FVector Axis;
+		TOptional<FPointerSample> PreviousPointer;
+		float AngleDegrees = 0.0f;
+		double DisplayScale = 1.0;
+	};
+
 	struct FGhost
 	{
+		TOptional<FGhostSnapBlend> SnapBlend;
+		TOptional<FHeldSway> HeldSway;
+		TOptional<FTransform> PreviousSnapTarget;
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
 		TArray<FVector> GroundPoints;
 		bool bSnapped = false;
 		bool bLastRemoteReversed = false;
+		bool bLastLocalReversed = false;
 	};
 
 	FGhost* GetOrCreateGhost(int32 PlayerId, const FMWPlayerTrackPlacement& Player, bool bLocal);
@@ -37,8 +68,14 @@ private:
 	void ClearInput();
 	void HandleTurn();
 	void HandleAccept();
-	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
-	bool UpdateGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost);
+	bool UpdateLocalPreview(AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session, FGhost& Ghost,
+		float DeltaSeconds, TOptional<FPointerSample>& OutPointer);
+	bool ResolveGhostFromPointer(const AMWGameplayPlayerController& PC, const FMWTrackPlacementSession& Session,
+		const FGhost& Ghost, FTransform& OutTarget, bool& bOutSnapped, FPointerSample* OutPointer = nullptr);
+	FTransform BlendGhostPose(FGhost& Ghost, const FTransform& Target, bool bSnapped, float DeltaSeconds,
+		double FreeMoveAlpha, bool bTurned = false) const;
+	void PulseSnapContact(const FGhost& Ghost, const FTransform& Target) const;
+	void UpdateVisualPose(FGhost& Ghost, double ScreenDelta, float DeltaSeconds) const;
 	void SetGhostSnapColor(FGhost& Ghost, bool bSnapped) const;
 
 	TMap<int32, FGhost> Ghosts;

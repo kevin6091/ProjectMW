@@ -224,6 +224,9 @@ public:
     void AllowInitialControllerView() { bAllowInitialControllerView = true; }
     bool IsViewPrepared(const AActor* Target) const { return Target && PreparedView.Get() == Target; }
 
+    // 실제 바닥 렌더러와 동일한 평면 높이를 설치 트랙 연출에서 사용한다.
+    bool TryGetFloorZ(double& OutZ) const;
+
 protected:
     // 지정된 테마 입력이 준비된 뒤 배경을 초기화하고 설정된 가시성 갱신을 시작한다.
     virtual void BeginPlay() override;

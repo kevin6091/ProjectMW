@@ -25,6 +25,57 @@ namespace
 		}
 		return false;
 	}
+
+	void ShowCandidateSurface(UStaticMeshComponent& Mesh, UMaterialInterface& PreviewMaterial)
+	{
+		static const FName TextureParameter(TEXT("BaseColorTexture"));
+		static const FName TintParameter(TEXT("BaseColor"));
+		static const FName UseAlphaParameter(TEXT("UseBaseColorAlpha"));
+
+		TArray<UMaterialInstanceDynamic*, TInlineAllocator<4>> SurfaceSlots;
+		for (UMaterialInterface* Original : Mesh.GetMaterials())
+		{
+			if (!Original)
+			{
+				return;
+			}
+			UTexture* Texture = nullptr;
+			FLinearColor Tint = FLinearColor::White;
+			const bool bHasTint = Original->GetVectorParameterValue(TintParameter, Tint);
+			if (!Original->GetTextureParameterValue(TextureParameter, Texture) && !bHasTint)
+			{
+				// 로고·데칼처럼 파라미터 없이 텍스처 하나만 읽는 재질도 원본 그림을 표시한다.
+				TArray<UTexture*> UsedTextures;
+				Original->GetUsedTextures(UsedTextures);
+				if (UsedTextures.Num() != 1)
+				{
+					return;
+				}
+				Texture = UsedTextures[0];
+			}
+			auto* Surface = UMaterialInstanceDynamic::Create(&PreviewMaterial, &Mesh);
+			if (Texture)
+			{
+				Surface->SetTextureParameterValue(TextureParameter, Texture);
+			}
+			Surface->SetVectorParameterValue(TintParameter, Tint);
+			Surface->SetScalarParameterValue(UseAlphaParameter, Original->IsMasked() ? 1.f : 0.f);
+			SurfaceSlots.Add(Surface);
+		}
+
+		// 모든 슬롯을 변환한 메시만 켜서 불투명한 원본 슬롯이 와이어프레임을 가리지 않게 한다.
+		if (SurfaceSlots.IsEmpty())
+		{
+			return;
+		}
+		for (int32 Slot = 0; Slot < SurfaceSlots.Num(); ++Slot)
+		{
+			Mesh.SetMaterial(Slot, SurfaceSlots[Slot]);
+		}
+		Mesh.SetCastShadow(false);
+		Mesh.SetVisibility(true);
+		Mesh.SetHiddenInGame(false);
+	}
 }
 
 bool MWTrackPreview::CollectVisibleMaterials(const AActor* Track, TArray<UMaterialInterface*>& OutMaterials)
@@ -112,9 +163,42 @@ FBox MWTrackPreview::ShowWireframes(AActor& Track)
 	return Bounds;
 }
 
+FBox MWTrackPreview::ShowSelectionPreview(AActor& Track, UMaterialInterface* SurfaceMaterial)
+{
+	TInlineComponentArray<UStaticMeshComponent*> Meshes(&Track);
+	// 공통 미리보기 초기화가 숨기기 전에 BP가 원래 켜 둔 표면만 기억한다.
+	Meshes.RemoveAll([](const UStaticMeshComponent* Mesh)
+	{
+		return !Mesh->IsVisible() || Mesh->bHiddenInGame || !Mesh->GetStaticMesh() || IsWireframePart(*Mesh);
+	});
+	FBox Bounds = ShowWireframes(Track);
+	if (SurfaceMaterial)
+	{
+		for (UStaticMeshComponent* Mesh : Meshes)
+		{
+			ShowCandidateSurface(*Mesh, *SurfaceMaterial);
+			if (Mesh->IsVisible())
+			{
+				Bounds += Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+			}
+		}
+	}
+	return Bounds;
+}
+
 bool MWTrackPreview::IsDisplayOnly(const AActor& Track)
 {
 	return Track.ActorHasTag(DisplayOnlyTag);
+}
+
+USceneComponent* MWTrackPreview::FindWireframeGroup(const AActor& Track)
+{
+	TInlineComponentArray<USceneComponent*> Components(&Track);
+	USceneComponent* const* Group = Components.FindByPredicate([](const USceneComponent* Component)
+	{
+		return Component->GetFName() == WireframesName;
+	});
+	return Group ? *Group : nullptr;
 }
 
 void MWTrackPreview::HideWireframes(AActor& Track)
@@ -135,10 +219,12 @@ void MWTrackPreview::SetWireframeColor(AActor& Track, const FLinearColor& Color)
 	TInlineComponentArray<UStaticMeshComponent*> Meshes(&Track);
 	for (UStaticMeshComponent* Mesh : Meshes)
 	{
-		if (Mesh->IsVisible() && Mesh->GetStaticMesh())
+		if (Mesh->IsVisible() && Mesh->GetStaticMesh() && IsWireframePart(*Mesh))
 		{
 			// BP의 기존 와이어프레임 재질을 부모로 두고 미리보기의 상태 색만 바꾼다.
-			if (auto* Material = Mesh->CreateDynamicMaterialInstance(0))
+			auto* Material = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0));
+			if (!Material) Material = Mesh->CreateDynamicMaterialInstance(0);
+			if (Material)
 			{
 				Material->SetVectorParameterValue(ColorParameter, Color);
 			}
