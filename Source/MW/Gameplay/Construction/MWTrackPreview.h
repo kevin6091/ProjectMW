@@ -4,6 +4,7 @@
 
 class AActor;
 class UMaterialInterface;
+class USceneComponent;
 
 namespace MWTrackPreview
 {
@@ -15,9 +16,12 @@ namespace MWTrackPreview
 
 	// 전시용 Actor에서만 Wireframes 하위 메시를 표시하고 보이는 메시의 월드 범위를 반환한다.
 	FBox ShowWireframes(AActor& Track);
+	// 선택 후보만 원본 표면의 색·텍스처를 반투명 재질로 옮겨 와이어프레임과 함께 표시한다.
+	FBox ShowSelectionPreview(AActor& Track, UMaterialInterface* SurfaceMaterial);
 	// 선택판·배치 고스트는 확정 트랙으로 승격되지 않고 폐기된다.
 	bool IsDisplayOnly(const AActor& Track);
 
+	USceneComponent* FindWireframeGroup(const AActor& Track);
 	void HideWireframes(AActor& Track);
 	void SetWireframeColor(AActor& Track, const FLinearColor& Color);
 }

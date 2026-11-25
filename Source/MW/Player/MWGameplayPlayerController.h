@@ -61,7 +61,7 @@ protected:
 private:
 	friend class UMWTrackPlacementViewComponent;
 
-	void ApplyGameplayInputMode();
+	void ApplyGameplayInputMode(bool bRestoreConstructionFocus = false);
 	void UpdateRaceViewTarget();
 	void RefreshDrivingInput();
 	void ClearDrivingInput();
