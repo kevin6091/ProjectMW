@@ -4,20 +4,23 @@
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "DrawDebugHelpers.h"
 
-double UMWVehicleSpringArmComponent::GetMovingTargetWeight(double TimeScale, double Decay)
+namespace
 {
-	// 아주 짧은 프레임에서도 1-exp(-x)의 소수점 손실과 0으로 나누는 일을 피한다.
-	if (TimeScale < 0.0001)
+	double GetMovingTargetWeight(double TimeScale, double Decay)
 	{
-		return 1.0 - TimeScale * 0.5 + TimeScale * TimeScale / 6.0;
+		// 아주 짧은 프레임에서도 1-exp(-x)의 소수점 손실과 0으로 나누는 일을 피한다.
+		if (TimeScale < 0.0001)
+		{
+			return 1.0 - TimeScale * 0.5 + TimeScale * TimeScale / 6.0;
+		}
+		return (1.0 - Decay) / TimeScale;
 	}
-	return (1.0 - Decay) / TimeScale;
-}
 
-FQuat UMWVehicleSpringArmComponent::ShortestRotation(const FQuat& Rotation)
-{
-	const FQuat Normalized = Rotation.GetNormalized();
-	return Normalized.W < 0.0 ? Normalized * -1.0 : Normalized;
+	FQuat ShortestRotation(const FQuat& Rotation)
+	{
+		const FQuat Normalized = Rotation.GetNormalized();
+		return Normalized.W < 0.0 ? Normalized * -1.0 : Normalized;
+	}
 }
 
 void UMWVehicleSpringArmComponent::ResetCameraLag()

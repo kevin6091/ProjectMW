@@ -5,14 +5,17 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
-// 변경 없는 Hover나 재확정으로 불필요한 네트워크 갱신·UI 이벤트가 발생하지 않게 한다.
-bool UMWPlayerConstructionComponent::IsSameSelection(const FMWPlayerTrackSelection& A, const FMWPlayerTrackSelection& B)
+namespace
 {
-    return A.SelectionSessionId == B.SelectionSessionId
-        && A.OffersRevision == B.OffersRevision
-        && A.HoveredOfferId == B.HoveredOfferId
-        && A.SelectedOfferId == B.SelectedOfferId
-        && A.bConfirmed == B.bConfirmed;
+    // 변경 없는 Hover나 재확정으로 불필요한 네트워크 갱신·UI 이벤트가 발생하지 않게 한다.
+    bool IsSameSelection(const FMWPlayerTrackSelection& A, const FMWPlayerTrackSelection& B)
+    {
+        return A.SelectionSessionId == B.SelectionSessionId
+            && A.OffersRevision == B.OffersRevision
+            && A.HoveredOfferId == B.HoveredOfferId
+            && A.SelectedOfferId == B.SelectedOfferId
+            && A.bConfirmed == B.bConfirmed;
+    }
 }
 
 UMWPlayerConstructionComponent::UMWPlayerConstructionComponent()

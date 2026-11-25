@@ -9,10 +9,13 @@
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
 
-UMWPlayerConstructionComponent* UMWTrackConstructionComponent::FindPlayerConstruction(APlayerController* PC) const
+namespace
 {
-	AMWPlayerState* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-	return PS ? PS->GetPlayerConstructionComponent() : nullptr;
+	UMWPlayerConstructionComponent* FindPlayerConstruction(APlayerController* PC)
+	{
+		AMWPlayerState* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
+		return PS ? PS->GetPlayerConstructionComponent() : nullptr;
+	}
 }
 
 UMWTrackConstructionComponent::UMWTrackConstructionComponent()

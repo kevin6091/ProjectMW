@@ -23,10 +23,6 @@ public:
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
-	static const FLinearColor LocalColor;
-	static const FLinearColor SnapColor;
-	static const FLinearColor RemoteColors[];
-
 	struct FGhost
 	{
 		TWeakObjectPtr<AActor> Actor;

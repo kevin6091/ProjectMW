@@ -16,6 +16,11 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogMWUCMMusic, Log, All);
 
+namespace
+{
+    constexpr float PlayerReadinessInterval = 0.15f;
+}
+
 // 일반 게임과 PIE 월드만 대상으로 해 에디터 미리보기에서 런타임 기능이 켜지지 않게 한다.
 bool UMWUCMWorldMusic::DoesSupportWorldType(EWorldType::Type Type) const
 {

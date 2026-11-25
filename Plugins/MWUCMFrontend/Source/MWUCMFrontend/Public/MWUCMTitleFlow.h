@@ -100,13 +100,6 @@ public:
     void InstallFrontendCursor();
     
 private:
-    friend class AMWUCMTitleFlow;
-
-    static constexpr double ReturnSessionWarningSeconds = 6.;
-    static constexpr double ReturnPreparationTimeoutSeconds = 8.;
-
-    static void RecordRoomReturn(const TCHAR* Event);
-
     // 맵 이동 중에도 유지할 커서 위젯을 UE가 추적하는 참조로 보관한다.
     UPROPERTY(Transient) 
     TObjectPtr<UMWVehiclePlayerMarkerWidget> FrontendCursor;
@@ -361,10 +354,6 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     
 private:
-    class SMWHostLeaveConfirmation;
-
-    static constexpr float VehiclePreviewBoardScale = 1.33f;
-
     // 현재 월드에서 생성한 루트 위젯이다. 종료 때 화면과 Flow 연결을 해제한다.
     UPROPERTY(Transient)
     TObjectPtr<UMWUCMTitleRootWidget> RootWidget;

@@ -8,6 +8,11 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWDriveTestGameMode.h"
 
+namespace
+{
+    constexpr double BoosterDurationSeconds = 2.0;
+}
+
 UMWItemComponent::UMWItemComponent()
 {
     SetIsReplicatedByDefault(true);

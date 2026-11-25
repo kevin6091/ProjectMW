@@ -4,53 +4,56 @@
 #include "Components/SceneComponent.h"
 #include "GameFramework/Actor.h"
 
-FTransform MWTrackSnap::ReverseFrame(const FTransform& Frame)
+namespace
 {
-	const FQuat Reverse(FVector::UpVector, UE_PI);
-	return FTransform((Frame.GetRotation() * Reverse).GetNormalized(), Frame.GetLocation());
-}
-
-FVector MWTrackSnap::GetPortCenter(const FMWTrackPortFrames& Ports)
-{
-	return (Ports[0].GetLocation() + Ports[1].GetLocation()) * 0.5;
-}
-
-bool MWTrackSnap::ReadLocalFrame(const AActor& Track, FName Name, FTransform& OutFrame)
-{
-	if (!Track.GetActorScale3D().Equals(FVector::OneVector, KINDA_SMALL_NUMBER))
+	FTransform ReverseFrame(const FTransform& Frame)
 	{
-		return false;
-	}
-	TInlineComponentArray<USceneComponent*> Components(&Track);
-	const USceneComponent* const* Point = Components.FindByPredicate([Name](const USceneComponent* Component)
-	{
-		return Component->GetFName() == Name;
-	});
-	if (!Point)
-	{
-		return false;
+		const FQuat Reverse(FVector::UpVector, UE_PI);
+		return FTransform((Frame.GetRotation() * Reverse).GetNormalized(), Frame.GetLocation());
 	}
 
-	const FTransform Local = (*Point)->GetComponentTransform().GetRelativeTransform(Track.GetActorTransform());
-	if (Local.ContainsNaN() || !Local.GetRotation().IsNormalized() || Local.GetScale3D().GetMin() <= 0.0)
+	FVector GetPortCenter(const FMWTrackPortFrames& Ports)
 	{
-		return false;
+		return (Ports[0].GetLocation() + Ports[1].GetLocation()) * 0.5;
 	}
-	// 중첩 BP의 스케일은 위치에만 반영하고 연결 프레임으로 넘기지 않는다.
-	OutFrame = FTransform(Local.GetRotation(), Local.GetLocation());
-	return true;
-}
 
-bool MWTrackSnap::ReadPort(const AActor& Track, FName Name, FTransform& OutPort)
-{
-	if (!ReadLocalFrame(Track, Name, OutPort))
+	bool ReadLocalFrame(const AActor& Track, FName Name, FTransform& OutFrame)
 	{
-		return false;
+		if (!Track.GetActorScale3D().Equals(FVector::OneVector, KINDA_SMALL_NUMBER))
+		{
+			return false;
+		}
+		TInlineComponentArray<USceneComponent*> Components(&Track);
+		const USceneComponent* const* Point = Components.FindByPredicate([Name](const USceneComponent* Component)
+		{
+			return Component->GetFName() == Name;
+		});
+		if (!Point)
+		{
+			return false;
+		}
+
+		const FTransform Local = (*Point)->GetComponentTransform().GetRelativeTransform(Track.GetActorTransform());
+		if (Local.ContainsNaN() || !Local.GetRotation().IsNormalized() || Local.GetScale3D().GetMin() <= 0.0)
+		{
+			return false;
+		}
+		// 중첩 BP의 스케일은 위치에만 반영하고 연결 프레임으로 넘기지 않는다.
+		OutFrame = FTransform(Local.GetRotation(), Local.GetLocation());
+		return true;
 	}
-	// BP의 +Y는 도로 안쪽이다. 계산에서는 +X가 바깥을 향하도록 바꾼다.
-	const FQuat PortBasis(FVector::UpVector, -UE_HALF_PI);
-	OutPort.SetRotation((OutPort.GetRotation() * PortBasis).GetNormalized());
-	return true;
+
+	bool ReadPort(const AActor& Track, FName Name, FTransform& OutPort)
+	{
+		if (!ReadLocalFrame(Track, Name, OutPort))
+		{
+			return false;
+		}
+		// BP의 +Y는 도로 안쪽이다. 계산에서는 +X가 바깥을 향하도록 바꾼다.
+		const FQuat PortBasis(FVector::UpVector, -UE_HALF_PI);
+		OutPort.SetRotation((OutPort.GetRotation() * PortBasis).GetNormalized());
+		return true;
+	}
 }
 
 bool MWTrackSnap::ReadFirstPort(const AActor& Track, FTransform& OutPort)

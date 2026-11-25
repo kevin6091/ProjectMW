@@ -8,20 +8,23 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-// 표시 전용 액터에만 붙는 내부 표식이다. 에셋이나 레벨에서 설정할 필요가 없다.
-const FName MWTrackPreview::DisplayOnlyTag(TEXT("MWTrackDisplayOnly"));
-const FName MWTrackPreview::WireframesName(TEXT("Wireframes"));
-
-bool MWTrackPreview::IsWireframePart(const USceneComponent& Component)
+namespace
 {
-	for (const USceneComponent* Parent = &Component; Parent; Parent = Parent->GetAttachParent())
+	// 표시 전용 액터에만 붙는 내부 표식이다. 에셋이나 레벨에서 설정할 필요가 없다.
+	const FName DisplayOnlyTag(TEXT("MWTrackDisplayOnly"));
+	const FName WireframesName(TEXT("Wireframes"));
+
+	bool IsWireframePart(const USceneComponent& Component)
 	{
-		if (Parent->GetFName() == WireframesName)
+		for (const USceneComponent* Parent = &Component; Parent; Parent = Parent->GetAttachParent())
 		{
-			return true;
+			if (Parent->GetFName() == WireframesName)
+			{
+				return true;
+			}
 		}
+		return false;
 	}
-	return false;
 }
 
 bool MWTrackPreview::CollectVisibleMaterials(const AActor* Track, TArray<UMaterialInterface*>& OutMaterials)

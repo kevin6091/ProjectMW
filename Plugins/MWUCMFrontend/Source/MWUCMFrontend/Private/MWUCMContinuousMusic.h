@@ -22,8 +22,6 @@ public:
     virtual void Deinitialize() override;
 
 private:
-    static constexpr float MusicFadeSeconds = 0.35f;
-
     // 월드가 교체되어도 재생 객체가 수거되지 않도록 강한 참조를 유지한다.
     UPROPERTY(Transient)
     TObjectPtr<UAudioComponent> PlayingMusic;

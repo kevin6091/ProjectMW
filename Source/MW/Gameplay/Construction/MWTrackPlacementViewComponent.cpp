@@ -19,13 +19,16 @@
 #include "UI/MWTrackSelectionWidget.h"
 #include "UnrealClient.h"
 
-const FLinearColor UMWTrackPlacementViewComponent::LocalColor(0.05f, 0.55f, 1.0f);
-const FLinearColor UMWTrackPlacementViewComponent::SnapColor(0.1f, 1.0f, 0.35f);
-const FLinearColor UMWTrackPlacementViewComponent::RemoteColors[] = {
-	FLinearColor(1.0f, 0.42f, 0.08f),
-	FLinearColor(0.82f, 0.18f, 0.75f),
-	FLinearColor(0.55f, 0.26f, 1.0f)
-};
+namespace
+{
+	const FLinearColor LocalColor(0.05f, 0.55f, 1.0f);
+	const FLinearColor SnapColor(0.1f, 1.0f, 0.35f);
+	const FLinearColor RemoteColors[] = {
+		FLinearColor(1.0f, 0.42f, 0.08f),
+		FLinearColor(0.82f, 0.18f, 0.75f),
+		FLinearColor(0.55f, 0.26f, 1.0f)
+	};
+}
 
 AActor* UMWTrackPlacementViewComponent::GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const
 {

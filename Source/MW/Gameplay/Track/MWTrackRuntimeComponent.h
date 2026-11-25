@@ -46,16 +46,6 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-    static const FName RoadTag;
-    static const FName TriggerTag;
-    static const FName TrainTag;
-    static const FName TrainHitTag;
-    static const FName TrainBellTag;
-    static const FName TrafficTag;
-    static const FName TrafficHitTag;
-
-    void SetTriggerCollision(UPrimitiveComponent& Component);
-
     struct FMovedPart
     {
         TWeakObjectPtr<USceneComponent> Component;

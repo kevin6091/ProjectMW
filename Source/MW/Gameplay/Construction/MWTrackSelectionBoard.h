@@ -42,14 +42,6 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<UBoxComponent>> SlotHitAreas;
 
 private:
-	static constexpr double RowSpacing = 1260.0;
-	static constexpr double ColumnSpacing = 1120.0;
-	static constexpr double BoardHeight = 80.0;
-	static const FVector SlotExtent;
-	static const FVector SelectionViewDirection;
-
-	void FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction);
-
 	bool BuildOffers(const FMWTrackSelectionSession& Session);
 	void ClearOffers();
 	void RefreshMarkers(const FMWTrackSelectionSession& Session);

@@ -17,20 +17,23 @@
 #include "Sound/SoundBase.h"
 #include "Net/UnrealNetwork.h"
 
-const FName UMWTrackRuntimeComponent::RoadTag(TEXT("MWTrackDriveCollision"));
-const FName UMWTrackRuntimeComponent::TriggerTag(TEXT("MWTrackRaceTrigger"));
-const FName UMWTrackRuntimeComponent::TrainTag(TEXT("MWTrackTrain"));
-const FName UMWTrackRuntimeComponent::TrainHitTag(TEXT("MWTrackTrainHit"));
-const FName UMWTrackRuntimeComponent::TrainBellTag(TEXT("MWTrackTrainBell"));
-const FName UMWTrackRuntimeComponent::TrafficTag(TEXT("MWTrackTraffic"));
-const FName UMWTrackRuntimeComponent::TrafficHitTag(TEXT("MWTrackTrafficHit"));
-
-void UMWTrackRuntimeComponent::SetTriggerCollision(UPrimitiveComponent& Component)
+namespace
 {
-    Component.SetCollisionObjectType(ECC_WorldDynamic);
-    Component.SetCollisionResponseToAllChannels(ECR_Ignore);
-    Component.SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    Component.SetGenerateOverlapEvents(true);
+    const FName RoadTag(TEXT("MWTrackDriveCollision"));
+    const FName TriggerTag(TEXT("MWTrackRaceTrigger"));
+    const FName TrainTag(TEXT("MWTrackTrain"));
+    const FName TrainHitTag(TEXT("MWTrackTrainHit"));
+    const FName TrainBellTag(TEXT("MWTrackTrainBell"));
+    const FName TrafficTag(TEXT("MWTrackTraffic"));
+    const FName TrafficHitTag(TEXT("MWTrackTrafficHit"));
+
+    void SetTriggerCollision(UPrimitiveComponent& Component)
+    {
+        Component.SetCollisionObjectType(ECC_WorldDynamic);
+        Component.SetCollisionResponseToAllChannels(ECR_Ignore);
+        Component.SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+        Component.SetGenerateOverlapEvents(true);
+    }
 }
 
 UMWTrackRuntimeComponent::UMWTrackRuntimeComponent()
