@@ -1,4 +1,4 @@
-// 서버가 실제 차량의 지급 가능 여부를 검사하는 아이템 상자와 재등장 수명을 관리한다.
+// 서버가 실제 차량의 지급 가능 여부를 검사하는 아이템 상자의 획득 수명을 관리한다.
 
 #include "Gameplay/Items/MWPickupBox.h"
 
@@ -6,6 +6,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Net/UnrealNetwork.h"
@@ -14,6 +15,9 @@
 AMWPickupBox::AMWPickupBox()
 {
     bReplicates = true;
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bStartWithTickEnabled = false;
+    PrimaryActorTick.bAllowTickOnDedicatedServer = false;
 
     Trigger = CreateDefaultSubobject<UBoxComponent>(TEXT("PickupTrigger"));
     SetRootComponent(Trigger);
@@ -42,25 +46,61 @@ AMWPickupBox::AMWPickupBox()
     }
 }
 
-// 서버 중첩 처리를 등록하고 현재 획득 가능 상태를 충돌·표시에 반영한다.
 void AMWPickupBox::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (GetNetMode() != NM_DedicatedServer)
+    {
+        // 기존 맵은 일부 부품을 충돌 루트에 직접 연결해 저장했다. 월드 자세를 보존하면서 연출 루트로 옮긴다.
+        for (UStaticMeshComponent* Part : {Visual.Get(), LidVisual.Get(), HandleVisual.Get()})
+        {
+            if (Part->GetAttachParent() != PresentationRoot)
+            {
+                Part->AttachToComponent(PresentationRoot, FAttachmentTransformRules::KeepWorldTransform);
+            }
+        }
+        RestPresentation = PresentationRoot->GetRelativeTransform();
+        RestLid = LidVisual->GetRelativeTransform();
+        RestHandle = HandleVisual->GetRelativeTransform();
+        bPresentationInitialized = true;
+        SetPresentationVisible(bAvailable);
+        if (bAvailable)
+        {
+            IdleStartedAt = GetWorld()->GetTimeSeconds();
+            UpdateIdlePresentation();
+            SetActorTickEnabled(true);
+        }
+    }
+
     if (HasAuthority())
     {
         Trigger->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::HandleOverlap);
     }
-    UpdateAvailability();
+    RefreshPickupCollision();
 }
 
-// 기존 복제 계약에 따라 소유자 전용 값과 다른 플레이어에게 보일 상태를 등록한다.
+void AMWPickupBox::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if (bAvailable)
+    {
+        UpdateIdlePresentation();
+    }
+    else
+    {
+        UpdateOpeningPresentation();
+    }
+}
+
+// 서버가 확정한 기존 획득 가능 상태를 클라이언트 표시에서도 사용한다.
 void AMWPickupBox::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(AMWPickupBox, bAvailable);
 }
 
-// 서버에서만 실제 차량의 지급 가능 여부를 검사하고 성공 시 상자를 재등장 대기로 바꾼다.
+// 서버에서만 실제 차량의 지급 가능 여부를 검사하고 성공 시 상자를 비활성화한다.
 void AMWPickupBox::HandleOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
                                  const FHitResult&)
 {
@@ -78,12 +118,86 @@ void AMWPickupBox::HandleOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrim
     }
 }
 
-// 기존 재등장 상태에 맞춰 충돌과 외형 표시를 함께 갱신한다.
 void AMWPickupBox::UpdateAvailability()
 {
-    Visual->SetVisibility(bAvailable);
-    LidVisual->SetVisibility(bAvailable);
-    HandleVisual->SetVisibility(bAvailable);
+    RefreshPickupCollision();
+    if (!bPresentationInitialized)
+    {
+        return;
+    }
+
+    if (bAvailable)
+    {
+        PresentationRoot->SetRelativeTransform(RestPresentation);
+        LidVisual->SetRelativeTransform(RestLid);
+        HandleVisual->SetRelativeTransform(RestHandle);
+        IdleStartedAt = GetWorld()->GetTimeSeconds();
+        SetPresentationVisible(true);
+        UpdateIdlePresentation();
+        SetActorTickEnabled(true);
+        return;
+    }
+
+    // 메시 하나로 구성된 테스트 상자는 열림 자세 없이 기존처럼 즉시 숨긴다.
+    if (!LidVisual->GetStaticMesh() || OpeningDuration <= 0.f)
+    {
+        SetPresentationVisible(false);
+        SetActorTickEnabled(false);
+        return;
+    }
+
+    OpeningStartedAt = GetWorld()->GetTimeSeconds();
+    SetActorTickEnabled(true);
+}
+
+void AMWPickupBox::RefreshPickupCollision()
+{
+    // 렌더링이 계속되는 동안에도 서버 획득 트리거는 즉시 꺼야 한다.
     Trigger->SetCollisionEnabled(HasAuthority() && bAvailable ? ECollisionEnabled::QueryOnly
                                                               : ECollisionEnabled::NoCollision);
+}
+
+void AMWPickupBox::SetPresentationVisible(bool bVisible)
+{
+    PresentationRoot->SetVisibility(bVisible, true);
+}
+
+void AMWPickupBox::UpdateIdlePresentation()
+{
+    const double Seconds = GetWorld()->GetTimeSeconds() - IdleStartedAt;
+    const double Bob = BobAmplitude * FMath::Sin(UE_TWO_PI * BobFrequency * Seconds);
+    const double Spin = FMath::Fmod(SpinDegreesPerSecond * Seconds, 360.0);
+    const FQuat Yaw(FVector::UpVector, FMath::DegreesToRadians(Spin));
+    const FQuat Tilt(FVector::RightVector, FMath::DegreesToRadians(IdleTilt));
+
+    PresentationRoot->SetRelativeLocationAndRotation(
+        RestPresentation.GetLocation() + FVector::UpVector * (HoverHeight + Bob),
+        Yaw * RestPresentation.GetRotation() * Tilt);
+}
+
+void AMWPickupBox::UpdateOpeningPresentation()
+{
+    const double Seconds = GetWorld()->GetTimeSeconds() - OpeningStartedAt;
+    if (Seconds >= OpeningDuration + DisappearDuration)
+    {
+        SetPresentationVisible(false);
+        SetActorTickEnabled(false);
+        return;
+    }
+
+    // 뚜껑 메시 원점은 경첩이다. 손잡이도 같은 원점을 중심으로 회전시킨다.
+    const double OpenAlpha = FMath::Min(Seconds / OpeningDuration, 1.0);
+    const double Angle = FMath::DegreesToRadians(-LidOpenAngle) * FMath::InterpEaseOut(0.0, 1.0, OpenAlpha, 2.0);
+    const FQuat OpenRotation(RestLid.GetRotation().GetForwardVector(), Angle);
+    LidVisual->SetRelativeRotation(OpenRotation * RestLid.GetRotation());
+    const FVector Hinge = RestLid.GetLocation();
+    HandleVisual->SetRelativeLocationAndRotation(
+        Hinge + OpenRotation.RotateVector(RestHandle.GetLocation() - Hinge),
+        OpenRotation * RestHandle.GetRotation());
+
+    if (Seconds > OpeningDuration && DisappearDuration > 0.f)
+    {
+        const double Remaining = 1.0 - (Seconds - OpeningDuration) / DisappearDuration;
+        PresentationRoot->SetRelativeScale3D(RestPresentation.GetScale3D() * Remaining);
+    }
 }
