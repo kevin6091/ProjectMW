@@ -186,7 +186,7 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
 	}
     // main의 차체 완충을 먼저 계산한 뒤 바퀴·자국 표시를 갱신한다.
     UpdateGroundVisual(DeltaSeconds);
-    UpdateRollerBodyPresentation();
+    UpdateRollerBodyPresentation(DeltaSeconds);
     UpdateWheelVisuals(DeltaSeconds);
     UpdateExhaustEffect();
     UpdateEngineAudio(DeltaSeconds);
@@ -653,6 +653,8 @@ void AMWVehiclePawn::ResetGroundVisual()
 	SmoothedVisualUp = CollisionTransform.GetRotation().GetAxisZ();
 
 	VisualHeightOffset = 0.0;
+	RollerBodyLift = 0.0;
+	RollerBodyLiftSpeed = 0.0;
 	BodyPresentation->SetRelativeLocation(FVector::ZeroVector);
 
 	PreviousCollisionTransform = CollisionTransform;
@@ -764,14 +766,15 @@ void AMWVehiclePawn::UpdateGroundVisual(float DeltaTime)
 	PreviousCollisionTransform = CollisionTransform;
 }
 
-void AMWVehiclePawn::UpdateRollerBodyPresentation()
+void AMWVehiclePawn::UpdateRollerBodyPresentation(float DeltaTime)
 {
-	if (GetNetMode() == NM_DedicatedServer)
+	if (GetNetMode() == NM_DedicatedServer || !FMath::IsFinite(DeltaTime) || DeltaTime <= 0.f)
 	{
 		return;
 	}
 
-	double Lift = 0.0;
+	const float SmoothingTime = 1.f / FMath::Max(VisualHeightResponse, 0.1f);
+	double TargetLift = 0.0;
 	bool bNearRoller = false;
 	if (VehicleMovement->IsGrounded())
 	{
@@ -797,6 +800,21 @@ void AMWVehiclePawn::UpdateRollerBodyPresentation()
 	{
 		const FVector AppliedOffset = BodyPresentation->GetComponentLocation() - DrivePresentation->GetComponentLocation();
 		const double PawnScale = GetActorScale3D().GetAbsMax();
+		const FVector PreviewTravel = FVector::VectorPlaneProject(GetVelocity(), FVector::UpVector) * SmoothingTime;
+		const auto SampleLift = [Roller, &PreviewTravel, &TargetLift](const FVector& Tire)
+		{
+			double SurfaceHeight;
+			if (Roller->TryGetRollerVisualHeight(Tire, SurfaceHeight))
+			{
+				TargetLift = FMath::Max(TargetLift, SurfaceHeight - Tire.Z);
+			}
+			// 바퀴가 같은 롤러의 경계에 닿기 직전부터 상승을 시작한다.
+			if (!PreviewTravel.IsNearlyZero() &&
+				Roller->TryGetRollerVisualHeight(Tire + PreviewTravel, SurfaceHeight))
+			{
+				TargetLift = FMath::Max(TargetLift, SurfaceHeight - Tire.Z);
+			}
+		};
 		bool bHasVisualTire = false;
 		for (const FCachedVisualWheel& Wheel : CachedVisualWheels)
 		{
@@ -805,11 +823,7 @@ void AMWVehiclePawn::UpdateRollerBodyPresentation()
 				bHasVisualTire = true;
 				const FVector Tire = Mesh->GetComponentLocation() - AppliedOffset -
 					FVector::UpVector * (Wheel.RadiusCm * PawnScale);
-				double Height;
-				if (Roller->TryGetRollerVisualHeight(Tire, Height))
-				{
-					Lift = FMath::Max(Lift, Height - Tire.Z);
-				}
+				SampleLift(Tire);
 			}
 		}
 		// 표시 바퀴가 정의되지 않은 차종은 기존 충돌 치수로 발밑을 구한다.
@@ -817,16 +831,23 @@ void AMWVehiclePawn::UpdateRollerBodyPresentation()
 		{
 			const FVector Contact = DrivePresentation->GetComponentLocation() -
 				DrivePresentation->GetUpVector() * CollisionRoot->GetScaledBoxExtent().Z;
-			double Height;
-			if (Roller->TryGetRollerVisualHeight(Contact, Height))
-			{
-				Lift = FMath::Max(0.0, Height - Contact.Z);
-			}
+			SampleLift(Contact);
 		}
 	}
 
+	// 접지 판정이 잠깐 비거나 면이 바뀌어도 표시 높이를 바로 지우지 않는다.
+	// 엔진 근사가 지원하는 시간 범위에서만 한 프레임의 이동을 적분한다.
+	FMath::CriticallyDampedSmoothing(RollerBodyLift, RollerBodyLiftSpeed, TargetLift, 0.0,
+		FMath::Min(DeltaTime, SmoothingTime * 0.5f), SmoothingTime);
+	if (RollerBodyLift <= UE_KINDA_SMALL_NUMBER && TargetLift == 0.0)
+	{
+		RollerBodyLift = 0.0;
+		RollerBodyLiftSpeed = 0.0;
+	}
+
 	// 렌더 가지에만 높이를 합성한다. 카메라와 이동·복제 상태는 기존 부모의 변환을 사용한다.
-	const FVector Offset = DrivePresentation->GetComponentTransform().InverseTransformVector(FVector::UpVector * Lift);
+	const FVector Offset = DrivePresentation->GetComponentTransform().InverseTransformVector(
+		FVector::UpVector * FMath::Max(0.0, RollerBodyLift));
 	if (!BodyPresentation->GetRelativeLocation().Equals(Offset, UE_KINDA_SMALL_NUMBER))
 	{
 		BodyPresentation->SetRelativeLocation(Offset);

@@ -341,7 +341,7 @@ private:
 
 	void ResetGroundVisual();
 	void UpdateGroundVisual(float DeltaTime);
-	void UpdateRollerBodyPresentation();
+	void UpdateRollerBodyPresentation(float DeltaTime);
 
 	// 표시 상태가 초기화됐는지.
 	bool bGroundVisualInitialized = false;
@@ -352,6 +352,9 @@ private:
 	FVector SmoothedVisualUp = FVector::UpVector;
 	// 현재 표시용 높이 오프셋. 단위: cm
 	double VisualHeightOffset = 0.0;
+	// 롤러 표면이 다음 프레임에 바뀌어도 표시 높이와 상승·하강 속도를 이어간다.
+	double RollerBodyLift = 0.0;
+	double RollerBodyLiftSpeed = 0.0;
 	// 큰 위치·회전 변화를 감지하기 위한 실제 충돌체의 이전 변환.
 	FTransform PreviousCollisionTransform = FTransform::Identity;
 };
