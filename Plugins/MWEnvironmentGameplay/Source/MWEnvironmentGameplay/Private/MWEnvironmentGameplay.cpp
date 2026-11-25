@@ -1,6 +1,7 @@
 // 기존 경기 테마·단계를 완료된 Environment 생성기에 연결하고 월드 종료 때 정리한다.
 
 #include "MWEnvironmentGameplay.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/AssetManager.h"
@@ -161,8 +162,10 @@ void UMWEnvironmentGameplay::RefreshState()
         return;
     }
     // 기존 생성기의 BeginPlay가 실행되기 전에 테마·시드·로컬 시점을 지정한다.
+    const double FloorZ = GetDefault<UMWTrackRuntimeSettings>()->TrackPlacementFloorZ;
+    const FTransform EnvironmentFrame(FVector(0.0, 0.0, FloorZ));
     Generator = World->SpawnActorDeferred<AMWEnvironmentGenerator>(AMWEnvironmentGenerator::StaticClass(),
-                                                                   FTransform::Identity, nullptr, nullptr,
+                                                                   EnvironmentFrame, nullptr, nullptr,
                                                                    ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
     if (!Generator)
     {
@@ -181,7 +184,7 @@ void UMWEnvironmentGameplay::RefreshState()
     }
     Generator->Seed = LocalEnvironmentSeed;
     Generator->ViewPlayerController = Local;
-    UGameplayStatics::FinishSpawningActor(Generator, FTransform::Identity);
+    UGameplayStatics::FinishSpawningActor(Generator, EnvironmentFrame);
     for (AActor* Actor : World->PersistentLevel->Actors)
     {
         if (Actor && HiddenBackdropActorPaths.Contains(UWorld::RemovePIEPrefix(Actor->GetPathName())))

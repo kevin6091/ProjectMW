@@ -82,7 +82,7 @@ void UMWTrackSelectionWidget::ShowPlacementStatus(const FText& Players, const FT
 			Text_Title->SetText(FText::FromString(TEXT("트랙 배치")));
 		}
 	}
-	if (!Text_Players->GetText().EqualTo(Players))
+	if (Text_Players && !Text_Players->GetText().EqualTo(Players))
 	{
 		Text_Players->SetText(Players);
 	}
@@ -120,6 +120,7 @@ void UMWTrackSelectionWidget::TryBindState()
 			auto* PS = Cast<AMWPlayerState>(State);
 			auto* Player = PS ? PS->GetPlayerConstructionComponent() : nullptr;
 			if (!Player || PS->IsInactive()) continue;
+			if (Session.bIsPlacementReselection && !Construction->IsPlacementReselectionPendingFor(*PS)) continue;
 			if (!BoundPlayers.Contains(Player))
 			{
 				BoundPlayers.Add(Player);
@@ -198,10 +199,15 @@ void UMWTrackSelectionWidget::Refresh()
 		Lines.Add(FString::Printf(TEXT("%s%s  ·  %s"), *Name, PS == OwnPS ? TEXT(" (나)") : TEXT(""), *State));
 		bOwnConfirmed |= PS == OwnPS && bSame && Selection.bConfirmed;
 	}
-	Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
+	if (Text_Players)
+	{
+		Text_Players->SetText(FText::FromString(FString::Join(Lines, TEXT("\n"))));
+	}
 
-	// 서버가 점유를 확정하면 전시 액터와 함께 이름표도 선택 화면에서 제거한다.
-	for (const FMWTrackOffer& Offer : Session.Offers)
+	// 이름표 브러시를 지정한 구형 WBP만 판을 그린다. cs:80은 후보명 판을 사용하지 않는다.
+	const TConstArrayView<FMWTrackOffer> NamedOffers = OfferPlateBrush.GetResourceObject() ? MakeArrayView(Session.Offers) : TConstArrayView<FMWTrackOffer>{};
+	// 점유를 확정하면 전시 액터와 함께 이름표도 제거한다.
+	for (const FMWTrackOffer& Offer : NamedOffers)
 	{
 		if (Offer.ClaimedByMemberId != INDEX_NONE)
 		{
@@ -228,7 +234,16 @@ void UMWTrackSelectionWidget::Refresh()
 	}
 	else if (Session.SelectionSessionId > 0 && !Session.bIsOpen) Status = TEXT("모든 플레이어의 트랙 선택이 끝났습니다.");
 	else if (bOwnConfirmed || AcknowledgedOffer != INDEX_NONE) Status = TEXT("선택 완료 · 참가자 대기 중");
-	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : FText::FromString(Status));
+	if (Session.IsWaitingForReselectionOffers())
+	{
+		Text_SessionStatus->SetText(NSLOCTEXT("MWTrackSelection", "RetryPlacementOffers",
+			"배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 후보 다시 준비"));
+		return;
+	}
+	const FText StatusText = Session.bIsOpen && Session.bIsPlacementReselection && !bOwnConfirmed && AcknowledgedOffer == INDEX_NONE
+		? NSLOCTEXT("MWTrackSelection", "PlacementReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택")
+		: FText::FromString(Status);
+	Text_SessionStatus->SetText(Session.bIsOpen && !RequestError.IsEmpty() ? RequestError : StatusText);
 }
 
 UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
@@ -243,7 +258,8 @@ UBorder* UMWTrackSelectionWidget::CreateOfferPlate()
 	Plate->SetVisibility(ESlateVisibility::Collapsed);
 
 	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	Label->SetFont(Text_Players->GetFont());
+	// 공용 WBP에서 참가자 목록을 숨겨도 후보 이름표는 기존 글꼴로 그린다.
+	Label->SetFont(Text_Players ? Text_Players->GetFont() : Text_SessionStatus->GetFont());
 	Label->SetColorAndOpacity(FLinearColor::White);
 	Label->SetJustification(ETextJustify::Center);
 	Plate->SetContent(Label);

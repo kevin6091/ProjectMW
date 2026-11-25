@@ -48,8 +48,19 @@ struct MW_API FMWTrackSelectionSession
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsOpen = false;
 
+	// 같은 라운드에서 현재 참가자 모두가 이번 배치를 되돌리고 다시 후보를 고른다.
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsPlacementReselection = false;
+
+	// 이미 배치한 참가자의 PlayerState가 늦게 복제돼도 다시 선택할 대상을 즉시 구분한다.
+	UPROPERTY()
+	TArray<int32> ReselectionMemberIds;
+
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FMWTrackOffer> Offers;
+
+	// 참가자에게 보여 줄 후보가 모두 준비될 때까지 같은 선택 세션을 유지한다.
+	bool IsWaitingForReselectionOffers() const { return bIsOpen && bIsPlacementReselection && Offers.IsEmpty(); }
 };
 
 // 플레이어 한 명의 선택 상태

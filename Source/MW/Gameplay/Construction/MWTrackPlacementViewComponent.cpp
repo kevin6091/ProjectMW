@@ -10,6 +10,7 @@
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "InputMappingContext.h"
 #include "MWGameplayTags.h"
 #include "Player/MWGameplayPlayerController.h"
@@ -40,7 +41,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 {
 	auto* PC = Cast<AMWGameplayPlayerController>(GetOwner());
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!PC || !PC->IsLocalController() || !GS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	if (!PC || !PC->IsLocalController() || !GS || PC->GetConstructionPresentationPhase() != EMWRoomPhase::TrackPlacement)
 	{
 		if (SessionId != 0)
 		{
@@ -48,7 +49,8 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 		}
 		return;
 	}
-	const auto& Session = GS->GetConstructionComponent()->GetPlacementSession();
+	const auto* Construction = GS->GetConstructionComponent();
+	const auto& Session = Construction->GetPlacementSession();
 	if (SessionId != Session.SessionId)
 	{
 		ResetView();
@@ -83,7 +85,7 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 			bOwnReady = true;
 			bOwnPlaced = bPlaced;
 		}
-		if (bPlaced || !Session.bIsOpen)
+		if (bPlaced || !Session.bIsOpen || Construction->IsPlacementReselectionPendingFor(*PS))
 		{
 			continue;
 		}
@@ -151,7 +153,27 @@ void UMWTrackPlacementViewComponent::Update(float DeltaSeconds, UEnhancedInputCo
 
 	if (auto* Widget = Cast<UMWTrackSelectionWidget>(PC->TrackSelectionWidget))
 	{
-		Widget->ShowPlacementStatus(FText::FromString(PlayerLines), FText::FromString(Status));
+		FText StatusText = FText::FromString(Status);
+		if (Session.bIsOpen && bOwnReady && !bOwnPlaced)
+		{
+			if (LastResult == EMWTrackPlacementResult::ReselectionOpened)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "PreparingReselection", "배치할 수 있는 트랙이 없어 다시 선택합니다.");
+			}
+			else if (LastResult == EMWTrackPlacementResult::NoCompatibleTracks)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "NotEnoughReselectionOffers", "다시 배치할 수 있는 트랙 후보가 부족합니다.");
+			}
+			else if (bCanRecoverBlocked)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "RecoverBlocked", "양쪽 방향이 막혔습니다 · 좌클릭 / Space로 다시 선택");
+			}
+			else if (bBelowFloor || LastResult == EMWTrackPlacementResult::BelowPlacementFloor)
+			{
+				StatusText = NSLOCTEXT("MWTrackPlacement", "TurnAboveFloor", "지면에 걸립니다 · Q/E로 방향 변경");
+			}
+		}
+		Widget->ShowPlacementStatus(FText::FromString(PlayerLines), StatusText);
 	}
 }
 
@@ -181,7 +203,6 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 	}
 
 	Actor->SetReplicates(false);
-	Actor->SetActorEnableCollision(false);
 	Actor->SetActorTickEnabled(false);
 	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
 	{
@@ -198,6 +219,8 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 		return nullptr;
 	}
 
+	Ghost.GroundPoints = MWTrackPlacementClearance::ReadLocalPoints(*Actor, MakeArrayView(&Ghost.Ports[0], 2));
+	Actor->SetActorEnableCollision(false);
 	const FLinearColor Color = bLocal ? LocalColor : RemoteColors[(PlayerId - 1) % UE_ARRAY_COUNT(RemoteColors)];
 	MWTrackPreview::ShowWireframes(*Actor);
 	MWTrackPreview::SetWireframeColor(*Actor, Color);
@@ -207,7 +230,7 @@ UMWTrackPlacementViewComponent::FGhost* UMWTrackPlacementViewComponent::GetOrCre
 bool UMWTrackPlacementViewComponent::UpdateLocalPreview(AMWGameplayPlayerController& PC,
 	const FMWTrackPlacementSession& Session, FGhost& Ghost)
 {
-	if (bWaitingForReply || !UpdateGhostFromPointer(PC, Session, Ghost))
+	if (bWaitingForReply || LastResult == EMWTrackPlacementResult::ReselectionOpened || !UpdateGhostFromPointer(PC, Session, Ghost))
 	{
 		return false;
 	}
@@ -241,8 +264,13 @@ bool UMWTrackPlacementViewComponent::UpdateGhostFromPointer(const AMWGameplayPla
 	}
 	FTransform Display;
 	const bool bSnapped = MWTrackSnap::Resolve(Ghost.Ports, Session, Intent, Display);
+	// 확정 입력도 이 자리에서 같은 포트와 현재 지면으로 다시 검사한다.
+	bBelowFloor = bSnapped && !MWTrackPlacementClearance::FitsWithFinish(Ghost.GroundPoints, Session.Ground,
+		Display, Ghost.Ports[1 - Intent.SourcePort]);
+	bCanRecoverBlocked = bBelowFloor && Session.OpenEnds.Num() == 1
+		&& !MWTrackPlacementClearance::FitsEitherPort(Ghost.GroundPoints, Session.Ground, Ghost.Ports, Session.OpenEnds[0].WorldFrame);
 	Ghost.Actor->SetActorTransform(Display);
-	SetGhostSnapColor(Ghost, bSnapped);
+	SetGhostSnapColor(Ghost, bSnapped && !bBelowFloor);
 	return true;
 }
 
@@ -324,7 +352,7 @@ void UMWTrackPlacementViewComponent::HandleTurn()
 
 void UMWTrackPlacementViewComponent::HandleAccept()
 {
-	if (bWaitingForReply || bAccepted)
+	if (bWaitingForReply || bAccepted || LastResult == EMWTrackPlacementResult::ReselectionOpened)
 	{
 		return;
 	}
@@ -332,7 +360,7 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 	auto* PC = CastChecked<AMWGameplayPlayerController>(GetOwner());
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
 	const auto* PS = PC->GetPlayerState<AMWPlayerState>();
-	if (!PC->IsLocalController() || !GS || !PS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	if (!PC->IsLocalController() || !GS || !PS || PC->GetConstructionPresentationPhase() != EMWRoomPhase::TrackPlacement)
 	{
 		return;
 	}
@@ -346,7 +374,7 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 
 	// 확정 입력은 미리보기 틱보다 먼저 들어올 수 있으므로 지금 커서 위치로 다시 판정한다.
 	FGhost* Ghost = Ghosts.Find(PS->GetLobbyMemberId());
-	if (!Ghost || !Ghost->Actor.IsValid() || !UpdateGhostFromPointer(*PC, Session, *Ghost) || !Ghost->bSnapped)
+	if (!Ghost || !Ghost->Actor.IsValid() || !UpdateGhostFromPointer(*PC, Session, *Ghost) || (!Ghost->bSnapped && !bBelowFloor))
 	{
 		return;
 	}
@@ -365,8 +393,10 @@ void UMWTrackPlacementViewComponent::HandleAccept()
 			P.X, P.Y, P.Z, Q.X, Q.Y, Q.Z, Q.W, Scale.X, Scale.Y, Scale.Z);
 	}
 #endif
+	FMWTrackPlacementIntent Request = Intent;
+	Request.bRecoverBlocked = bCanRecoverBlocked;
 	bWaitingForReply = true;
-	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Intent);
+	PC->ServerPlaceTrack(SessionId, Session.CourseRevision, Request);
 }
 
 void UMWTrackPlacementViewComponent::HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result)
@@ -397,5 +427,7 @@ void UMWTrackPlacementViewComponent::ResetView()
 	NextPreviewTime = 0.0;
 	bWaitingForReply = false;
 	bAccepted = false;
+	bBelowFloor = false;
+	bCanRecoverBlocked = false;
 	LastResult = EMWTrackPlacementResult::Accepted;
 }
