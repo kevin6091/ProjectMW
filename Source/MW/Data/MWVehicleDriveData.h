@@ -90,6 +90,22 @@ struct MW_API FMWVehicleDriveConfig
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground", meta = (ClampMin = "0.0"))
 	float GroundAlignSpeed = 180.f;
 
+	// 바퀴의 기본 위치를 기준으로 범프에서 위쪽으로 움직일 수 있는 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Suspension", meta = (ClampMin = "1.0", Units = "cm"))
+	float SuspensionCompressionTravel = 12.f;
+
+	// 바퀴가 기본 위치에서 아래쪽 노면을 따라가는 최대 거리. 단위: cm
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Suspension", meta = (ClampMin = "1.0", Units = "cm"))
+	float SuspensionReboundTravel = 18.f;
+
+	// 차체 높이가 바퀴의 지지 높이를 따라가는 스프링 응답. 단위: rad/s
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Suspension", meta = (ClampMin = "1.0", ClampMax = "40.0"))
+	float SuspensionResponse = 16.f;
+
+	// 1은 임계 감쇠다. 높이 보정에만 적용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ground|Suspension", meta = (ClampMin = "0.7", ClampMax = "2.0"))
+	float SuspensionDampingRatio = 1.f;
+
 	// 엔진에서 가져온 중력에 적용할 배율
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Air", meta = (ClampMin = "0.0"))
 	float GravityScale = 1.f;

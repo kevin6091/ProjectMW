@@ -12,6 +12,7 @@
 class AMWVehiclePawn;
 class UMWItemComponent;
 class UMWTrackRuntimeComponent;
+class USphereComponent;
 
 /**
  *
@@ -115,6 +116,9 @@ private:
 	// 차체의 아래 방향에서 지지면까지의 이동 거리.
 	float GroundDistance = 0.f;
 	float ImpactYawRate = 0.f;
+	// 높이 보정에만 쓰는 서스펜션 속도(cm/s)다. 차체의 충돌 반발과 분리한다.
+	float SuspensionSpeed = 0.f;
+	bool bHasWheelSupport = false;
 	// 접지 검사에서 다시 계산하는 값. 단위: cm/s²
 	double GroundNormalLoadAcceleration = 0.0;
 
@@ -142,6 +146,11 @@ private:
 	// 접지 상태나 속도는 변경하지 않는다.
 	// 박스 스윕을 보완할 때는 확인한 평면의 법선도 반환한다.
 	bool FindGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal, bool bWasGrounded,
+		FVector& OutOrientationNormal, bool& bOutWheelSupport) const;
+
+	// 바퀴 구체를 압축·신장 범위 안에서 검사한다. Offset은 기본 중심에서 위쪽이 양수다.
+	bool TraceSuspensionWheel(const USphereComponent& Wheel, FHitResult& OutHit, double& OutOffset) const;
+	bool FindWheelGroundCandidate(FHitResult& OutHit, const FVector& PreviousNormal, bool bWasGrounded,
 		FVector& OutOrientationNormal) const;
 	void UpdateGroundState(FVector* OutOrientationNormal = nullptr);
 	// 예측 접촉을 포함해 노면 정렬과 조향을 적용하고, 실제 충돌체를 움직였는지 반환한다.
@@ -192,4 +201,7 @@ private:
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 
 	void AdjustGroundHeight(float DeltaTime);
+	// 차체에 걸린 낮은 단차는 바퀴가 위쪽 노면을 찾고 올라갈 공간이 있을 때만 넘는다.
+	bool TryStepOverWheelContact(const FHitResult& Hit, const FVector& RemainingDelta);
+	void AdjustSuspensionHeight(float DeltaTime);
 };

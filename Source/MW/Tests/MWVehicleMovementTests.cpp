@@ -1326,6 +1326,8 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		Sent.Location = FVector(100, 200, 300);
 		Sent.Velocity = FVector(800, 0, 0);
 		Sent.ImpactYawRate = 25.f;
+		// 높이 보정을 재실행할 때 서스펜션 속도가 누락되지 않는지 함께 검사한다.
+		Sent.SuspensionSpeed = -32.5f;
 		Sent.GroundNormal = FVector(0, 0.6, 0.8);
 		Sent.bGrounded = true;
 		Sent.ServerTimeSeconds = 17.25;
@@ -1347,6 +1349,7 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("ACK survives serialization"), Received.LastProcessedMoveId, Sent.LastProcessedMoveId);
 		TestTrue(TEXT("Pose and motion survive serialization"), Received.Location.Equals(Sent.Location, 0.1)
 			&& Received.Velocity.Equals(Sent.Velocity, 0.1) && Received.ImpactYawRate == Sent.ImpactYawRate
+			&& Received.SuspensionSpeed == Sent.SuspensionSpeed
 			&& Received.bGrounded && Received.GroundNormal.Equals(Sent.GroundNormal, 0.001)
 			&& Received.ServerTimeSeconds == Sent.ServerTimeSeconds);
 	}

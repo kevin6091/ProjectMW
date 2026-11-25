@@ -55,7 +55,8 @@ namespace
 			|| Prediction.bGrounded != Server.bGrounded
 			|| (Prediction.bGrounded && Server.bGrounded
 				&& !Prediction.GroundNormal.Equals(Server.GroundNormal, GroundNormalTolerance))
-			|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f;
+			|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f
+			|| FMath::Abs(Prediction.SuspensionSpeed - Server.SuspensionSpeed) > 10.f;
 	}
 
 	bool IsValidDriveInput(const FMWVehicleDriveInput& Input)
@@ -129,6 +130,7 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
 		&& Snapshot.ImpactYawRate == ServerDriveSnapshot.ImpactYawRate
+		&& Snapshot.SuspensionSpeed == ServerDriveSnapshot.SuspensionSpeed
 		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded
 		&& (!Snapshot.bGrounded || Snapshot.GroundNormal.Equals(ServerDriveSnapshot.GroundNormal, GroundNormalTolerance)))
 	{
