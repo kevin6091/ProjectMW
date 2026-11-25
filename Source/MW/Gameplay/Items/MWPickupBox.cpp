@@ -7,7 +7,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Gameplay/Items/MWCoursePickupSettings.h"
 #include "Gameplay/Items/MWItemComponent.h"
+#include "LogChannel.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
@@ -46,6 +48,32 @@ AMWPickupBox::AMWPickupBox()
     }
 }
 
+void AMWPickupBox::ApplyDefaultPresentation()
+{
+    // 레벨과 BP에 지정한 외형이 먼저다. 런타임 기본 상자만 공용 설정에서 채운다.
+    if (LidVisual->GetStaticMesh() || HandleVisual->GetStaticMesh()
+        || Visual->GetStaticMesh() != GetDefault<ThisClass>()->Visual->GetStaticMesh())
+    {
+        return;
+    }
+
+    const auto& Settings = *GetDefault<UMWCoursePickupSettings>();
+    UStaticMesh* BodyMesh = Settings.Body.Mesh.LoadSynchronous();
+    UStaticMesh* LidMesh = Settings.Lid.Mesh.LoadSynchronous();
+    if (!BodyMesh || !LidMesh)
+    {
+        return;
+    }
+    const auto ApplyPart = [](UStaticMeshComponent& Part, UStaticMesh* Mesh, const FMWPickupVisualPart& Data)
+    {
+        Part.SetStaticMesh(Mesh);
+        Part.SetRelativeTransform(FTransform(Data.Rotation, Data.Offset, FVector(Data.Scale)));
+    };
+    ApplyPart(*Visual, BodyMesh, Settings.Body);
+    ApplyPart(*LidVisual, LidMesh, Settings.Lid);
+    ApplyPart(*HandleVisual, Settings.Handle.Mesh.LoadSynchronous(), Settings.Handle);
+}
+
 void AMWPickupBox::BeginPlay()
 {
     Super::BeginPlay();
@@ -60,6 +88,7 @@ void AMWPickupBox::BeginPlay()
                 Part->AttachToComponent(PresentationRoot, FAttachmentTransformRules::KeepWorldTransform);
             }
         }
+        ApplyDefaultPresentation();
         RestPresentation = PresentationRoot->GetRelativeTransform();
         RestLid = LidVisual->GetRelativeTransform();
         RestHandle = HandleVisual->GetRelativeTransform();
@@ -115,6 +144,8 @@ void AMWPickupBox::HandleOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrim
         bAvailable = false;
         UpdateAvailability();
         ForceNetUpdate();
+        UE_LOG(LogMWServer, Log, TEXT("[MWPickup] box=%s vehicle=%s location=%s speed=%.1f"),
+            *GetName(), *GetNameSafe(Vehicle), *Vehicle->GetActorLocation().ToCompactString(), Vehicle->GetVelocity().Size2D());
     }
 }
 

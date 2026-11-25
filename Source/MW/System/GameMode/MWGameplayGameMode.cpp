@@ -10,6 +10,7 @@
 #include "System/MWGameInstance.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackSelectionBoard.h"
+#include "Gameplay/Items/MWCoursePickupComponent.h"
 #include "Gameplay/PlayerStart/MWPlayerStartManager.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -29,6 +30,7 @@ AMWGameplayGameMode::AMWGameplayGameMode()
 	PlayerControllerClass = AMWGameplayPlayerController::StaticClass();
 	PlayerStateClass = AMWPlayerState::StaticClass();
 
+	CoursePickups = CreateDefaultSubobject<UMWCoursePickupComponent>(TEXT("CoursePickups"));
 	DefaultPawnClass = nullptr;
 	bUseSeamlessTravel = true;
 }
@@ -657,6 +659,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	}
 	if (NewPhase == EMWRoomPhase::RoundResults)
 	{
+		CoursePickups->Clear();
 		WaitForRacePhaseDeadline();
 		return;
 	}
@@ -669,6 +672,7 @@ void AMWGameplayGameMode::EnterPhase(EMWRoomPhase NewPhase, const FString& Failu
 	}
 
 	// 허용된 전환 중 여기까지 내려오는 경우는 Failed뿐이다.
+	CoursePickups->Clear();
 	if (Construction)
 	{
 		Construction->EndSelection();
@@ -1117,6 +1121,12 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 			PC->GetPlayerState<AMWPlayerState>()->GetLobbyMemberId(), Index + 1, *GetNameSafe(Start), *GetNameSafe(Vehicle));
 	}
 	
+	if (GS->GetProgress().CourseSessionId > 0)
+	{
+		// 코스와 출발 슬롯이 확정된 뒤에만 이번 라운드의 상자를 배치한다.
+		CoursePickups->Prepare(GS->GetConstructionComponent()->GetPlacementSession(), PlayerStarts);
+	}
+
 	UE_LOG(LogMWServer, Log, TEXT("[MWRace] 전원 차량 소유 확인 완료. 클라이언트 출발 준비 보고를 기다립니다."));
 }
 
@@ -1192,6 +1202,7 @@ void AMWGameplayGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(RacePhaseTimer);
+		if (!World->bIsTearingDown) CoursePickups->Clear();
 	}
 
 	if (auto* GS = GetGameState<AMWGameplayGameState>())

@@ -24,6 +24,7 @@ protected:
     virtual void Tick(float DeltaSeconds) override;
 
 private:
+    void ApplyDefaultPresentation();
     void RefreshPickupCollision();
     void SetPresentationVisible(bool bVisible);
     void UpdateIdlePresentation();
