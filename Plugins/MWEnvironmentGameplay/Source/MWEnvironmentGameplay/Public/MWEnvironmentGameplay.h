@@ -7,6 +7,7 @@ class AMWEnvironmentGenerator;
 class AMWGameplayGameState;
 class AMWLobbyGameState;
 class UMWEnvironmentTheme;
+class UPrimitiveComponent;
 class USceneComponent;
 class UStaticMeshComponent;
 class UStaticMesh;
@@ -109,6 +110,21 @@ protected:
     virtual bool DoesSupportWorldType(EWorldType::Type Type) const override;
 
 private:
+    static constexpr double PeakTimeFraction = 0.35;
+
+    // 와이어프레임 받침과 비슷하게 양쪽 도로 가장자리보다 조금 안쪽에 세운다.
+    static constexpr double RoadWidthFraction = 0.85;
+    static constexpr int32 WidthMeasurements = 7;
+    static constexpr double TrackLaidSpriteLifeSeconds = 1.0;
+    static const FName ParticleAgeParameter;
+    static const FName ParticleSeedParameter;
+
+    bool IsTrackPlacementVerificationEnabled();
+    bool TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow = true);
+    double RoadHalfWidth(UPrimitiveComponent& Road, const FVector& Center, const FVector& Across);
+    bool FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth,
+        FVector& OutRoadSurface);
+    TArray<FVector> SampleTrackSurfaces(const AActor& Piece, const FVector& Center, double Spacing);
 
     UPROPERTY(Transient)
     TObjectPtr<AMWEnvironmentGenerator> Generator;

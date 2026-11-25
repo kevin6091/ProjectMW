@@ -8,74 +8,71 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-namespace
+// 표시 전용 액터에만 붙는 내부 표식이다. 에셋이나 레벨에서 설정할 필요가 없다.
+const FName MWTrackPreview::DisplayOnlyTag(TEXT("MWTrackDisplayOnly"));
+const FName MWTrackPreview::WireframesName(TEXT("Wireframes"));
+
+bool MWTrackPreview::IsWireframePart(const USceneComponent& Component)
 {
-	// 표시 전용 액터에만 붙는 내부 표식이다. 에셋이나 레벨에서 설정할 필요가 없다.
-	const FName DisplayOnlyTag(TEXT("MWTrackDisplayOnly"));
-	const FName WireframesName(TEXT("Wireframes"));
-
-	bool IsWireframePart(const USceneComponent& Component)
+	for (const USceneComponent* Parent = &Component; Parent; Parent = Parent->GetAttachParent())
 	{
-		for (const USceneComponent* Parent = &Component; Parent; Parent = Parent->GetAttachParent())
+		if (Parent->GetFName() == WireframesName)
 		{
-			if (Parent->GetFName() == WireframesName)
-			{
-				return true;
-			}
+			return true;
 		}
-		return false;
 	}
+	return false;
+}
 
-	void ShowCandidateSurface(UStaticMeshComponent& Mesh, UMaterialInterface& PreviewMaterial)
+void MWTrackPreview::ShowCandidateSurface(UStaticMeshComponent& Mesh, UMaterialInterface& PreviewMaterial)
+{
+	static const FName TextureParameter(TEXT("BaseColorTexture"));
+	static const FName TintParameter(TEXT("BaseColor"));
+	static const FName UseAlphaParameter(TEXT("UseBaseColorAlpha"));
+
+	TArray<UMaterialInstanceDynamic*, TInlineAllocator<4>> SurfaceSlots;
+	for (UMaterialInterface* Original : Mesh.GetMaterials())
 	{
-		static const FName TextureParameter(TEXT("BaseColorTexture"));
-		static const FName TintParameter(TEXT("BaseColor"));
-		static const FName UseAlphaParameter(TEXT("UseBaseColorAlpha"));
-
-		TArray<UMaterialInstanceDynamic*, TInlineAllocator<4>> SurfaceSlots;
-		for (UMaterialInterface* Original : Mesh.GetMaterials())
-		{
-			if (!Original)
-			{
-				return;
-			}
-			UTexture* Texture = nullptr;
-			FLinearColor Tint = FLinearColor::White;
-			const bool bHasTint = Original->GetVectorParameterValue(TintParameter, Tint);
-			if (!Original->GetTextureParameterValue(TextureParameter, Texture) && !bHasTint)
-			{
-				// 로고·데칼처럼 파라미터 없이 텍스처 하나만 읽는 재질도 원본 그림을 표시한다.
-				TArray<UTexture*> UsedTextures;
-				Original->GetUsedTextures(UsedTextures);
-				if (UsedTextures.Num() != 1)
-				{
-					return;
-				}
-				Texture = UsedTextures[0];
-			}
-			auto* Surface = UMaterialInstanceDynamic::Create(&PreviewMaterial, &Mesh);
-			if (Texture)
-			{
-				Surface->SetTextureParameterValue(TextureParameter, Texture);
-			}
-			Surface->SetVectorParameterValue(TintParameter, Tint);
-			Surface->SetScalarParameterValue(UseAlphaParameter, Original->IsMasked() ? 1.f : 0.f);
-			SurfaceSlots.Add(Surface);
-		}
-
-		// 모든 슬롯을 변환한 메시만 켜서 불투명한 원본 슬롯이 와이어프레임을 가리지 않게 한다.
-		if (SurfaceSlots.IsEmpty())
+		if (!Original)
 		{
 			return;
 		}
-		for (int32 Slot = 0; Slot < SurfaceSlots.Num(); ++Slot)
+		UTexture* Texture = nullptr;
+		FLinearColor Tint = FLinearColor::White;
+		const bool bHasTint = Original->GetVectorParameterValue(TintParameter, Tint);
+		if (!Original->GetTextureParameterValue(TextureParameter, Texture) && !bHasTint)
 		{
-			Mesh.SetMaterial(Slot, SurfaceSlots[Slot]);
+			// 로고·데칼처럼 파라미터 없이 텍스처 하나만 읽는 재질도 원본 그림을 표시한다.
+			TArray<UTexture*> UsedTextures;
+			Original->GetUsedTextures(UsedTextures);
+			if (UsedTextures.Num() != 1)
+			{
+				return;
+			}
+			Texture = UsedTextures[0];
 		}
-		Mesh.SetCastShadow(false);
-		Mesh.SetVisibility(true);
-		Mesh.SetHiddenInGame(false);
+		auto* Surface = UMaterialInstanceDynamic::Create(&PreviewMaterial, &Mesh);
+		if (Texture)
+		{
+			Surface->SetTextureParameterValue(TextureParameter, Texture);
+		}
+		Surface->SetVectorParameterValue(TintParameter, Tint);
+		Surface->SetScalarParameterValue(UseAlphaParameter, Original->IsMasked() ? 1.f : 0.f);
+		SurfaceSlots.Add(Surface);
 	}
+
+	// 모든 슬롯을 변환한 메시만 켜서 불투명한 원본 슬롯이 와이어프레임을 가리지 않게 한다.
+	if (SurfaceSlots.IsEmpty())
+	{
+		return;
+	}
+	for (int32 Slot = 0; Slot < SurfaceSlots.Num(); ++Slot)
+	{
+		Mesh.SetMaterial(Slot, SurfaceSlots[Slot]);
+	}
+	Mesh.SetCastShadow(false);
+	Mesh.SetVisibility(true);
+	Mesh.SetHiddenInGame(false);
 }
 
 bool MWTrackPreview::CollectVisibleMaterials(const AActor* Track, TArray<UMaterialInterface*>& OutMaterials)

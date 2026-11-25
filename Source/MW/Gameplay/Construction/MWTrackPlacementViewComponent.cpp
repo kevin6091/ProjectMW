@@ -23,34 +23,30 @@
 #include "UI/Cursor/MWCursorProjection.h"
 #include "UnrealClient.h"
 
-namespace
+const FLinearColor UMWTrackPlacementViewComponent::LocalColor(0.05f, 0.55f, 1.0f);
+const FLinearColor UMWTrackPlacementViewComponent::SnapColor(0.1f, 1.0f, 0.35f);
+const FLinearColor UMWTrackPlacementViewComponent::RemoteColors[] = {
+	FLinearColor(1.0f, 0.42f, 0.08f),
+	FLinearColor(0.82f, 0.18f, 0.75f),
+	FLinearColor(0.55f, 0.26f, 1.0f)
+};
+
+double UMWTrackPlacementViewComponent::GetProjectedHorizontalDelta(const APlayerController& PC, const FVector& From, const FVector& To)
 {
-	constexpr double SnapContactTolerance = 10.0;
-	const FLinearColor LocalColor(0.05f, 0.55f, 1.0f);
-	const FLinearColor SnapColor(0.1f, 1.0f, 0.35f);
-	const FLinearColor RemoteColors[] = {
-		FLinearColor(1.0f, 0.42f, 0.08f),
-		FLinearColor(0.82f, 0.18f, 0.75f),
-		FLinearColor(0.55f, 0.26f, 1.0f)
-	};
-
-	double GetProjectedHorizontalDelta(const APlayerController& PC, const FVector& From, const FVector& To)
+	if (From.Equals(To))
 	{
-		if (From.Equals(To))
-		{
-			return 0.0;
-		}
-
-		int32 ViewportWidth, ViewportHeight;
-		PC.GetViewportSize(ViewportWidth, ViewportHeight);
-		FVector2D FromScreen, ToScreen;
-		if (ViewportWidth <= 0 || !PC.ProjectWorldLocationToScreen(From, FromScreen)
-			|| !PC.ProjectWorldLocationToScreen(To, ToScreen))
-		{
-			return 0.0;
-		}
-		return (ToScreen.X - FromScreen.X) / ViewportWidth;
+		return 0.0;
 	}
+
+	int32 ViewportWidth, ViewportHeight;
+	PC.GetViewportSize(ViewportWidth, ViewportHeight);
+	FVector2D FromScreen, ToScreen;
+	if (ViewportWidth <= 0 || !PC.ProjectWorldLocationToScreen(From, FromScreen)
+		|| !PC.ProjectWorldLocationToScreen(To, ToScreen))
+	{
+		return 0.0;
+	}
+	return (ToScreen.X - FromScreen.X) / ViewportWidth;
 }
 
 AActor* UMWTrackPlacementViewComponent::GetArrivalGhost(int32 ExpectedSession, int32 MemberId) const

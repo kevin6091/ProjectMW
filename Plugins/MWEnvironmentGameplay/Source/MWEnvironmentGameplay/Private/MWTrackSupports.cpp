@@ -10,195 +10,181 @@
 #include "Gameplay/Construction/MWTrackSnap.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
 #include "MWEnvironmentRestore.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
-namespace
+const FName UMWEnvironmentGameplay::ParticleAgeParameter(TEXT("Age"));
+const FName UMWEnvironmentGameplay::ParticleSeedParameter(TEXT("Seed"));
+
+bool UMWEnvironmentGameplay::TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow)
 {
-    // 와이어프레임 받침과 비슷하게 양쪽 도로 가장자리보다 조금 안쪽에 세운다.
-    constexpr double RoadWidthFraction = 0.85;
-    constexpr int32 WidthMeasurements = 7;
-    constexpr double TrackLaidSpriteLifeSeconds = 1.0;
-    const FName ParticleAgeParameter(TEXT("Age"));
-    const FName ParticleSeedParameter(TEXT("Seed"));
-
-    bool TraceRoad(UPrimitiveComponent& Road, const FVector& At, FVector& Out, bool bFromBelow = true)
+    const FBoxSphereBounds& Bounds = Road.Bounds;
+    const FVector Bottom(At.X, At.Y, Bounds.Origin.Z - Bounds.BoxExtent.Z - 1.0);
+    const FVector Top(At.X, At.Y, Bounds.Origin.Z + Bounds.BoxExtent.Z + 1.0);
+    FHitResult Hit;
+    if (!Road.LineTraceComponent(Hit, bFromBelow ? Bottom : Top, bFromBelow ? Top : Bottom, FCollisionQueryParams()))
     {
-        const FBoxSphereBounds& Bounds = Road.Bounds;
-        const FVector Bottom(At.X, At.Y, Bounds.Origin.Z - Bounds.BoxExtent.Z - 1.0);
-        const FVector Top(At.X, At.Y, Bounds.Origin.Z + Bounds.BoxExtent.Z + 1.0);
-        FHitResult Hit;
-        if (!Road.LineTraceComponent(Hit, bFromBelow ? Bottom : Top, bFromBelow ? Top : Bottom, FCollisionQueryParams()))
-        {
-            return false;
-        }
-        Out = Hit.ImpactPoint;
-        return true;
+        return false;
     }
+    Out = Hit.ImpactPoint;
+    return true;
+}
 
-    double RoadHalfWidth(UPrimitiveComponent& Road, const FVector& Center, const FVector& Across)
+double UMWEnvironmentGameplay::RoadHalfWidth(UPrimitiveComponent& Road, const FVector& Center, const FVector& Across)
+{
+    const FBoxSphereBounds& Bounds = Road.Bounds;
+    double Inside = 0.0;
+    double Outside = FVector::DotProduct(Bounds.BoxExtent, Across.GetAbs())
+        - FVector::DotProduct(Center - Bounds.Origin, Across);
+    for (int32 Index = 0; Index < WidthMeasurements; ++Index)
     {
-        const FBoxSphereBounds& Bounds = Road.Bounds;
-        double Inside = 0.0;
-        double Outside = FVector::DotProduct(Bounds.BoxExtent, Across.GetAbs())
-            - FVector::DotProduct(Center - Bounds.Origin, Across);
-        for (int32 Index = 0; Index < WidthMeasurements; ++Index)
+        const double Distance = (Inside + Outside) * 0.5;
+        FVector Unused;
+        if (TraceRoad(Road, Center + Across * Distance, Unused))
         {
-            const double Distance = (Inside + Outside) * 0.5;
-            FVector Unused;
-            if (TraceRoad(Road, Center + Across * Distance, Unused))
-            {
-                Inside = Distance;
-            }
-            else
-            {
-                Outside = Distance;
-            }
-        }
-        return Inside;
-    }
-
-    bool FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth,
-        FVector& OutRoadSurface)
-    {
-        TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
-        static const FName LegMarkerName(TEXT("MiddleLeg"));
-        UPrimitiveComponent* const* LegMarker = Components.FindByPredicate([](const UPrimitiveComponent* Part)
-        {
-            return Part->GetFName() == LegMarkerName;
-        });
-        const FVector Preferred = LegMarker ? (*LegMarker)->GetComponentLocation() : Piece.GetActorLocation();
-        UPrimitiveComponent* Road = nullptr;
-        double Closest = TNumericLimits<double>::Max();
-        for (UPrimitiveComponent* Part : Components)
-        {
-            if (!Part->ComponentHasTag(UMWTrackRuntimeComponent::FixedRoadTag) || !Part->IsQueryCollisionEnabled())
-            {
-                continue;
-            }
-            FVector Bottom;
-            // 직선·경사는 BP의 프리뷰 받침 위치를 사용한다. 곡선은 고정 도로에서 접점을 구한다.
-            if (!(LegMarker && TraceRoad(*Part, Preferred, Bottom))
-                && !TraceRoad(*Part, Part->Bounds.Origin, Bottom))
-            {
-                continue;
-            }
-            const double Distance = FVector::DistSquared2D(Preferred, Bottom);
-            if (Distance < Closest)
-            {
-                Closest = Distance;
-                Road = Part;
-                OutTop = Bottom;
-            }
-        }
-        if (!Road)
-        {
-            return false;
-        }
-        OutRoadSurface = OutTop;
-        TraceRoad(*Road, OutTop, OutRoadSurface, /* bFromBelow */ false);
-
-        OutAcross = Piece.GetActorForwardVector().GetSafeNormal2D();
-        if (LegMarker)
-        {
-            OutAcross = (*LegMarker)->GetForwardVector().GetSafeNormal2D();
+            Inside = Distance;
         }
         else
         {
-            FMWTrackPortFrames Ports;
-            if (MWTrackSnap::ReadPorts(Piece, Ports))
-            {
-                // 포트 사이 진행 방향을 기준으로 골조의 긴 축이 곡선의 도로를 가로지르게 한다.
-                const FVector Direction = Piece.GetActorTransform().TransformVectorNoScale(
-                    Ports[1].GetLocation() - Ports[0].GetLocation());
-                OutAcross = FVector::CrossProduct(Direction, FVector::UpVector).GetSafeNormal2D();
-            }
+            Outside = Distance;
         }
-
-        const double Left = RoadHalfWidth(*Road, OutTop, -OutAcross);
-        const double Right = RoadHalfWidth(*Road, OutTop, OutAcross);
-        OutWidth = 2.0 * FMath::Min(Left, Right) * RoadWidthFraction;
-        if (const UStaticMeshComponent* Marker = LegMarker ? Cast<UStaticMeshComponent>(*LegMarker) : nullptr)
-        {
-            if (const UStaticMesh* Mesh = Marker->GetStaticMesh())
-            {
-                // BP의 받침 폭이 있으면 그 폭을 우선하되 도로 아래에 들어오는 범위만 사용한다.
-                const double AuthoredWidth = Mesh->GetBoundingBox().GetSize().X *
-                    FMath::Abs(Marker->GetComponentScale().X);
-                OutWidth = FMath::Min(OutWidth, AuthoredWidth);
-            }
-        }
-        return OutWidth > UE_SMALL_NUMBER;
     }
+    return Inside;
+}
 
-    TArray<FVector> SampleTrackSurfaces(const AActor& Piece, const FVector& Center, double Spacing)
+bool UMWEnvironmentGameplay::FitScaffoldToRoad(const AActor& Piece, FVector& OutTop, FVector& OutAcross, double& OutWidth,
+    FVector& OutRoadSurface)
+{
+    TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
+    static const FName LegMarkerName(TEXT("MiddleLeg"));
+    UPrimitiveComponent* const* LegMarker = Components.FindByPredicate([](const UPrimitiveComponent* Part)
     {
-        constexpr int32 GridResolution = 9;
-        constexpr int32 MaxEffectSites = 6;
-        TArray<FVector> Candidates;
-        TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
-        for (UPrimitiveComponent* Road : Components)
-        {
-            if (!Road->ComponentHasTag(UMWTrackRuntimeComponent::FixedRoadTag) || !Road->IsQueryCollisionEnabled())
-            {
-                continue;
-            }
-
-            // 고정 노면과 접촉한 지점만 남긴다. 굽은 조각의 양 끝을 잇는 직선 위에는 도로가 없을 수 있다.
-            const FBox Bounds = Road->Bounds.GetBox();
-            for (int32 X = 0; X < GridResolution; ++X)
-            {
-                for (int32 Y = 0; Y < GridResolution; ++Y)
-                {
-                    const FVector Probe(
-                        FMath::Lerp(Bounds.Min.X, Bounds.Max.X, (X + 0.5) / GridResolution),
-                        FMath::Lerp(Bounds.Min.Y, Bounds.Max.Y, (Y + 0.5) / GridResolution),
-                        Bounds.GetCenter().Z);
-                    FVector Surface;
-                    if (TraceRoad(*Road, Probe, Surface, /* bFromBelow */ false))
-                    {
-                        Candidates.Add(Surface);
-                    }
-                }
-            }
-        }
-
-        TArray<FVector> Sites { Center };
-        const double MinDistanceSquared = FMath::Square(Spacing);
-        // 골조 접점에서 시작하고, 이미 선택한 모든 점에서 가장 먼 후보를 추가해 한쪽 끝으로 쏠리지 않게 한다.
-        while (Sites.Num() < MaxEffectSites)
-        {
-            const FVector* Best = nullptr;
-            double BestDistance = MinDistanceSquared;
-            for (const FVector& Candidate : Candidates)
-            {
-                double Nearest = TNumericLimits<double>::Max();
-                for (const FVector& Site : Sites)
-                {
-                    Nearest = FMath::Min(Nearest, FVector::DistSquared2D(Candidate, Site));
-                }
-                if (Nearest > BestDistance)
-                {
-                    Best = &Candidate;
-                    BestDistance = Nearest;
-                }
-            }
-            if (!Best)
-            {
-                break;
-            }
-            Sites.Add(*Best);
-        }
-        return Sites;
-    }
-
-    bool VerifySupports()
+        return Part->GetFName() == LegMarkerName;
+    });
+    const FVector Preferred = LegMarker ? (*LegMarker)->GetComponentLocation() : Piece.GetActorLocation();
+    UPrimitiveComponent* Road = nullptr;
+    double Closest = TNumericLimits<double>::Max();
+    for (UPrimitiveComponent* Part : Components)
     {
-        return FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement"));
+        if (!Part->ComponentHasTag(UMWTrackRuntimeComponent::FixedRoadTag) || !Part->IsQueryCollisionEnabled())
+        {
+            continue;
+        }
+        FVector Bottom;
+        // 직선·경사는 BP의 프리뷰 받침 위치를 사용한다. 곡선은 고정 도로에서 접점을 구한다.
+        if (!(LegMarker && TraceRoad(*Part, Preferred, Bottom))
+            && !TraceRoad(*Part, Part->Bounds.Origin, Bottom))
+        {
+            continue;
+        }
+        const double Distance = FVector::DistSquared2D(Preferred, Bottom);
+        if (Distance < Closest)
+        {
+            Closest = Distance;
+            Road = Part;
+            OutTop = Bottom;
+        }
     }
+    if (!Road)
+    {
+        return false;
+    }
+    OutRoadSurface = OutTop;
+    TraceRoad(*Road, OutTop, OutRoadSurface, /* bFromBelow */ false);
+
+    OutAcross = Piece.GetActorForwardVector().GetSafeNormal2D();
+    if (LegMarker)
+    {
+        OutAcross = (*LegMarker)->GetForwardVector().GetSafeNormal2D();
+    }
+    else
+    {
+        FMWTrackPortFrames Ports;
+        if (MWTrackSnap::ReadPorts(Piece, Ports))
+        {
+            // 포트 사이 진행 방향을 기준으로 골조의 긴 축이 곡선의 도로를 가로지르게 한다.
+            const FVector Direction = Piece.GetActorTransform().TransformVectorNoScale(
+                Ports[1].GetLocation() - Ports[0].GetLocation());
+            OutAcross = FVector::CrossProduct(Direction, FVector::UpVector).GetSafeNormal2D();
+        }
+    }
+
+    const double Left = RoadHalfWidth(*Road, OutTop, -OutAcross);
+    const double Right = RoadHalfWidth(*Road, OutTop, OutAcross);
+    OutWidth = 2.0 * FMath::Min(Left, Right) * RoadWidthFraction;
+    if (const UStaticMeshComponent* Marker = LegMarker ? Cast<UStaticMeshComponent>(*LegMarker) : nullptr)
+    {
+        if (const UStaticMesh* Mesh = Marker->GetStaticMesh())
+        {
+            // BP의 받침 폭이 있으면 그 폭을 우선하되 도로 아래에 들어오는 범위만 사용한다.
+            const double AuthoredWidth = Mesh->GetBoundingBox().GetSize().X *
+                FMath::Abs(Marker->GetComponentScale().X);
+            OutWidth = FMath::Min(OutWidth, AuthoredWidth);
+        }
+    }
+    return OutWidth > UE_SMALL_NUMBER;
+}
+
+TArray<FVector> UMWEnvironmentGameplay::SampleTrackSurfaces(const AActor& Piece, const FVector& Center, double Spacing)
+{
+    constexpr int32 GridResolution = 9;
+    constexpr int32 MaxEffectSites = 6;
+    TArray<FVector> Candidates;
+    TInlineComponentArray<UPrimitiveComponent*> Components(&Piece);
+    for (UPrimitiveComponent* Road : Components)
+    {
+        if (!Road->ComponentHasTag(UMWTrackRuntimeComponent::FixedRoadTag) || !Road->IsQueryCollisionEnabled())
+        {
+            continue;
+        }
+
+        // 고정 노면과 접촉한 지점만 남긴다. 굽은 조각의 양 끝을 잇는 직선 위에는 도로가 없을 수 있다.
+        const FBox Bounds = Road->Bounds.GetBox();
+        for (int32 X = 0; X < GridResolution; ++X)
+        {
+            for (int32 Y = 0; Y < GridResolution; ++Y)
+            {
+                const FVector Probe(
+                    FMath::Lerp(Bounds.Min.X, Bounds.Max.X, (X + 0.5) / GridResolution),
+                    FMath::Lerp(Bounds.Min.Y, Bounds.Max.Y, (Y + 0.5) / GridResolution),
+                    Bounds.GetCenter().Z);
+                FVector Surface;
+                if (TraceRoad(*Road, Probe, Surface, /* bFromBelow */ false))
+                {
+                    Candidates.Add(Surface);
+                }
+            }
+        }
+    }
+
+    TArray<FVector> Sites { Center };
+    const double MinDistanceSquared = FMath::Square(Spacing);
+    // 골조 접점에서 시작하고, 이미 선택한 모든 점에서 가장 먼 후보를 추가해 한쪽 끝으로 쏠리지 않게 한다.
+    while (Sites.Num() < MaxEffectSites)
+    {
+        const FVector* Best = nullptr;
+        double BestDistance = MinDistanceSquared;
+        for (const FVector& Candidate : Candidates)
+        {
+            double Nearest = TNumericLimits<double>::Max();
+            for (const FVector& Site : Sites)
+            {
+                Nearest = FMath::Min(Nearest, FVector::DistSquared2D(Candidate, Site));
+            }
+            if (Nearest > BestDistance)
+            {
+                Best = &Candidate;
+                BestDistance = Nearest;
+            }
+        }
+        if (!Best)
+        {
+            break;
+        }
+        Sites.Add(*Best);
+    }
+    return Sites;
 }
 
 void UMWEnvironmentGameplay::RefreshTrackSupports()
@@ -272,7 +258,7 @@ void UMWEnvironmentGameplay::RefreshTrackSupports()
         {
             PlayTrackLaidEffects(*Piece.Actor, Piece.PieceId, RoadSurface, Width, StartedAt);
         }
-        if (VerifySupports())
+        if (IsTrackPlacementVerificationEnabled())
         {
             UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] begin world=%s session=%d piece=%d width=%.2f layers=%d floor=%.2f top=%s delay=%.3f assembly=%.3f"),
                 *GetWorld()->GetOutermost()->GetName(), Session.SessionId, Piece.PieceId,
@@ -318,7 +304,7 @@ void UMWEnvironmentGameplay::PlayTrackLaidEffects(const AActor& Piece, int32 Pie
         Sprite->RegisterComponent();
         TrackLaidSprites.Add({Sprite, Instance, Site, Size * 0.18f, StartedAt});
 
-        if (VerifySupports())
+        if (IsTrackPlacementVerificationEnabled())
         {
             UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] site world=%s session=%d piece=%d index=%d/%d position=%s particle=1"),
                 *GetWorld()->GetOutermost()->GetName(), SupportSessionId, PieceId, Index + 1, Sites.Num(), *Site.ToCompactString());
@@ -360,7 +346,7 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
             Generator->AddInstanceComponent(Section);
             Section->RegisterComponent();
             TrackSupportComponents.Add(Section);
-            if (VerifySupports())
+            if (IsTrackPlacementVerificationEnabled())
             {
                 UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] layer world=%s session=%d piece=%d layer=%d/%d elapsed=%.3f bottom=%.2f"),
                     *GetWorld()->GetOutermost()->GetName(), SupportSessionId, Build.PieceId, Build.RevealedLayers + 1,
@@ -371,7 +357,7 @@ void UMWEnvironmentGameplay::TickTrackSupportBuilds()
         {
             return false;
         }
-        if (VerifySupports())
+        if (IsTrackPlacementVerificationEnabled())
         {
             UE_LOG(LogTemp, Display, TEXT("[MWTrackSupports] complete world=%s session=%d piece=%d layers=%d elapsed=%.3f"),
                 *GetWorld()->GetOutermost()->GetName(), SupportSessionId, Build.PieceId, Build.Layers, Elapsed);

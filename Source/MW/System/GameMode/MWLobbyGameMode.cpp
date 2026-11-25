@@ -15,11 +15,6 @@
 #include "Player/Cursor/MWPlayerCursorComponent.h"
 #include "TimerManager.h"
 
-namespace
-{
-    constexpr float VehicleDepartureTimeoutSeconds = 12.f;
-}
-
 AMWLobbyGameMode::AMWLobbyGameMode()
 {
     GameStateClass = AMWLobbyGameState::StaticClass();

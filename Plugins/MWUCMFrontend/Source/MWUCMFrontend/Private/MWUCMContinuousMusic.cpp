@@ -12,11 +12,6 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogMWContinuousMusic, Log, All);
 
-namespace
-{
-    constexpr float MusicFadeSeconds = 0.35f;
-}
-
 // 같은 곡의 재생 위치는 유지하고 새 곡만 비동기로 요청한다. 다른 게임 인스턴스의 월드는 받지 않는다.
 void UMWUCMContinuousMusic::RequestTrack(UWorld* World, TSoftObjectPtr<USoundWave> Track, float Volume)
 {

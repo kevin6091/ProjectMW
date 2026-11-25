@@ -20,74 +20,65 @@
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
-namespace
+const FName UMWItemComponent::BoosterBaseTag(TEXT("MWItemNode=sharedassets0.assets:1715"));
+const FName UMWItemComponent::BoosterBodyTag(TEXT("MWItemNode=sharedassets0.assets:1487"));
+const FName UMWItemComponent::BoosterNozzleTag(TEXT("MWItemNode=sharedassets0.assets:1645"));
+
+USceneComponent* UMWItemComponent::FindVisualNode(const AActor& Visual, FName NodeTag)
 {
-    const FName BoosterBaseTag(TEXT("MWItemNode=sharedassets0.assets:1715"));
-    const FName BoosterBodyTag(TEXT("MWItemNode=sharedassets0.assets:1487"));
-    const FName BoosterNozzleTag(TEXT("MWItemNode=sharedassets0.assets:1645"));
-
-    USceneComponent* FindVisualNode(const AActor& Visual, FName NodeTag)
+    for (USceneComponent* Component : TInlineComponentArray<USceneComponent*>(&Visual))
     {
-        for (USceneComponent* Component : TInlineComponentArray<USceneComponent*>(&Visual))
+        if (Component->ComponentHasTag(NodeTag))
         {
-            if (Component->ComponentHasTag(NodeTag))
-            {
-                return Component;
-            }
+            return Component;
         }
-        return nullptr;
+    }
+    return nullptr;
+}
+
+FBox UMWItemComponent::GetLocalMeshBounds(const AActor& Actor)
+{
+    FBox Bounds(ForceInit);
+    const FTransform ActorTransform = Actor.GetActorTransform();
+    for (const UStaticMeshComponent* Component : TInlineComponentArray<UStaticMeshComponent*>(&Actor))
+    {
+        if (Component->IsVisible() && !Component->bHiddenInGame && Component->GetStaticMesh())
+        {
+            Bounds += Component->GetStaticMesh()->GetBoundingBox().TransformBy(
+                Component->GetComponentTransform().GetRelativeTransform(ActorTransform));
+        }
+    }
+    return Bounds;
+}
+
+UMWItemComponent::FBoosterMount UMWItemComponent::GetBoosterMount(const AActor& Vehicle, const AActor& Booster)
+{
+    const FBox Bounds = GetLocalMeshBounds(Vehicle);
+    const FBox BoosterBounds = GetLocalMeshBounds(Booster);
+    if (!Bounds.IsValid || !BoosterBounds.IsValid || BoosterBounds.GetSize().X <= UE_SMALL_NUMBER)
+    {
+        return {FTransform(FRotator(0.f, -90.f, 0.f), FVector(-65.f, 0.f, 10.f), FVector(0.05f))};
     }
 
-    FBox GetLocalMeshBounds(const AActor& Actor)
+    const FVector Size = Bounds.GetSize();
+    // 원본 조립체가 +Y를 향하므로 장착 후 폭은 원본 X 크기에서 구한다.
+    const double Scale = 0.58 * Size.Y / BoosterBounds.GetSize().X;
+    FVector Mount(Bounds.Min.X + Size.X * 0.23, Bounds.GetCenter().Y, Bounds.Max.Z - Size.Z * 0.18);
+    const FTransform VehicleTransform = Vehicle.GetActorTransform();
+    if (UPrimitiveComponent* Hull = Cast<UPrimitiveComponent>(Vehicle.GetRootComponent()))
     {
-        FBox Bounds(ForceInit);
-        const FTransform ActorTransform = Actor.GetActorTransform();
-        for (const UStaticMeshComponent* Component : TInlineComponentArray<UStaticMeshComponent*>(&Actor))
+        FHitResult Hit;
+        const FVector High(Mount.X, Mount.Y, Bounds.Max.Z + 100.f);
+        const FVector Low(Mount.X, Mount.Y, Bounds.Min.Z);
+        if (Hull->LineTraceComponent(Hit, VehicleTransform.TransformPosition(High),
+                                     VehicleTransform.TransformPosition(Low), FCollisionQueryParams()))
         {
-            if (Component->IsVisible() && !Component->bHiddenInGame && Component->GetStaticMesh())
-            {
-                Bounds += Component->GetStaticMesh()->GetBoundingBox().TransformBy(
-                    Component->GetComponentTransform().GetRelativeTransform(ActorTransform));
-            }
+            Mount.Z = VehicleTransform.InverseTransformPosition(Hit.ImpactPoint).Z;
         }
-        return Bounds;
     }
 
-    struct FBoosterMount
-    {
-        FTransform Transform;
-        double ExhaustLengthScale = 6.2;
-    };
-
-    FBoosterMount GetBoosterMount(const AActor& Vehicle, const AActor& Booster)
-    {
-        const FBox Bounds = GetLocalMeshBounds(Vehicle);
-        const FBox BoosterBounds = GetLocalMeshBounds(Booster);
-        if (!Bounds.IsValid || !BoosterBounds.IsValid || BoosterBounds.GetSize().X <= UE_SMALL_NUMBER)
-        {
-            return {FTransform(FRotator(0.f, -90.f, 0.f), FVector(-65.f, 0.f, 10.f), FVector(0.05f))};
-        }
-
-        const FVector Size = Bounds.GetSize();
-        // 원본 조립체가 +Y를 향하므로 장착 후 폭은 원본 X 크기에서 구한다.
-        const double Scale = 0.58 * Size.Y / BoosterBounds.GetSize().X;
-        FVector Mount(Bounds.Min.X + Size.X * 0.23, Bounds.GetCenter().Y, Bounds.Max.Z - Size.Z * 0.18);
-        const FTransform VehicleTransform = Vehicle.GetActorTransform();
-        if (UPrimitiveComponent* Hull = Cast<UPrimitiveComponent>(Vehicle.GetRootComponent()))
-        {
-            FHitResult Hit;
-            const FVector High(Mount.X, Mount.Y, Bounds.Max.Z + 100.f);
-            const FVector Low(Mount.X, Mount.Y, Bounds.Min.Z);
-            if (Hull->LineTraceComponent(Hit, VehicleTransform.TransformPosition(High),
-                                         VehicleTransform.TransformPosition(Low), FCollisionQueryParams()))
-            {
-                Mount.Z = VehicleTransform.InverseTransformPosition(Hit.ImpactPoint).Z;
-            }
-        }
-
-        Mount.Z -= BoosterBounds.Min.Z * Scale;
-        return {FTransform(FRotator(0.f, -90.f, 0.f), Mount, FVector(Scale))};
-    }
+    Mount.Z -= BoosterBounds.Min.Z * Scale;
+    return {FTransform(FRotator(0.f, -90.f, 0.f), Mount, FVector(Scale))};
 }
 
 // 실제 클래스 경로를 비교하므로 메시 교체와 관계없이 장착 설정을 찾는다.

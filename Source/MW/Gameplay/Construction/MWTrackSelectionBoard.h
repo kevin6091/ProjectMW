@@ -52,6 +52,15 @@ protected:
 	UPROPERTY(Transient) TArray<TObjectPtr<USceneComponent>> SlotVisualPivots;
 
 private:
+	static constexpr double RowSpacing = 1260.0;
+	static constexpr double ColumnSpacing = 1120.0;
+	static constexpr double BoardHeight = 80.0;
+	static const FVector SlotExtent;
+	static const FVector SelectionExtent;
+	static const FVector SelectionViewDirection;
+
+	static void FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction);
+
 	bool BuildOffers(const FMWTrackSelectionSession& Session);
 	void ClearOffers();
 	TOptional<double> GetBackdropTop() const;

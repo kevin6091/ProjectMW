@@ -24,6 +24,13 @@ public:
 	void HandlePlacementReply(int32 ReplySessionId, EMWTrackPlacementResult Result);
 
 private:
+	static constexpr double SnapContactTolerance = 10.0;
+	static const FLinearColor LocalColor;
+	static const FLinearColor SnapColor;
+	static const FLinearColor RemoteColors[];
+
+	static double GetProjectedHorizontalDelta(const APlayerController& PC, const FVector& From, const FVector& To);
+
 	struct FGhostSnapBlend
 	{
 		FTransform Start;

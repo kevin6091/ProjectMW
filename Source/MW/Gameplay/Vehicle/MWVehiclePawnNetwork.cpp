@@ -12,59 +12,34 @@
 #include "LogChannel.h"
 #include "System/GameState/MWGameplayGameState.h"
 
-namespace
+bool AMWVehiclePawn::IsNewerSequence(uint32 Candidate, uint32 Previous)
 {
-	constexpr float DriveStep = 1.f / 120.f;
-	constexpr float MaxDriveStepTime = 12.f * DriveStep;
-	constexpr float SnapshotInterval = 1.f / 20.f;
-	constexpr float GroundNormalTolerance = 0.001f;
-	constexpr float SendInterval = 1.f / 30.f;
-	constexpr float RemoteInputTimeout = 1.f;
-	constexpr int32 MaxMovesPerPacket = 32;
-	// 120Hz에서 1.5초 분량. 지연된 ACK와 짧은 손실이 겹쳐도 소유자 예측 이력을 유지한다.
-	constexpr int32 MaxPendingMoves = 180;
-	constexpr int32 MaxProxySnapshots = 12;
-	constexpr double ProxyBufferTime = 0.075;
-	constexpr double MaxProxyExtrapolation = 0.05;
-	constexpr double MaxContactExtrapolation = 0.25;
-	constexpr double MaxContactSampleAge = 0.35;
-	constexpr float PredictedContactLifetime = 0.25f;
-	constexpr float PresentationHalfLife = 0.055f;
-	constexpr double MaxVisualCorrectionDistance = 150.0;
-	constexpr double MaxVisualCorrectionAngle = 45.0;
-	constexpr double MinProxyCorrectionSpeed = 120.0;
-	constexpr double ProxyCorrectionSpeedFraction = 0.15;
-	constexpr float ProxyCorrectionHalfLife = 0.08f;
+	const uint32 Difference = Candidate - Previous;
+	return Difference != 0 && Difference < (1u << 31);
+}
 
-	bool IsNewerSequence(uint32 Candidate, uint32 Previous)
-	{
-		const uint32 Difference = Candidate - Previous;
-		return Difference != 0 && Difference < (1u << 31);
-	}
+bool AMWVehiclePawn::NeedsDriveCorrection(const FMWVehicleDriveSnapshot& Prediction, const FMWVehicleDriveSnapshot& Server)
+{
+	// 움직이는 중에는 작은 오차를 허용하고, 정지하면 복제 정밀도에 가깝게 맞춘다.
+	const bool bStopped = Prediction.Velocity.IsNearlyZero(1.0) && Server.Velocity.IsNearlyZero(1.0)
+		&& FMath::IsNearlyZero(Prediction.ImpactYawRate) && FMath::IsNearlyZero(Server.ImpactYawRate);
+	const double LocationTolerance = bStopped ? 0.15 : 3.0;
+	const double RotationTolerance = bStopped ? 0.15 : 1.0;
+	return !Prediction.Location.Equals(Server.Location, LocationTolerance)
+		|| !Prediction.Rotation.Equals(Server.Rotation, RotationTolerance)
+		|| !Prediction.Velocity.Equals(Server.Velocity, 5.f)
+		|| Prediction.bGrounded != Server.bGrounded
+		|| (Prediction.bGrounded && Server.bGrounded
+			&& !Prediction.GroundNormal.Equals(Server.GroundNormal, GroundNormalTolerance))
+		|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f
+		|| FMath::Abs(Prediction.SuspensionSpeed - Server.SuspensionSpeed) > 10.f;
+}
 
-	bool NeedsDriveCorrection(const FMWVehicleDriveSnapshot& Prediction, const FMWVehicleDriveSnapshot& Server)
-	{
-		// 움직이는 중에는 작은 오차를 허용하고, 정지하면 복제 정밀도에 가깝게 맞춘다.
-		const bool bStopped = Prediction.Velocity.IsNearlyZero(1.0) && Server.Velocity.IsNearlyZero(1.0)
-			&& FMath::IsNearlyZero(Prediction.ImpactYawRate) && FMath::IsNearlyZero(Server.ImpactYawRate);
-		const double LocationTolerance = bStopped ? 0.15 : 3.0;
-		const double RotationTolerance = bStopped ? 0.15 : 1.0;
-		return !Prediction.Location.Equals(Server.Location, LocationTolerance)
-			|| !Prediction.Rotation.Equals(Server.Rotation, RotationTolerance)
-			|| !Prediction.Velocity.Equals(Server.Velocity, 5.f)
-			|| Prediction.bGrounded != Server.bGrounded
-			|| (Prediction.bGrounded && Server.bGrounded
-				&& !Prediction.GroundNormal.Equals(Server.GroundNormal, GroundNormalTolerance))
-			|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f
-			|| FMath::Abs(Prediction.SuspensionSpeed - Server.SuspensionSpeed) > 10.f;
-	}
-
-	bool IsValidDriveInput(const FMWVehicleDriveInput& Input)
-	{
-		return FMath::IsWithinInclusive(Input.Throttle, 0.f, 1.f)
-			&& FMath::IsWithinInclusive(Input.Reverse, 0.f, 1.f)
-			&& FMath::IsWithinInclusive(Input.Steering, -1.f, 1.f);
-	}
+bool AMWVehiclePawn::IsValidDriveInput(const FMWVehicleDriveInput& Input)
+{
+	return FMath::IsWithinInclusive(Input.Throttle, 0.f, 1.f)
+		&& FMath::IsWithinInclusive(Input.Reverse, 0.f, 1.f)
+		&& FMath::IsWithinInclusive(Input.Steering, -1.f, 1.f);
 }
 
 double AMWVehiclePawn::GetDriveServerTime() const

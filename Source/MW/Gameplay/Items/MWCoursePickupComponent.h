@@ -6,6 +6,9 @@
 
 class AMWPickupBox;
 class APlayerStart;
+class UMWCoursePickupSettings;
+class UMWTrackRuntimeSubsystem;
+struct FMWPlacedTrack;
 struct FMWTrackPlacementSession;
 
 // 일반 경기의 서버 GameMode가 이번 라운드 상자의 생성과 제거를 소유한다.
@@ -19,5 +22,10 @@ public:
     void Clear();
 
 private:
+    bool HasStationaryRoad(const FMWPlacedTrack& Track, const UMWTrackRuntimeSubsystem& Runtime,
+        const UMWCoursePickupSettings& Settings);
+    bool FindRoadSurface(const AActor& Track, const FVector& Candidate,
+        const UMWCoursePickupSettings& Settings, FVector& OutPoint);
+
     TArray<TWeakObjectPtr<AMWPickupBox>> Boxes;
 };

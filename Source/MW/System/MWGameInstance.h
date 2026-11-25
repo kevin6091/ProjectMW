@@ -52,6 +52,8 @@ public:
     UPROPERTY(BlueprintAssignable) FMWRoomsUpdated OnRoomsUpdated;
     UPROPERTY(BlueprintAssignable) FMWJoinRoomFinished OnJoinRoomFinished;
 private:
+    FName MapPackage(const UWorld* W) const;
+
     TWeakObjectPtr<UMWConnectionSubsystem> Connection;
     FDelegateHandle SnapshotHandle, OperationHandle, WorldHandle;
     UPROPERTY(Transient) FMWRoomSettings CurrentRoomSettings;

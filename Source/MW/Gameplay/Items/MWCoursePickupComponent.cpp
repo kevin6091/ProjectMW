@@ -8,35 +8,32 @@
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "LogChannel.h"
 
-namespace
+bool UMWCoursePickupComponent::HasStationaryRoad(const FMWPlacedTrack& Track, const UMWTrackRuntimeSubsystem& Runtime,
+    const UMWCoursePickupSettings& Settings)
 {
-    bool HasStationaryRoad(const FMWPlacedTrack& Track, const UMWTrackRuntimeSubsystem& Runtime,
-                           const UMWCoursePickupSettings& Settings)
+    if (!IsValid(Track.Actor) || !Track.bRequiresCollision || Settings.ExcludedTracks.Contains(Track.TrackClass))
     {
-        if (!IsValid(Track.Actor) || !Track.bRequiresCollision || Settings.ExcludedTracks.Contains(Track.TrackClass))
-        {
-            return false;
-        }
-
-        const FMWTrackDefinition* Data = Runtime.FindTrackDefinition(Track.TrackClass);
-        return Data && Data->Motions.IsEmpty() && Data->TrafficLanes.IsEmpty() && Data->TrainParts.IsEmpty();
+        return false;
     }
 
-    bool FindRoadSurface(const AActor& Track, const FVector& Candidate, const UMWCoursePickupSettings& Settings,
-                         FVector& OutPoint)
+    const FMWTrackDefinition* Data = Runtime.FindTrackDefinition(Track.TrackClass);
+    return Data && Data->Motions.IsEmpty() && Data->TrafficLanes.IsEmpty() && Data->TrainParts.IsEmpty();
+}
+
+bool UMWCoursePickupComponent::FindRoadSurface(const AActor& Track, const FVector& Candidate,
+    const UMWCoursePickupSettings& Settings, FVector& OutPoint)
+{
+    const FVector Probe = FVector::UpVector * Settings.SurfaceSearchHeight;
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(MWPickupRoad), true);
+    FHitResult Hit;
+    // 이 조각의 충돌만 검사하므로 아래 지형이나 위로 교차하는 다른 도로에 얹히지 않는다.
+    if (!Track.ActorLineTraceSingle(Hit, Candidate + Probe, Candidate - Probe, ECC_Visibility, Query)
+        || Hit.ImpactNormal.Z < Settings.MinSurfaceUpDot)
     {
-        const FVector Probe = FVector::UpVector * Settings.SurfaceSearchHeight;
-        FCollisionQueryParams Query(SCENE_QUERY_STAT(MWPickupRoad), true);
-        FHitResult Hit;
-        // 이 조각의 충돌만 검사하므로 아래 지형이나 위로 교차하는 다른 도로에 얹히지 않는다.
-        if (!Track.ActorLineTraceSingle(Hit, Candidate + Probe, Candidate - Probe, ECC_Visibility, Query)
-            || Hit.ImpactNormal.Z < Settings.MinSurfaceUpDot)
-        {
-            return false;
-        }
-        OutPoint = Hit.ImpactPoint;
-        return true;
+        return false;
     }
+    OutPoint = Hit.ImpactPoint;
+    return true;
 }
 
 void UMWCoursePickupComponent::Prepare(const FMWTrackPlacementSession& Course,

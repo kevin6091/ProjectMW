@@ -22,6 +22,11 @@ public:
     }
 
 private:
+    static constexpr int32 MaxMarksPerVehicle = 384;
+    static constexpr double PlaneSizeCm = 100.0;
+    static constexpr double SurfaceLiftCm = 0.8;
+    static constexpr double MaxGapCm = 160.0;
+
     struct FWheelContact
     {
         FVector Position;

@@ -8,10 +8,9 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
-namespace
+FName UMWGameInstance::MapPackage(const UWorld* W) const
 {
-    FName MapPackage(const UWorld* W)
-    { return W ? FName(*UWorld::RemovePIEPrefix(W->GetOutermost()->GetName())) : NAME_None; }
+    return W ? FName(*UWorld::RemovePIEPrefix(W->GetOutermost()->GetName())) : NAME_None;
 }
 
 void UMWGameInstance::Init()

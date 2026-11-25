@@ -11,14 +11,9 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "TimerManager.h"
 
-namespace
+bool UMWEnvironmentGameplay::IsTrackPlacementVerificationEnabled()
 {
-    constexpr double PeakTimeFraction = 0.35;
-
-    bool VerifyPlacementPop()
-    {
-        return FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement"));
-    }
+    return FParse::Param(FCommandLine::Get(), TEXT("MWVerifyTrackPlacement"));
 }
 
 void UMWEnvironmentGameplay::RefreshTrackPlacementPops()
@@ -88,7 +83,7 @@ void UMWEnvironmentGameplay::RefreshTrackPlacementPops()
         }
         if (!Pop.Surfaces.IsEmpty())
         {
-            if (VerifyPlacementPop())
+            if (IsTrackPlacementVerificationEnabled())
             {
                 UE_LOG(LogTemp, Display, TEXT("MWPlacementPop begin world=%s piece=%d meshes=%d pivot=%s actor=%s"),
                     *GetWorld()->GetOutermost()->GetName(), Piece.PieceId, Pop.Surfaces.Num(),
@@ -113,7 +108,7 @@ void UMWEnvironmentGameplay::TickTrackPlacementPops()
         if (Progress >= 1.0)
         {
             RestoreTrackPopSurfaces(Pop);
-            if (VerifyPlacementPop())
+            if (IsTrackPlacementVerificationEnabled())
             {
                 UE_LOG(LogTemp, Display, TEXT("MWPlacementPop end world=%s piece=%d elapsed=%.3f"),
                     *GetWorld()->GetOutermost()->GetName(), Pop.PieceId, Now - Pop.StartedAt);
@@ -135,7 +130,7 @@ void UMWEnvironmentGameplay::TickTrackPlacementPops()
                 Visual->SetWorldTransform(Pose);
             }
         }
-        if (Progress >= PeakTimeFraction && !Pop.bLoggedPeak && VerifyPlacementPop())
+        if (Progress >= PeakTimeFraction && !Pop.bLoggedPeak && IsTrackPlacementVerificationEnabled())
         {
             Pop.bLoggedPeak = true;
             UE_LOG(LogTemp, Display, TEXT("MWPlacementPop turn world=%s piece=%d elapsed=%.3f scale=%.4f"),

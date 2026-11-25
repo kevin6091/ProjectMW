@@ -20,39 +20,33 @@
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
 
-namespace
-{
-	constexpr double RowSpacing = 1260.0;
-	constexpr double ColumnSpacing = 1120.0;
-	constexpr double BoardHeight = 80.0;
-	const FVector SlotExtent(410.0, 460.0, 225.0);
-	const FVector SelectionExtent = SlotExtent + FVector(RowSpacing * (MWTrackSelection::Rows - 1) * 0.5,
-		ColumnSpacing * (MWTrackSelection::Columns - 1) * 0.5, 0.0);
-	const FVector SelectionViewDirection(-1.0, 0.0, -1.8);
+const FVector AMWTrackSelectionBoard::SlotExtent(410.0, 460.0, 225.0);
+const FVector AMWTrackSelectionBoard::SelectionViewDirection(-1.0, 0.0, -1.8);
+const FVector AMWTrackSelectionBoard::SelectionExtent = SlotExtent + FVector(RowSpacing * (MWTrackSelection::Rows - 1) * 0.5,
+	ColumnSpacing * (MWTrackSelection::Columns - 1) * 0.5, 0.0);
 
-	void FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction)
+void AMWTrackSelectionBoard::FrameBounds(FMinimalViewInfo& View, const FBox& Bounds, double Aspect, double ScreenFraction)
+{
+	View.ProjectionMode = ECameraProjectionMode::Perspective;
+	View.AspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
+	const FRotationMatrix ViewAxes(View.Rotation);
+	const double HorizontalLimit = FMath::Tan(FMath::DegreesToRadians(View.FOV * 0.5)) * ScreenFraction;
+	const double VerticalLimit = HorizontalLimit / Aspect;
+	const FVector Extent = Bounds.GetExtent();
+	double CameraDistance = 0.0;
+	// 원근 카메라에서는 가까운 쪽의 모서리도 화면 안에 들어와야 한다.
+	for (int32 Index = 0; Index < 8; ++Index)
 	{
-		View.ProjectionMode = ECameraProjectionMode::Perspective;
-		View.AspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
-		const FRotationMatrix ViewAxes(View.Rotation);
-		const double HorizontalLimit = FMath::Tan(FMath::DegreesToRadians(View.FOV * 0.5)) * ScreenFraction;
-		const double VerticalLimit = HorizontalLimit / Aspect;
-		const FVector Extent = Bounds.GetExtent();
-		double CameraDistance = 0.0;
-		// 원근 카메라에서는 가까운 쪽의 모서리도 화면 안에 들어와야 한다.
-		for (int32 Index = 0; Index < 8; ++Index)
-		{
-			const FVector Corner(
-				(Index & 1) ? Extent.X : -Extent.X,
-				(Index & 2) ? Extent.Y : -Extent.Y,
-				(Index & 4) ? Extent.Z : -Extent.Z);
-			const FVector ViewCorner = ViewAxes.InverseTransformVector(Corner);
-			const double RequiredDepth = FMath::Max(
-				FMath::Abs(ViewCorner.Y) / HorizontalLimit, FMath::Abs(ViewCorner.Z) / VerticalLimit);
-			CameraDistance = FMath::Max(CameraDistance, FMath::Max(RequiredDepth, 100.0) - ViewCorner.X);
-		}
-		View.Location = Bounds.GetCenter() - ViewAxes.GetUnitAxis(EAxis::X) * CameraDistance;
+		const FVector Corner(
+			(Index & 1) ? Extent.X : -Extent.X,
+			(Index & 2) ? Extent.Y : -Extent.Y,
+			(Index & 4) ? Extent.Z : -Extent.Z);
+		const FVector ViewCorner = ViewAxes.InverseTransformVector(Corner);
+		const double RequiredDepth = FMath::Max(
+			FMath::Abs(ViewCorner.Y) / HorizontalLimit, FMath::Abs(ViewCorner.Z) / VerticalLimit);
+		CameraDistance = FMath::Max(CameraDistance, FMath::Max(RequiredDepth, 100.0) - ViewCorner.X);
 	}
+	View.Location = Bounds.GetCenter() - ViewAxes.GetUnitAxis(EAxis::X) * CameraDistance;
 }
 
 AMWTrackSelectionBoard::AMWTrackSelectionBoard()

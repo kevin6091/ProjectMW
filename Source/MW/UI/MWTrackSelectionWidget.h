@@ -35,6 +35,8 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UCanvasPanel> Canvas_Cursors;
 
 private:
+	static constexpr float SnapContactPulseSeconds = 0.20f;
+
 	// Actor마다 복제 도착 순서가 달라 초기 준비 중에만 상태를 재조회한다.
 	void TryBindState();
 	void Refresh();

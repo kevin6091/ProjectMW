@@ -20,11 +20,6 @@
 #include "UI/Cursor/MWRemoteCursorOverlay.h"
 #include "UI/Common/MWParticipantPalette.h"
 
-namespace
-{
-	constexpr float SnapContactPulseSeconds = 0.20f;
-}
-
 void UMWTrackSelectionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();

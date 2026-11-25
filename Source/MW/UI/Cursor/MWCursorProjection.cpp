@@ -10,14 +10,11 @@
 #include "Slate/SceneViewport.h"
 #include "UnrealClient.h"
 
-namespace
+const FSceneViewport* MWCursorProjection::FindActivePointerViewport(const APlayerController& PC)
 {
-	const FSceneViewport* FindActivePointerViewport(const APlayerController& PC)
-	{
-		const auto* LP = PC.GetLocalPlayer();
-		const auto* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->GetGameViewport() : nullptr;
-		return PC.bShowMouseCursor && Viewport && Viewport->IsForegroundWindow() ? Viewport : nullptr;
-	}
+	const auto* LP = PC.GetLocalPlayer();
+	const auto* Viewport = LP && LP->ViewportClient ? LP->ViewportClient->GetGameViewport() : nullptr;
+	return PC.bShowMouseCursor && Viewport && Viewport->IsForegroundWindow() ? Viewport : nullptr;
 }
 
 bool MWCursorProjection::HasActiveViewportPointer(const APlayerController& PC)
