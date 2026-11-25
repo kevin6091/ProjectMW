@@ -9,6 +9,7 @@
 
 #include "CollisionQueryParams.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/MeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "ProfilingDebugging/CpuProfilerTrace.h"
@@ -19,6 +20,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 #include "Engine/World.h"
+#include "Engine/StaticMesh.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
 #include "System/MWDriveTestGameMode.h"
@@ -101,10 +103,8 @@ void AMWVehiclePawn::InitializeWheelVisuals()
     PreviousVisualLocation = GetActorLocation();
     bVisualLocationValid = false;
     VisualStreamId = ServerDriveSnapshot.StreamId;
-    if (GetNetMode() == NM_DedicatedServer)
-        return;
-
-    if (RootComponent)
+    // 표시 콜백만 전용 서버에서 생략한다. 서버도 같은 바퀴 위치와 반지름으로 주행한다.
+    if (RootComponent && GetNetMode() != NM_DedicatedServer)
     {
         RootComponent->TransformUpdated.Remove(VisualRootTransformHandle);
         VisualRootTransformHandle = RootComponent->TransformUpdated.AddWeakLambda(
@@ -147,6 +147,7 @@ void AMWVehiclePawn::InitializeWheelVisuals()
         FCachedVisualWheel& Wheel = CachedVisualWheels.AddDefaulted_GetRef();
         Wheel.Mesh = Mesh;
         Wheel.RestRotation = Mesh->GetRelativeRotation().Quaternion();
+        Wheel.RestLocation = Mesh->GetRelativeLocation();
         Wheel.RollAxis = Definition.RollAxis.GetSafeNormal();
         Wheel.SteeringAxis = Definition.SteeringAxis.GetSafeNormal();
         Wheel.RadiusCm = Definition.RadiusCm;
@@ -169,6 +170,63 @@ void AMWVehiclePawn::InitializeWheelVisuals()
         }
         CachedVirtualSkidWheels.Add(Wheel);
     }
+
+    if (CachedVisualWheels.IsEmpty() && CachedVirtualSkidWheels.IsEmpty())
+        return;
+
+    AppliedDriveVehicleScale = DriveVehicleScale;
+    // 표시 부모를 키우기 전에 현재 BP 메시에서 바퀴의 중심을 Pawn 로컬 좌표로 얻는다.
+    const FTransform ToPawn = GetActorTransform();
+    for (FCachedVisualWheel& Wheel : CachedVisualWheels)
+    {
+        const UStaticMeshComponent* Mesh = Wheel.Mesh.Get();
+        const FVector Center = Mesh->GetStaticMesh()
+            ? Mesh->GetComponentTransform().TransformPosition(Mesh->GetStaticMesh()->GetBounds().Origin)
+            : Mesh->GetComponentLocation();
+        Wheel.Collision = CreateWheelSuspensionCollision(ToPawn.InverseTransformPosition(Center), Wheel.RadiusCm);
+    }
+
+    if (CachedVisualWheels.IsEmpty())
+    {
+        // 외형이 없는 차량은 기존 가상 바퀴를 사용한다. 뒤쪽 바퀴만 있으면 앞쪽에도 지지점을 둔다.
+        const bool bOnlyRear = !CachedVirtualSkidWheels.ContainsByPredicate(
+            [](const FMWVehicleVirtualSkidWheel& Wheel) { return Wheel.LocalCenter.X >= 0.0; });
+        for (const FMWVehicleVirtualSkidWheel& Wheel : CachedVirtualSkidWheels)
+        {
+            CreateWheelSuspensionCollision(Wheel.LocalCenter, Wheel.RadiusCm);
+            if (bOnlyRear)
+                CreateWheelSuspensionCollision(
+                    FVector(-Wheel.LocalCenter.X, Wheel.LocalCenter.Y, Wheel.LocalCenter.Z), Wheel.RadiusCm);
+        }
+    }
+
+    FVector Extent = CollisionRoot->GetUnscaledBoxExtent() * AppliedDriveVehicleScale;
+    double TireBottomDepth = 0.0;
+    for (const USphereComponent* Wheel : WheelSuspensionCollisions)
+        TireBottomDepth = FMath::Max(TireBottomDepth, Wheel->GetUnscaledSphereRadius() - Wheel->GetRelativeLocation().Z);
+
+    // 하부 박스가 바퀴 밑면을 덮으면 턱에 바퀴보다 차체가 먼저 걸린다.
+    // 기본 확대율은 유지하고 차체 아래쪽에 작은 압축 여유가 생기도록 박스 높이를 맞춘다.
+    constexpr double UnderbodyClearanceCm = 8.0;
+    Extent.Z = FMath::Clamp(TireBottomDepth - UnderbodyClearanceCm, Extent.Z * 0.75, Extent.Z);
+    CollisionRoot->SetBoxExtent(Extent, true);
+    DrivePresentation->SetRelativeScale3D(FVector(AppliedDriveVehicleScale));
+}
+
+USphereComponent* AMWVehiclePawn::CreateWheelSuspensionCollision(const FVector& LocalCenter, double RadiusCm)
+{
+    USphereComponent* Wheel = NewObject<USphereComponent>(this, NAME_None, RF_Transient);
+    Wheel->SetupAttachment(CollisionRoot);
+    Wheel->SetRelativeLocation(LocalCenter * AppliedDriveVehicleScale);
+    Wheel->InitSphereRadius(RadiusCm * AppliedDriveVehicleScale);
+    Wheel->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    // 이 구체는 이동 컴포넌트의 노면 Sweep에서만 사용한다. 차량 간 충돌과 아이템 판정은 박스가 담당한다.
+    Wheel->SetCollisionResponseToAllChannels(ECR_Ignore);
+    Wheel->SetGenerateOverlapEvents(false);
+    AddInstanceComponent(Wheel);
+    WheelSuspensionCollisions.Add(Wheel);
+    Wheel->RegisterComponent();
+    return Wheel;
 }
 
 // 기존 Pawn 틱 뒤에 캐시한 바퀴·자국 표시만 갱신한다.
@@ -215,7 +273,8 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
     // 스냅샷에는 조향 전용 값이 없으므로 기존 조향 입력 조회 경로를 유지한다.
     const float Input = VehicleMovement ? VehicleMovement->GetSteeringInput() : 0.f;
     const double TargetSteering = FMath::IsFinite(Input) ? FMath::Clamp(Input, -1.f, 1.f) : 0;
-    const double ActorScale = GetActorScale3D().GetAbsMax();
+    // 바퀴 반지름과 드리프트 자국에도 실제 표시 크기를 사용한다.
+    const double ActorScale = GetActorScale3D().GetAbsMax() * AppliedDriveVehicleScale;
     if (!FMath::IsFinite(ActorScale) || ActorScale <= KINDA_SMALL_NUMBER)
         return;
     // 바퀴 수와 화면 갱신률에 영향을 받지 않도록 Pawn마다 한 번 조향을 보간한다.
@@ -231,6 +290,20 @@ void AMWVehiclePawn::UpdateWheelVisuals(float DeltaSeconds)
         UStaticMeshComponent* Mesh = Wheel.Mesh.Get();
         if (!Mesh)
             continue;
+        const USphereComponent* Collision = Wheel.Collision.Get();
+        const USceneComponent* Parent = Mesh->GetAttachParent();
+        if (Collision && Parent)
+        {
+            // 충돌 루트에서 얻은 압축량을 표시 부모의 로컬 위치로 변환한다.
+            FHitResult Contact;
+            double Offset = 0.0;
+            if (!VehicleMovement->TraceSuspensionWheel(*Collision, Contact, Offset))
+                Offset = -VehicleMovement->DriveConfig.SuspensionReboundTravel * ActorScale;
+            const FVector WorldOffset = CollisionRoot->GetUpVector() * Offset;
+            const FVector LocalOffset = Parent->GetComponentTransform().InverseTransformVector(WorldOffset);
+            Mesh->SetRelativeLocation(Wheel.RestLocation + LocalOffset);
+        }
+
         Wheel.RollRadians =
             FMath::Fmod(Wheel.RollRadians + Distance / (Wheel.RadiusCm * ActorScale), 2.0 * UE_DOUBLE_PI);
         FQuat Rotation = FQuat(Wheel.RollAxis, Wheel.RollRadians) * Wheel.RestRotation;

@@ -65,6 +65,10 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	float ImpactYawRate = 0.f;
 
+	// 위치 보정과 함께 복원하는 바퀴 지지 높이의 속도(cm/s)다.
+	UPROPERTY()
+	float SuspensionSpeed = 0.f;
+
 	UPROPERTY()
 	double ServerTimeSeconds = 0.0;
 

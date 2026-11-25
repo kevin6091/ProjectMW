@@ -36,6 +36,11 @@ bool UMWVehicleDriveData::ValidateConfig(TArray<FText>& OutErrors) const
 	RequireRange(TEXT("MaxGroundAngle"), Config.MaxGroundAngle, 0.f, 89.f);
 	RequireRange(TEXT("GroundDetachSpeed"), Config.GroundDetachSpeed, 0.f, Largest);
 	RequireRange(TEXT("GroundAlignSpeed"), Config.GroundAlignSpeed, 0.f, Largest);
+	// 서스펜션이 120Hz 주행 단계에서 안정적으로 계산되는 범위를 검증한다.
+	RequireRange(TEXT("SuspensionCompressionTravel"), Config.SuspensionCompressionTravel, 1.f, Largest);
+	RequireRange(TEXT("SuspensionReboundTravel"), Config.SuspensionReboundTravel, 1.f, Largest);
+	RequireRange(TEXT("SuspensionResponse"), Config.SuspensionResponse, 1.f, 40.f);
+	RequireRange(TEXT("SuspensionDampingRatio"), Config.SuspensionDampingRatio, 0.7f, 2.f);
 	RequireRange(TEXT("GravityScale"), Config.GravityScale, 0.f, Largest);
 	RequireRange(TEXT("MaxFallSpeed"), Config.MaxFallSpeed, 1.f, Largest);
 	RequireRange(TEXT("VehicleMass"), Config.VehicleMass, 1.f, Largest);

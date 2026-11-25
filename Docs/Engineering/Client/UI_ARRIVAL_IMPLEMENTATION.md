@@ -28,3 +28,15 @@ Snow, 로컬 IP 연결, DX12. `-MWCaptureArrival`를 사용한 에디터 검증�
 - 트랙 후보가 없는 경기 준비 직행은 세 창 모두 각자의 FRED·DOUG·SMIET 차량 카메라에서 공개됐다. 별도 프로세스 첫 진입에서도 트랙 선택과 DOUG 경기 직행을 각각 검사했다. OS 파일 캐시는 초기화하지 않았다.
 - 차량 좌클릭 확정과 우클릭 취소 뒤 실제 월드 트랙을 좌클릭했다. 세 번째 참가자의 `HoveredOfferId=1`, `SelectedOfferId=1`, `bConfirmed=True`가 일치했고 전원이 선택하자 서버가 TrackPlacement로 전환했다.
 - 시간·빌드·에셋 해시와 예외 시험의 상세 결과는 이 변경 묶음의 검증 기록에 둔다. 로컬 에셋은 `Content/UI/Common/WBP_MWLoading.uasset`이다.
+
+## 2026-11-23 · 후보 셰이더 준비와 Uniform Buffer 수명
+
+3대 PC의 경기 진입 중 발생한 D3D12 크래시 덤프에서 픽셀 셰이더 Uniform Buffer 슬롯 2의 null 접근을 확인했다. 특정 재질과 원본 버퍼의 메모리는 덤프에 없어 원인 객체까지 확정하지 못했다. 소스 조사에서는 `MWTrackPreviewPreload::PrepareCandidates`가 `CacheShaders(Background)`를 렌더 명령 갱신 없이 호출하는 누락을 발견했다. 이 함수는 내부에서 Uniform Buffer를 재생성하므로 이미 캐시된 draw command가 이전 버퍼를 계속 참조할 수 있다. 설치 UE 5.8.4의 `UMaterialInterface::SubmitRemainingJobsForWorld`도 이 이유로 `FMaterialUpdateContext`를 사용한다.
+
+프리로더는 같은 엔진 패턴인 `FMaterialUpdateContext(SyncWithRenderingThread) → AddMaterialInterface → CacheShaders`를 사용한다. 로드 중 이미 컴파일하는 재질은 기다리고, 누락된 셰이더를 직접 요청하는 경우에는 후보 집합마다 재질당 한 번만 요청한다. 요청 이력은 weak pointer로 보관하며 후보 변경·해제 시 초기화한다. 미완성 재질이 있으면 `false`를 반환해 기존 선택판 Tick이 다시 검사한다. 최종 셰이더 맵·텍스처·첫 GPU 프레임의 공개 조건과 45초 실패·재시도 경로는 기존 ArrivalScreen이 담당한다. 이것이 BP 전체 메시의 비동기 준비를 모두 보장한다는 뜻은 아니다.
+
+`MWEditor`와 `MW` Win64 Development 빌드 및 기존 자동화 23개가 통과했다. 자동화의 경고 1건은 동기 자산 준비 중 EOSRTC TickTracker 지연이다. 추가로 실제 D3D12의 로컬 3인 PIE를 세 번 새로 시작해, 매번 복제된 후보 6개씩 총 54개가 실제 렌더된 것을 검사했다. 두 번째 진입 전에는 두 와이어프레임 기본 재질을 저장 없이 재컴파일했고, 세 번째에는 표시 중 GC 이후에도 정상 진행했다. 각 화면의 공개·후속 캡처도 남겼다. 셰이더 재컴파일·수동 갱신은 테스트 과정이며 런타임 기능으로 추가하지 않았다.
+
+검증 데이터는 `Saved/Automation/ArrivalFix/index.json`, `Saved/Logs/ArrivalRHIFixed.json`, `Saved/Logs/ArrivalRHIFixed.log`에 있다. 재현 스크립트는 `Saved/Codex/ArrivalRHIFixed.py`이며 서버 검증 진입점으로 준비·차량 선택을 진행하고 세 클라이언트는 정상 복제·렌더링한다. 실제 3대 PC의 입력 조작 시험이나 패키지 검증을 대신하지 않는다. 수정 전 로컬 3인 PIE 한 번에서도 동일 크래시는 재현되지 않았으므로, 원래 3대 PC 조건에서 재발 여부는 별도로 확인해야 한다. 렌더 기능을 비활성화하는 기본 설정 변경은 없다.
+
+별도 프로세스의 `-rhivalidation` 실행에서는 두 기본 재질의 TwoSided를 메모리에서 바꿔 셰이더 변형을 준비하고, 3인 입장·후보 18개 렌더·GC 생존을 확인했다. 두 원본 `.uasset`의 실행 전후 SHA-256은 같으며 저장하지 않았다. 이 실행을 **RHI 검증 전체 통과로 기록하지 않는다.** 타이틀 에디터의 첫 프레임부터 `HZBBoundsCenter/Extent` 전환 오류 292건이 발생했고, `-MWCaptureArrival`의 엔진 `FFrameGrabber`가 `ResampleTexture/BackBufferReference` 전환 오류 7건을 추가로 남겼다. 최초 HZB 오류는 검증 스크립트·PIE·후보 준비보다 먼저 발생했으며, Uniform Buffer null 크래시는 재발하지 않았다. 상세 원본은 `Saved/Logs/ArrivalRHIValidation.log`, 렌더 검사 결과는 `Saved/Logs/ArrivalRHIValidation.json`이다. 해당 JSON의 `step=passed`는 스크립트의 입장·렌더·GC 조건에 대한 결과이며 RHI 오류 0건이라는 의미가 아니다. 통합 판정은 `Saved/Logs/ArrivalFixVerification.json`을 따른다.
