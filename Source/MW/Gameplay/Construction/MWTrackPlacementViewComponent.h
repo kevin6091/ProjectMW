@@ -27,6 +27,7 @@ private:
 	{
 		TWeakObjectPtr<AActor> Actor;
 		FMWTrackPortFrames Ports;
+		TArray<FVector> GroundPoints;
 		bool bSnapped = false;
 		bool bLastRemoteReversed = false;
 	};
@@ -51,5 +52,7 @@ private:
 	bool bTriedLoadingInput = false;
 	bool bWaitingForReply = false;
 	bool bAccepted = false;
+	bool bBelowFloor = false;
+	bool bCanRecoverBlocked = false;
 	EMWTrackPlacementResult LastResult = EMWTrackPlacementResult::Accepted;
 };

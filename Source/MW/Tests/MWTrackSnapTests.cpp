@@ -1,6 +1,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Gameplay/Construction/MWTrackSnap.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWTrackPreviewMatchesSnapTest, "MW.Construction.PreviewMatchesSnap",
@@ -52,6 +53,49 @@ bool FMWTrackPreviewMatchesSnapTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("The other end is still snapped to the same target"), MWTrackSnap::Resolve(Ports, Session, Intent, Display));
 	TestTrue(TEXT("The other port sits exactly at the target"),
 		Display.TransformPosition(Ports[0].GetLocation()).Equals(TargetLocation, 0.01));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWTrackPlacementClearanceTest, "MW.Construction.PlacementClearance",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMWTrackPlacementClearanceTest::RunTest(const FString& Parameters)
+{
+	const TArray<FVector> RoadPoints{{-100.0, 0.0, 40.0}, {100.0, 0.0, 40.0}};
+	const FTransform LowPivot(FVector(0.0, 0.0, -20.0));
+	TestTrue(TEXT("A pivot below the floor does not reject a road that clears it"),
+		MWTrackPlacementClearance::FitsFloor(RoadPoints, LowPivot, 0.0));
+	TestFalse(TEXT("The same pose is blocked by a raised floor"),
+		MWTrackPlacementClearance::FitsFloor(RoadPoints, LowPivot, 30.0));
+	TestTrue(TEXT("A point touching the floor is allowed"),
+		MWTrackPlacementClearance::FitsFloor(RoadPoints, FTransform(FVector(0.0, 0.0, -40.0)), 0.0));
+
+	const FTransform Tilted(FRotator(45.0, 0.0, 0.0), FVector(0.0, 0.0, 20.0));
+	TestFalse(TEXT("Low road geometry is rejected even when the pivot is above ground"),
+		MWTrackPlacementClearance::FitsFloor(RoadPoints, Tilted, 0.0));
+
+	FMWTrackPlacementGround Ground;
+	Ground.FinishLocalPoints.Add(FVector(100.0, 0.0, -20.0));
+	TestFalse(TEXT("The visible track fits but its required finish does not"),
+		MWTrackPlacementClearance::FitsWithFinish(RoadPoints, Ground, LowPivot, FTransform::Identity));
+	TestTrue(TEXT("A normal high exit can still reserve the finish"),
+		MWTrackPlacementClearance::FitsWithFinish(RoadPoints, Ground, LowPivot, FTransform(FVector(0.0, 0.0, 100.0))));
+
+	const FMWTrackPortFrames Rise = {
+		FTransform(FQuat(FVector::UpVector, UE_PI), FVector(-100.0, 0.0, 0.0)),
+		FTransform(FVector(100.0, 0.0, 80.0))
+	};
+	const TArray<FVector> RisePoints{Rise[0].GetLocation(), Rise[1].GetLocation()};
+	const FTransform End(FVector(0.0, 0.0, 25.0));
+	TestFalse(TEXT("The descending direction would put the lower port below the floor"),
+		MWTrackPlacementClearance::FitsWithFinish(RisePoints, Ground,
+			MWTrackSnap::AlignPorts(Rise[1], End), Rise[0]));
+	TestTrue(TEXT("Reversing a blocked ramp still leaves a valid direction"),
+		MWTrackPlacementClearance::FitsEitherPort(RisePoints, Ground, Rise, End));
+	TArray<FVector> DeepUnderside = RisePoints;
+	DeepUnderside.Add(FVector(0.0, 0.0, -100.0));
+	TestFalse(TEXT("Both blocked directions are eligible for recovery"),
+		MWTrackPlacementClearance::FitsEitherPort(DeepUnderside, Ground, Rise, End));
 	return true;
 }
 

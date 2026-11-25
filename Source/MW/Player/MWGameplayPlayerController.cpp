@@ -112,6 +112,15 @@ void AMWGameplayPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReas
 	Super::EndPlay(EndPlayReason);
 }
 
+EMWRoomPhase AMWGameplayPlayerController::GetConstructionPresentationPhase() const
+{
+	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
+	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	const auto* PS = GetPlayerState<AMWPlayerState>();
+	return Phase == EMWRoomPhase::TrackPlacement && PS && GS->GetConstructionComponent()->IsPlacementReselectionPendingFor(*PS)
+		? EMWRoomPhase::PreparingConstruction : Phase;
+}
+
 void AMWGameplayPlayerController::ApplyGameplayInputMode()
 {
 	if (!IsLocalController() || !HasActorBegunPlay())
@@ -119,8 +128,7 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode()
 		return;
 	}
 
-	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	const EMWRoomPhase Phase = GS ? GS->GetRoomPhase() : EMWRoomPhase::PreparingConstruction;
+	const EMWRoomPhase Phase = GetConstructionPresentationPhase();
 	// 실패 단계의 안내는 경기 HUD가 소유한다. 종료된 건설판이 오류 배지를 덮지 않게 한다.
 	const bool bShowConstruction = TrackSelectionWidgetClass &&
 		(Phase == EMWRoomPhase::PreparingConstruction || Phase == EMWRoomPhase::TrackPlacement);
@@ -230,7 +238,7 @@ void AMWGameplayPlayerController::PlayerTick(float DeltaSeconds)
 		return;
 	}
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (GS && GS->GetRoomPhase() != PresentedPhase)
+	if (GS && GetConstructionPresentationPhase() != PresentedPhase)
 	{
 		ApplyGameplayInputMode();
 	}
@@ -528,8 +536,25 @@ void AMWGameplayPlayerController::SetTrackSelectionBoard(AMWTrackSelectionBoard*
 
 void AMWGameplayPlayerController::HandleTrackSelectPressed()
 {
-	if (SelectionBoard.IsValid())
-		if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget)) Widget->ConfirmOffer(SelectionBoard->FindHoveredOffer());
+	if (!SelectionBoard.IsValid() || GetGameInstance()->GetSubsystem<UMWArrivalScreen>()->IsCovered()) return;
+	if (const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>())
+	{
+		const auto Session = GS->GetConstructionComponent()->GetSelectionSession();
+		if (Session.IsWaitingForReselectionOffers())
+		{
+			ServerRetryTrackSelection(Session.SelectionSessionId, Session.OffersRevision);
+			return;
+		}
+	}
+	if (auto* Widget = Cast<UMWTrackSelectionWidget>(TrackSelectionWidget)) Widget->ConfirmOffer(SelectionBoard->FindHoveredOffer());
+}
+
+void AMWGameplayPlayerController::ServerRetryTrackSelection_Implementation(int32 SessionId, int32 Revision)
+{
+	if (auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>(); GS && GS->GetRoomPhase() == EMWRoomPhase::TrackPlacement)
+	{
+		GS->GetConstructionComponent()->RetryPlacementReselection(this, SessionId, Revision);
+	}
 }
 
 void AMWGameplayPlayerController::RequestTrackHover(int32 SessionId, int32 Revision, int32 OfferId)

@@ -106,7 +106,9 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 	if (Viewer.IsValid()) Viewer->GetViewportSize(Width, Height);
 	else if (const auto* PC = GetWorld()->GetFirstPlayerController()) PC->GetViewportSize(Width, Height);
 	const double Aspect = Width > 0 && Height > 0 ? static_cast<double>(Width) / Height : 16.0 / 9.0;
-	if (GS->GetRoomPhase() == EMWRoomPhase::PreparingConstruction)
+	const auto* PC = Viewer.IsValid() ? Viewer.Get() : Cast<AMWGameplayPlayerController>(GetWorld()->GetFirstPlayerController());
+	const EMWRoomPhase Phase = PC ? PC->GetConstructionPresentationPhase() : GS->GetRoomPhase();
+	if (Phase == EMWRoomPhase::PreparingConstruction)
 	{
 		// 전시 화면은 열을 수평으로 보고, 선택 후 빈 칸이 생겨도 카메라 범위는 고정한다.
 		OutResult.Rotation = GetActorTransform().TransformVectorNoScale(SelectionViewDirection).Rotation();
@@ -120,7 +122,7 @@ void AMWTrackSelectionBoard::CalcCamera(float DeltaTime, FMinimalViewInfo& OutRe
 		OutResult.Location -= FRotationMatrix(OutResult.Rotation).GetUnitAxis(EAxis::Y) * (HalfWidth * 0.24);
 		return;
 	}
-	if (!bUseTopDownPlacementCamera || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement)
+	if (!bUseTopDownPlacementCamera || Phase != EMWRoomPhase::TrackPlacement)
 	{
 		return;
 	}
@@ -245,15 +247,39 @@ bool AMWTrackSelectionBoard::GetCursorPosition(FVector& OutPosition) const
 
 int32 AMWTrackSelectionBoard::FindHoveredOffer() const
 {
-	FVector Cursor;
-	FHitResult Hit;
-	if (!GetCursorPosition(Cursor) || !Viewer->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) return INDEX_NONE;
-	const int32 Slot = SlotHitAreas.IndexOfByPredicate([&Hit](const UBoxComponent* Box) { return Hit.GetComponent() == Box; });
 	const auto* GS = GetWorld()->GetGameState<AMWGameplayGameState>();
-	if (!GS) return INDEX_NONE;
+	FVector PlanePosition, Start, Direction;
+	if (!GS || !GetCursorPosition(PlanePosition) || !Viewer->DeprojectMousePositionToWorld(Start, Direction))
+	{
+		return INDEX_NONE;
+	}
+
+	// 전시판의 후보 상자만 비교하므로 배경과 장식의 월드 충돌이 선택을 가로채지 않는다.
+	const FVector End = Start + Direction * Viewer->HitResultTraceDistance;
 	const FMWTrackSelectionSession Session = GS->GetConstructionComponent()->GetSelectionSession();
-	const auto* Offer = Session.Offers.FindByPredicate([Slot](const FMWTrackOffer& Item) { return Item.BoardSlotIndex == Slot; });
-	return Offer && Offer->ClaimedByMemberId == INDEX_NONE ? Offer->OfferId : INDEX_NONE;
+	int32 BestOffer = INDEX_NONE;
+	float BestTime = TNumericLimits<float>::Max();
+	for (const FMWTrackOffer& Offer : Session.Offers)
+	{
+		if (Offer.ClaimedByMemberId != INDEX_NONE || !IsValid(Offers.FindRef(Offer.OfferId))
+			|| !SlotHitAreas.IsValidIndex(Offer.BoardSlotIndex))
+		{
+			continue;
+		}
+
+		const UBoxComponent& Box = *SlotHitAreas[Offer.BoardSlotIndex];
+		const FVector Extent = Box.GetUnscaledBoxExtent();
+		const FTransform& Transform = Box.GetComponentTransform();
+		FVector HitLocation, HitNormal;
+		float HitTime;
+		if (FMath::LineExtentBoxIntersection(FBox(-Extent, Extent), Transform.InverseTransformPosition(Start),
+			Transform.InverseTransformPosition(End), FVector::ZeroVector, HitLocation, HitNormal, HitTime) && HitTime < BestTime)
+		{
+			BestTime = HitTime;
+			BestOffer = Offer.OfferId;
+		}
+	}
+	return BestOffer;
 }
 
 void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
@@ -264,7 +290,9 @@ void AMWTrackSelectionBoard::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	if (GS->GetRoomPhase() != EMWRoomPhase::PreparingConstruction)
+	// 서버는 배치 단계에 머무르므로 실제 참가자의 표시 단계로 전시 수명을 결정한다.
+	const auto* Local = Viewer.IsValid() ? Viewer.Get() : Cast<AMWGameplayPlayerController>(GetWorld()->GetFirstPlayerController());
+	if (!Local || !Local->IsLocalController() || Local->GetConstructionPresentationPhase() != EMWRoomPhase::PreparingConstruction)
 	{
 		if (Viewer.IsValid())
 		{

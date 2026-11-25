@@ -1,0 +1,65 @@
+2026-11-25 KST  UE 5.8.4  Win64 Development
+Git base: 1b57b3b9c7781129e850403867b88225b89fe6ba   UVCS cs:80
+격리 검증본의 커밋 대상 소스·설정과 SHA-256 대상 에셋 파일을 대조했다.
+
+[cs:80 서버 파일 해시]
+19e5e8b60d393f4c482d28225e7a40a149d6625cfab92f7aabe38f73b59b6052  Content/Gameplay/Tracks/BP_Track_WoodBridge_DropBlock.uasset
+d91dc8ddb6e2a0db95af09a78ef370d6916a87d91f684c8ab82aba73aea77b46  Content/Gameplay/Tracks/BP_Track_WoodBridge_Roller.uasset
+4251e6378a94464dcc2a285ac1b802edf975b885ae47b523d424f562543e9e91  Content/Gameplay/Tracks/BP_Track_WoodElevated_Left_300_Long.uasset
+48751d8824df3859068a16effaea5e64e80a352b572a08cd6a9b38d61fe8a17a  Content/Gameplay/Tracks/BP_Track_WoodElevated_Left_75_Medium.uasset
+eca332929cee6944d7ed8af4c91457dface6547628408c1372c4e2aa69f511ae  Content/Gameplay/Tracks/BP_Track_WoodElevated_Right_300_Long.uasset
+aeada98d255c8cc663cc08e2a2e642f697e665342af949e99d990c574d903e6f  Content/Gameplay/Tracks/BP_Track_WoodElevated_Right_60_Small.uasset
+6b7e9c1e4cbac5dbe501e96e88282cffe9023cc7bd684c64c7a6beb1b641fc4d  Content/Gameplay/Tracks/BP_Track_WoodElevated_Right_75_Medium.uasset
+9f6e010e9fdcedd258bb78c94615dc7b8b6d3a266b1b4e3301f6fa6b88ea39b6  Content/Gameplay/Tracks/Data/DA_TrackRuntime.uasset
+6c207f7ff8ad7e91794da209a6edc8d79882ce69647de6a3216968e5dfa0fec5  Content/Developers/user/L_VehicleTrackIssues_Test.umap
+68494a4e54838154490e9e9712456640260394e756aef44e0748ab2dda94e4be  Content/Gameplay/Tracks/Art/Collision/SM_col_DropBlock_DriveSurface.uasset
+125fffcea377dd26e5e7684390fa46ec92383f57effabc331207674eaf5121ad  Content/Gameplay/Tracks/Art/Collision/SM_col_ElevatedRight60Small_DriveSurface.uasset
+58c0852eaf10e6fc5e2b2be9b83a8994ff3a35e3e99ad02b9f97e4d77d860deb  Content/Gameplay/Tracks/Art/Collision/SM_col_Roller_DriveSurface.uasset
+7a3177dec53287102009cb5381999926204bb8b80670a868b83a0c455ee5a699  Content/UI/Construction/WBP_TrackSelectionTest.uasset
+
+[최종 빌드·WBP 컴파일·자동화]
+C:\Users\user\Documents\Codex\mw-reselection-split-qa\Source\MW\Gameplay\Items\MWItemComponentVisual.cpp(230,58): warning C4996: 'UMovieScene::GetBindings': Getting non-const access to GetBindings is no longer allowed. Please use const GetBindings() - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+Result: Succeeded
+Total execution time: 27.09 seconds
+[2026.11.25-00.53.37:799][  0]LogPython: MW_SPLIT_WBP name=WBP_TrackSelectionTest compiled=True unchanged=True sha256=7a3177dec53287102009cb5381999926204bb8b80670a868b83a0c455ee5a699
+[2026.11.25-00.53.37:833][  0]LogPython: MW_SPLIT_WBP name=BP_MWGameplayPlayerController compiled=True unchanged=True sha256=067dc447427224a7ed9861381604b2b99e56a1ad5faf0d925bea4e5a00b5b850
+[2026.11.25-00.53.37:870][  0]LogPython: MW_SPLIT_WBP name=WBP_MatchPanels compiled=True unchanged=True sha256=6fa01454bdf2b6151588bd1d6de38105ce1aac22705cc9c13654b15a33c1dd89
+[2026.11.25-00.53.37:960][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+[2026.11.25-00.54.17:930][582]LogAutomationController: Display: Test Completed. Result={Success} Name={PlacementClearance} Path={MW.Construction.PlacementClearance}
+[2026.11.25-00.54.18:007][585]LogAutomationController: Display: Test Completed. Result={Success} Name={PreviewMatchesSnap} Path={MW.Construction.PreviewMatchesSnap}
+[2026.11.25-00.54.18:355][602]LogAutomationController: Display: Test Completed. Result={Success} Name={ExpiryAndHeartbeat} Path={MW.Cursor.ExpiryAndHeartbeat}
+[2026.11.25-00.54.18:470][604]LogAutomationController: Display: Test Completed. Result={Success} Name={StreamValidation} Path={MW.Cursor.StreamValidation}
+[2026.11.25-00.54.18:584][606]LogAutomationController: Display: Test Completed. Result={Success} Name={WorldWidgetProjection} Path={MW.Cursor.WorldWidgetProjection}
+[2026.11.25-00.54.24:214][704]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.25-00.54.25:197][802]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.25-00.54.27:941][252]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.25-00.54.27:986][258]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 8 tests performed.
+
+[PIE 3인 세션·후보 부족·선택 복구]
+[2026.11.25-00.49.29:447][298]LogPython: MW_QA setup only: server lobby ready for three test participants
+[2026.11.25-00.49.33:849][340]LogPython: MW_QA setup only: vehicle choices submitted; track selections and installations require Cua Driver
+[2026.11.25-00.49.55:243][752]LogTemp: Display: RESELECTION_FIXTURE authority member=2 zone=local initial candidate only
+[2026.11.25-00.50.04:117][920]LogMWServer: [MWTrackPlacement] Reselection opened trigger=2 previous=1 session=2 players=3 offers=0 pieces=2->1 revision=3
+[2026.11.25-00.50.04:094][920]LogMWServer: [MWTrackSelection] Reselection waiting immediate=2 prepared=2 required=3
+[2026.11.25-00.50.05:116][942]LogMWServer: [MWTrackSelection] Reselection waiting immediate=2 prepared=2 required=3
+[2026.11.25-00.50.05:140][942]LogMWServer: [MWTrackPlacement] Reselection opened trigger=2 previous=2 session=2 players=3 offers=0 pieces=1->1 revision=3
+[2026.11.25-00.50.06:179][975]LogMWServer: [MWTrackSelection] Reselection waiting immediate=2 prepared=2 required=3
+[2026.11.25-00.50.32:173][666]LogMWServer: [MWTrackPlacement] Reselection opened trigger=1 previous=2 session=2 players=3 offers=6 pieces=1->1 revision=3
+[2026.11.25-00.50.04:174][920]LogPython: MW_PANEL_OBS member=1 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[794, 514] dpi=0.4755 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 후보 다시 준비", "size": [437.5, 77.5]}}
+[2026.11.25-00.50.04:207][920]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[994, 532] dpi=0.4921 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 후보 다시 준비", "size": [447.1, 77.8]}}
+[2026.11.25-00.50.04:230][920]LogPython: MW_PANEL_OBS member=3 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[1039, 372] dpi=0.4440 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 후보 다시 준비", "size": [441.4, 76.3]}}
+[2026.11.25-00.50.32:781][670]LogPython: MW_PANEL_OBS member=1 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[794, 514] dpi=0.4755 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택", "size": [439.4, 77.8]}}
+[2026.11.25-00.50.32:805][670]LogPython: MW_PANEL_OBS member=2 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[994, 532] dpi=0.4921 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택", "size": [449.0, 78.2]}}
+[2026.11.25-00.50.32:828][670]LogPython: MW_PANEL_OBS member=3 phase=<MWRoomPhase.TRACK_PLACEMENT: 5> viewport=[1039, 372] dpi=0.4440 labels={"Text_SessionStatus": {"text": "배치할 수 있는 트랙이 없어 다시 선택합니다\n좌클릭으로 선택", "size": [420.3, 73.1]}}
+[2026.11.25-00.50.55:749][226]LogMWServer: [MWTrackPlacement] Reselection confirmed placement=2 players=3 retained_pieces=1
+[2026.11.25-00.51.15:856][720]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=1 session=2 revision=3 target=1:0 source=0 pointer=(272.0,255.0) ghost=(260.390000000,450.000000000,6000.000000000) quat=(-0.000000000,0.000000000,-0.707106781,0.707106781) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-00.51.26:026][988]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=2 session=2 revision=4 target=2:1 source=0 pointer=(321.0,329.0) ghost=(1673.590051175,-135.369876454,6000.000000000) quat=(-0.000000000,0.000000000,-0.923879499,0.382683513) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-00.51.36:986][271]LogTemp: Display: MWPlacement accept world=L_Dev_Drive member=3 session=2 revision=5 target=3:1 source=0 pointer=(413.0,333.0) ghost=(1673.591287519,-7206.437688319,6000.000000000) quat=(-0.000000000,0.000000000,-0.991445674,0.130520018) scale=(1.000000000,1.000000000,1.000000000)
+[2026.11.25-00.51.40:563][346]LogPython: ARRIVAL_REFACTOR_OBS member=1 world=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=2,OffersRevision=7,HoveredOfferId=1,SelectedOfferId=1,bConfirmed=True) pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.25-00.51.40:583][346]LogPython: ARRIVAL_REFACTOR_OBS member=2 world=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=2,OffersRevision=7,HoveredOfferId=3,SelectedOfferId=3,bConfirmed=True) pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.25-00.51.40:603][346]LogPython: ARRIVAL_REFACTOR_OBS member=3 world=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive phase=<MWRoomPhase.RACING: 9> cursor=False selection=(SelectionSessionId=2,OffersRevision=7,HoveredOfferId=5,SelectedOfferId=5,bConfirmed=True) pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+
+[PIE 3인 최종 스냅샷]
+P1 /Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive <MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_FRED_C_0 position=[-2620.0, 375.0, 6069.2] possessed=True pieces=5
+P2 /Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive <MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_DOUG_C_0 position=[-2620.0, 525.0, 6046.2] possessed=True pieces=5
+P3 /Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive <MWRoomPhase.RACING: 9> pawn=BP_MWVehiclePawn_MAMMOTH_C_0 position=[-2870.0, 375.0, 6054.2] possessed=True pieces=5

@@ -4,6 +4,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWPlayerConstructionComponent.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPlacementClearance.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "LogChannel.h"
@@ -55,7 +56,6 @@ bool UMWTrackConstructionComponent::PrepareTrack(const TSoftClassPtr<AActor>& Tr
 	OutTrack.bEnableTick = Track->IsActorTickEnabled();
 	Track->SetReplicates(false);
 	Track->SetActorHiddenInGame(true);
-	Track->SetActorEnableCollision(false);
 	Track->SetActorTickEnabled(false);
 	if (auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>())
 	{
@@ -70,6 +70,9 @@ bool UMWTrackConstructionComponent::PrepareTrack(const TSoftClassPtr<AActor>& Tr
 		OutTrack.Destroy();
 		return false;
 	}
+	OutTrack.GroundPoints = MWTrackPlacementClearance::ReadLocalPoints(*Track,
+		MakeArrayView(&OutTrack.Ports[0], bSinglePort ? 1 : 2));
+	Track->SetActorEnableCollision(false);
 	return true;
 }
 
@@ -176,6 +179,7 @@ void UMWTrackConstructionComponent::OnRep_PlacementSession()
 			}
 		}
 	}
+	OnPlacementSessionChanged.Broadcast();
 }
 
 bool UMWTrackConstructionComponent::BeginPlacement(const FTransform& BuildFrame, double LayoutScale, FText& OutError)
@@ -276,10 +280,17 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FTransform& BuildFrame,
 		DiscardPrepared();
 		return false;
 	}
+	FMWTrackPlacementGround Ground;
+	Ground.FloorZ = Settings->TrackPlacementFloorZ;
+	Ground.FinishPort = EndCap.Ports[0];
+	Ground.FinishLocalPoints = EndCap.GroundPoints;
+
 	FMWOpenTrackEnd OpenEnd;
 	if (bExtending)
 	{
-		if (!EndCap.SetTransform(MWTrackSnap::AlignPorts(EndCap.Ports[0], NextRoundEnd.WorldFrame))
+		const FTransform EndTransform = MWTrackSnap::AlignPorts(Ground.FinishPort, NextRoundEnd.WorldFrame);
+		if (!MWTrackPlacementClearance::FitsFloor(Ground.FinishLocalPoints, EndTransform, Ground.FloorZ)
+			|| !EndCap.SetTransform(EndTransform)
 			|| !GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->PrepareCourseCheckpoint(
 				*PreviousTail->Actor, NextRoundEnd.WorldFrame, FVector(50, 1350, 1250)))
 		{
@@ -309,7 +320,8 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FTransform& BuildFrame,
 			return false;
 		}
 		const FTransform StartTransform = StartGrid.Inverse() * FTransform(BuildFrame.GetRotation(), BuildOrigin);
-		if (!Starter.SetTransform(StartTransform))
+		if (!MWTrackPlacementClearance::FitsWithFinish(Starter.GroundPoints, Ground, StartTransform, Starter.Ports[0])
+			|| !Starter.SetTransform(StartTransform))
 		{
 			DiscardPrepared();
 			OutError = FText::FromString(TEXT("시작 트랙을 설치할 수 없습니다."));
@@ -323,10 +335,17 @@ bool UMWTrackConstructionComponent::BeginPlacement(const FTransform& BuildFrame,
 	// 일반 트랙 BP의 기본 진행축은 +Y다. 자유 미리보기는 레벨의 출발 방향을 기준으로 돌린다.
 	PlacementSession.PreviewYaw = FRotator::NormalizeAxis((bExtending ? OpenEnd.WorldFrame.Rotator().Yaw : BuildFrame.Rotator().Yaw) - 90.0);
 
+	RoundStartEnd = OpenEnd;
+	PlacementSession.BaseCoursePieceCount = PlacementSession.PlacedTracks.Num();
+	RoundStartCourseBounds = PlacementSession.CourseBounds;
+	PlacementParticipants.Reset();
+	for (const auto& Entry : PlayerPlacements) PlacementParticipants.Add(Entry.Key);
+
 	PendingEndCap = EndCap;
 	PendingTracks = MoveTemp(PreparedTracks);
 	PlacementSession.BuildOrigin = BuildOrigin;
 	PlacementSession.LayoutScale = LayoutScale;
+	PlacementSession.Ground = MoveTemp(Ground);
 	PlacementSession.SessionId = SelectionSession.SelectionSessionId;
 	PlacementSession.bIsOpen = true;
 	int32 OffsetIndex = 0;
@@ -358,7 +377,7 @@ UMWTrackConstructionComponent::FPreparedTrack* UMWTrackConstructionComponent::Fi
 	const auto* GS = Cast<AMWGameplayGameState>(GetOwner());
 	if (!HasServerAuthority() || !GS || GS->GetRoomPhase() != EMWRoomPhase::TrackPlacement
 		|| !PlacementSession.bIsOpen || PlacementSession.SessionId != SessionId
-		|| !IsValid(Requester) || Requester->GetWorld() != GetWorld())
+		|| IsPlacementReselectionOpen() || !IsValid(Requester) || Requester->GetWorld() != GetWorld())
 	{
 		return nullptr;
 	}
@@ -386,7 +405,9 @@ void UMWTrackConstructionComponent::UpdatePlacementPreview(APlayerController* Re
 	auto* Component = Requester->GetPlayerState<AMWPlayerState>()->GetPlayerConstructionComponent();
 	auto Player = Component->GetPlacement();
 	FTransform Display;
-	const bool bSnapped = MWTrackSnap::Resolve(Prepared->Ports, PlacementSession, Intent, Display);
+	const bool bSnapped = MWTrackSnap::Resolve(Prepared->Ports, PlacementSession, Intent, Display)
+		&& MWTrackPlacementClearance::FitsWithFinish(Prepared->GroundPoints, PlacementSession.Ground,
+			Display, Prepared->Ports[1 - Intent.SourcePort]);
 
 	if (Player.bSnapped != bSnapped || Player.bReversed != Intent.bReversed || !Player.PreviewTransform.Equals(Display))
 	{
@@ -416,9 +437,30 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 	{
 		return EMWTrackPlacementResult::NotSnapped;
 	}
+
+	const FTransform& OpenEnd = PlacementSession.OpenEnds[0].WorldFrame;
+	auto* PS = Requester->GetPlayerState<AMWPlayerState>();
 	TGuardValue<bool> CommitGuard(bCommittingPlacement, true);
-	const int32 PieceId = PlacementSession.PlacedTracks.Num() + 1;
+	if (Intent.bRecoverBlocked)
+	{
+		// 복구 요청도 양쪽 연결 방향을 서버에서 검사한다. 다른 방향이 가능하면 재선택을 열지 않는다.
+		if (MWTrackPlacementClearance::FitsEitherPort(Prepared->GroundPoints, PlacementSession.Ground, Prepared->Ports, OpenEnd))
+		{
+			return EMWTrackPlacementResult::CourseChanged;
+		}
+		return OpenPlacementReselection(PS->GetLobbyMemberId());
+	}
+
 	const int32 FreePort = 1 - Intent.SourcePort;
+	if (!MWTrackPlacementClearance::FitsWithFinish(Prepared->GroundPoints, PlacementSession.Ground,
+		Transform, Prepared->Ports[FreePort]))
+	{
+		UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Below floor member=%d session=%d target=%d/%d source=%d floor=%.3f"),
+			PS->GetLobbyMemberId(), SessionId, Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort, PlacementSession.Ground.FloorZ);
+		return EMWTrackPlacementResult::BelowPlacementFloor;
+	}
+
+	const int32 PieceId = PlacementSession.PlacedTracks.Num() + 1;
 	const FMWOpenTrackEnd NextEnd{{PieceId, FreePort}, Prepared->Ports[FreePort] * Transform};
 	const bool bLastPlayer = PendingTracks.Num() == 1;
 	FTransform EndTransform;
@@ -428,7 +470,6 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 		return EMWTrackPlacementResult::Unavailable;
 	}
 
-	AMWPlayerState* PS = Requester->GetPlayerState<AMWPlayerState>();
 	auto* Component = PS->GetPlayerConstructionComponent();
 	auto Player = Component->GetPlacement();
 	PublishTrack(*Prepared, Transform, Intent.Target, Intent.SourcePort);
@@ -446,7 +487,104 @@ EMWTrackPlacementResult UMWTrackConstructionComponent::PlaceTrack(APlayerControl
 	GetOwner()->ForceNetUpdate();
 	UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Placed piece=%d member=%d target=%d/%d source=%d"),
 		PieceId, PS->GetLobbyMemberId(), Intent.Target.PieceId, Intent.Target.PortIndex, Intent.SourcePort);
+	OnPlacementSessionChanged.Broadcast();
 	return EMWTrackPlacementResult::Accepted;
+}
+
+EMWTrackPlacementResult UMWTrackConstructionComponent::OpenPlacementReselection(int32 RequestingMemberId)
+{
+	TArray<AMWPlayerState*> Players;
+	for (const auto& Participant : PlacementParticipants)
+	{
+		if (AMWPlayerState* Player = Participant.Get()) Players.Add(Player);
+	}
+	Players.Sort([](const AMWPlayerState& A, const AMWPlayerState& B)
+	{
+		return A.GetLobbyMemberId() < B.GetLobbyMemberId();
+	});
+	const int32 PreviousSession = PlacementSession.SessionId;
+	const int32 PreviousPieceCount = PlacementSession.PlacedTracks.Num();
+	FText Error;
+	if (Players.Num() != PlacementParticipants.Num() || !BeginSelectionInternal(Players, Error, true))
+	{
+		UE_LOG(LogMWServer, Warning, TEXT("[MWTrackPlacement] Reselection unavailable member=%d session=%d error=%s"),
+			RequestingMemberId, PreviousSession, *Error.ToString());
+		return EMWTrackPlacementResult::NoCompatibleTracks;
+	}
+	UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Reselection opened trigger=%d previous=%d session=%d players=%d offers=%d pieces=%d->%d revision=%d"),
+		RequestingMemberId, PreviousSession, PlacementSession.SessionId, Players.Num(), SelectionSession.Offers.Num(),
+		PreviousPieceCount, PlacementSession.PlacedTracks.Num(), PlacementSession.CourseRevision);
+	return EMWTrackPlacementResult::ReselectionOpened;
+}
+
+void UMWTrackConstructionComponent::RollbackRoundPlacementForReselection(const TArray<AMWPlayerState*>& Players)
+{
+	// 새 선택 후보가 준비된 뒤에만 현 라운드의 도로를 되돌린다. 출발과 이전 라운드 도로는 남긴다.
+	for (int32 Index = PlacementSession.PlacedTracks.Num() - 1; Index >= PlacementSession.BaseCoursePieceCount; --Index)
+	{
+		if (AActor* Actor = PlacementSession.PlacedTracks[Index].Actor.Get(); IsValid(Actor))
+		{
+			Actor->Destroy();
+		}
+	}
+	PlacementSession.PlacedTracks.SetNum(PlacementSession.BaseCoursePieceCount, EAllowShrinking::No);
+	PlacementSession.CourseBounds = RoundStartCourseBounds;
+	PlacementSession.OpenEnds.Reset();
+	PlacementSession.OpenEnds.Add(RoundStartEnd);
+
+	for (const auto& Entry : PendingTracks) Entry.Value.Destroy();
+	PendingTracks.Reset();
+
+	// 새로운 배치 세션으로 바꿔 되돌리기 전의 확정·고스트 요청을 서버에서 거절한다.
+	PlacementSession.SessionId = SelectionSession.SelectionSessionId;
+	++PlacementSession.CourseRevision;
+	for (AMWPlayerState* Player : Players)
+	{
+		FMWPlayerTrackPlacement Placement;
+		Placement.SessionId = PlacementSession.SessionId;
+		Player->GetPlayerConstructionComponent()->SetPlacementForServer(Placement);
+	}
+	OnPlacementSessionChanged.Broadcast();
+}
+
+void UMWTrackConstructionComponent::ResumePlacementAfterReselection()
+{
+	// 후보를 모두 확인한 뒤 한 번에 배치를 재개한다.
+	for (const auto& Participant : PlacementParticipants)
+	{
+		const AMWPlayerState* PS = Participant.Get();
+		const auto* Player = PS ? PS->GetPlayerConstructionComponent() : nullptr;
+		const auto* Offer = Player ? ReselectionOffers.Find(Player->GetSelection().SelectedOfferId) : nullptr;
+		if (!Offer || !Offer->Actor.IsValid())
+		{
+			const int32 FailedSessionId = PlacementSession.SessionId;
+			CancelPlacement();
+			OnConstructionFailed.Broadcast(FailedSessionId, TEXT("다시 선택한 트랙을 준비하지 못했습니다."));
+			return;
+		}
+	}
+
+	for (const auto& Participant : PlacementParticipants)
+	{
+		AMWPlayerState* PS = Participant.Get();
+		auto* Component = PS->GetPlayerConstructionComponent();
+		const int32 OfferId = Component->GetSelection().SelectedOfferId;
+		FPreparedTrack Prepared = MoveTemp(ReselectionOffers.FindChecked(OfferId));
+		ReselectionOffers.Remove(OfferId);
+
+		FMWPlayerTrackPlacement Player;
+		Player.SessionId = PlacementSession.SessionId;
+		Player.TrackClass = TSoftClassPtr<AActor>(Prepared.Actor->GetClass());
+		FMWTrackPlacementIntent Initial;
+		Initial.CursorLocation = RoundStartEnd.WorldFrame.GetLocation();
+		Player.PreviewTransform = MWTrackSnap::MakeRawTransform(Prepared.Ports, PlacementSession, Initial);
+		PendingTracks.Add(Participant, MoveTemp(Prepared));
+		Component->SetPlacementForServer(Player);
+		PS->GetCursorComponent()->OpenStreamForServer(MWCursorContexts::TrackPlacement, EMWCursorSpace::World);
+	}
+	UE_LOG(LogMWServer, Log, TEXT("[MWTrackPlacement] Reselection confirmed placement=%d players=%d retained_pieces=%d"),
+		PlacementSession.SessionId, PendingTracks.Num(), PlacementSession.PlacedTracks.Num());
+	EndSelection();
 }
 
 bool UMWTrackConstructionComponent::PositionEndCap(const FMWOpenTrackEnd& Tail, FTransform& OutTransform) const
@@ -456,7 +594,8 @@ bool UMWTrackConstructionComponent::PositionEndCap(const FMWOpenTrackEnd& Tail, 
 		return false;
 	}
 	OutTransform = MWTrackSnap::AlignPorts(PendingEndCap.Ports[0], Tail.WorldFrame);
-	return PendingEndCap.SetTransform(OutTransform);
+	return MWTrackPlacementClearance::FitsFloor(PendingEndCap.GroundPoints, OutTransform, PlacementSession.Ground.FloorZ)
+		&& PendingEndCap.SetTransform(OutTransform);
 }
 
 void UMWTrackConstructionComponent::FinishPlacement(const FMWOpenTrackEnd& Tail, const FTransform& EndTransform)
@@ -466,6 +605,7 @@ void UMWTrackConstructionComponent::FinishPlacement(const FMWOpenTrackEnd& Tail,
 	PublishTrack(PendingEndCap, EndTransform, Tail.Id, 0);
 
 	PendingEndCap = {};
+	PlacementParticipants.Reset();
 	PlacementSession.OpenEnds.Reset();
 	PlacementSession.bIsOpen = false;
 
@@ -515,6 +655,7 @@ void UMWTrackConstructionComponent::CancelPlacement()
 	{
 		return;
 	}
+	if (IsPlacementReselectionOpen()) EndSelection();
 	// 이미 설치한 도로는 월드가 정리한다. 취소 시에는 서버의 미확정 Actor만 파괴한다.
 	for (const auto& Entry : PendingTracks)
 	{
@@ -522,6 +663,7 @@ void UMWTrackConstructionComponent::CancelPlacement()
 		Entry.Value.Destroy();
 	}
 	PendingTracks.Reset();
+	PlacementParticipants.Reset();
 	PendingEndCap.Destroy();
 	PendingEndCap = {};
 	PlacementSession.bIsOpen = false;
