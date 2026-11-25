@@ -12,6 +12,8 @@ class UMWInputData;
 class UMWItemComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UNiagaraComponent;
+class UAudioComponent;
 class UBoxComponent;
 class USceneComponent;
 class UMWVehicleMovementComponent;
@@ -172,10 +174,30 @@ protected:
 	TObjectPtr<UMWVehiclePresentationComponent> PresentationTick;
 
 private:
+    // 차량마다 좌우 배기구의 로컬 입자 컴포넌트를 보관한다.
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UNiagaraComponent>> ExhaustEffects;
+
+    bool bExhaustEmitting = false;
+    bool bExhaustLoadFailed = false;
+    void UpdateExhaustEffect();
+    void StopExhaustEffect();
+
+    // 경기 내의 차량마다 로컬 청취용 루프 한 개를 보관한다.
+    UPROPERTY(Transient)
+    TObjectPtr<UAudioComponent> EngineAudio;
+
+    float EngineAudioLoad = 0.f;
+    bool bEngineAudioStarted = false;
+    bool bEngineAudioLoadFailed = false;
+    void UpdateEngineAudio(float DeltaSeconds);
+    void StopEngineAudio();
+
     bool bRespawningAtCheckpoint = false;
 	double NextRaceFailureCheck = 0.0;
 
 	friend class UMWVehicleMovementComponent;
+    friend class UMWItemComponent;
 	friend class UMWVehiclePresentationComponent;
 	friend class FMWRaceDriveNetworkTest;
 
