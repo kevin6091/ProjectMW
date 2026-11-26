@@ -1,5 +1,7 @@
 # 경기 종료 점수 집계와 최종 우승
 
+현재 결과 화면은 [결승 순위에서 끝난다](#점수판-구도와-결승-카드-공개-순서). 앞선 절의 경기 개요 전환은 해당 버전의 검증 기록이다.
+
 ## 영상과 화면 흐름
 
 Switch 플레이 영상 1:29–1:38과 4:13–4:25에서 체크포인트 번호별 점수, 완주 점수, 선착 보너스, 순위 순서와 숫자·막대의 움직임을 확인했다. 10월 30일 멀티플레이 영상 11:02–11:11의 결승 카메라, 순위 공개, 계속 입력 후 경기 개요 전환도 참고했다. 화면 외형에는 ProjectMW의 기존 결과 위젯과 서체를 사용했다.
@@ -144,3 +146,40 @@ Switch 영상 4:01~4:13의 체크포인트 구간과 10월 30일 영상 9:30~10:
 | `WBP_MatchPodiumCard.uasset` | `06B6A7771C74A184A03E23C3F9E01E935A77AE24096AB03173D232EC2D0D430D` |
 
 세 WBP의 컴파일과 실제 위젯의 브러시 연결을 확인했다. 원본 텍스처는 기존 에셋을 참조한다. 세 WBP는 로컬에서 검토할 수 있다. Git 푸시와 UVCS 체크인은 사용자 확인 대기다.
+
+## 점수판 구도와 결승 카드 공개 순서
+
+10월 30일 플레이 영상의 10:38 프레임에서 판면이 화면 너비의 약 80%를 차지했다. 11:03대는 영상을 초당 20장으로 샘플링했다. 이름판이 화면 안에 처음 들어온 시각을 기준으로 1위 약 11:03.25, 2위 약 11:03.45, 3위 약 11:03.65에 등장했다. 메달은 이름판보다 먼저 보이는 구간이 있어 비교 시각은 이름판으로 통일했다.
+
+| 편집 위치 | 변경 |
+| --- | --- |
+| `Content/UI/Results/WBP_MatchResults.uasset` | 점수판을 안전 영역 중앙에 놓고 디자인 폭을 1,130에서 1,480으로 넓혔다. 좌우 여백으로 참가자 열을 중앙에 묶었다. 결승 순위는 1위 슬롯 폭 1,230, 아래 순위 폭 820을 사용한다. 숫자는 WBP 디자인 단위다. 개요 패널과 `계속` 버튼을 위젯 트리에서 제거했다. |
+| `Content/UI/Results/WBP_MatchScoreColumn.uasset` | 막대 높이를 334에서 482 디자인 단위로 늘렸다. 낮은 점수에서 배지와 숫자가 읽히도록 하단 여백을 뒀다. |
+| `Source/MW/UI/Gameplay/MWMatchResultsWidget.h/.cpp` | `UpdatePodium`은 WBP에 저장된 진입 시간과 1위 단독 표시 시간을 적용한다. 1위가 자리를 잡은 뒤 하위 순위를 서버 확정 순서대로 공개한다. `Standings`가 이 위젯의 마지막 상태다. 이전 WBP에서 로드되는 개요와 버튼은 선택 바인딩으로 접는다. |
+
+세 사람일 때 WBP의 진입 시간 0.66초를 카드당 0.22초로 나눈다. 1위 카드는 진입을 마친 뒤 0.30초간 단독으로 보인다. 그 뒤 2위와 3위를 각각 0.22초 간격으로 공개한다. 로비 복귀 흐름은 앞서 보류한 범위다.
+
+### Cua Driver 3인 PIE 전후 비교
+
+| 장면 | 변경 전 `a325a54` | 변경 후 |
+| --- | --- | --- |
+| 중간 점수판 | [호스트 58.8% 너비](Evidence/MatchResultsTally/score-panel-tally-p1.png) | [같은 크기의 호스트 창 76.9% 너비](Evidence/MatchResultsTally/podium-layout-tally-p1.png) |
+| 결승 순위 | [이전 카드 크기와 계속 버튼](Evidence/MatchResultsTally/score-panel-podium-p1.png) | [1위 단독](Evidence/MatchResultsTally/podium-layout-first-only-p1.png) · [2위가 열린 뒤 3위 진입](Evidence/MatchResultsTally/podium-layout-lower-entry-p1.png) · [최종 호스트](Evidence/MatchResultsTally/podium-layout-final-p1.png) · [4:3](Evidence/MatchResultsTally/podium-layout-final-p2.png) · [21:9](Evidence/MatchResultsTally/podium-layout-final-p3.png) |
+
+| 첫 이름판이 보인 뒤 | 영상 | 호스트 1280×722 | 클라이언트 924×693 | 클라이언트 1120×480 |
+| --- | ---: | ---: | ---: | ---: |
+| 2위 첫 공개 | 약 0.20초 | 0.609초 | 0.563초 | 0.515초 |
+| 3위 첫 공개 | 약 0.40초 | 0.843초 | 0.797초 | 0.750초 |
+
+- PIE는 카드 불투명도가 0.01을 넘은 첫 표본을 쟀다. 세 창에서 1위만 완전히 보이는 프레임이 있었고, 2위에서 3위까지는 약 0.23초였다. 1위 단독 구간을 둬 영상보다 2위가 늦게 시작한다. 결승 카드에는 ProjectMW의 수평 배치와 서체를 적용했다.
+- 4:3에서는 판면이 창 너비의 95.9%, 21:9에서는 높이에 맞춰 58.5%로 표시됐다. 각 창에서 판면과 배지, 숫자, 카드가 잘리지 않았다. 21:9의 결승 카메라에는 기존 좌우 검은 여백이 보인다. 첫 21:9 순위 캡처에선 녹색 포인터 모양 표시가 메달 일부를 잠깐 가렸고, 멈춘 뒤 재확인한 캡처에서는 사라졌다.
+- Cua Driver로 세 사람의 트랙 조각을 배치했다. PIE 목표를 250점으로 설정하고 보조 스크립트로 차량을 실제 완주 트리거까지 이동했다. 세 창에 서버 결과인 300·150·50점이 표시됐다. 각 창에서 Enter와 Space를 눌렀고 세 창 모두 `Standings`에 머물렀다. 실행 중 위젯 트리와 저장된 WBP 양쪽에서 개요와 계속 버튼의 부재를 확인했다. [빌드·PIE·타이밍 로그](Evidence/MatchResultsTally/podium-layout-pie-evidence.txt)
+
+| 검토용 로컬 WBP | SHA-256 |
+| --- | --- |
+| `WBP_MatchResults.uasset` | `B2CCFDA065D103347CCC40D33E29D5A6BD4B383B10823B34DA9AF76D1DD06C8A` |
+| `WBP_MatchScoreColumn.uasset` | `DA5AB9AE4ECBA05B9BEF33353506593118B7B396D68BDDB9ECA3898F21BCCA07` |
+
+이전 개요 트리의 GUID 정리 후 새 프로세스에서 두 WBP를 로드해 컴파일 오류 0건을 확인했다. 저장 없는 검증 전후 해시는 동일하다. 두 WBP는 로컬 검토본이며 Git 푸시와 UVCS 체크인은 확인 대기다.
+
+임시 PIE 명령을 제거하고 UE 5.8 `MWEditor Win64 Development`를 재빌드했다. `MW.Gameplay.PlayerRound`와 `MW.Gameplay.RoundLoop` 자동화 6개가 통과했다.

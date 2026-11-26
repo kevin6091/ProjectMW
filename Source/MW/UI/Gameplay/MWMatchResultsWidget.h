@@ -8,7 +8,6 @@
 class ACameraActor;
 class AMWGameplayGameState;
 class UBorder;
-class UButton;
 class UHorizontalBox;
 class UImage;
 class UNiagaraComponent;
@@ -27,11 +26,10 @@ enum class EMWMatchResultsScreen : uint8
     Tally,
     RoundPositions,
     Winner,
-    Standings,
-    Overview
+    Standings
 };
 
-// 집계 열·순위 카드·개요 행은 동일한 참가자 데이터를 각 WBP의 바인딩으로 표시한다.
+// 집계 열과 순위 카드는 동일한 참가자 데이터를 각 WBP의 바인딩으로 표시한다.
 UCLASS(Abstract)
 class MW_API UMWMatchResultRowWidget : public UUserWidget
 {
@@ -48,8 +46,6 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> NameLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
-    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> CheckpointLabel;
-    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> FinishLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> VehiclePortrait;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
@@ -59,7 +55,7 @@ private:
     TOptional<int32> ShownScore;
 };
 
-// 경기 단계는 서버가 소유한다. 이 위젯은 각 창의 결승선 연출과 두 결과 화면을 관리한다.
+// 경기 단계는 서버가 소유한다. 이 위젯은 각 창의 점수판과 결승선 연출을 관리한다.
 UCLASS(Abstract)
 class MW_API UMWMatchResultsWidget : public UUserWidget
 {
@@ -72,16 +68,13 @@ public:
     void Dismiss();
 
 protected:
-    virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
     virtual void NativeTick(const FGeometry& Geometry, float DeltaTime) override;
-    virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
 
 private:
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> ResultsPanel;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> MatchContext;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UVerticalBox> ResultRows;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> ContinueButton;
+    // 이전 버전의 WBP를 사용 중인 작업 공간에서도 종료된 화면과 입력을 숨긴다.
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> ResultsPanel;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> ContinueButton;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyPanel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> TallyHeading;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UHorizontalBox> TallyColumns;
@@ -90,8 +83,6 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> WinnerCardHost;
     UPROPERTY(Transient) TArray<TObjectPtr<UMWMatchResultRowWidget>> PodiumRevealOrder;
 
-    UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
-    TSubclassOf<UMWMatchResultRowWidget> ResultRowClass;
     UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
     TSubclassOf<UMWMatchResultRowWidget> TallyColumnClass;
     UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
@@ -146,8 +137,12 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
     float RoundPositionsHoldSeconds = 0.f;
 
+    // 각 카드의 진입에 배분할 시간이다. 1위 카드가 자리를 잡은 뒤의 정지 시간은 별도다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
     float WinnerSeconds = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
+    float FirstPlaceHoldSeconds = 0.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D CardEntryOffset = FVector2D::ZeroVector;
@@ -187,6 +182,4 @@ private:
     void UpdatePodium(float DeltaTime);
     void ShowStandings();
     void ClearPresentation();
-
-    UFUNCTION() void HandleContinue();
 };

@@ -4,7 +4,6 @@
 #include "Camera/CameraComponent.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/Border.h"
-#include "Components/Button.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
@@ -15,7 +14,6 @@
 #include "Components/WidgetSwitcher.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
-#include "Framework/Application/SlateApplication.h"
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
@@ -68,11 +66,6 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
     }
     NameLabel->SetText(PlayerName);
     TotalScoreLabel->SetText(FText::AsNumber(Result.TotalScore));
-    if (CheckpointLabel)
-        CheckpointLabel->SetText(FText::Format(LOCTEXT("CheckpointResult", "{0}개 · +{1}"),
-            FText::AsNumber(Result.CheckpointsPassed), FText::AsNumber(Result.CheckpointScore)));
-    if (FinishLabel)
-        FinishLabel->SetText(FText::Format(LOCTEXT("FinishBonus", "+{0}"), FText::AsNumber(Result.FinishScore)));
 }
 
 void UMWMatchResultRowWidget::ShowRank(bool bShow)
@@ -109,15 +102,8 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
     }
 }
 
-void UMWMatchResultsWidget::NativeConstruct()
-{
-    Super::NativeConstruct();
-    ContinueButton->OnClicked.AddUniqueDynamic(this, &ThisClass::HandleContinue);
-}
-
 void UMWMatchResultsWidget::NativeDestruct()
 {
-    ContinueButton->OnClicked.RemoveDynamic(this, &ThisClass::HandleContinue);
     ClearPresentation();
     Super::NativeDestruct();
 }
@@ -129,7 +115,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     bFinalResults = Progress.Phase == EMWRoomPhase::MatchResults;
     if (!Controller || !Controller->IsLocalController() || Controller->GetWorld() != State.GetWorld()
         || !TallyPanel || !TallyColumns || !TallyHeading || !TallyColumnClass
-        || (bFinalResults && (!PodiumPanel || !PodiumCards || !ResultRowClass || !PodiumCardClass))
+        || (bFinalResults && (!PodiumPanel || !PodiumCards || !PodiumCardClass))
         || (!bFinalResults && Progress.Phase != EMWRoomPhase::RoundResults) || Progress.Results.IsEmpty()
         || Progress.RoundEpoch <= 0 || Progress.ResultsEpoch != Progress.RoundEpoch)
     {
@@ -148,7 +134,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     Results = Progress.Results;
     BarScaleScore = Progress.TargetScore;
     RoundEndServerTime = Progress.PhaseEndServerTime;
-    const auto CreateEntry = [&](TSubclassOf<UMWMatchResultRowWidget> EntryClass, const FMWPlayerRoundState& Result, bool bPortrait)
+    const auto CreateEntry = [&](TSubclassOf<UMWMatchResultRowWidget> EntryClass, const FMWPlayerRoundState& Result)
     {
         auto* Entry = CreateWidget<UMWMatchResultRowWidget>(Controller, EntryClass);
         if (Entry)
@@ -156,7 +142,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
             const AMWPlayerState* Player = Players.FindRef(Result.MemberId);
             const FText Name = Player && !Player->GetPlayerName().IsEmpty() ? FText::AsCultureInvariant(Player->GetPlayerName())
                 : FText::Format(LOCTEXT("UnknownPlayer", "플레이어 {0}"), FText::AsNumber(Result.MemberId));
-            UTexture2D* Portrait = bPortrait && Player
+            UTexture2D* Portrait = Player
                 ? GetDefault<UMWVehicleSelectionWidget>()->DefaultVehicleThumbnails.FindRef(Player->GetVehicleAssetID()).LoadSynchronous()
                 : nullptr;
             Entry->SetResult(Result, Name, bFinalResults ? Result.FinalRank : Result.RoundRank, Portrait);
@@ -167,7 +153,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     Results.Sort([](const FMWPlayerRoundState& A, const FMWPlayerRoundState& B) { return A.MemberId < B.MemberId; });
     for (const FMWPlayerRoundState& Result : Results)
     {
-        auto* Column = CreateEntry(TallyColumnClass, Result, true);
+        auto* Column = CreateEntry(TallyColumnClass, Result);
         if (!Column) return false;
         Column->ShowRank(false);
         auto* ColumnSlot = TallyColumns->AddChildToHorizontalBox(Column);
@@ -180,10 +166,8 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
         if (WinnerCardHost) WinnerCardHost->SetVisibility(ESlateVisibility::Collapsed);
         for (const FMWPlayerRoundState& Result : Progress.Results)
         {
-            auto* OverviewRow = CreateEntry(ResultRowClass, Result, false);
-            auto* PodiumCard = CreateEntry(PodiumCardClass, Result, true);
-            if (!OverviewRow || !PodiumCard) return false;
-            ResultRows->AddChildToVerticalBox(OverviewRow);
+            auto* PodiumCard = CreateEntry(PodiumCardClass, Result);
+            if (!PodiumCard) return false;
             if (WinnerCardHost && Result.FinalRank == 1)
             {
                 WinnerCardHost->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -202,17 +186,15 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
             *GetWorld()->GetOutermost()->GetName(), Progress.ResultsEpoch, Result.MemberId, Result.FinalRank,
             Result.TotalScore, Result.CheckpointsPassed, Result.CheckpointScore, Result.FinishScore);
     }
-    MatchContext->SetText(FText::Format(LOCTEXT("MatchContext", "최종 라운드 {0}  ·  목표 {1}점"),
-        FText::AsNumber(Progress.RoundIndex), FText::AsNumber(Progress.TargetScore)));
     if (bPlayTally)
     {
         PrepareTally();
     }
 
-    ResultsPanel->SetVisibility(ESlateVisibility::Collapsed);
+    if (ResultsPanel) ResultsPanel->SetVisibility(ESlateVisibility::Collapsed);
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
     if (PodiumPanel) PodiumPanel->SetVisibility(ESlateVisibility::Collapsed);
-    ContinueButton->SetVisibility(ESlateVisibility::Collapsed);
+    if (ContinueButton) ContinueButton->SetVisibility(ESlateVisibility::Collapsed);
     if (!AddToPlayerScreen())
     {
         return false;
@@ -428,7 +410,7 @@ void UMWMatchResultsWidget::EndTally()
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
     PodiumPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     PlayCelebration();
-    if (WinnerSeconds <= 0.f)
+    if (!FMath::IsFinite(WinnerSeconds) || WinnerSeconds <= 0.f || PodiumRevealOrder.IsEmpty())
     {
         ShowStandings();
         return;
@@ -441,17 +423,22 @@ void UMWMatchResultsWidget::EndTally()
 
 void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 {
-    RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, WinnerSeconds);
     const int32 Count = PodiumRevealOrder.Num();
-    const float Reveal = RevealElapsed / WinnerSeconds * Count;
+    const float HoldSeconds = Count > 1 && FMath::IsFinite(FirstPlaceHoldSeconds)
+        ? FMath::Max(FirstPlaceHoldSeconds, 0.f) : 0.f;
+    const float TotalSeconds = WinnerSeconds + HoldSeconds;
+    RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, TotalSeconds);
+    const float CardSeconds = WinnerSeconds / Count;
+    // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
     for (int32 Index = 0; Index < Count; ++Index)
     {
         UWidget* Card = PodiumRevealOrder[Index];
-        const float Alpha = FMath::SmoothStep(0.f, 1.f, Reveal - Index);
+        const float Start = Index == 0 ? 0.f : CardSeconds * Index + HoldSeconds;
+        const float Alpha = FMath::SmoothStep(0.f, CardSeconds, RevealElapsed - Start);
         Card->SetRenderOpacity(Alpha);
         Card->SetRenderTranslation(CardEntryOffset * (1.f - Alpha));
     }
-    if (RevealElapsed >= WinnerSeconds)
+    if (RevealElapsed >= TotalSeconds)
     {
         ShowStandings();
     }
@@ -459,41 +446,14 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 
 void UMWMatchResultsWidget::ShowStandings()
 {
+    // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
+    for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)
+    {
+        Card->SetRenderOpacity(1.f);
+        Card->SetRenderTranslation(FVector2D::ZeroVector);
+    }
     Screen = EMWMatchResultsScreen::Standings;
-    ContinueButton->SetVisibility(ESlateVisibility::Visible);
-    if (auto* Controller = GetOwningPlayer())
-    {
-        RestoreInput(*Controller);
-    }
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Standings"), *GetWorld()->GetOutermost()->GetName());
-}
-
-FReply UMWMatchResultsWidget::NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event)
-{
-    // 마우스 버튼과 Slate의 표준 확인 키가 같은 로컬 전환을 사용한다.
-    if (Screen == EMWMatchResultsScreen::Standings && !Event.IsRepeat()
-        && FSlateApplication::Get().GetNavigationActionFromKey(Event) == EUINavigationAction::Accept)
-    {
-        HandleContinue();
-        return FReply::Handled();
-    }
-    return Super::NativeOnPreviewKeyDown(Geometry, Event);
-}
-
-void UMWMatchResultsWidget::HandleContinue()
-{
-    if (Screen != EMWMatchResultsScreen::Standings)
-    {
-        return;
-    }
-    Screen = EMWMatchResultsScreen::Overview;
-    PodiumPanel->SetVisibility(ESlateVisibility::Collapsed);
-    ResultsPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-    if (auto* Controller = GetOwningPlayer())
-    {
-        RestoreInput(*Controller);
-    }
-    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Overview"), *GetWorld()->GetOutermost()->GetName());
 }
 
 bool UMWMatchResultsWidget::RestoreInput(APlayerController& Controller)
@@ -509,14 +469,9 @@ bool UMWMatchResultsWidget::RestoreInput(APlayerController& Controller)
     }
     FInputModeUIOnly Mode;
     Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-    Mode.SetWidgetToFocus(Screen == EMWMatchResultsScreen::Standings ? ContinueButton->TakeWidget() : TakeWidget());
+    Mode.SetWidgetToFocus(TakeWidget());
     Controller.SetInputMode(Mode);
-    const bool bContinueAvailable = Screen == EMWMatchResultsScreen::Standings;
-    if (bContinueAvailable)
-    {
-        ContinueButton->SetUserFocus(&Controller);
-    }
-    Controller.bShowMouseCursor = bContinueAvailable;
+    Controller.bShowMouseCursor = false;
     return true;
 }
 

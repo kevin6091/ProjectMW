@@ -1,0 +1,85 @@
+2026-11-26 | Cua Driver 3-player PIE | base a325a54
+Reference video sampled at 20 fps: first plate 11:03.25, second 11:03.45, third 11:03.65 (approximate).
+The first visible plate in each local window is t=0. The PIE threshold is opacity > 0.01.
+Driver sent Enter and Space to all three windows after standings. All three remained in Standings.
+PIE-only target 250. The fixture requested lobby/track selection and moved the cars to the actual finish trigger.
+
+== C++ build and no-save asset validation ==
+Result: Succeeded
+[2026.11.26-04.48.31:016][  0]LogPython: MW_PODIUM_LAYOUT_DISK_VALIDATED card_seconds=0.6600000262260437 hold=0.30000001192092896 offset=<Struct 'Vector2D' (0x0000029BF8703E40) {x: 0.000000, y: 42.000000}> overview=absent continue=absent
+[2026.11.26-04.48.31:017][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+
+== Server and three local presentation screens ==
+[2026.11.26-04.50.01:490][618]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-04.50.06:520][767]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-04.50.11:688][951]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.26-04.50.14:955][ 59]LogMWServer: [MWProgress] EMWRoomPhase::Countdown -> EMWRoomPhase::Racing Round=1 Epoch=1
+[2026.11.26-04.50.29:284][559]LogMWServer: [MWProgress] EMWRoomPhase::Racing -> EMWRoomPhase::RoundResults Round=1 Epoch=1
+[2026.11.26-04.50.29:330][559]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.50.29:350][560]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.50.29:356][560]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.50.30:350][571]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.50.30:351][571]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.50.30:352][571]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.50.32:310][600]LogMWServer: [MWProgress] EMWRoomPhase::RoundResults -> EMWRoomPhase::MatchResults Round=1 Epoch=1
+[2026.11.26-04.50.35:758][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-04.50.35:759][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-04.50.35:760][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-04.50.36:837][677]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-04.50.36:837][677]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-04.50.36:838][677]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+
+== Live render opacity and still-image widths ==
+P1 first=0.000 second=0.609 third=0.843 settled=1.062 isolated_full_first_samples=1
+P2 first=0.000 second=0.563 third=0.797 settled=1.016 isolated_full_first_samples=1
+P3 first=0.000 second=0.515 third=0.750 settled=0.984 isolated_full_first_samples=1
+Unexpected overview/continue widgets: 0
+score-panel-tally-p1.png: scan y=284, x=198..761, fraction=58.8%
+layout-podium-frame-09.png: scan y=193, x=111..848, fraction=76.9%
+layout-podium-tally-p2-7.png: scan y=251, x=19..908, fraction=95.9%
+layout-podium-tally-p3-7.png: scan y=156, x=199..760, fraction=58.5%
+
+== Input check: local viewports and terminal result screen ==
+{"1": {"phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [1280, 722], "epoch": 1, "passed": 0, "earned": 0, "finish": 1, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}, "2": {"phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [924, 693], "epoch": 1, "passed": 0, "earned": 0, "finish": 2, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}, "3": {"phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [1120, 480], "epoch": 1, "passed": 0, "earned": 0, "finish": 3, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}}
+
+== Per-window sampled reveal details ==
+{"event": "reveal", "member": 1, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.147, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.147, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.147, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.218, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.9053, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.172, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.9053, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.125, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.9053, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.297, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.25, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.203, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.609, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.1441, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.563, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.1441, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.515, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.1441, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.687, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.6644, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.656, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.6644, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.609, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.6644, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.781, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.0021}}
+{"event": "reveal", "member": 2, "elapsed": 0.735, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.0021}}
+{"event": "reveal", "member": 3, "elapsed": 0.687, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.0021}}
+{"event": "reveal", "member": 1, "elapsed": 0.843, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.2957}}
+{"event": "reveal", "member": 2, "elapsed": 0.797, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.2957}}
+{"event": "reveal", "member": 3, "elapsed": 0.75, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.2957}}
+{"event": "reveal", "member": 1, "elapsed": 0.922, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.7463}}
+{"event": "reveal", "member": 2, "elapsed": 0.875, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.7463}}
+{"event": "reveal", "member": 3, "elapsed": 0.828, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.7463}}
+{"event": "reveal", "member": 1, "elapsed": 0.984, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.9986}}
+{"event": "reveal", "member": 2, "elapsed": 0.938, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.9986}}
+{"event": "reveal", "member": 3, "elapsed": 0.89, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.9986}}
+{"event": "reveal", "member": 1, "elapsed": 1.062, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+{"event": "reveal", "member": 2, "elapsed": 1.016, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.984, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+
+== Clean rebuild after removing the PIE helper and existing automation ==
+Result: Succeeded
+[2026.11.26-04.56.32:629][586]LogAutomationController: Display: Test Completed. Result={Success} Name={AuthorityAndNotify} Path={MW.Gameplay.PlayerRound.AuthorityAndNotify}
+[2026.11.26-04.56.32:663][588]LogAutomationController: Display: Test Completed. Result={Success} Name={ProgressResultsSerialization} Path={MW.Gameplay.PlayerRound.ProgressResultsSerialization}
+[2026.11.26-04.56.32:677][590]LogAutomationController: Display: Test Completed. Result={Success} Name={Serialization} Path={MW.Gameplay.PlayerRound.Serialization}
+[2026.11.26-04.56.36:211][688]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.26-04.56.36:640][786]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.26-04.56.37:214][236]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.26-04.56.37:215][237]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 6 tests performed.
