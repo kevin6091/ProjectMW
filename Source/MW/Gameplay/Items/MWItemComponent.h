@@ -3,11 +3,14 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Engine/TimerHandle.h"
+#include "Gameplay/Items/MWItemTypes.h"
 #include "UObject/SoftObjectPtr.h"
 #include "MWItemComponent.generated.h"
 
 class ALevelSequenceActor;
 class AMWGameplayGameState;
+class AMWMountedItemPresentation;
+class UMWItemDefinitionData;
 class ULevelSequence;
 class USceneComponent;
 class UStaticMesh;
@@ -44,11 +47,16 @@ struct FMWBoosterPresentation
     double FiringEndsAt = 0.0;
 };
 
-UENUM(BlueprintType)
-enum class EMWItemId : uint8
+USTRUCT()
+struct FMWMountedItemPresentationState
 {
-    None,
-    Booster
+    GENERATED_BODY()
+
+    UPROPERTY()
+    EMWItemId ItemId = EMWItemId::None;
+
+    UPROPERTY()
+    double UseEndsAt = -1.0;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMWHeldItemChanged, EMWItemId, ItemId);
@@ -73,7 +81,8 @@ public:
     FMWHeldItemChanged OnHeldItemChanged;
 
     // 서버 권한·소유 차량·허용 단계·빈 슬롯을 검사한 뒤 지급 ID와 보유 상태를 갱신한다.
-    bool TryGrantBooster();
+    bool TryGrantItem(EMWItemId ItemId);
+    bool TryGrantRandomItem();
 
     // 로컬 소유 차량의 실제 보유 아이템만 서버 사용 요청으로 전달한다.
     void RequestUseItem();
@@ -88,9 +97,9 @@ public:
     bool IsBoosterJetActive() const;
 
     // 활성 효과에 적용할 설정 배율이다. 아이템 사용 승인·종료 시각·Snapshot은 변경하지 않는다.
-    float GetBoosterSpeedMultiplier() const { return BoosterSpeedMultiplier; }
+    float GetBoosterSpeedMultiplier() const;
 
-    float GetBoosterAccelerationMultiplier() const { return BoosterAccelerationMultiplier; }
+    float GetBoosterAccelerationMultiplier() const;
 
     // 복제된 종료 시각에서 남은 초를 계산하고 이미 끝났으면 0을 반환한다.
     float GetBoosterTimeRemaining() const;
@@ -113,7 +122,6 @@ protected:
     float BoosterExhaustLengthScale = 6.2f;
 
 private:
-    static constexpr double BoosterDurationSeconds = 2.0;
     static const FName BoosterBaseTag;
     static const FName BoosterBodyTag;
     static const FName BoosterNozzleTag;
@@ -129,12 +137,11 @@ private:
 
     FBoosterMount GetBoosterMount(const AActor& Vehicle, const AActor& Booster);
 
-    // 예측과 권한 시뮬레이션이 같은 값을 사용해야 하므로 서버·클라이언트에 동일한 Config를 배포한다.
-    UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Items|Booster", meta = (ClampMin = "1"))
-    float BoosterSpeedMultiplier = 1.25f;
+    UPROPERTY(Transient)
+    TObjectPtr<UMWItemDefinitionData> BoosterDefinition;
 
-    UPROPERTY(Config, EditDefaultsOnly, Category = "MW|Items|Booster", meta = (ClampMin = "1"))
-    float BoosterAccelerationMultiplier = 1.5f;
+    UPROPERTY(Transient)
+    TObjectPtr<UMWItemDefinitionData> HammerDefinition;
 
     // Config의 차량별 기본값이다. BP override가 없을 때만 사용한다.
     UPROPERTY(Config)
@@ -151,6 +158,20 @@ private:
 
     // 보유 값과 외형 상태를 함께 갱신하고 실제 변경만 소유자 UI에 알린다.
     void SetCurrentItem(EMWItemId ItemId);
+    void ResolveHammerHit();
+    const UMWItemDefinitionData* GetMountedItemDefinition(EMWItemId ItemId) const;
+    void RemoveMountedVisual();
+
+    UFUNCTION()
+    void OnRep_MountedPresentation();
+
+    UPROPERTY(ReplicatedUsing = OnRep_MountedPresentation)
+    FMWMountedItemPresentationState MountedPresentation;
+
+    TWeakObjectPtr<AMWMountedItemPresentation> MountedVisual;
+    EMWItemId PresentedMountedItem = EMWItemId::None;
+    double LastPresentedUseEnd = -1.0;
+    FTimerHandle HammerImpactTimer;
 
     // 기본 외형과 음원을 준비하되 원본 시퀀스는 CDO 시점에 강제로 로드하지 않는다.
     void LoadBoosterVisualAssets();

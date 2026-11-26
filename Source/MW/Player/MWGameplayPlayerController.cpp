@@ -13,6 +13,7 @@
 #include "System/GameMode/MWGameplayGameMode.h"
 #include "System/MWPlayerState.h"
 #include "System/MWAssetManager.h"
+#include "System/MWDriveTestGameMode.h"
 #include "LogChannel.h"
 #include "MWGameplayTags.h"
 #include "EnhancedInputComponent.h"
@@ -38,6 +39,10 @@ AMWGameplayPlayerController::AMWGameplayPlayerController()
 void AMWGameplayPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	if (GetNetMode() == NM_Client && IsLocalController())
+	{
+		AMWDriveTestGameMode::ConfigureItemPickupGround(*GetWorld());
+	}
 	ApplyGameplayInputMode();
 	RefreshDrivingInput();
 }
@@ -53,6 +58,12 @@ void AMWGameplayPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 	RefreshDrivingInput();
+#if !UE_BUILD_SHIPPING
+	if (InputComponent && IsLocalController() && AMWDriveTestGameMode::IsItemPickupTestMap(*GetWorld()))
+	{
+		InputComponent->BindKey(EKeys::H, IE_Pressed, this, &ThisClass::HandleTestGrantRandomItem);
+	}
+#endif
 }
 
 void AMWGameplayPlayerController::SetPawn(APawn* InPawn)
@@ -80,13 +91,35 @@ void AMWGameplayPlayerController::PostSeamlessTravel()
 	RefreshDrivingInput();
 }
 
-// 현재 소유한 차량에만 아이템 사용 의도를 전달하고 서버 판정은 ItemComponent에 맡긴다.
+// 현재 소유한 차량에만 사용 요청을 전달한다.
 void AMWGameplayPlayerController::HandleUseItem()
 {
     if (AMWVehiclePawn* Vehicle = GetInputVehicle())
     {
         Vehicle->GetItemComponent()->RequestUseItem();
     }
+}
+
+void AMWGameplayPlayerController::HandleTestGrantRandomItem()
+{
+	if (GetInputVehicle())
+	{
+		ServerGrantTestRandomItem();
+	}
+}
+
+void AMWGameplayPlayerController::ServerGrantTestRandomItem_Implementation()
+{
+#if !UE_BUILD_SHIPPING
+	UWorld* World = GetWorld();
+	if (World && World->GetAuthGameMode<AMWDriveTestGameMode>() && AMWDriveTestGameMode::IsItemPickupTestMap(*World))
+	{
+		if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()); Vehicle && Vehicle->GetController() == this)
+		{
+			Vehicle->GetItemComponent()->TryGrantRandomItem();
+		}
+	}
+#endif
 }
 
 void AMWGameplayPlayerController::RequestConfirmTrack(int32 SessionId, int32 Revision, int32 OfferId)

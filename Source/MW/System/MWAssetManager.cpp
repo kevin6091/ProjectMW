@@ -1,5 +1,7 @@
 #include "System/MWAssetManager.h"
+#include "Data/MWAssetData.h"
 #if WITH_EDITOR
+#include "Data/MWItemDefinitionData.h"
 #include "Gameplay/Items/MWCoursePickupSettings.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
 
@@ -18,10 +20,36 @@ void UMWAssetManager::ModifyCook(TConstArrayView<const ITargetPlatform*> TargetP
         const FName MeshPackage = Part->Mesh.ToSoftObjectPath().GetLongPackageFName();
         if (!MeshPackage.IsNone()) PackagesToCook.AddUnique(MeshPackage);
     }
+    const auto AddPackage = [&PackagesToCook](const FSoftObjectPath& Path)
+    {
+        const FName Name = Path.GetLongPackageFName();
+        if (!Name.IsNone()) PackagesToCook.AddUnique(Name);
+    };
+    for (const TSoftObjectPtr<UMWAssetData>& Reference : StartupAssetDataAdditions)
+    {
+        AddPackage(Reference.ToSoftObjectPath());
+        if (const UMWAssetData* Catalog = Reference.LoadSynchronous())
+        {
+            for (const FMWAssetEntry& Entry : Catalog->GetEntries())
+            {
+                AddPackage(Entry.Asset.ToSoftObjectPath());
+                if (const auto* Item = Cast<UMWItemDefinitionData>(Entry.Asset.LoadSynchronous()))
+                {
+                    const auto& Art = Item->Presentation;
+                    for (const FSoftObjectPath& Path : {Item->Icon.ToSoftObjectPath(), Art.VisualClass.ToSoftObjectPath(),
+                        Art.Attach.ToSoftObjectPath(), Art.Use.ToSoftObjectPath(), Art.Loop.ToSoftObjectPath(),
+                        Art.Detach.ToSoftObjectPath(), Art.UseSound.ToSoftObjectPath(), Art.ImpactSound.ToSoftObjectPath(),
+                        Art.ExhaustMesh.ToSoftObjectPath()})
+                    {
+                        AddPackage(Path);
+                    }
+                }
+            }
+        }
+    }
 }
 #endif
 
-#include "Data/MWAssetData.h"
 #include "Engine/Engine.h"
 #include "Engine/StreamableManager.h"
 #include "Misc/PackageName.h"
@@ -42,6 +70,18 @@ UMWAssetManager& UMWAssetManager::Get()
 void UMWAssetManager::StartInitialLoading()
 {
 	Super::StartInitialLoading();
+	TArray<UMWAssetData*> Additions;
+	for (const TSoftObjectPtr<UMWAssetData>& Reference : StartupAssetDataAdditions)
+	{
+		if (UMWAssetData* Addition = Reference.LoadSynchronous())
+		{
+			Additions.Add(Addition);
+		}
+		else
+		{
+			UE_LOG(LogMWAssets, Error, TEXT("Could not load supplemental catalog '%s'."), *Reference.ToString());
+		}
+	}
 	UMWAssetData* Catalog = nullptr;
 	TArray<FText> Errors;
 	if (!StartupAssetDataOverride.IsNull())
@@ -51,7 +91,7 @@ void UMWAssetManager::StartInitialLoading()
 		{
 			Catalog = StartupAssetDataOverride.LoadSynchronous();
 		}
-		if (!InitializeCatalog(Catalog, Errors))
+		if (!InitializeCatalog(Catalog, Errors, Additions))
 		{
 			UE_LOG(LogMWAssets, Warning, TEXT("Optional catalog '%s' is unavailable; using StartupAssetData."), *OverridePath.ToString());
 			for (const FText& Error : Errors) UE_LOG(LogMWAssets, Warning, TEXT("%s"), *Error.ToString());
@@ -68,7 +108,7 @@ void UMWAssetManager::StartInitialLoading()
 			return;
 		}
 		Catalog = StartupAssetData.LoadSynchronous();
-		if (!InitializeCatalog(Catalog, Errors))
+		if (!InitializeCatalog(Catalog, Errors, Additions))
 		{
 			for (const FText& Error : Errors) UE_LOG(LogMWAssets, Error, TEXT("%s"), *Error.ToString());
 			return;
@@ -78,9 +118,12 @@ void UMWAssetManager::StartInitialLoading()
 	{
 		UE_LOG(LogMWAssets, Error, TEXT("MW startup preload failed for %s."), *Catalog->GetPathName());
 	}
+	UE_LOG(LogMWAssets, Display, TEXT("Loaded MW catalog '%s' with %d supplemental catalogs."),
+		*Catalog->GetPathName(), Additions.Num());
 }
 
-bool UMWAssetManager::InitializeCatalog(UMWAssetData* Catalog, TArray<FText>& OutErrors)
+bool UMWAssetManager::InitializeCatalog(UMWAssetData* Catalog, TArray<FText>& OutErrors,
+	TConstArrayView<UMWAssetData*> Additions)
 {
 	check(IsInGameThread());
 	// 새 목록의 검사가 끝나기 전에는 현재 목록이나 보관 중인 에셋을 건드리지 않습니다.
@@ -89,18 +132,37 @@ bool UMWAssetManager::InitializeCatalog(UMWAssetData* Catalog, TArray<FText>& Ou
 		OutErrors.Add(FText::FromString(TEXT("Asset catalog is null or could not be loaded.")));
 		return false;
 	}
-	if (!Catalog->ValidateCatalog(OutErrors)) return false;
-
 	// 원본 데이터와 별개로 조회에 쓸 경로와 분류를 먼저 완성한 뒤, 한 번에 교체합니다.
 	TMap<FGameplayTag, FSoftObjectPath> NewPaths;
 	TMap<FGameplayTag, TArray<FGameplayTag>> NewLabels;
-	for (const FMWAssetEntry& Entry : Catalog->GetEntries())
+	const auto IndexCatalog = [&](const UMWAssetData& Source)
 	{
-		NewPaths.Add(Entry.AssetId, Entry.Asset.ToSoftObjectPath());
-		for (const FGameplayTag Label : Entry.Labels)
+		if (!Source.ValidateCatalog(OutErrors)) return false;
+		for (const FMWAssetEntry& Entry : Source.GetEntries())
 		{
-			NewLabels.FindOrAdd(Label).Add(Entry.AssetId);
+			if (NewPaths.Contains(Entry.AssetId))
+			{
+				OutErrors.Add(FText::FromString(FString::Printf(TEXT("Duplicate AssetId '%s' in catalog '%s'."),
+					*Entry.AssetId.ToString(), *Source.GetPathName())));
+				return false;
+			}
+			NewPaths.Add(Entry.AssetId, Entry.Asset.ToSoftObjectPath());
+			for (const FGameplayTag Label : Entry.Labels)
+			{
+				NewLabels.FindOrAdd(Label).Add(Entry.AssetId);
+			}
 		}
+		return true;
+	};
+	if (!IndexCatalog(*Catalog)) return false;
+	for (const UMWAssetData* Addition : Additions)
+	{
+		if (!::IsValid(Addition))
+		{
+			OutErrors.Add(FText::FromString(TEXT("Supplemental asset catalog is null.")));
+			return false;
+		}
+		if (!IndexCatalog(*Addition)) return false;
 	}
 	// 이 구간에서는 파일 불러오기나 그에 따른 외부 호출 없이 새 목록을 적용합니다.
 	// 적용 후 에디터에서 원본 목록을 수정했다면 InitializeCatalog를 다시 호출해야 합니다.

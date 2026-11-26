@@ -106,9 +106,7 @@ public:
     UPROPERTY(Config)
     TSoftObjectPtr<UTexture2D> BoardBolt;
 
-    UPROPERTY(Config)
-    TSoftObjectPtr<UTexture2D> BoosterIcon;
-
+    // 획득 애니메이션 중에만 쓰는 카드 그림이다. 확정 아이콘은 아이템 정의가 제공한다.
     UPROPERTY(Config)
     TArray<TSoftObjectPtr<UTexture2D>> ItemRouletteIcons;
 
@@ -127,9 +125,6 @@ public:
 
     UPROPERTY(Config)
     TSoftObjectPtr<UMaterialInterface> ItemIconMaterial;
-
-    UPROPERTY(Config)
-    FVector2D BoosterIconContentCenter = FVector2D(.5, .5);
 
     // 화면 생성 때 한 번 복사하므로 매 틱 설정 조회·Widget 재생성 없이 사용한다.
     UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Layout")

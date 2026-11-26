@@ -32,6 +32,18 @@ bool FMWVehicleDriveSnapshot::NetSerialize(FArchive& Ar, UPackageMap* Map, bool&
 	bool bGroundNormalSuccess = false;
 	GroundNormal.NetSerialize(Ar, Map, bGroundNormalSuccess);
 	Ar << ImpactYawRate;
+	uint8 ItemControlLocked = ItemControlLockRemaining > 0.f ? 1 : 0;
+	Ar.SerializeBits(&ItemControlLocked, 1);
+	if (ItemControlLocked)
+	{
+		Ar << ItemControlLockRemaining;
+		Ar << ItemSpinYawRate;
+	}
+	else if (Ar.IsLoading())
+	{
+		ItemControlLockRemaining = 0.f;
+		ItemSpinYawRate = 0.f;
+	}
 	// 소유자의 재실행이 같은 높이 감쇠에서 시작하도록 전달한다.
 	Ar << SuspensionSpeed;
 	Ar << ServerTimeSeconds;

@@ -16,6 +16,9 @@ namespace MWGameplayTags
 	
 	// 원격 선택·배치가 공통으로 사용하는 트랙 카탈로그 ID
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Track_RuntimeCatalog);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Item);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Item_Booster);
+	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Item_Hammer);
 
 	// VehicleAsset ID
 	MW_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(Asset_Vehicle_SMIET);

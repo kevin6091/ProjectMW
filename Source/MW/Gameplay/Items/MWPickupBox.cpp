@@ -129,6 +129,14 @@ void AMWPickupBox::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
     DOREPLIFETIME(AMWPickupBox, bAvailable);
 }
 
+void AMWPickupBox::SetItemPool(const TArray<EMWItemId>& Items)
+{
+    if (HasAuthority())
+    {
+        ItemPool = Items;
+    }
+}
+
 // 서버에서만 실제 차량의 지급 가능 여부를 검사하고 성공 시 상자를 비활성화한다.
 void AMWPickupBox::HandleOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrimitiveComponent*, int32, bool,
                                  const FHitResult&)
@@ -139,13 +147,26 @@ void AMWPickupBox::HandleOverlap(UPrimitiveComponent*, AActor* OtherActor, UPrim
     }
     AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(OtherActor);
     UMWItemComponent* Items = Vehicle ? Vehicle->FindComponentByClass<UMWItemComponent>() : nullptr;
-    if (Items && Items->TryGrantBooster())
+    if (!Items || Items->GetCurrentItemId() != EMWItemId::None || ItemPool.IsEmpty())
     {
+        return;
+    }
+
+    const int32 First = FMath::RandHelper(ItemPool.Num());
+    for (int32 Offset = 0; Offset < ItemPool.Num(); ++Offset)
+    {
+        const EMWItemId Item = ItemPool[(First + Offset) % ItemPool.Num()];
+        if (!Items->TryGrantItem(Item))
+        {
+            continue;
+        }
         bAvailable = false;
         UpdateAvailability();
         ForceNetUpdate();
-        UE_LOG(LogMWServer, Log, TEXT("[MWPickup] box=%s vehicle=%s location=%s speed=%.1f"),
-            *GetName(), *GetNameSafe(Vehicle), *Vehicle->GetActorLocation().ToCompactString(), Vehicle->GetVelocity().Size2D());
+        UE_LOG(LogMWServer, Log, TEXT("[MWPickup] box=%s vehicle=%s location=%s speed=%.1f item=%s"),
+            *GetName(), *GetNameSafe(Vehicle), *Vehicle->GetActorLocation().ToCompactString(), Vehicle->GetVelocity().Size2D(),
+            *StaticEnum<EMWItemId>()->GetNameStringByValue(static_cast<int64>(Item)));
+        return;
     }
 }
 

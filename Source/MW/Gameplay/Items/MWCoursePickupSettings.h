@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
+#include "Gameplay/Items/MWItemTypes.h"
 #include "MWCoursePickupSettings.generated.h"
 
 class UStaticMesh;
@@ -30,6 +31,9 @@ class UMWCoursePickupSettings : public UDeveloperSettings
     GENERATED_BODY()
 
 public:
+    UPROPERTY(Config, EditAnywhere, Category = "Items")
+    TArray<EMWItemId> ItemPool = {EMWItemId::Booster, EMWItemId::Hammer};
+
     UPROPERTY(Config, EditAnywhere, Category = "Placement")
     bool bEnabled = false;
 

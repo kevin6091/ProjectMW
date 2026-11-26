@@ -12,6 +12,19 @@
 #include "LogChannel.h"
 #include "System/GameState/MWGameplayGameState.h"
 
+namespace
+{
+FVector ExtrapolateDriveLocation(const FVector& Location, const FVector& Velocity, double Lead, double PlanarLead)
+{
+	return Location + FVector(Velocity.X * PlanarLead, Velocity.Y * PlanarLead, Velocity.Z * Lead);
+}
+
+double GetPlanarLead(double Lead, float ItemSpinYawRate, double ItemControlLockRemaining)
+{
+	return ItemSpinYawRate != 0.f ? FMath::Clamp(ItemControlLockRemaining, 0.0, Lead) : Lead;
+}
+}
+
 bool AMWVehiclePawn::IsNewerSequence(uint32 Candidate, uint32 Previous)
 {
 	const uint32 Difference = Candidate - Previous;
@@ -22,7 +35,8 @@ bool AMWVehiclePawn::NeedsDriveCorrection(const FMWVehicleDriveSnapshot& Predict
 {
 	// 움직이는 중에는 작은 오차를 허용하고, 정지하면 복제 정밀도에 가깝게 맞춘다.
 	const bool bStopped = Prediction.Velocity.IsNearlyZero(1.0) && Server.Velocity.IsNearlyZero(1.0)
-		&& FMath::IsNearlyZero(Prediction.ImpactYawRate) && FMath::IsNearlyZero(Server.ImpactYawRate);
+		&& FMath::IsNearlyZero(Prediction.ImpactYawRate) && FMath::IsNearlyZero(Server.ImpactYawRate)
+		&& FMath::IsNearlyZero(Prediction.ItemSpinYawRate) && FMath::IsNearlyZero(Server.ItemSpinYawRate);
 	const double LocationTolerance = bStopped ? 0.15 : 3.0;
 	const double RotationTolerance = bStopped ? 0.15 : 1.0;
 	return !Prediction.Location.Equals(Server.Location, LocationTolerance)
@@ -32,6 +46,9 @@ bool AMWVehiclePawn::NeedsDriveCorrection(const FMWVehicleDriveSnapshot& Predict
 		|| (Prediction.bGrounded && Server.bGrounded
 			&& !Prediction.GroundNormal.Equals(Server.GroundNormal, GroundNormalTolerance))
 		|| FMath::Abs(Prediction.ImpactYawRate - Server.ImpactYawRate) > 2.f
+		|| Prediction.ItemSpinYawRate != Server.ItemSpinYawRate
+		|| (Prediction.ItemControlLockRemaining > 0.f) != (Server.ItemControlLockRemaining > 0.f)
+		|| FMath::Abs(Prediction.ItemControlLockRemaining - Server.ItemControlLockRemaining) > DriveStep
 		|| FMath::Abs(Prediction.SuspensionSpeed - Server.SuspensionSpeed) > 10.f;
 }
 
@@ -87,6 +104,33 @@ void AMWVehiclePawn::OnRep_ServerDriveSnapshot()
 	RefreshDrivePermission();
 }
 
+bool AMWVehiclePawn::IsItemControlLocked() const
+{
+	return VehicleMovement && VehicleMovement->IsItemControlLocked();
+}
+
+void AMWVehiclePawn::ApplyItemHit(const FVector& Direction, float Speed, float ControlLockDuration, float SpinDegrees)
+{
+	if (!HasAuthority() || !CanDrive() || Direction.ContainsNaN() || !FMath::IsFinite(Speed) || Speed <= 0.f)
+	{
+		return;
+	}
+
+	constexpr float MaxItemKnockbackSpeed = 2000.f;
+	VehicleMovement->ApplyExternalVelocityChange(Direction.GetSafeNormal() * FMath::Min(Speed, MaxItemKnockbackSpeed));
+
+	if (FMath::IsFinite(ControlLockDuration) && ControlLockDuration > KINDA_SMALL_NUMBER && FMath::IsFinite(SpinDegrees))
+	{
+		const float Duration = FMath::Min(ControlLockDuration, 3.f);
+		VehicleMovement->ItemControlLockRemaining = FMath::Max(VehicleMovement->ItemControlLockRemaining, Duration);
+		const float SpinSign = FVector::DotProduct(Direction, GetActorRightVector()) < -KINDA_SMALL_NUMBER ? -1.f : 1.f;
+		VehicleMovement->ItemSpinYawRate = SpinSign * FMath::Clamp(
+			SpinDegrees / VehicleMovement->ItemControlLockRemaining, 0.f, 1440.f);
+	}
+	PublishDriveSnapshot(false);
+	ForceNetUpdate();
+}
+
 void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 {
 	FMWVehicleDriveSnapshot Snapshot = ServerDriveSnapshot;
@@ -105,6 +149,8 @@ void AMWVehiclePawn::PublishDriveSnapshot(bool bNewStream)
 		&& Snapshot.Rotation == ServerDriveSnapshot.Rotation
 		&& Snapshot.Velocity == ServerDriveSnapshot.Velocity
 		&& Snapshot.ImpactYawRate == ServerDriveSnapshot.ImpactYawRate
+		&& Snapshot.ItemControlLockRemaining == ServerDriveSnapshot.ItemControlLockRemaining
+		&& Snapshot.ItemSpinYawRate == ServerDriveSnapshot.ItemSpinYawRate
 		&& Snapshot.SuspensionSpeed == ServerDriveSnapshot.SuspensionSpeed
 		&& Snapshot.bGrounded == ServerDriveSnapshot.bGrounded
 		&& (!Snapshot.bGrounded || Snapshot.GroundNormal.Equals(ServerDriveSnapshot.GroundNormal, GroundNormalTolerance)))
@@ -204,6 +250,7 @@ void AMWVehiclePawn::TickAuthorityDrive(float DeltaTime)
 		}
 	}
 
+	const bool bWasSpinning = VehicleMovement->ItemSpinYawRate != 0.f;
 	DriveStepTime = FMath::Min(DriveStepTime + DeltaTime, MaxDriveStepTime);
 	while (DriveStepTime >= DriveStep)
 	{
@@ -252,13 +299,14 @@ void AMWVehiclePawn::TickAuthorityDrive(float DeltaTime)
 	}
 
 	SnapshotTime += DeltaTime;
-	if (bContactSnapshotPending || SnapshotTime >= SnapshotInterval)
+	const bool bSpinEnded = bWasSpinning && VehicleMovement->ItemSpinYawRate == 0.f;
+	if (bContactSnapshotPending || bSpinEnded || SnapshotTime >= SnapshotInterval)
 	{
 		SnapshotTime = FMath::Fmod(SnapshotTime, SnapshotInterval);
 		PublishDriveSnapshot();
-		if (bContactSnapshotPending)
+		if (bContactSnapshotPending || bSpinEnded)
 		{
-			// 피해 차량이 이번 틱에 입력을 처리하지 않아도 같은 ACK로 충돌 상태를 보낸다.
+			// 같은 ACK에서도 충돌이나 피격 정지가 발생하면 즉시 보낸다.
 			bContactSnapshotPending = false;
 			ForceNetUpdate();
 		}
@@ -386,9 +434,16 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move, bool bReplaying
 		}
 		// 내 차와 상대를 같은 시각으로 평가하되 오래된 자료로 계속 멀리 추정하지 않는다.
 		const double Lead = FMath::Clamp(StepTime - Contact.SourceTime, 0.0, MaxContactExtrapolation);
-		Contact.Location = Contact.SourceLocation + Contact.SourceVelocity * Lead;
+		const double PlanarLead = GetPlanarLead(Lead, Contact.SourceItemSpinYawRate, Contact.SourceItemControlLockRemaining);
+		Contact.Location = ExtrapolateDriveLocation(Contact.SourceLocation, Contact.SourceVelocity, Lead, PlanarLead);
+		if (PlanarLead < Lead)
+		{
+			Contact.Velocity.X = 0.0;
+			Contact.Velocity.Y = 0.0;
+		}
 		FRotator Rotation = Contact.SourceRotation.Rotator();
-		Rotation.Yaw += Contact.ImpactYawRate * Lead;
+		Rotation.Yaw += Contact.ImpactYawRate * Lead
+			+ Contact.GetItemSpinAngle(Contact.SourceTime, Contact.SourceTime + Lead);
 		Contact.Rotation = Rotation.Quaternion();
 	}
 	for (int32 Index = PredictedContactMotions.Num() - 1; Index >= 0; --Index)
@@ -426,7 +481,7 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move, bool bReplaying
 			Sample->ImpactYawRate = Motion.ImpactYawRate;
 			Motion.Location += Motion.Velocity * DriveStep;
 			FRotator Rotation = Motion.Rotation.Rotator();
-			Rotation.Yaw += Motion.ImpactYawRate * DriveStep;
+			Rotation.Yaw += Motion.ImpactYawRate * DriveStep + Sample->GetItemSpinAngle(StepTime, Move.ResultTime);
 			Motion.Rotation = Rotation.Quaternion();
 			Motion.ImpactYawRate *= FMath::Exp(-MWVehicleImpactYawDamping * DriveStep);
 			Motion.RemainingTime -= DriveStep;
@@ -488,7 +543,7 @@ void AMWVehiclePawn::SimulatePredictedMove(FPredictedMove& Move, bool bReplaying
 		Motion->Location = Sample.Location + (Sample.Velocity * DriveStep + Sample.CorrectionDelta) * Impact.Fraction
 			+ Motion->Velocity * (DriveStep * (1.0 - Impact.Fraction));
 		FRotator Rotation = Sample.Rotation.Rotator();
-		Rotation.Yaw += Sample.ImpactYawRate * DriveStep;
+		Rotation.Yaw += Sample.ImpactYawRate * DriveStep + Sample.GetItemSpinAngle(StepTime, Move.ResultTime);
 		Motion->Rotation = Rotation.Quaternion();
 		Motion->ImpactYawRate = FMath::Clamp(Sample.ImpactYawRate + Impact.OtherYawRateDelta, -150.f, 150.f);
 	}
@@ -674,6 +729,8 @@ bool AMWVehiclePawn::GetContactPrediction(const AMWVehiclePawn* Other, double Se
 	OutContact.SourceLocation = Snapshot.Location;
 	OutContact.SourceVelocity = Snapshot.Velocity;
 	OutContact.SourceRotation = Snapshot.Rotation.Quaternion();
+	OutContact.SourceItemControlLockRemaining = Snapshot.ItemControlLockRemaining;
+	OutContact.SourceItemSpinYawRate = Snapshot.ItemSpinYawRate;
 	if (HasAuthority())
 	{
 		OutContact.Location = Other->GetActorLocation();
@@ -684,12 +741,19 @@ bool AMWVehiclePawn::GetContactPrediction(const AMWVehiclePawn* Other, double Se
 	}
 	const double Age = ServerTime - Snapshot.ServerTimeSeconds;
 	const double Lead = FMath::Clamp(Age, 0.0, MaxContactExtrapolation);
-	OutContact.Location = FVector(Snapshot.Location) + FVector(Snapshot.Velocity) * Lead;
+	const double PlanarLead = GetPlanarLead(Lead, Snapshot.ItemSpinYawRate, Snapshot.ItemControlLockRemaining);
+	OutContact.Location = ExtrapolateDriveLocation(Snapshot.Location, Snapshot.Velocity, Lead, PlanarLead);
 	FRotator Rotation = Snapshot.Rotation;
-	Rotation.Yaw += Snapshot.ImpactYawRate * Lead;
+	Rotation.Yaw += Snapshot.ImpactYawRate * Lead
+		+ OutContact.GetItemSpinAngle(Snapshot.ServerTimeSeconds, Snapshot.ServerTimeSeconds + Lead);
 	OutContact.Rotation = Rotation.Quaternion();
 	const double SourceAge = GetDriveServerTime() - Snapshot.ServerTimeSeconds;
 	OutContact.Velocity = SourceAge <= MaxContactSampleAge ? FVector(Snapshot.Velocity) : FVector::ZeroVector;
+	if (PlanarLead < Lead)
+	{
+		OutContact.Velocity.X = 0.0;
+		OutContact.Velocity.Y = 0.0;
+	}
 	OutContact.ImpactYawRate = Snapshot.ImpactYawRate;
 	if (bUseContactMotion)
 	{
@@ -704,7 +768,8 @@ bool AMWVehiclePawn::GetContactPrediction(const AMWVehiclePawn* Other, double Se
 			OutContact.Location = Motion->Location + Motion->Velocity * MotionLead;
 			OutContact.Velocity = Motion->Velocity;
 			FRotator MotionRotation = Motion->Rotation.Rotator();
-			MotionRotation.Yaw += Motion->ImpactYawRate * MotionLead;
+			MotionRotation.Yaw += Motion->ImpactYawRate * MotionLead
+				+ OutContact.GetItemSpinAngle(MotionTime, MotionTime + MotionLead);
 			OutContact.Rotation = MotionRotation.Quaternion();
 			OutContact.ImpactYawRate = Motion->ImpactYawRate;
 		}
@@ -881,7 +946,7 @@ FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTim
 		{
 			// 정지 중에는 같은 스냅샷을 보내지 않는다. 새 움직임을 정지 구간 전체로 늘려 보간하지 않는다.
 			if (SampleTime - Last.ServerTimeSeconds > 0.2 && Last.Velocity.IsNearlyZero(1.0)
-				&& FMath::IsNearlyZero(Last.ImpactYawRate))
+				&& FMath::IsNearlyZero(Last.ImpactYawRate) && FMath::IsNearlyZero(Last.ItemSpinYawRate))
 			{
 				FMWVehicleDriveSnapshot Hold = Last;
 				Hold.ServerTimeSeconds = SampleTime - SnapshotInterval;
@@ -935,14 +1000,27 @@ FMWVehicleDriveSnapshot AMWVehiclePawn::GetProxyDrivePresentation(float DeltaTim
 		const double Elapsed = ProxyPlaybackTime - Latest.ServerTimeSeconds;
 		const double Lead = FMath::Min(Elapsed, MaxProxyExtrapolation);
 		Presentation = Latest;
-		Presentation.Location = FVector(Latest.Location) + FVector(Latest.Velocity) * Lead;
-		Presentation.Rotation.Yaw += Latest.ImpactYawRate * Lead;
+		const double PlanarLead = GetPlanarLead(Lead, Latest.ItemSpinYawRate, Latest.ItemControlLockRemaining);
+		Presentation.Location = ExtrapolateDriveLocation(Latest.Location, Latest.Velocity, Lead, PlanarLead);
+		if (PlanarLead < Lead)
+		{
+			Presentation.Velocity.X = 0.0;
+			Presentation.Velocity.Y = 0.0;
+		}
+		Presentation.Rotation.Yaw += Latest.ImpactYawRate * Lead
+			+ Latest.ItemSpinYawRate * FMath::Min(Lead, static_cast<double>(Latest.ItemControlLockRemaining));
 		if (Elapsed >= MaxProxyExtrapolation - UE_SMALL_NUMBER)
 		{
 			// 장시간 입력 유실 동안 마지막 속도로 계속 화면 밖까지 밀어내지 않는다.
 			Presentation.Velocity = FVector::ZeroVector;
 			Presentation.ImpactYawRate = 0.f;
 		}
+	}
+	const float PresentationAge = static_cast<float>(FMath::Max(0.0, ProxyPlaybackTime - Presentation.ServerTimeSeconds));
+	Presentation.ItemControlLockRemaining = FMath::Max(0.f, Presentation.ItemControlLockRemaining - PresentationAge);
+	if (Presentation.ItemControlLockRemaining <= 0.f)
+	{
+		Presentation.ItemSpinYawRate = 0.f;
 	}
 	return Presentation;
 }

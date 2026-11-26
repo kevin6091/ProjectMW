@@ -12,6 +12,16 @@ namespace MWGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Input_SelectConstruction, "Asset.Input.SelectConstruction");
 	
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Track_RuntimeCatalog, "Asset.Track.RuntimeCatalog");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Item, "Asset.Item");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Item_Booster, "Asset.Item.Booster");
+	UE_DEFINE_GAMEPLAY_TAG(Asset_Item_Hammer, "Asset.Item.Hammer");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_MachineGun, "Asset.Item.MachineGun");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_Shotgun, "Asset.Item.Shotgun");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_MortarLauncher, "Asset.Item.MortarLauncher");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_MineLayer, "Asset.Item.MineLayer");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_StickyBlobLauncher, "Asset.Item.StickyBlobLauncher");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_GrowPotion, "Asset.Item.GrowPotion");
+	UE_DEFINE_GAMEPLAY_TAG_STATIC(Asset_Item_TeslaCoil, "Asset.Item.TeslaCoil");
 
 	// VehicleAsset ID
 	UE_DEFINE_GAMEPLAY_TAG(Asset_Vehicle_SMIET, "Asset.Vehicle.SMIET");

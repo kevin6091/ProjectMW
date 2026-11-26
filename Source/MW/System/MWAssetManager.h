@@ -34,7 +34,8 @@ public:
 	 * 성공하면 기존 에셋 보관 목록을 비웁니다.
 	 * 나중에 원본 목록을 편집하면 이 함수를 다시 호출해야 반영됩니다.
 	 */
-	bool InitializeCatalog(UMWAssetData* Catalog, TArray<FText>& OutErrors);
+	bool InitializeCatalog(UMWAssetData* Catalog, TArray<FText>& OutErrors,
+		TConstArrayView<UMWAssetData*> Additions = {});
 
 	/** 검사를 통과한 에셋 목록이 있는지 확인합니다. 모든 에셋을 불러왔다는 뜻은 아닙니다. */
 	bool HasCatalog() const { return AssetData != nullptr; }
@@ -92,6 +93,10 @@ private:
     // 선택 설치한 카탈로그입니다. 로드나 검증에 실패하면 기본 목록을 사용합니다.
     UPROPERTY(Config, EditAnywhere, Category = "Assets")
     TSoftObjectPtr<UMWAssetData> StartupAssetDataOverride;
+
+    // 기본·환경 목록 중 어느 쪽이 선택되어도 함께 쓰는 기능별 목록이다.
+    UPROPERTY(Config, EditAnywhere, Category = "Assets")
+    TArray<TSoftObjectPtr<UMWAssetData>> StartupAssetDataAdditions;
 
     // 직접 ID로 조회할 수 있는 개발 항목을 선택 목록에서만 숨깁니다.
     UPROPERTY(Config, EditAnywhere, Category = "Assets")

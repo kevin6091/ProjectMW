@@ -16,4 +16,7 @@ class MW_API AMWDriveTestGameMode : public AGameModeBase
 	
 public:
 	AMWDriveTestGameMode();
+	virtual void StartPlay() override;
+	static bool IsItemPickupTestMap(const UWorld& World);
+	static void ConfigureItemPickupGround(UWorld& World);
 };

@@ -44,7 +44,7 @@ void UMWCoursePickupComponent::Prepare(const FMWTrackPlacementSession& Course,
     const auto& Settings = *GetDefault<UMWCoursePickupSettings>();
     if (!World || !GetOwner()->HasAuthority() || !Settings.bEnabled || Course.bIsOpen || Course.PlacedTracks.Num() < 2
         || !FMath::IsFinite(Settings.SurfaceSearchHeight) || Settings.SurfaceSearchHeight <= 0
-        || Settings.LaneOffsets.IsEmpty())
+        || Settings.LaneOffsets.IsEmpty() || Settings.ItemPool.IsEmpty())
     {
         return;
     }
@@ -54,6 +54,7 @@ void UMWCoursePickupComponent::Prepare(const FMWTrackPlacementSession& Course,
     Params.Owner = GetOwner();
     Params.ObjectFlags |= RF_Transient;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    Params.bDeferConstruction = true;
 
     TArray<FVector> RowCenters;
     const auto SpawnRow = [&](AActor& Track, const FVector& Center, const FVector& Forward)
@@ -79,6 +80,8 @@ void UMWCoursePickupComponent::Prepare(const FMWTrackPlacementSession& Course,
             const FVector BoxPosition = RoadPoint + FVector::UpVector * Settings.BoxOriginHeight;
             if (AMWPickupBox* Box = World->SpawnActor<AMWPickupBox>(BoxPosition, Direction.Rotation(), Params))
             {
+                Box->SetItemPool(Settings.ItemPool);
+                Box->FinishSpawning(FTransform(Direction.Rotation(), BoxPosition));
                 Boxes.Add(Box);
                 UE_LOG(LogMWServer, Log, TEXT("[MWCoursePickup] session=%d box=%s track=%s lane=%.1f location=%s"),
                     Course.SessionId, *Box->GetName(), *Track.GetName(), Offset, *BoxPosition.ToCompactString());

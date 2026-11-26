@@ -8,6 +8,7 @@
 #include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/SceneComponent.h"
+#include "Data/MWItemDefinitionData.h"
 #include "Data/MWVehicleDefinitionData.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/GameInstance.h"
@@ -16,6 +17,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "MWGameplayTags.h"
 #include "Misc/Paths.h"
 #include "Player/MWGameplayPlayerController.h"
 #include "Rendering/DrawElements.h"
@@ -93,23 +95,15 @@ public:
         ConstructionPromptSeconds = FMath::IsFinite(Settings->ConstructionPromptSeconds)
                                         ? FMath::Max(0.f, Settings->ConstructionPromptSeconds) : 0.f;
         InitializeItemTiming(*Settings);
-        BoosterTexture.Reset(Settings->BoosterIcon.LoadSynchronous());
-        if (BoosterTexture)
+        UMaterialInterface* IconMaterial = Settings->ItemIconMaterial.LoadSynchronous();
+        UMWAssetManager& AssetManager = UMWAssetManager::Get();
+        for (const FGameplayTag Id : AssetManager.GetAssetIdsUnderRoot(MWGameplayTags::Asset_Item))
         {
-            const FVector2D TextureSize(BoosterTexture->GetSizeX(), BoosterTexture->GetSizeY());
-            const FVector2D IconSize = TextureSize * (ItemLayout.IconSize / FMath::Max(1.0, TextureSize.GetMax()));
-            BoosterIconOffset = (FVector2D(.5, .5) - Settings->BoosterIconContentCenter) * IconSize;
-            UObject* IconResource = BoosterTexture.Get();
-            if (UMaterialInterface* Material = Settings->ItemIconMaterial.LoadSynchronous())
+            const auto* Item = AssetManager.LoadAssetSynchronous<UMWItemDefinitionData>(Id);
+            if (Item && Item->HasValidDefinition())
             {
-                BoosterIconMaterial.Reset(UMaterialInstanceDynamic::Create(Material, GetTransientPackage()));
-                if (BoosterIconMaterial)
-                {
-                    BoosterIconMaterial->SetTextureParameterValue(TEXT("ItemIcon"), BoosterTexture.Get());
-                    IconResource = BoosterIconMaterial.Get();
-                }
+                AddHeldItemIcon(Item->ItemId, Item->DisplayName, Item->Icon, Item->IconContentCenter, IconMaterial);
             }
-            BoosterBrush = FSlateImageBrush(IconResource, IconSize);
         }
         for (const TSoftObjectPtr<UTexture2D>& Icon : Settings->ItemRouletteIcons)
         {
@@ -130,15 +124,16 @@ public:
                     .RenderTransformPivot(FVector2D(.5,.5))
                     .RenderTransform_Lambda([this]() -> TOptional<FSlateRenderTransform>
                     {
-                        const FVector2D Offset = RouletteStep == INDEX_NONE ? BoosterIconOffset : FVector2D::ZeroVector;
+                        const FHeldItemIcon* Icon = RouletteStep == INDEX_NONE ? HeldIcons.Find(DisplayedItem) : nullptr;
+                        const FVector2D Offset = Icon ? Icon->Offset : FVector2D::ZeroVector;
                         return FSlateRenderTransform(ItemIconScale, Offset * ItemIconScale);
                     })
                     .ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(1,1,1,ItemIconOpacity)); })
                     .Visibility_Lambda([this] { return GetItemSlotBrush() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
                 + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-                [SNew(STextBlock).Text(NSLOCTEXT("MWGameplayUI","BoosterItem","부스터")).Font(Art.Font(24.f))
+                [SNew(STextBlock).Text_Lambda([this] { return GetItemSlotLabel(); }).Font(Art.Font(24.f))
                     .ColorAndOpacity_Lambda([this] { return FSlateColor(FLinearColor(.72f,.75f,.80f,ItemIconOpacity)); })
-                    .Visibility_Lambda([this] { return !GetItemSlotBrush() && DisplayedItem == EMWItemId::Booster
+                    .Visibility_Lambda([this] { return !GetItemSlotBrush() && DisplayedItem != EMWItemId::None
                         ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]);
         }
         ChildSlot[SNew(SOverlay)
@@ -464,13 +459,59 @@ private:
         }
     }
 
+    struct FHeldItemIcon
+    {
+        TStrongObjectPtr<UTexture2D> Texture;
+        TStrongObjectPtr<UMaterialInstanceDynamic> Material;
+        FSlateBrush Brush;
+        FText Label;
+        FVector2D Offset = FVector2D::ZeroVector;
+    };
+
+    void AddHeldItemIcon(EMWItemId ItemId, const FText& Label, const TSoftObjectPtr<UTexture2D>& Texture,
+        const FVector2D& ContentCenter, UMaterialInterface* Material)
+    {
+        FHeldItemIcon& Icon = HeldIcons.Add(ItemId);
+        Icon.Label = Label;
+        Icon.Texture.Reset(Texture.LoadSynchronous());
+        if (!Icon.Texture)
+        {
+            return;
+        }
+        const FVector2D TextureSize(Icon.Texture->GetSizeX(), Icon.Texture->GetSizeY());
+        const FVector2D IconSize = TextureSize * (ItemLayout.IconSize / FMath::Max(1.0, TextureSize.GetMax()));
+        Icon.Offset = (FVector2D(.5, .5) - ContentCenter) * IconSize;
+        UObject* IconResource = Icon.Texture.Get();
+        if (Material)
+        {
+            Icon.Material.Reset(UMaterialInstanceDynamic::Create(Material, GetTransientPackage()));
+            if (Icon.Material)
+            {
+                Icon.Material->SetTextureParameterValue(TEXT("ItemIcon"), Icon.Texture.Get());
+                IconResource = Icon.Material.Get();
+            }
+        }
+        Icon.Brush = FSlateImageBrush(IconResource, IconSize);
+    }
+
+    FText GetItemSlotLabel() const
+    {
+        if (const FHeldItemIcon* Icon = HeldIcons.Find(DisplayedItem); Icon && !Icon->Label.IsEmpty())
+        {
+            return Icon->Label;
+        }
+        return DisplayedItem == EMWItemId::None ? FText::GetEmpty()
+            : StaticEnum<EMWItemId>()->GetDisplayNameTextByValue(static_cast<int64>(DisplayedItem));
+    }
+
     const FSlateBrush* GetItemSlotBrush() const
     {
         if (RouletteStep != INDEX_NONE)
         {
             return &RouletteBrushes[RouletteStep % RouletteBrushes.Num()];
         }
-        return BoosterTexture && DisplayedItem == EMWItemId::Booster ? &BoosterBrush : nullptr;
+        const FHeldItemIcon* Icon = HeldIcons.Find(DisplayedItem);
+        return Icon && Icon->Texture ? &Icon->Brush : nullptr;
     }
 
     // 공통 글꼴과 색으로 대기판 셀을 추가해 참가자 열 배치를 일치시킨다.
@@ -578,10 +619,7 @@ private:
     int32 RouletteStep = INDEX_NONE;
     TArray<TStrongObjectPtr<UTexture2D>> RouletteTextures;
     TArray<FSlateBrush> RouletteBrushes;
-    TStrongObjectPtr<UTexture2D> BoosterTexture;
-    TStrongObjectPtr<UMaterialInstanceDynamic> BoosterIconMaterial;
-    FVector2D BoosterIconOffset = FVector2D::ZeroVector;
-    FSlateBrush BoosterBrush;
+    TMap<EMWItemId, FHeldItemIcon> HeldIcons;
     TArray<FText> DisplayedCells;
     TArray<FLinearColor> DisplayedVehicleTints;
     FMWGameplayUIArt Art;

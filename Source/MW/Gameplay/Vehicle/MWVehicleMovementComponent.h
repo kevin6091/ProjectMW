@@ -31,7 +31,7 @@ public:
 
 	// 파일럿·핸들·바퀴 표시에서 입력을 조회만 한다. 주행과 서버 상태는 변경하지 않는다.
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
-	float GetSteeringInput() const { return DriveInput.Steering; }
+	float GetSteeringInput() const { return IsItemControlLocked() ? 0.f : DriveInput.Steering; }
 
 	float GetUnboostedForwardSpeed() const
 	{
@@ -146,6 +146,8 @@ private:
 	// 차체의 아래 방향에서 지지면까지의 이동 거리.
 	float GroundDistance = 0.f;
 	float ImpactYawRate = 0.f;
+	float ItemControlLockRemaining = 0.f;
+	float ItemSpinYawRate = 0.f;
 	// 높이 보정에만 쓰는 서스펜션 속도(cm/s)다. 차체의 충돌 반발과 분리한다.
 	float SuspensionSpeed = 0.f;
 	bool bHasWheelSupport = false;
@@ -168,6 +170,7 @@ private:
 	void UpdateAirVelocity(float DeltaTime);
 	// 외부 충격에 의한 속도 변화량을 적용한다. 단위: cm/s
 	void ApplyExternalVelocityChange(const FVector& DeltaVelocity);
+	bool IsItemControlLocked() const { return ItemControlLockRemaining > 0.f; }
 	// 지지면의 안쪽 속도를 제거하고, 접지 중 벽에는 노면과 평행한 반발을 적용한다.
 	// 차량 간 충돌과 공중 접촉에는 벽 반발 설정을 적용하지 않는다.
 	void ResolveContactVelocity(const FHitResult& Hit);

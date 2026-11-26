@@ -375,6 +375,21 @@ void UMWVehicleMovementComponent::SimulateDriveStep(float DeltaTime, TArrayView<
 
 	UpdateGroundState();
 	AdjustGroundHeight(DeltaTime);
+
+	if (IsItemControlLocked())
+	{
+		ItemControlLockRemaining = FMath::Max(0.f, ItemControlLockRemaining - DeltaTime);
+		if (ItemControlLockRemaining <= KINDA_SMALL_NUMBER)
+		{
+			// 회전이 끝나는 위치에서 넉백을 멈추고, 공중에서는 낙하를 이어 간다.
+			if (ItemSpinYawRate != 0.f)
+			{
+				Velocity = FVector(0.0, 0.0, bGrounded ? 0.0 : Velocity.Z);
+			}
+			ItemControlLockRemaining = 0.f;
+			ItemSpinYawRate = 0.f;
+		}
+	}
 	UpdateComponentVelocity();
 }
 
@@ -391,6 +406,8 @@ void UMWVehicleMovementComponent::CaptureDriveSnapshot(FMWVehicleDriveSnapshot& 
 	OutSnapshot.Velocity = Velocity;
 	OutSnapshot.bGrounded = bGrounded;
 	OutSnapshot.ImpactYawRate = ImpactYawRate;
+	OutSnapshot.ItemControlLockRemaining = ItemControlLockRemaining;
+	OutSnapshot.ItemSpinYawRate = ItemSpinYawRate;
 	// 보정 이후 같은 스프링 상태에서 재실행해야 높이가 튀지 않는다.
 	OutSnapshot.SuspensionSpeed = SuspensionSpeed;
 	OutSnapshot.GroundNormal = GroundNormal.GetSafeNormal();
@@ -403,6 +420,8 @@ void UMWVehicleMovementComponent::ApplyDriveSnapshot(const FMWVehicleDriveSnapsh
 	Velocity = Snapshot.Velocity;
 	bGrounded = Snapshot.bGrounded;
 	ImpactYawRate = Snapshot.ImpactYawRate;
+	ItemControlLockRemaining = Snapshot.ItemControlLockRemaining;
+	ItemSpinYawRate = Snapshot.ItemSpinYawRate;
 	SuspensionSpeed = Snapshot.bGrounded ? Snapshot.SuspensionSpeed : 0.f;
 	// 실제 지지 여부는 다음 스텝에서 복원한 차체 위치로 다시 검사한다.
 	bHasWheelSupport = false;
@@ -579,6 +598,8 @@ void UMWVehicleMovementComponent::StopMovementImmediately()
 	SuspensionSpeed = 0.f;
 	bHasWheelSupport = false;
 	ImpactYawRate = 0.f;
+	ItemControlLockRemaining = 0.f;
+	ItemSpinYawRate = 0.f;
 	TargetRotation = UpdatedComponent ? UpdatedComponent->GetComponentQuat() : FQuat::Identity;
 }
 
@@ -599,6 +620,8 @@ void UMWVehicleMovementComponent::OnTeleported()
 	SuspensionSpeed = 0.f;
 	bHasWheelSupport = false;
 	ImpactYawRate = 0.f;
+	ItemControlLockRemaining = 0.f;
+	ItemSpinYawRate = 0.f;
 	GroundNormal = FVector::UpVector;
 	GroundDistance = 0.f;
 	GroundNormalLoadAcceleration = 0.0;
@@ -607,7 +630,7 @@ void UMWVehicleMovementComponent::OnTeleported()
 
 bool UMWVehicleMovementComponent::IsDriftControlActive() const
 {
-	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent)
+	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent || IsItemControlLocked())
 	{
 		return false;
 	}
@@ -746,7 +769,7 @@ void UMWVehicleMovementComponent::ResolveDriveControl(float& OutThrottle, float&
 	OutThrottle = 0.f;
 	OutBrake = 0.f;
 
-	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent)
+	if (!bDriveConfigReady || !PawnOwner || !UpdatedComponent || IsItemControlLocked())
 	{
 		return;
 	}
@@ -821,7 +844,7 @@ FQuat UMWVehicleMovementComponent::CalculateSteeringRotation(const FQuat& BaseRo
 		return BaseRotation;
 	}
 
-	const float Steering = DriveInput.Steering;
+	const float Steering = GetSteeringInput();
 
 	if (FMath::IsNearlyZero(Steering))
 	{
@@ -1035,16 +1058,17 @@ void UMWVehicleMovementComponent::UpdateDriveVelocity(float DeltaTime)
 		GroundVelocity -= DriveDirection * SpeedReduction;
 	}
 
-	// 드리프트 중에는 횡방향 그립을 낮춘다.
-	const float GripMultiplier = IsDriftControlActive()
-		? FMath::Clamp(DriveConfig.DriftFrictionMultiplier, 0.f, 1.f)
-		: 1.f;
-
-	const float Grip = FMath::Max(DriveConfig.LateralGrip * GripMultiplier, 0.f);
-	const float LateralSpeed = FVector::DotProduct(GroundVelocity, Right);
-	const float GripAlpha = 1.f - FMath::Exp(-Grip * DeltaTime);
-
-	GroundVelocity -= Right * LateralSpeed * GripAlpha;
+	// 피격 회전 중에는 차체 방향이 넉백으로 밀리는 방향을 끌고 가지 않게 한다.
+	if (FMath::IsNearlyZero(ItemSpinYawRate))
+	{
+		const float GripMultiplier = IsDriftControlActive()
+			? FMath::Clamp(DriveConfig.DriftFrictionMultiplier, 0.f, 1.f)
+			: 1.f;
+		const float Grip = FMath::Max(DriveConfig.LateralGrip * GripMultiplier, 0.f);
+		const float LateralSpeed = FVector::DotProduct(GroundVelocity, Right);
+		const float GripAlpha = 1.f - FMath::Exp(-Grip * DeltaTime);
+		GroundVelocity -= Right * LateralSpeed * GripAlpha;
+	}
 
 	const FVector RequestedTireDeltaVelocity = GroundVelocity - VelocityBeforeTireForces;
 
@@ -1564,7 +1588,7 @@ bool UMWVehicleMovementComponent::UpdateGroundRotation(float DeltaTime, TArrayVi
 	}
 
 	// 충돌 회전은 공중에서도 감쇠한다. 입력 조향은 아래 노면 회전 경로에서 한 번만 계산한다.
-	const float ImpactAngle = ImpactYawRate * DeltaTime;
+	const float ImpactAngle = ImpactYawRate * DeltaTime + ItemSpinYawRate * FMath::Min(DeltaTime, ItemControlLockRemaining);
 	ImpactYawRate *= FMath::Exp(-ImpactYawDamping * DeltaTime);
 	if (FMath::Abs(ImpactYawRate) < 0.05f)
 	{

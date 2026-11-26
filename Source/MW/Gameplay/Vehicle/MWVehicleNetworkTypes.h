@@ -65,6 +65,12 @@ struct FMWVehicleDriveSnapshot
 	UPROPERTY()
 	float ImpactYawRate = 0.f;
 
+	UPROPERTY()
+	float ItemControlLockRemaining = 0.f;
+
+	UPROPERTY()
+	float ItemSpinYawRate = 0.f;
+
 	// 위치 보정과 함께 복원하는 바퀴 지지 높이의 속도(cm/s)다.
 	UPROPERTY()
 	float SuspensionSpeed = 0.f;
@@ -109,6 +115,16 @@ struct FMWVehicleContactSample
 	FVector SourceLocation = FVector::ZeroVector;
 	FVector SourceVelocity = FVector::ZeroVector;
 	FQuat SourceRotation = FQuat::Identity;
+	float SourceItemControlLockRemaining = 0.f;
+	float SourceItemSpinYawRate = 0.f;
+
+	double GetItemSpinAngle(double FromTime, double ToTime) const
+	{
+		const double Duration = SourceItemControlLockRemaining;
+		const double From = FMath::Clamp(FromTime - SourceTime, 0.0, Duration);
+		const double To = FMath::Clamp(ToTime - SourceTime, 0.0, Duration);
+		return SourceItemSpinYawRate * (To - From);
+	}
 };
 
 struct FMWVehiclePredictedImpact

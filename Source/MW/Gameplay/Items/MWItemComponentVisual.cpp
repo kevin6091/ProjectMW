@@ -1,6 +1,7 @@
 // 같은 ItemComponent의 표시 구현이다. 부스터 외형·시퀀스·음향의 시작과 정리를 담당한다.
 
 #include "Gameplay/Items/MWItemComponent.h"
+#include "Data/MWItemDefinitionData.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 
 #include "CollisionQueryParams.h"
@@ -18,7 +19,6 @@
 #include "MovieSceneObjectBindingID.h"
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
-#include "UObject/ConstructorHelpers.h"
 
 const FName UMWItemComponent::BoosterBaseTag(TEXT("MWItemNode=sharedassets0.assets:1715"));
 const FName UMWItemComponent::BoosterBodyTag(TEXT("MWItemNode=sharedassets0.assets:1487"));
@@ -103,27 +103,18 @@ bool UMWItemComponent::FindBoosterMountPreset(FTransform& OutTransform, float& O
     return false;
 }
 
-// 기본 외형과 음원을 준비하되 원본 시퀀스는 CDO 시점에 강제로 로드하지 않는다.
+// 실제 표시가 필요할 때 정의에서 외형을 준비한다.
 void UMWItemComponent::LoadBoosterVisualAssets()
 {
-    static const ConstructorHelpers::FClassFinder<AActor> Model(
-        TEXT("/Game/Gameplay/Items/Art/Blueprints/BP_MWVisual_Booster_3d816410"));
-    // 복구 시퀀스의 Spawnable은 CDO 생성 중 아직 준비되지 않은 요소 레지스트리를 요구하므로 로드를 늦춘다.
-    BoosterAttach = TSoftObjectPtr<ULevelSequence>(FSoftObjectPath(
-        TEXT("/Game/Gameplay/Items/Art/Animations/LS_MW_Booster_Attach_17505c5d.LS_MW_Booster_Attach_17505c5d")));
-    BoosterFireStart = TSoftObjectPtr<ULevelSequence>(FSoftObjectPath(TEXT(
-        "/Game/Gameplay/Items/Art/Animations/LS_MW_Booster_Fire_Start_a6dbc896.LS_MW_Booster_Fire_Start_a6dbc896")));
-    BoosterFireLoop = TSoftObjectPtr<ULevelSequence>(FSoftObjectPath(
-        TEXT("/Game/Gameplay/Items/Art/Animations/LS_MW_Booster_Fire_Loop_341814c0.LS_MW_Booster_Fire_Loop_341814c0")));
-    BoosterDetach = TSoftObjectPtr<ULevelSequence>(FSoftObjectPath(
-        TEXT("/Game/Gameplay/Items/Art/Animations/LS_MW_Booster_Detach_7c732ff0.LS_MW_Booster_Detach_7c732ff0")));
-    static const ConstructorHelpers::FObjectFinder<UStaticMesh> Jet(
-        TEXT("/Game/Gameplay/Items/Art/Meshes/SM_MW_BoosterExhaust.SM_MW_BoosterExhaust"));
-    static const ConstructorHelpers::FObjectFinder<USoundBase> Sound(
-        TEXT("/Game/Gameplay/Items/Art/Audio/S_MW_Booster_Fire_65e7084e.S_MW_Booster_Fire_65e7084e"));
-    BoosterVisualClass = Model.Class;
-    BoosterJetMesh = Jet.Object;
-    BoosterFireSound = Sound.Object;
+    if (!BoosterDefinition) return;
+    const FMWItemPresentationData& Art = BoosterDefinition->Presentation;
+    BoosterVisualClass = Art.VisualClass.LoadSynchronous();
+    BoosterAttach = Art.Attach;
+    BoosterFireStart = Art.Use;
+    BoosterFireLoop = Art.Loop;
+    BoosterDetach = Art.Detach;
+    BoosterJetMesh = Art.ExhaustMesh.LoadSynchronous();
+    BoosterFireSound = Art.UseSound.LoadSynchronous();
 }
 
 // 기존 BP override를 우선하고 차량별 기본값은 Config에서 읽어 외형을 붙인다.
@@ -134,6 +125,10 @@ bool UMWItemComponent::SpawnBoosterVisual()
         return true;
     }
     AActor* Vehicle = GetOwner();
+    if (!BoosterVisualClass)
+    {
+        LoadBoosterVisualAssets();
+    }
     if (!BoosterVisualClass || !Vehicle || !Vehicle->GetRootComponent())
     {
         return false;

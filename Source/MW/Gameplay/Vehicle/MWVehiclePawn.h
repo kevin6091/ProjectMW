@@ -90,6 +90,10 @@ public:
 
     // 서버가 고른 체크포인트 후보로 안전 이동한다. 성공한 후보에서만 속도를 초기화한다.
     bool RespawnAtCheckpoint(const FVector& Location, const FRotator& Rotation);
+    void ApplyItemHit(const FVector& Direction, float Speed, float ControlLockDuration, float SpinDegrees);
+
+    UFUNCTION(BlueprintPure, Category = "MW|Drive")
+    bool IsItemControlLocked() const;
 
     // main의 차체 표시 완충 뒤에 캐시한 바퀴·자국 표시를 갱신한다.
     virtual void Tick(float DeltaSeconds) override;

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/Items/MWItemTypes.h"
 #include "MWPickupBox.generated.h"
 
 class UBoxComponent;
@@ -17,6 +18,7 @@ class MW_API AMWPickupBox : public AActor
 public:
     AMWPickupBox();
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    void SetItemPool(const TArray<EMWItemId>& Items);
 
 protected:
     // 서버 중첩 처리를 등록하고 현재 획득 가능 상태를 충돌·표시에 반영한다.
@@ -41,6 +43,9 @@ private:
 
     UPROPERTY(VisibleAnywhere, Category = "MW|Items")
     TObjectPtr<UBoxComponent> Trigger;
+
+    UPROPERTY(EditAnywhere, Category = "MW|Items")
+    TArray<EMWItemId> ItemPool = {EMWItemId::Booster};
 
     UPROPERTY(VisibleAnywhere, Category = "MW|Items")
     TObjectPtr<USceneComponent> PresentationRoot;

@@ -244,6 +244,57 @@ bool FMWDriveControlsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWVehicleItemHitTest, "MW.Vehicle.ItemHitControl",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWVehicleItemHitTest::RunTest(const FString& Parameters)
+{
+	const FMWVehicleDriveConfig Config;
+	MWVehicleTests::FScene Scene(Config);
+	constexpr float FrameTime = 1.f / 60.f;
+	constexpr int32 LockFrames = 54;
+	constexpr float KnockbackSpeed = 1100.f;
+	Scene.Step(FrameTime);
+	Scene.Vehicle->ApplyItemHit(FVector::ForwardVector, KnockbackSpeed, LockFrames * FrameTime, 360.f);
+	Scene.Input(1.f, 1.f, -1.f, true);
+	double SpinAngle = 0.0;
+	double PreviousYaw = Scene.Vehicle->GetActorRotation().Yaw;
+	for (int32 Frame = 0; Frame < LockFrames; ++Frame)
+	{
+		Scene.Step(FrameTime);
+		const double Yaw = Scene.Vehicle->GetActorRotation().Yaw;
+		SpinAngle += FMath::FindDeltaAngleDegrees(PreviousYaw, Yaw);
+		PreviousYaw = Yaw;
+		if (Frame == LockFrames / 2)
+		{
+			TestTrue(TEXT("Steering and drift stay disabled during the spin"),
+				Scene.Vehicle->IsItemControlLocked() && Scene.Movement->GetSteeringInput() == 0.f
+				&& !Scene.Movement->IsDriftControlActive());
+			const double ExpectedCoastSpeed = KnockbackSpeed - Config.CoastDeceleration * (Frame + 1) * FrameTime;
+			TestTrue(TEXT("Driver brake inputs do not interrupt knockback while spinning"),
+				Scene.Movement->Velocity.Equals(FVector(ExpectedCoastSpeed, 0, 0), 2.0));
+		}
+	}
+	TestTrue(TEXT("The collision hull makes one full turn on open ground"), FMath::IsNearlyEqual(SpinAngle, 360.0, 1.0));
+	TestFalse(TEXT("The hit lock expires"), Scene.Vehicle->IsItemControlLocked());
+	TestTrue(TEXT("Knockback stops on the final spin step"), Scene.Movement->Velocity.IsNearlyZero());
+	const FVector StopLocation = Scene.Vehicle->GetActorLocation();
+	Scene.Input(0.f);
+	Scene.Step(0.2f);
+	TestTrue(TEXT("The vehicle stays at the stop location with no input"),
+		Scene.Vehicle->GetActorLocation().Equals(StopLocation, 0.1));
+	Scene.Input(1.f);
+	Scene.Step(0.1f);
+	TestTrue(TEXT("Driver input can accelerate the stopped vehicle again"), Scene.Movement->Velocity.X > 0.f);
+
+	Scene.Vehicle->ApplyItemHit(-FVector::RightVector, KnockbackSpeed, 0.9f, 360.f);
+	TestTrue(TEXT("A later hit locks input again"), Scene.Vehicle->IsItemControlLocked());
+	TestTrue(TEXT("Race respawn succeeds"), Scene.Vehicle->RespawnAtCheckpoint(FVector(2500, 0, 31), FRotator::ZeroRotator));
+	TestFalse(TEXT("Respawn clears the hit lock"), Scene.Vehicle->IsItemControlLocked());
+	Scene.Step(FrameTime);
+	TestTrue(TEXT("No hit spin continues after respawn"), Scene.Vehicle->GetActorRotation().IsNearlyZero(0.1));
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveCollisionTest, "MW.Vehicle.CollisionAndGround",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMWDriveCollisionTest::RunTest(const FString& Parameters)
@@ -917,7 +968,7 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	Scene.Input(1);
 	Scene.Step(0.15f);
 	TestTrue(TEXT("Participant is moving before finishing"), Scene.Movement->Velocity.Size() > 0);
-	TestTrue(TEXT("Participant can hold an item before finishing"), Scene.Vehicle->GetItemComponent()->TryGrantBooster());
+	TestTrue(TEXT("Participant can hold an item before finishing"), Scene.Vehicle->GetItemComponent()->TryGrantItem(EMWItemId::Booster));
 	TestFalse(TEXT("Old epoch cannot finish"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *FinishTrack, 0));
 	TestFalse(TEXT("An unrelated track cannot finish"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *OtherTrack, 1));
 	++Course.CourseRevision;
@@ -932,7 +983,7 @@ bool FMWPersonalFinishTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Finished vehicle has no blocking or overlap collision"), Root->IsCollisionEnabled());
 	TestTrue(TEXT("Completion clears velocity and held input"), Scene.Movement->Velocity.IsZero() && Scene.Vehicle->GetDriveInput().Throttle == 0);
 	TestTrue(TEXT("Completion clears the held item"), Scene.Vehicle->GetItemComponent()->GetCurrentItemId() == EMWItemId::None);
-	TestFalse(TEXT("Completion rejects another item grant"), Scene.Vehicle->GetItemComponent()->TryGrantBooster());
+	TestFalse(TEXT("Completion rejects another item grant"), Scene.Vehicle->GetItemComponent()->TryGrantItem(EMWItemId::Booster));
 	TestFalse(TEXT("Duplicate completion is rejected"), Mode->TryFinishPlayerRace(*Scene.Vehicle, *FinishTrack, 1));
 	TestFalse(TEXT("Finished player cannot respawn through the checkpoint path"), Runtime->RespawnAtTrackCheckpoint(Scene.Vehicle));
 	const FTransform Held = Scene.Vehicle->GetActorTransform();
@@ -1467,6 +1518,8 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		Sent.Location = FVector(100, 200, 300);
 		Sent.Velocity = FVector(800, 0, 0);
 		Sent.ImpactYawRate = 25.f;
+		Sent.ItemControlLockRemaining = bAllowed ? 0.375f : 0.f;
+		Sent.ItemSpinYawRate = bAllowed ? -400.f : 0.f;
 		// 높이 보정을 재실행할 때 서스펜션 속도가 누락되지 않는지 함께 검사한다.
 		Sent.SuspensionSpeed = -32.5f;
 		Sent.GroundNormal = FVector(0, 0.6, 0.8);
@@ -1479,6 +1532,8 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		FMWVehicleDriveSnapshot Received;
 		Received.bDriveAllowed = !bAllowed;
 		Received.bFinishCollisionDisabled = bAllowed;
+		Received.ItemControlLockRemaining = 0.8f;
+		Received.ItemSpinYawRate = 200.f;
 		FMemoryReader Reader(Bytes);
 		bool bRead = false;
 		Received.NetSerialize(Reader, nullptr, bRead);
@@ -1488,6 +1543,8 @@ bool FMWRaceDriveSnapshotTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Round epoch is transmitted with the stream"), Received.RoundEpoch, Sent.RoundEpoch);
 		TestEqual(TEXT("Stream survives serialization"), Received.StreamId, Sent.StreamId);
 		TestEqual(TEXT("ACK survives serialization"), Received.LastProcessedMoveId, Sent.LastProcessedMoveId);
+		TestTrue(TEXT("Drive snapshots transmit and clear item hit state"),
+			Received.ItemControlLockRemaining == Sent.ItemControlLockRemaining && Received.ItemSpinYawRate == Sent.ItemSpinYawRate);
 		TestTrue(TEXT("Pose and motion survive serialization"), Received.Location.Equals(Sent.Location, 0.1)
 			&& Received.Velocity.Equals(Sent.Velocity, 0.1) && Received.ImpactYawRate == Sent.ImpactYawRate
 			&& Received.SuspensionSpeed == Sent.SuspensionSpeed
