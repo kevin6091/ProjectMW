@@ -12,6 +12,7 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Components/WidgetSwitcher.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
@@ -42,10 +43,28 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
         RankLabel->SetText(Rank > 0 ? FText::Format(LOCTEXT("Rank", "{0}위"), FText::AsNumber(Rank))
             : LOCTEXT("Spectating", "관전"));
     }
+    if (RankMedals)
+    {
+        // 카드 WBP는 1위부터 메달 이미지를 순서대로 보관한다.
+        const bool bHasMedal = Rank > 0 && Rank <= RankMedals->GetChildrenCount();
+        if (bHasMedal)
+        {
+            RankMedals->SetActiveWidgetIndex(Rank - 1);
+        }
+        RankMedals->SetVisibility(bHasMedal ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+        if (MemberAccent)
+        {
+            MemberAccent->SetVisibility(bHasMedal ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
+        }
+    }
     if (VehiclePortrait)
     {
         VehiclePortrait->SetBrushFromTexture(Portrait, true);
         VehiclePortrait->SetVisibility(Portrait ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+    }
+    if (TallyVehicleBadge)
+    {
+        TallyVehicleBadge->SetVisibility(Portrait ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
     }
     NameLabel->SetText(PlayerName);
     TotalScoreLabel->SetText(FText::AsNumber(Result.TotalScore));
@@ -76,14 +95,15 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
     {
         const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
         ScoreBar->SetPercent(Fraction);
-        // 막대와 같은 정규화 높이를 쓴다. 수평 정렬·간격은 디자이너 슬롯 값을 유지한다.
-        for (UTextBlock* Label : {NameLabel.Get(), TotalScoreLabel.Get()})
+        // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
+        UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
+        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), ScoreMarker})
         {
-            if (auto* LabelSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Label))
+            if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {
-                FAnchors Anchors = LabelSlot->GetAnchors();
+                FAnchors Anchors = MarkerSlot->GetAnchors();
                 Anchors.Minimum.Y = Anchors.Maximum.Y = 1.f - Fraction;
-                LabelSlot->SetAnchors(Anchors);
+                MarkerSlot->SetAnchors(Anchors);
             }
         }
     }
@@ -147,7 +167,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     Results.Sort([](const FMWPlayerRoundState& A, const FMWPlayerRoundState& B) { return A.MemberId < B.MemberId; });
     for (const FMWPlayerRoundState& Result : Results)
     {
-        auto* Column = CreateEntry(TallyColumnClass, Result, false);
+        auto* Column = CreateEntry(TallyColumnClass, Result, true);
         if (!Column) return false;
         Column->ShowRank(false);
         auto* ColumnSlot = TallyColumns->AddChildToHorizontalBox(Column);

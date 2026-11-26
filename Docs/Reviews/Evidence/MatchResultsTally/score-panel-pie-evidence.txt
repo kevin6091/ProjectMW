@@ -1,0 +1,69 @@
+2026-11-26 | Cua Driver 3-player PIE | base e683996
+P1 1280x722, P2/P3 800x482. The test fixture moved cars onto the production finish triggers and changed the target to 250 in PIE.
+
+== Authored resources ==
+[2026.11.26-04.25.24:600][  2]LogPython: MW_SCORE_PANEL_AUTHORED T_Road_Sign_Background_852f137d0c4e T_Road_Sign_Bolts_442797e33bc2 T_Make_Way__Logo_Small_Sign_5909de5ef398 T_Make_Way_Logo_v1_Pole_49ad24987e58 T_Vehicle_Badge_Background_7d063220e79b T_Gold_Ribbon_fcdd58b00bec T_Silver_Ribbon_876a83b54fcd T_Bronze_Ribbon_d58438bb23f3
+[2026.11.26-04.30.35:688][  2]LogPython: MW_PODIUM_MEDALS_AUTHORED T_Gold_Ribbon_fcdd58b00bec T_Silver_Ribbon_876a83b54fcd T_Bronze_Ribbon_d58438bb23f3
+
+== Placement and result presentation ==
+[2026.11.26-04.31.19:536][265]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-04.31.26:795][480]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-04.31.49:539][195]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.26-04.32.10:171][779]LogMWServer: [MWProgress] EMWRoomPhase::Racing -> EMWRoomPhase::RoundResults Round=1 Epoch=1
+[2026.11.26-04.32.10:238][779]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.10:255][780]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.10:264][780]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.12:073][788]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.12:074][788]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.12:075][788]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.13:327][793]LogMWServer: [MWProgress] EMWRoomPhase::RoundResults -> EMWRoomPhase::MatchResults Round=1 Epoch=1
+[2026.11.26-04.32.13:338][793]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=11090.35, Y=2009.32, Z=7750.00)
+[2026.11.26-04.32.13:349][793]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=11090.35, Y=2009.32, Z=7750.00)
+[2026.11.26-04.32.13:360][793]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=11090.35, Y=2009.32, Z=7750.00)
+[2026.11.26-04.32.16:727][884]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.16:728][884]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.16:729][884]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.32.20:052][892]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.20:053][892]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.20:053][892]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.32.23:472][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-04.32.23:473][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-04.32.23:474][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-04.32.25:327][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-04.32.25:331][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-04.32.25:335][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+[2026.11.26-04.33.02:301][102]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Overview
+[2026.11.26-04.33.06:312][268]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Overview
+[2026.11.26-04.33.09:748][405]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Overview
+
+== Live UMG marker anchors and brush resources (tolerance 0.000002) ==
+P1 marker samples=132, mismatches=0
+P2 marker samples=132, mismatches=0
+P3 marker samples=132, mismatches=0
+{"event":"meter","member":1,"fill":0.01,"name":"258","score":"3","name_y":0.9900000095367432,"marker_y":0.9900000095367432,"badge":"T_Vehicle_Badge_Background_7d063220e79b","portrait":"T_MW_VehiclePreview_Mammoth"}
+{"event":"meter","member":1,"fill":0.033333,"name":"257","score":"10","name_y":0.9666666388511658,"marker_y":0.9666666388511658,"badge":"T_Vehicle_Badge_Background_7d063220e79b","portrait":"T_MW_VehiclePreview_Doug"}
+{"event":"meter","member":1,"fill":0.033333,"name":"256","score":"10","name_y":0.9666666388511658,"marker_y":0.9666666388511658,"badge":"T_Vehicle_Badge_Background_7d063220e79b","portrait":"T_MW_VehiclePreview_Fred"}
+
+== Active rank switcher images ==
+P1 medal matches=3/3
+P2 medal matches=3/3
+P3 medal matches=3/3
+{"event": "medal", "member": 1, "rank": "3위", "texture": "T_Bronze_Ribbon_d58438bb23f3"}
+{"event": "medal", "member": 1, "rank": "2위", "texture": "T_Silver_Ribbon_876a83b54fcd"}
+{"event": "medal", "member": 1, "rank": "1위", "texture": "T_Gold_Ribbon_fcdd58b00bec"}
+{"event": "medal", "member": 2, "rank": "3위", "texture": "T_Bronze_Ribbon_d58438bb23f3"}
+{"event": "medal", "member": 2, "rank": "2위", "texture": "T_Silver_Ribbon_876a83b54fcd"}
+{"event": "medal", "member": 2, "rank": "1위", "texture": "T_Gold_Ribbon_fcdd58b00bec"}
+{"event": "medal", "member": 3, "rank": "3위", "texture": "T_Bronze_Ribbon_d58438bb23f3"}
+{"event": "medal", "member": 3, "rank": "2위", "texture": "T_Silver_Ribbon_876a83b54fcd"}
+{"event": "medal", "member": 3, "rank": "1위", "texture": "T_Gold_Ribbon_fcdd58b00bec"}
+
+== Editor rebuild and existing gameplay automation ==
+Result: Succeeded
+[2026.11.26-04.35.39:626][578]LogAutomationController: Display: Test Completed. Result={Success} Name={AuthorityAndNotify} Path={MW.Gameplay.PlayerRound.AuthorityAndNotify}
+[2026.11.26-04.35.39:657][580]LogAutomationController: Display: Test Completed. Result={Success} Name={ProgressResultsSerialization} Path={MW.Gameplay.PlayerRound.ProgressResultsSerialization}
+[2026.11.26-04.35.39:675][582]LogAutomationController: Display: Test Completed. Result={Success} Name={Serialization} Path={MW.Gameplay.PlayerRound.Serialization}
+[2026.11.26-04.35.42:793][681]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.26-04.35.43:077][779]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.26-04.35.43:643][229]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.26-04.35.43:644][230]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 6 tests performed.

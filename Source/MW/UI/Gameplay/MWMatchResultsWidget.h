@@ -17,6 +17,7 @@ class UProgressBar;
 class UTextBlock;
 class UTexture2D;
 class UVerticalBox;
+class UWidgetSwitcher;
 
 UENUM(BlueprintType)
 enum class EMWMatchResultsScreen : uint8
@@ -51,6 +52,9 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> FinishLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> VehiclePortrait;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyVehicleBadge;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidgetSwitcher> RankMedals;
 
     TOptional<int32> ShownScore;
 };

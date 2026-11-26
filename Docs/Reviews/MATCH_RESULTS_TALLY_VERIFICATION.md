@@ -111,3 +111,36 @@ Switch 영상 4:01~4:13의 체크포인트 구간과 10월 30일 영상 9:30~10:
 | `WBP_MatchResults.uasset` | `55BB0A27F619A4FF839A413E95A59BC2B93DE3E7DAECCA0A0CC1970E5DD9F937` |
 
 세 WBP를 컴파일하고 두 브러시 리소스가 지정한 텍스처를 참조하는지 확인했다. 두 텍스처와 `WBP_MatchResultRow`의 해시는 작업 전과 동일하다. 세 WBP는 검토용 로컬본으로 보관한다. Git 푸시와 UVCS 체크인은 사용자 확인 대기다.
+
+## 파란 집계판·차량 배지·결승 메달
+
+10월 30일 멀티플레이 영상 10:38에서 파란 판면과 네 모서리 볼트, 상단 로고, 세로 막대 안의 차량 배지를 대조했다. 11:04의 결승 순위에서는 이름판 앞에 붙은 금·은·동 메달을 확인했다. ProjectMW의 Noto Sans KR, 참가자 팔레트, 결승 카드 배치를 적용했다.
+
+| 수정 위치 | 편집·실행 동작 |
+| --- | --- |
+| `Content/UI/Results/WBP_MatchResults.uasset` | `TallySignArt` 아래 `TallySignFace`에 파란 `T_Road_Sign_Background_852f137d0c4e`을 사용한다. `TallyBolt*` 네 개는 `T_Road_Sign_Bolts_442797e33bc2`를 각 모서리에 앵커로 배치한다. 상단 `TallySignLogo`와 뒤쪽 `TallySignPole`도 기존 텍스처를 사용한다. |
+| `Content/UI/Results/WBP_MatchScoreColumn.uasset` | `TallyScoreMarker` 아래에 배지와 점수 글자를 한 줄로 배치했다. `TallyBadgeBackground`에서 `T_Vehicle_Badge_Background_7d063220e79b`를 사용한다. 채움이 짧을 때도 배지와 점수를 읽을 수 있게 하단 여백을 둔다. |
+| `Content/UI/Results/WBP_MatchPodiumCard.uasset` | 모든 결승 이름판이 같은 WBP를 사용한다. `RankMedals` 스위처가 금·은·동 `Ribbon` 브러시를 1·2·3위 순으로 보관한다. |
+| `Source/MW/UI/Gameplay/MWMatchResultsWidget.h/.cpp` | `SetResult`가 서버 확정 순위로 메달을 선택하고 차량 선택과 같은 썸네일을 집계와 결승 목록에 표시한다. 메달 이미지가 없는 순위는 순위 번호와 참가자 색을 표시한다. `SetTallyScore`는 이름과 배지·점수 슬롯의 세로 앵커에 같은 `1 - 채움 비율`을 적용한다. |
+
+### Cua Driver 3인 PIE
+
+| 장면 | 변경 전 `e683996` | 변경 후 |
+| --- | --- | --- |
+| 중간 점수판 | [기존 집계판](Evidence/MatchResultsTally/score-sign-tally-rising-p1.png) | [203점](Evidence/MatchResultsTally/score-panel-tally-p1.png) · [258점](Evidence/MatchResultsTally/score-panel-tally-rise-p1.png) |
+| 결승 순위 | [기존 순위판](Evidence/MatchResultsTally/score-sign-podium-p1.png) | [호스트](Evidence/MatchResultsTally/score-panel-podium-p1.png) · [클라이언트 1](Evidence/MatchResultsTally/score-panel-podium-p2.png) · [클라이언트 2](Evidence/MatchResultsTally/score-panel-podium-p3.png) |
+
+- 호스트 1280×722, 클라이언트 두 창 800×482에서 세 사람 모두 트랙을 설치하고 같은 결승 순위와 `계속 → 경기 개요`를 확인했다. PIE 목표 250점과 차량 위치 보조를 사용했다. 완주·점수·순위는 실제 결승 트리거에서 서버가 확정했다.
+- 각 창에서 이름·배지·점수 높이와 차량 썸네일을 132번씩 읽어 396개 표본이 모두 일치했다. 서버 순위와 스위처가 실제로 표시한 금·은·동 브러시도 9개 모두 일치했다. [PIE·브러시·앵커 로그](Evidence/MatchResultsTally/score-panel-pie-evidence.txt)
+- 판면의 긁힘이 실행에 따라 약하게 보이는 프레임이 있었다. 로고·볼트·차량 배지·순위 메달은 캡처에서 확인했다.
+- 임시 PIE 명령을 제거한 뒤 UE 5.8 `MWEditor Win64 Development` 빌드와 `MW.Gameplay.PlayerRound`·`MW.Gameplay.RoundLoop` 자동화 6개가 통과했다.
+
+### 검토용 로컬 WBP 해시
+
+| 파일 | SHA-256 |
+| --- | --- |
+| `WBP_MatchResults.uasset` | `E66424EDE1359B8A3F5137CEE6AA230D0D852D8F3705E67264C1D579687AC492` |
+| `WBP_MatchScoreColumn.uasset` | `326ADD1987AF37D106CB306C06BB34CE7F5738703548D7BCE0EBB72B78782669` |
+| `WBP_MatchPodiumCard.uasset` | `06B6A7771C74A184A03E23C3F9E01E935A77AE24096AB03173D232EC2D0D430D` |
+
+세 WBP의 컴파일과 실제 위젯의 브러시 연결을 확인했다. 원본 텍스처는 기존 에셋을 참조한다. 세 WBP는 로컬에서 검토할 수 있다. Git 푸시와 UVCS 체크인은 사용자 확인 대기다.
