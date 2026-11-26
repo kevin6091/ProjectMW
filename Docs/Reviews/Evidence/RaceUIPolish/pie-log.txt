@@ -1,0 +1,71 @@
+UE 5.8 MWEditor Win64 Development. Baseline Git 4192c37. Cua Driver, listen server and 2 clients.
+Result: Succeeded
+Total execution time: 20.85 seconds
+[2026.11.26-06.40.58:949][  0]LogPython: MW_RESULTS_UI_POLISH_AUTHORED board,column,podium
+Capture windows recorded in each scene timing manifest.
+"scene","count","max_gap_s","median_gap_s","first_s","last_s"
+"01-checkpoint","11","0.222","0.177","-0.75","0.999"
+"02-recovery","11","0.216","0.19","-0.357","1.47"
+"03-score-tally","14","0.375","0.199","-0.318","2.48"
+"04-round-positions","7","0.212","0.187","-0.218","0.908"
+"05-podium","30","0.278","0.179","-3.628","1.63"
+[2026.11.26-06.47.51:907][661]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.51:933][662]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.51:946][662]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.54:870][690]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.54:876][690]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.54:881][690]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=3 Camera=V(X=43053.16, Y=-549.99, Z=12050.84)
+[2026.11.26-06.47.58:907][753]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-06.47.58:907][753]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-06.47.58:909][753]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+{"event":"server_overlap","timestamp":627718.031,"wall_time":1795675628.1190422,"member":2,"epoch":1,"index":0,"piece":5,"score":0,"finish":1}
+{"event":"server_overlap","timestamp":627718.531,"wall_time":1795675628.6192763,"member":1,"epoch":1,"index":0,"piece":5,"score":0,"finish":2}
+{"event":"server_overlap","timestamp":627719.093,"wall_time":1795675629.1744568,"member":3,"epoch":1,"index":0,"piece":5,"score":0,"finish":3}
+{"event":"server_overlap","timestamp":627747.812,"wall_time":1795675657.8858736,"member":1,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"client","timestamp":627751.671,"wall_time":1795675661.7589712,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1920,1080],"recovering":true,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_wait","timestamp":627751.687,"wall_time":1795675661.7749596,"member":1,"remaining":0.800000011920929,"drive":false,"z":6100.799848556519}
+{"event":"server_recovery_restored","timestamp":627752.531,"wall_time":1795675662.6131432,"member":1,"checkpoints":1}
+{"event":"server_overlap","timestamp":627752.531,"wall_time":1795675662.6141484,"member":2,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"client","timestamp":627758.203,"wall_time":1795675668.2860258,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":true,"can_drive":false,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_wait","timestamp":627758.218,"wall_time":1795675668.2945297,"member":2,"remaining":0.800000011920929,"drive":false,"z":6060.0}
+{"event":"server_recovery_restored","timestamp":627759.046,"wall_time":1795675669.1327417,"member":2,"checkpoints":1}
+{"event":"server_overlap","timestamp":627759.046,"wall_time":1795675669.1327417,"member":3,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"server_overlap","timestamp":627759.593,"wall_time":1795675669.6738193,"member":2,"epoch":2,"index":0,"piece":8,"score":100,"finish":1}
+{"event":"server_overlap","timestamp":627760.109,"wall_time":1795675670.1833699,"member":1,"epoch":2,"index":0,"piece":8,"score":100,"finish":2}
+{"event":"server_overlap","timestamp":627761.828,"wall_time":1795675671.9154212,"member":3,"epoch":2,"index":0,"piece":8,"score":100,"finish":3}
+{"event":"client","timestamp":627764.281,"wall_time":1795675674.3680046,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1920,1080],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_FRED_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":627764.312,"wall_time":1795675674.3918562,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":627764.328,"wall_time":1795675674.4131021,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"reveal","timestamp":627768.25,"wall_time":1795675678.333531,"member":1,"elapsed":0.0,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[0.2487,0.0283,0.0,0.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.296,"wall_time":1795675678.3812702,"member":2,"elapsed":0.0,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[0.2487,0.0283,0.0,0.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.343,"wall_time":1795675678.4289784,"member":3,"elapsed":0.0,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[0.2487,0.0283,0.0,0.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.39,"wall_time":1795675678.4781327,"member":1,"elapsed":0.172,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.421,"wall_time":1795675678.4955583,"member":2,"elapsed":0.141,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.437,"wall_time":1795675678.5166004,"member":3,"elapsed":0.125,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.0,0.0,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.484,"wall_time":1795675678.5676987,"member":1,"elapsed":0.266,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.2948,0.0577,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.515,"wall_time":1795675678.5928597,"member":2,"elapsed":0.235,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.2948,0.0577,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.531,"wall_time":1795675678.6135855,"member":3,"elapsed":0.219,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.2948,0.0577,0.0,0.0],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.578,"wall_time":1795675678.6551242,"member":1,"elapsed":0.344,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.9616,0.9337,0.8737,0.9108],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.593,"wall_time":1795675678.6776555,"member":2,"elapsed":0.328,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.9616,0.9337,0.8737,0.9108],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.609,"wall_time":1795675678.6967475,"member":3,"elapsed":0.297,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[0.9616,0.9337,0.8737,0.9108],"3위":[0.0,0.0,0.0,0.0]}}
+{"event":"reveal","timestamp":627768.656,"wall_time":1795675678.7415872,"member":1,"elapsed":0.438,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.3355,0.0897,0.0,0.0058]}}
+{"event":"reveal","timestamp":627768.687,"wall_time":1795675678.7657897,"member":2,"elapsed":0.406,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.3355,0.0897,0.0,0.0058]}}
+{"event":"reveal","timestamp":627768.703,"wall_time":1795675678.788856,"member":3,"elapsed":0.391,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.3355,0.0897,0.0,0.0058]}}
+{"event":"reveal","timestamp":627768.75,"wall_time":1795675678.8336923,"member":1,"elapsed":0.532,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.9838,0.9718,0.9451,0.9617]}}
+{"event":"reveal","timestamp":627768.781,"wall_time":1795675678.857612,"member":2,"elapsed":0.5,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.9838,0.9718,0.9451,0.9617]}}
+{"event":"reveal","timestamp":627768.796,"wall_time":1795675678.8791914,"member":3,"elapsed":0.484,"screen":"<MWMatchResultsScreen.WINNER: 4>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[0.9838,0.9718,0.9451,0.9617]}}
+{"event":"reveal","timestamp":627768.843,"wall_time":1795675678.9258745,"member":1,"elapsed":0.61,"screen":"<MWMatchResultsScreen.STANDINGS: 5>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[1.0,1.0,1.0,1.0]}}
+{"event":"medal","timestamp":627768.843,"wall_time":1795675678.9323742,"member":1,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"medal","timestamp":627768.859,"wall_time":1795675678.9334707,"member":1,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":627768.859,"wall_time":1795675678.9334707,"member":1,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"client","timestamp":627768.859,"wall_time":1795675678.9438388,"member":1,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[1920,1080],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"TallyHeading":"점수 집계","PodiumHeading":"결승 순위"}}
+{"event":"reveal","timestamp":627768.875,"wall_time":1795675678.958053,"member":2,"elapsed":0.61,"screen":"<MWMatchResultsScreen.STANDINGS: 5>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[1.0,1.0,1.0,1.0]}}
+{"event":"medal","timestamp":627768.89,"wall_time":1795675678.9641163,"member":2,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"medal","timestamp":627768.89,"wall_time":1795675678.9641163,"member":2,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":627768.89,"wall_time":1795675678.9656274,"member":2,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"client","timestamp":627768.89,"wall_time":1795675678.973692,"member":2,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"TallyHeading":"점수 집계","PodiumHeading":"결승 순위"}}
+{"event":"reveal","timestamp":627768.906,"wall_time":1795675678.9855955,"member":3,"elapsed":0.594,"screen":"<MWMatchResultsScreen.STANDINGS: 5>","opacity":{"1위":[1.0,1.0,1.0,1.0],"2위":[1.0,1.0,1.0,1.0],"3위":[1.0,1.0,1.0,1.0]}}
+{"event":"medal","timestamp":627768.906,"wall_time":1795675678.9938517,"member":3,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"medal","timestamp":627768.906,"wall_time":1795675678.9943676,"member":3,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":627768.906,"wall_time":1795675678.9948797,"member":3,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"client","timestamp":627768.921,"wall_time":1795675679.0012429,"member":3,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"TallyHeading":"점수 집계","PodiumHeading":"결승 순위"}}

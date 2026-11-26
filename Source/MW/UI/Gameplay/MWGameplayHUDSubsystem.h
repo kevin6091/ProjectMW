@@ -72,7 +72,7 @@ struct FMWCheckpointRecoveryLayout
     FMargin CountdownInset = FMargin(0.f, 40.f, 0.f, 0.f);
 
     UPROPERTY(EditAnywhere)
-    FMargin BadgeInset = FMargin(68.f, 0.f, 0.f, 52.f);
+    FMargin BadgeGap = FMargin(0.f, 0.f, 8.f, 0.f);
 
     UPROPERTY(EditAnywhere)
     FMargin CountdownPadding = FMargin(24.f, 6.f);
@@ -88,6 +88,12 @@ struct FMWCheckpointRecoveryLayout
 
     UPROPERTY(EditAnywhere)
     FLinearColor SlotColor = FLinearColor::White;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0.01", Units = "s"))
+    float RingTravelSeconds = 0.8f;
+
+    UPROPERTY(EditAnywhere)
+    FVector2D RingRadii = FVector2D(42.f, 88.f);
 
     UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
     float CountdownCornerRadius = 9.f;

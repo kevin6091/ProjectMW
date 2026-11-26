@@ -9,6 +9,7 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
@@ -71,10 +72,18 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
 
 void UMWMatchResultRowWidget::ShowRank(int32 Rank)
 {
+    if (RankSuffix)
+    {
+        RankSuffix->SetVisibility(Rank > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+    }
     if (RankLabel)
     {
         RankLabel->SetVisibility(Rank > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
-        if (Rank > 0) RankLabel->SetText(FText::Format(LOCTEXT("Rank", "{0}위"), FText::AsNumber(Rank)));
+        if (Rank > 0)
+        {
+            const FText Number = FText::AsNumber(Rank);
+            RankLabel->SetText(RankSuffix ? Number : FText::Format(LOCTEXT("Rank", "{0}위"), Number));
+        }
         if (UWidgetLayoutLibrary::SlotAsCanvasSlot(RankLabel))
         {
             NameLabel->SetVisibility(Rank > 0 ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
@@ -82,11 +91,29 @@ void UMWMatchResultRowWidget::ShowRank(int32 Rank)
     }
 }
 
-void UMWMatchResultRowWidget::SetPodiumDetailsOpacity(float Opacity)
+void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
+    const FVector2D& PlateOffset)
 {
-    NameLabel->SetRenderOpacity(Opacity);
-    TotalScoreLabel->SetRenderOpacity(Opacity);
-    if (VehiclePortrait) VehiclePortrait->SetRenderOpacity(Opacity);
+    // 새 WBP는 메달과 판을 같은 부모의 별도 슬롯에 둔다. 기존 카드는 전체 단위로 진입한다.
+    if (PodiumMedal && CardBackground)
+    {
+        PodiumMedal->SetRenderOpacity(MedalAlpha);
+        CardBackground->SetRenderOpacity(PlateAlpha);
+        CardBackground->SetRenderTranslation(PlateOffset);
+    }
+    else
+    {
+        SetRenderOpacity(PlateAlpha);
+        SetRenderTranslation(PlateOffset);
+    }
+    NameLabel->SetRenderOpacity(NameAlpha);
+    NameLabel->SetRenderScale(FVector2D(FMath::Lerp(InitialNameScale, 1.f, NameAlpha)));
+    TotalScoreLabel->SetRenderOpacity(NameAlpha);
+    if (VehiclePortrait)
+    {
+        VehiclePortrait->SetRenderOpacity(PortraitAlpha);
+        VehiclePortrait->SetRenderTranslation(PortraitEntryOffset * (1.f - PortraitAlpha));
+    }
 }
 
 void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
@@ -105,7 +132,8 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
         ScoreBar->SetPercent(Fraction);
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
-        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), static_cast<UWidget*>(RankLabel.Get()), ScoreMarker})
+        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), static_cast<UWidget*>(RankLabel.Get()),
+            static_cast<UWidget*>(RankSuffix.Get()), ScoreMarker})
         {
             if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {
@@ -249,8 +277,48 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
 
     // 설치가 쓰는 결승 포트를 복제된 코스 Transform에 합성한다. 결승 Actor 포인터의 도착을 기다리지 않는다.
     FinishFrame = Course.Ground.FinishPort * Finish.WorldTransform;
-    const FVector CameraLocation = FinishFrame.TransformPositionNoScale(CameraOffset);
-    const FVector Direction = FinishFrame.TransformPositionNoScale(LookAtOffset) - CameraLocation;
+    const FVector LookAt = FinishFrame.TransformPositionNoScale(LookAtOffset);
+    FVector CameraLocation = FinishFrame.TransformPositionNoScale(CameraOffset);
+    int32 ViewIndex = 0;
+    if (!AlternateCameraOffsets.IsEmpty() && !LookAt.ContainsNaN() && !CameraLocation.ContainsNaN())
+    {
+        // 가시성 충돌이 없는 트랙 장식도 시야를 가릴 수 있어 렌더 메시 경계까지 검사한다.
+        TArray<FBox> TrackBounds;
+        for (const FMWPlacedTrack& Piece : Course.PlacedTracks)
+        {
+            if (Piece.PieceId == Finish.PieceId || !IsValid(Piece.Actor.Get())) continue;
+            TInlineComponentArray<UStaticMeshComponent*> Meshes(Piece.Actor.Get(), true);
+            for (const UStaticMeshComponent* Mesh : Meshes)
+            {
+                if (Mesh->IsVisible() && Mesh->GetStaticMesh()) TrackBounds.Add(Mesh->Bounds.GetBox());
+            }
+        }
+        FCollisionQueryParams Query(SCENE_QUERY_STAT(MWFinishShotVisibility), true);
+        if (IsValid(Finish.Actor.Get())) Query.AddIgnoredActor(Finish.Actor.Get());
+        const auto IsObstructed = [&](const FVector& Location)
+        {
+            return GetWorld()->LineTraceTestByChannel(Location, LookAt, ECC_Visibility, Query)
+                || TrackBounds.ContainsByPredicate([&](const FBox& Bounds)
+                {
+                    return FMath::LineBoxIntersection(Bounds, Location, LookAt, LookAt - Location);
+                });
+        };
+        if (IsObstructed(CameraLocation))
+        {
+            ViewIndex = INDEX_NONE;
+            for (int32 Index = 0; Index < AlternateCameraOffsets.Num(); ++Index)
+            {
+                const FVector Candidate = FinishFrame.TransformPositionNoScale(AlternateCameraOffsets[Index]);
+                if (!Candidate.ContainsNaN() && !IsObstructed(Candidate))
+                {
+                    CameraLocation = Candidate;
+                    ViewIndex = Index + 1;
+                    break;
+                }
+            }
+        }
+    }
+    const FVector Direction = LookAt - CameraLocation;
     if (CameraLocation.ContainsNaN() || Direction.ContainsNaN() || Direction.IsNearlyZero())
     {
         return false;
@@ -277,8 +345,8 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     {
         GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginTally, ShotSeconds, false);
     }
-    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d Camera=%s"),
-        *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, *CameraLocation.ToCompactString());
+    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s"),
+        *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, ViewIndex, *CameraLocation.ToCompactString());
     return true;
 }
 
@@ -492,11 +560,14 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
     {
         UMWMatchResultRowWidget* Card = PodiumRevealOrder[Index];
         const float Start = Index == 0 ? 0.f : CardSeconds * Index + HoldSeconds;
-        const float Alpha = FMath::SmoothStep(0.f, CardSeconds, RevealElapsed - Start);
-        Card->SetRenderOpacity(Alpha);
-        Card->SetRenderTranslation(CardEntryOffset * (1.f - Alpha));
-        const float DetailsStart = CardSeconds * FMath::Clamp(DetailsEntryFraction, 0.f, .95f);
-        Card->SetPodiumDetailsOpacity(FMath::SmoothStep(DetailsStart, CardSeconds, RevealElapsed - Start));
+        const float Elapsed = RevealElapsed - Start;
+        const auto EntryAlpha = [&](float Fraction)
+        {
+            return FMath::SmoothStep(CardSeconds * FMath::Clamp(Fraction, 0.f, .95f), CardSeconds, Elapsed);
+        };
+        const float PlateAlpha = EntryAlpha(PlateEntryFraction);
+        Card->SetPodiumEntry(EntryAlpha(0.f), PlateAlpha, EntryAlpha(DetailsEntryFraction),
+            EntryAlpha(PortraitEntryFraction), CardEntryOffset * (1.f - PlateAlpha));
     }
     if (RevealElapsed >= TotalSeconds)
     {
@@ -509,9 +580,7 @@ void UMWMatchResultsWidget::ShowStandings()
     // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)
     {
-        Card->SetRenderOpacity(1.f);
-        Card->SetPodiumDetailsOpacity(1.f);
-        Card->SetRenderTranslation(FVector2D::ZeroVector);
+        Card->SetPodiumEntry(1.f, 1.f, 1.f, 1.f, FVector2D::ZeroVector);
     }
     Screen = EMWMatchResultsScreen::Standings;
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Standings"), *GetWorld()->GetOutermost()->GetName());

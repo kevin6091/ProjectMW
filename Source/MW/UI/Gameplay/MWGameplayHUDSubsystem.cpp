@@ -152,17 +152,19 @@ public:
         ChildSlot[SNew(SOverlay)
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]
-            + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(SNew(SOverlay)
+            + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(
+                SNew(SOverlay)
                 + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(RecoveryLayout.CountdownInset)
-                [SNew(SBorder).BorderImage(&RecoveryCountdownBrush).Padding(RecoveryLayout.CountdownPadding)
+                [SNew(SHorizontalBox)
                     .Visibility_Lambda([this] { return GetRecoveringVehicle() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
-                    [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).ColorAndOpacity(RecoveryLayout.CountdownText)
-                        .Text_Lambda([this] { return RecoveryCountdownText(); })]]
-                + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(RecoveryLayout.BadgeInset)
-                [SNew(SBorder).BorderImage(&RecoveryBadgeBrush).Padding(RecoveryLayout.BadgePadding)
-                    .BorderBackgroundColor_Lambda([this] { return GetPlayerTint(Controller.IsValid() ? Controller->PlayerState : nullptr); })
-                    .Visibility_Lambda([this] { return GetRecoveringVehicle() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
-                    [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).Text(NSLOCTEXT("MWGameplayUI", "RecoveryBadge", "복귀"))]] )]
+                    + SHorizontalBox::Slot().AutoWidth().Padding(RecoveryLayout.BadgeGap)
+                    [SNew(SBorder).BorderImage(&RecoveryBadgeBrush).Padding(RecoveryLayout.BadgePadding)
+                        .BorderBackgroundColor_Lambda([this] { return GetPlayerTint(Controller.IsValid() ? Controller->PlayerState : nullptr); })
+                        [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).Text(NSLOCTEXT("MWGameplayUI", "RecoveryBadge", "복귀"))]]
+                    + SHorizontalBox::Slot().AutoWidth()
+                    [SNew(SBorder).BorderImage(&RecoveryCountdownBrush).Padding(RecoveryLayout.CountdownPadding)
+                        [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).ColorAndOpacity(RecoveryLayout.CountdownText)
+                            .Text_Lambda([this] { return RecoveryCountdownText(); })]]])]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
             [SNew(SBorder).Padding(28).BorderBackgroundColor(FLinearColor(0.025f, 0.035f, 0.05f, 0.94f))
                 .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ResultsText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
@@ -366,17 +368,38 @@ private:
             {Extent.X, Extent.Y, -Extent.Z}, {-Extent.X, Extent.Y, -Extent.Z}};
         TArray<FVector2f> Line;
         Line.Reserve(UE_ARRAY_COUNT(Corners) + 1);
+        FVector2f SlotCenter = FVector2f::ZeroVector;
         for (const FVector& Corner : Corners)
         {
             FVector2D ScreenPoint;
             if (!PC.ProjectWorldLocationToScreen(Box->GetComponentTransform().TransformPosition(Corner), ScreenPoint)) return;
-            Line.Add(FVector2f(ScreenPoint * PixelToOverlay));
+            const FVector2f Projected(ScreenPoint * PixelToOverlay);
+            Line.Add(Projected);
+            SlotCenter += Projected;
         }
+        SlotCenter /= UE_ARRAY_COUNT(Corners);
         // TArray에 자기 원소를 참조로 전달할 수 없으므로 닫는 점을 복사한다.
         const FVector2f FirstPoint = Line[0];
         Line.Add(FirstPoint);
+        const float Remaining = Vehicle.GetCheckpointRecoveryRemaining();
+        const float Travel = FMath::Clamp(Remaining / FMath::Max(RecoveryLayout.RingTravelSeconds, .01f), 0.f, 1.f);
+        const float Scale = Geometry.GetLocalSize().Y / 1080.f;
+        const float Radius = Scale * FMath::Lerp(RecoveryLayout.RingRadii.X, RecoveryLayout.RingRadii.Y, Travel);
+        FLinearColor Tint = GetPlayerTint(PC.PlayerState);
+        Tint.A *= Travel;
+        TArray<FVector2f> Ring;
+        constexpr int32 RingSegments = 32;
+        Ring.Reserve(RingSegments + 1);
+        for (int32 Segment = 0; Segment <= RingSegments; ++Segment)
+        {
+            const float Angle = 2.f * PI * Segment / RingSegments;
+            Ring.Add(SlotCenter + FVector2f(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius);
+        }
+        const float Thickness = FMath::Max(1.f, RecoveryLayout.SlotThickness * Scale);
+        FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Ring),
+            ESlateDrawEffect::None, Tint, true, Thickness);
         FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Line),
-            ESlateDrawEffect::None, RecoveryLayout.SlotColor, true, FMath::Max(1.f, RecoveryLayout.SlotThickness));
+            ESlateDrawEffect::None, RecoveryLayout.SlotColor, true, Thickness);
     }
 
     // 크기 설정은 생성 시 한 번 검증한다. 잘못된 입력은 기존 배치로 복구해 NaN·역전된 Clamp를 막는다.

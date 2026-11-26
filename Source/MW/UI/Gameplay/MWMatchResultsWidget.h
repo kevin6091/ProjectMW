@@ -39,12 +39,14 @@ public:
     void SetResult(const FMWPlayerRoundState& Result, const FText& PlayerName, int32 Rank, UTexture2D* Portrait);
     void SetTallyScore(int32 Score, int32 Target);
     void ShowRank(int32 Rank);
-    void SetPodiumDetailsOpacity(float Opacity);
+    void SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
+        const FVector2D& PlateOffset);
 
 private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> MemberAccent;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> CardBackground;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankLabel;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankSuffix;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> NameLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
@@ -52,9 +54,16 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyVehicleBadge;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidgetSwitcher> RankMedals;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> PodiumMedal;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "1", ClampMax = "10"))
     int32 ScoreDigits = 1;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
+    FVector2D PortraitEntryOffset = FVector2D::ZeroVector;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0.1", ClampMax = "1"))
+    float InitialNameScale = 1.f;
 
     TOptional<int32> ShownScore;
 };
@@ -101,6 +110,10 @@ private:
     // 결승 소켓 기준의 카메라 위치와 시선이다. 맵 좌표나 특정 테마에 의존하지 않는다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot", meta = (Units = "cm"))
     FVector CameraOffset = FVector::ZeroVector;
+
+    // 가려졌을 때만 순서대로 평가하는 결승 소켓 기준 대체 시점(cm)이다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot")
+    TArray<FVector> AlternateCameraOffsets;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot", meta = (Units = "cm"))
     FVector LookAtOffset = FVector::ZeroVector;
@@ -168,6 +181,12 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0", ClampMax = "0.95"))
     float DetailsEntryFraction = 0.35f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0", ClampMax = "0.95"))
+    float PlateEntryFraction = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0", ClampMax = "0.95"))
+    float PortraitEntryFraction = 0.35f;
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "MW|Results", meta = (AllowPrivateAccess = "true"))
     EMWMatchResultsScreen Screen = EMWMatchResultsScreen::Inactive;
