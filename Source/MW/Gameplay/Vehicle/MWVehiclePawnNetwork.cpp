@@ -59,6 +59,7 @@ void AMWVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AMWVehiclePawn, ServerDriveSnapshot);
+	DOREPLIFETIME_CONDITION(AMWVehiclePawn, CheckpointRecoveryEndServerTime, COND_OwnerOnly);
 }
 
 void AMWVehiclePawn::ResetDriveStream()
@@ -79,6 +80,11 @@ void AMWVehiclePawn::ResetDriveStream()
 	bContactSnapshotPending = false;
 	PublishDriveSnapshot(true);
 	ForceNetUpdate();
+}
+
+void AMWVehiclePawn::OnRep_CheckpointRecoveryEndServerTime()
+{
+	RefreshDrivePermission();
 }
 
 void AMWVehiclePawn::OnRep_ServerDriveSnapshot()

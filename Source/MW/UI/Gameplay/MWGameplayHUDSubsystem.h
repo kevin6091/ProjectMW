@@ -62,6 +62,46 @@ struct FMWWaitingBoardLayout
     float RowFontSize = 32.f;
 };
 
+// 복귀 카운트와 참가자 표식의 안전 영역 여백 및 슬롯 테두리다.
+USTRUCT()
+struct FMWCheckpointRecoveryLayout
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere)
+    FMargin CountdownInset = FMargin(0.f, 40.f, 0.f, 0.f);
+
+    UPROPERTY(EditAnywhere)
+    FMargin BadgeInset = FMargin(68.f, 0.f, 0.f, 52.f);
+
+    UPROPERTY(EditAnywhere)
+    FMargin CountdownPadding = FMargin(24.f, 6.f);
+
+    UPROPERTY(EditAnywhere)
+    FMargin BadgePadding = FMargin(20.f, 12.f);
+
+    UPROPERTY(EditAnywhere)
+    FLinearColor CountdownBackground = FLinearColor(1.f, .69f, .22f);
+
+    UPROPERTY(EditAnywhere)
+    FLinearColor CountdownText = FLinearColor(.12f, .07f, .02f);
+
+    UPROPERTY(EditAnywhere)
+    FLinearColor SlotColor = FLinearColor::White;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+    float CountdownCornerRadius = 9.f;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+    float BadgeCornerRadius = 24.f;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "1"))
+    float SlotThickness = 3.f;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "1"))
+    float FontSize = 30.f;
+};
+
 // 월드 시작 때 한 번 결정하는 개발 맵 전용 표시 옵션이다.
 struct FMWPIEHUDPreview
 {
@@ -103,6 +143,9 @@ public:
 
     UPROPERTY(Config)
     TSoftClassPtr<UMWMatchResultsWidget> MatchResultsWidgetClass;
+
+    UPROPERTY(Config, EditAnywhere, Category = "MW|UI|Recovery")
+    FMWCheckpointRecoveryLayout CheckpointRecoveryLayout;
 
     UPROPERTY(Config)
     TSoftObjectPtr<UFont> DisplayFont;

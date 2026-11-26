@@ -5,6 +5,7 @@
 #include "Brushes/SlateImageBrush.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
 #include "Components/NativeWidgetHost.h"
+#include "Components/BoxComponent.h"
 #include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/SceneComponent.h"
@@ -28,6 +29,7 @@
 #include "UI/Gameplay/MWGameplaySign.h"
 #include "UI/Gameplay/MWMatchResultsWidget.h"
 #include "UI/Gameplay/MWRaceHUDWidget.h"
+#include "UObject/Package.h"
 #include "Widgets/SNullWidget.h"
 #include "UI/Common/MWParticipantPalette.h"
 #include "Widgets/Layout/SScaleBox.h"
@@ -65,6 +67,9 @@ public:
         MatchResultsActive = Args._MatchResultsActive;
         const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
         InitializeLayout(*Settings);
+        RecoveryLayout = Settings->CheckpointRecoveryLayout;
+        RecoveryCountdownBrush = FSlateRoundedBoxBrush(RecoveryLayout.CountdownBackground, RecoveryLayout.CountdownCornerRadius);
+        RecoveryBadgeBrush = FSlateRoundedBoxBrush(FLinearColor::White, RecoveryLayout.BadgeCornerRadius);
         UUserWidget* Panels = Args._Panels;
         UNativeWidgetHost* IconHost = nullptr;
         if (Panels)
@@ -147,6 +152,17 @@ public:
         ChildSlot[SNew(SOverlay)
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]
+            + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(SNew(SOverlay)
+                + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(RecoveryLayout.CountdownInset)
+                [SNew(SBorder).BorderImage(&RecoveryCountdownBrush).Padding(RecoveryLayout.CountdownPadding)
+                    .Visibility_Lambda([this] { return GetRecoveringVehicle() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                    [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).ColorAndOpacity(RecoveryLayout.CountdownText)
+                        .Text_Lambda([this] { return RecoveryCountdownText(); })]]
+                + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Bottom).Padding(RecoveryLayout.BadgeInset)
+                [SNew(SBorder).BorderImage(&RecoveryBadgeBrush).Padding(RecoveryLayout.BadgePadding)
+                    .BorderBackgroundColor_Lambda([this] { return GetPlayerTint(Controller.IsValid() ? Controller->PlayerState : nullptr); })
+                    .Visibility_Lambda([this] { return GetRecoveringVehicle() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                    [SNew(STextBlock).Font(Art.Font(RecoveryLayout.FontSize)).Text(NSLOCTEXT("MWGameplayUI", "RecoveryBadge", "복귀"))]] )]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
             [SNew(SBorder).Padding(28).BorderBackgroundColor(FLinearColor(0.025f, 0.035f, 0.05f, 0.94f))
                 .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ResultsText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
@@ -275,6 +291,10 @@ public:
         if (ViewportWidth <= 0 || ViewportHeight <= 0)
             return TopLayer;
         const FVector2D PixelToOverlay = Geometry.GetLocalSize() / FVector2D(ViewportWidth, ViewportHeight);
+        if (const auto* Recovering = GetRecoveringVehicle())
+        {
+            DrawRecoverySlot(*PC, *Recovering, Geometry, PixelToOverlay, DrawElements, TopLayer + 1);
+        }
         const auto FontMeasure = FSlateApplication::Get().GetRenderer()->GetFontMeasureService();
         const double NameScale = FMath::Min(Geometry.GetLocalSize().X / 1920.0, Geometry.GetLocalSize().Y / 1080.0);
         FSlateFontInfo NameFont = Art.Font(FMath::Max(11.0, 30.0 * NameScale));
@@ -316,6 +336,49 @@ public:
     }
 
 private:
+    const AMWVehiclePawn* GetRecoveringVehicle() const
+    {
+        const auto* PC = Controller.Get();
+        const auto* Vehicle = PC ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
+        const auto* State = Vehicle ? Vehicle->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
+        return State && State->GetRoomPhase() == EMWRoomPhase::Racing && Vehicle->GetCheckpointRecoveryRemaining() > 0.f
+            ? Vehicle : nullptr;
+    }
+
+    FText RecoveryCountdownText() const
+    {
+        const auto* Vehicle = GetRecoveringVehicle();
+        if (!Vehicle) return FText::GetEmpty();
+        FNumberFormattingOptions Decimal;
+        Decimal.MinimumFractionalDigits = 1;
+        Decimal.MaximumFractionalDigits = 1;
+        return FText::Format(NSLOCTEXT("MWGameplayUI", "CheckpointRecoveryCountdown", "재출발 {0}초"),
+            FText::AsNumber(Vehicle->GetCheckpointRecoveryRemaining(), &Decimal));
+    }
+
+    void DrawRecoverySlot(const APlayerController& PC, const AMWVehiclePawn& Vehicle, const FGeometry& Geometry,
+        const FVector2D& PixelToOverlay, FSlateWindowElementList& DrawElements, int32 Layer) const
+    {
+        const auto* Box = Cast<UBoxComponent>(Vehicle.GetRootComponent());
+        if (!Box) return;
+        const FVector Extent = Box->GetUnscaledBoxExtent();
+        const FVector Corners[] = {{-Extent.X, -Extent.Y, -Extent.Z}, {Extent.X, -Extent.Y, -Extent.Z},
+            {Extent.X, Extent.Y, -Extent.Z}, {-Extent.X, Extent.Y, -Extent.Z}};
+        TArray<FVector2f> Line;
+        Line.Reserve(UE_ARRAY_COUNT(Corners) + 1);
+        for (const FVector& Corner : Corners)
+        {
+            FVector2D ScreenPoint;
+            if (!PC.ProjectWorldLocationToScreen(Box->GetComponentTransform().TransformPosition(Corner), ScreenPoint)) return;
+            Line.Add(FVector2f(ScreenPoint * PixelToOverlay));
+        }
+        // TArray에 자기 원소를 참조로 전달할 수 없으므로 닫는 점을 복사한다.
+        const FVector2f FirstPoint = Line[0];
+        Line.Add(FirstPoint);
+        FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Line),
+            ESlateDrawEffect::None, RecoveryLayout.SlotColor, true, FMath::Max(1.f, RecoveryLayout.SlotThickness));
+    }
+
     // 크기 설정은 생성 시 한 번 검증한다. 잘못된 입력은 기존 배치로 복구해 NaN·역전된 Clamp를 막는다.
     void InitializeLayout(const UMWGameplayHUDSubsystem& Settings)
     {
@@ -547,6 +610,9 @@ private:
 
     FMWItemSlotLayout ItemLayout;
     FMWWaitingBoardLayout BoardLayout;
+    FMWCheckpointRecoveryLayout RecoveryLayout;
+    FSlateRoundedBoxBrush RecoveryCountdownBrush{FLinearColor::Transparent};
+    FSlateRoundedBoxBrush RecoveryBadgeBrush{FLinearColor::Transparent};
     TWeakObjectPtr<APlayerController> Controller;
     TWeakObjectPtr<UWidget> WaitingBoard;
     TSharedPtr<SGridPanel> Roster;

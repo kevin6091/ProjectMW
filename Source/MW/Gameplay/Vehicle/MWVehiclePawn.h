@@ -91,6 +91,9 @@ public:
     // 서버가 고른 체크포인트 후보로 안전 이동한다. 성공한 후보에서만 속도를 초기화한다.
     bool RespawnAtCheckpoint(const FVector& Location, const FRotator& Rotation);
 
+    UFUNCTION(BlueprintPure, Category = "MW|Race")
+    float GetCheckpointRecoveryRemaining() const;
+
     // main의 차체 표시 완충 뒤에 캐시한 바퀴·자국 표시를 갱신한다.
     virtual void Tick(float DeltaSeconds) override;
 
@@ -225,6 +228,16 @@ private:
 	bool IsValidDriveInput(const FMWVehicleDriveInput& Input);
 
     bool bRespawningAtCheckpoint = false;
+
+    // 복귀 성공 뒤 서버가 주행 재개 시각을 정한다. 0이면 정지 시간을 생략한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "0", Units = "s"))
+    float CheckpointRecoverySeconds = 0.8f;
+
+    UPROPERTY(ReplicatedUsing = OnRep_CheckpointRecoveryEndServerTime)
+    double CheckpointRecoveryEndServerTime = 0.0;
+
+    UFUNCTION()
+    void OnRep_CheckpointRecoveryEndServerTime();
 	double NextRaceFailureCheck = 0.0;
 
 	friend class UMWVehicleMovementComponent;

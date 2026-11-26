@@ -230,6 +230,11 @@ USphereComponent* AMWVehiclePawn::CreateWheelSuspensionCollision(const FVector& 
 void AMWVehiclePawn::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+	if (HasAuthority() && CheckpointRecoveryEndServerTime > 0.0 && GetDriveServerTime() >= CheckpointRecoveryEndServerTime)
+	{
+		CheckpointRecoveryEndServerTime = 0.0;
+		RefreshDrivePermission();
+	}
 	if (HasAuthority() && GetWorld()->GetTimeSeconds() >= NextRaceFailureCheck)
 	{
 		NextRaceFailureCheck = GetWorld()->GetTimeSeconds() + 0.25;
@@ -398,7 +403,8 @@ bool AMWVehiclePawn::CanDrive() const
 	}
 	const FMWGameplayProgress& Progress = GS->GetProgressRef();
 	const FMWPlayerRoundState Round = PS->GetRoundState();
-	return !bFinishCollisionDisabled && Progress.Phase == EMWRoomPhase::Racing && Progress.RoundEpoch > 0
+	return !bFinishCollisionDisabled && GetCheckpointRecoveryRemaining() <= 0.f
+		&& Progress.Phase == EMWRoomPhase::Racing && Progress.RoundEpoch > 0
 		&& Round.RoundEpoch == Progress.RoundEpoch && Round.bRaceParticipant && Round.RaceStatus == EMWRaceStatus::Active
 		&& (HasAuthority() || (ServerDriveSnapshot.bDriveAllowed && ServerDriveSnapshot.RoundEpoch == Progress.RoundEpoch));
 }
@@ -536,6 +542,7 @@ void AMWVehiclePawn::PrepareForRaceFromServer()
 	VehicleMovement->ResetDriveInput();
 	VehicleMovement->StopMovementImmediately();
 	// GameMode가 출발 위치를 적용한 뒤 호출한다. Waiting 복제만으로는 충돌을 복원하지 않는다.
+	CheckpointRecoveryEndServerTime = 0.0;
 	SetFinishCollisionDisabled(false);
 	RefreshDrivePermission();
 	// 이미 정지 중이어도 새 Epoch를 포함한 시작 위치를 반드시 공개한다.
@@ -607,6 +614,12 @@ bool AMWVehiclePawn::RespawnAtCheckpoint(const FVector& Location, const FRotator
 	return TeleportTo(Location, Rotation);
 }
 
+float AMWVehiclePawn::GetCheckpointRecoveryRemaining() const
+{
+    return CheckpointRecoveryEndServerTime > 0.0 && GetWorld()
+        ? static_cast<float>(FMath::Max(0.0, CheckpointRecoveryEndServerTime - GetDriveServerTime())) : 0.f;
+}
+
 void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 {
 	Super::TeleportSucceeded(bIsATest);
@@ -625,7 +638,15 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 		DriveInput = FMWVehicleDriveInput{};
 		if (HasActorBegunPlay())
 		{
-			ResetDriveStream();
+			const auto* State = GetWorld()->GetGameState<AMWGameplayGameState>();
+			const bool bStartRecovery = HasAuthority() && bRespawningAtCheckpoint && State
+				&& State->GetRoomPhase() == EMWRoomPhase::Racing
+				&& FMath::IsFinite(CheckpointRecoverySeconds) && CheckpointRecoverySeconds > 0.f;
+			if (bStartRecovery) CheckpointRecoveryEndServerTime = GetDriveServerTime() + CheckpointRecoverySeconds;
+			const bool bWasAllowed = bDriveAllowed;
+			if (bStartRecovery) RefreshDrivePermission();
+			// 권한 갱신에서 스트림을 새로 열었으면 같은 위치를 두 번 전송하지 않는다.
+			if (bWasAllowed == bDriveAllowed) ResetDriveStream();
 			// 실제 텔레포트 이후에는 이전 표시 위치·기울기를 이어 쓰지 않는다.
 			ResetGroundVisual();
 		}

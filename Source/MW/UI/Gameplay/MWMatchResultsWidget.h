@@ -38,7 +38,8 @@ class MW_API UMWMatchResultRowWidget : public UUserWidget
 public:
     void SetResult(const FMWPlayerRoundState& Result, const FText& PlayerName, int32 Rank, UTexture2D* Portrait);
     void SetTallyScore(int32 Score, int32 Target);
-    void ShowRank(bool bShow);
+    void ShowRank(int32 Rank);
+    void SetPodiumDetailsOpacity(float Opacity);
 
 private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> MemberAccent;
@@ -51,6 +52,9 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyVehicleBadge;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidgetSwitcher> RankMedals;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "1", ClampMax = "10"))
+    int32 ScoreDigits = 1;
 
     TOptional<int32> ShownScore;
 };
@@ -128,6 +132,21 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally")
     FText FirstFinishBonusText;
 
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally")
+    FText RoundIntroFormat;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float RoundIntroSeconds = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0.05", ClampMax = "1"))
+    float AwardMotionFraction = 0.6f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float FinishStageSeconds = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float BonusStageSeconds = 0.f;
+
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
     float StageSeconds = 0.f;
 
@@ -147,6 +166,9 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D CardEntryOffset = FVector2D::ZeroVector;
 
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0", ClampMax = "0.95"))
+    float DetailsEntryFraction = 0.35f;
+
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "MW|Results", meta = (AllowPrivateAccess = "true"))
     EMWMatchResultsScreen Screen = EMWMatchResultsScreen::Inactive;
 
@@ -160,6 +182,8 @@ private:
     {
         FText Label;
         TArray<int32> Awards;
+        float Duration = 0.f;
+        int32 LargestAward = 0;
     };
 
     TArray<FMWPlayerRoundState> Results;
@@ -167,8 +191,8 @@ private:
     TArray<int32> DisplayedScores;
     bool bFinalResults = false;
     int32 BarScaleScore = 0;
+    int32 RoundNumber = 0;
     int32 CurrentStage = 0;
-    float StageDuration = 0.f;
     float StageElapsed = 0.f;
     float RevealElapsed = 0.f;
     double RoundEndServerTime = 0.0;
@@ -179,6 +203,7 @@ private:
     void BeginTally();
     void ShowTallyStage();
     void EndTally();
+    void BeginPodium();
     void UpdatePodium(float DeltaTime);
     void ShowStandings();
     void ClearPresentation();

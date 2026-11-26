@@ -12,6 +12,7 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
+#include "Engine/GameInstance.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -68,12 +69,24 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
     TotalScoreLabel->SetText(FText::AsNumber(Result.TotalScore));
 }
 
-void UMWMatchResultRowWidget::ShowRank(bool bShow)
+void UMWMatchResultRowWidget::ShowRank(int32 Rank)
 {
     if (RankLabel)
     {
-        RankLabel->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+        RankLabel->SetVisibility(Rank > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+        if (Rank > 0) RankLabel->SetText(FText::Format(LOCTEXT("Rank", "{0}위"), FText::AsNumber(Rank)));
+        if (UWidgetLayoutLibrary::SlotAsCanvasSlot(RankLabel))
+        {
+            NameLabel->SetVisibility(Rank > 0 ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
+        }
     }
+}
+
+void UMWMatchResultRowWidget::SetPodiumDetailsOpacity(float Opacity)
+{
+    NameLabel->SetRenderOpacity(Opacity);
+    TotalScoreLabel->SetRenderOpacity(Opacity);
+    if (VehiclePortrait) VehiclePortrait->SetRenderOpacity(Opacity);
 }
 
 void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
@@ -83,14 +96,16 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
         return;
     }
     ShownScore = Score;
-    TotalScoreLabel->SetText(FText::AsNumber(Score));
+    FNumberFormattingOptions ScoreFormat;
+    ScoreFormat.SetUseGrouping(ScoreDigits <= 1).SetMinimumIntegralDigits(FMath::Clamp(ScoreDigits, 1, 10));
+    TotalScoreLabel->SetText(FText::AsNumber(Score, &ScoreFormat));
     if (ScoreBar)
     {
         const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
         ScoreBar->SetPercent(Fraction);
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
-        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), ScoreMarker})
+        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), static_cast<UWidget*>(RankLabel.Get()), ScoreMarker})
         {
             if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {
@@ -132,6 +147,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
 
     Results = Progress.Results;
+    RoundNumber = Progress.RoundIndex;
     BarScaleScore = Progress.TargetScore;
     RoundEndServerTime = Progress.PhaseEndServerTime;
     const auto CreateEntry = [&](TSubclassOf<UMWMatchResultRowWidget> EntryClass, const FMWPlayerRoundState& Result)
@@ -155,7 +171,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     {
         auto* Column = CreateEntry(TallyColumnClass, Result);
         if (!Column) return false;
-        Column->ShowRank(false);
+        Column->ShowRank(0);
         auto* ColumnSlot = TallyColumns->AddChildToHorizontalBox(Column);
         ColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
         BarScaleScore = FMath::Max(BarScaleScore, Result.TotalScore);
@@ -166,6 +182,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
         if (WinnerCardHost) WinnerCardHost->SetVisibility(ESlateVisibility::Collapsed);
         for (const FMWPlayerRoundState& Result : Progress.Results)
         {
+            if (Result.FinalRank < 1 || Result.FinalRank > 3) continue;
             auto* PodiumCard = CreateEntry(PodiumCardClass, Result);
             if (!PodiumCard) return false;
             if (WinnerCardHost && Result.FinalRank == 1)
@@ -199,7 +216,8 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     {
         return false;
     }
-    if (bFinalResults && BeginFinishShot(State))
+    // 라운드 집계도 결승을 배경으로 즉시 시작한다. 카메라 단독 연출은 매치 종료 때만 기다린다.
+    if (BeginFinishShot(State) && bFinalResults)
     {
         Screen = EMWMatchResultsScreen::FinishShot;
         RestoreInput(*Controller);
@@ -255,7 +273,10 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     const float Blend = FMath::IsFinite(CameraBlendSeconds) ? FMath::Clamp(CameraBlendSeconds, 0.f, ShotSeconds) : 0.f;
     Controller->SetViewTargetWithBlend(FinishCamera, Blend, VTBlend_EaseInOut, 0.f, true);
 
-    GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginTally, ShotSeconds, false);
+    if (bFinalResults)
+    {
+        GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginTally, ShotSeconds, false);
+    }
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d Camera=%s"),
         *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, *CameraLocation.ToCompactString());
     return true;
@@ -287,30 +308,30 @@ void UMWMatchResultsWidget::PrepareTally()
         DisplayedScores.Add(Result.TotalScore - Result.CheckpointScore - Result.FinishScore);
     }
 
-    const auto AddStage = [this](const FText& Label, auto GetAward)
+    const auto AddStage = [this](const FText& Label, float Seconds, auto GetAward, bool bKeepEmpty = false)
     {
         FScoreStage Stage;
         Stage.Label = Label;
-        bool bHasAward = false;
+        Stage.Duration = FMath::IsFinite(Seconds) && Seconds > 0.f ? Seconds : StageSeconds;
         for (const FMWPlayerRoundState& Result : Results)
         {
             const int32 Award = GetAward(Result);
             Stage.Awards.Add(Award);
-            bHasAward |= Award > 0;
+            Stage.LargestAward = FMath::Max(Stage.LargestAward, Award);
         }
-        if (bHasAward)
+        if (Stage.LargestAward > 0 || bKeepEmpty)
         {
             ScoreStages.Add(MoveTemp(Stage));
         }
     };
     for (int32 Index = 0; Index < CheckpointCount; ++Index)
     {
-        AddStage(FText::Format(CheckpointStageFormat, FText::AsNumber(Index + 1)), [Index](const FMWPlayerRoundState& Result)
+        AddStage(FText::Format(CheckpointStageFormat, FText::AsNumber(Index + 1)), StageSeconds, [Index](const FMWPlayerRoundState& Result)
         {
             return Result.CheckpointAwards.IsValidIndex(Index) ? Result.CheckpointAwards[Index] : 0;
-        });
+        }, true);
     }
-    AddStage(CheckpointRemainderText, [](const FMWPlayerRoundState& Result)
+    AddStage(CheckpointRemainderText, StageSeconds, [](const FMWPlayerRoundState& Result)
     {
         int32 Remainder = Result.CheckpointScore;
         for (const int32 Award : Result.CheckpointAwards)
@@ -319,8 +340,16 @@ void UMWMatchResultsWidget::PrepareTally()
         }
         return Remainder;
     });
-    AddStage(FinishStageText, [](const FMWPlayerRoundState& Result) { return Result.FinishScore - Result.FirstFinishBonus; });
-    AddStage(FirstFinishBonusText, [](const FMWPlayerRoundState& Result) { return Result.FirstFinishBonus; });
+    AddStage(FinishStageText, FinishStageSeconds, [](const FMWPlayerRoundState& Result) { return Result.FinishScore - Result.FirstFinishBonus; });
+    AddStage(FirstFinishBonusText, BonusStageSeconds, [](const FMWPlayerRoundState& Result) { return Result.FirstFinishBonus; });
+    if (!ScoreStages.IsEmpty() && !RoundIntroFormat.IsEmpty() && FMath::IsFinite(RoundIntroSeconds) && RoundIntroSeconds > 0.f)
+    {
+        FScoreStage Intro;
+        Intro.Label = FText::Format(RoundIntroFormat, FText::AsNumber(RoundNumber));
+        Intro.Duration = RoundIntroSeconds;
+        Intro.Awards.Init(0, Results.Num());
+        ScoreStages.Insert(MoveTemp(Intro), 0);
+    }
 }
 
 void UMWMatchResultsWidget::BeginTally()
@@ -333,14 +362,19 @@ void UMWMatchResultsWidget::BeginTally()
         TimeBudget = FMath::Min(TimeBudget, static_cast<float>(RoundEndServerTime - Now) - RoundPositionsHoldSeconds);
     }
     TallyPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
-    if (ScoreStages.IsEmpty() || StageSeconds <= 0.f || TimeBudget <= 0.f)
+    if (ScoreStages.IsEmpty() || !FMath::IsFinite(StageSeconds) || StageSeconds <= 0.f
+        || !FMath::IsFinite(TimeBudget) || TimeBudget <= 0.f)
     {
         EndTally();
         return;
     }
 
     Screen = EMWMatchResultsScreen::Tally;
-    StageDuration = FMath::Min(StageSeconds, TimeBudget / ScoreStages.Num());
+    float RequestedSeconds = 0.f;
+    for (const FScoreStage& Stage : ScoreStages) RequestedSeconds += Stage.Duration;
+    // 서버 단계가 예약한 종료 시각에 맞추되 항목별 상대 길이와 멈춤은 유지한다.
+    const float TimeScale = FMath::Min(1.f, TimeBudget / RequestedSeconds);
+    for (FScoreStage& Stage : ScoreStages) Stage.Duration *= TimeScale;
     ShowTallyStage();
     for (int32 Index = 0; Index < Results.Num(); ++Index)
     {
@@ -370,13 +404,13 @@ void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTim
     }
     StageElapsed += DeltaTime;
     // 프레임이 밀려도 서버가 지급한 구간의 합은 모두 한 번씩 반영한다.
-    while (StageElapsed >= StageDuration)
+    while (StageElapsed >= ScoreStages[CurrentStage].Duration)
     {
         for (int32 Index = 0; Index < Results.Num(); ++Index)
         {
             DisplayedScores[Index] += ScoreStages[CurrentStage].Awards[Index];
         }
-        StageElapsed -= StageDuration;
+        StageElapsed -= ScoreStages[CurrentStage].Duration;
         if (++CurrentStage == ScoreStages.Num())
         {
             EndTally();
@@ -384,29 +418,53 @@ void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTim
         }
         ShowTallyStage();
     }
-    const float Alpha = FMath::SmoothStep(0.f, StageDuration, StageElapsed);
+    const FScoreStage& Stage = ScoreStages[CurrentStage];
+    const float MotionSeconds = Stage.Duration * FMath::Clamp(AwardMotionFraction, 0.05f, 1.f);
+    const float Alpha = FMath::Clamp(StageElapsed / MotionSeconds, 0.f, 1.f);
+    // 같은 항목의 모든 열을 같은 속도로 올리고, 각 열의 실제 지급분에 닿으면 그 열만 멈춘다.
+    const int32 AwardProgress = FMath::RoundToInt(Stage.LargestAward * Alpha);
     for (int32 Index = 0; Index < Results.Num(); ++Index)
     {
-        const int32 Display = DisplayedScores[Index] + FMath::RoundToInt(ScoreStages[CurrentStage].Awards[Index] * Alpha);
+        const int32 Display = DisplayedScores[Index] + FMath::Min(Stage.Awards[Index], AwardProgress);
         CastChecked<UMWMatchResultRowWidget>(TallyColumns->GetChildAt(Index))->SetTallyScore(Display, BarScaleScore);
     }
 }
 
 void UMWMatchResultsWidget::EndTally()
 {
-    if (!bFinalResults)
+    if (!bFinalResults || !ScoreStages.IsEmpty())
     {
         Screen = EMWMatchResultsScreen::RoundPositions;
-        TallyHeading->SetText(RoundPositionsText);
+        TallyHeading->SetText(RoundPositionsText.IsEmpty() ? LOCTEXT("RoundPositions", "누적 순위") : RoundPositionsText);
+        // 열은 참가자 슬롯 순으로 둔다. 누적 점수 동점은 서버의 라운드 순위와 슬롯으로 가른다.
+        TArray<const FMWPlayerRoundState*> Ranked;
+        for (const FMWPlayerRoundState& Result : Results) Ranked.Add(&Result);
+        Ranked.Sort([](const FMWPlayerRoundState& A, const FMWPlayerRoundState& B)
+        {
+            if (A.TotalScore != B.TotalScore) return A.TotalScore > B.TotalScore;
+            if (A.RoundRank != B.RoundRank) return A.RoundRank < B.RoundRank;
+            return A.MemberId < B.MemberId;
+        });
         for (int32 Index = 0; Index < Results.Num(); ++Index)
         {
             auto* Column = CastChecked<UMWMatchResultRowWidget>(TallyColumns->GetChildAt(Index));
             Column->SetTallyScore(Results[Index].TotalScore, BarScaleScore);
-            Column->ShowRank(true);
+            Column->ShowRank(bFinalResults ? Results[Index].FinalRank : Ranked.Find(&Results[Index]) + 1);
         }
-        return;
+        UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=RoundPositions"), *GetWorld()->GetOutermost()->GetName());
+        if (!bFinalResults) return;
+        // 확정 라운드 화면을 받지 못한 클라이언트도 집계를 건너뛰지 않고 최종 시상까지 이어 간다.
+        if (FMath::IsFinite(RoundPositionsHoldSeconds) && RoundPositionsHoldSeconds > 0.f)
+        {
+            GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, RoundPositionsHoldSeconds, false);
+            return;
+        }
     }
+    BeginPodium();
+}
 
+void UMWMatchResultsWidget::BeginPodium()
+{
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
     PodiumPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     PlayCelebration();
@@ -432,11 +490,13 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
     // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
     for (int32 Index = 0; Index < Count; ++Index)
     {
-        UWidget* Card = PodiumRevealOrder[Index];
+        UMWMatchResultRowWidget* Card = PodiumRevealOrder[Index];
         const float Start = Index == 0 ? 0.f : CardSeconds * Index + HoldSeconds;
         const float Alpha = FMath::SmoothStep(0.f, CardSeconds, RevealElapsed - Start);
         Card->SetRenderOpacity(Alpha);
         Card->SetRenderTranslation(CardEntryOffset * (1.f - Alpha));
+        const float DetailsStart = CardSeconds * FMath::Clamp(DetailsEntryFraction, 0.f, .95f);
+        Card->SetPodiumDetailsOpacity(FMath::SmoothStep(DetailsStart, CardSeconds, RevealElapsed - Start));
     }
     if (RevealElapsed >= TotalSeconds)
     {
@@ -450,6 +510,7 @@ void UMWMatchResultsWidget::ShowStandings()
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)
     {
         Card->SetRenderOpacity(1.f);
+        Card->SetPodiumDetailsOpacity(1.f);
         Card->SetRenderTranslation(FVector2D::ZeroVector);
     }
     Screen = EMWMatchResultsScreen::Standings;

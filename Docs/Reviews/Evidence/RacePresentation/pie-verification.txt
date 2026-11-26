@@ -1,0 +1,182 @@
+Unreal Engine 5.8 / MWEditor Win64 Development / 3-player PIE
+The first tested build failed when opening the checkpoint recovery UI.
+[2026.11.26-06.04.50:317][  9]LogWindows: Error: appError called: Assertion failed: Addr < GetData() || Addr >= (GetData() + ArrayMax) [File:C:\Program Files\Epic Games\UE_5.8\Engine\Source\Runtime\Core\Public\Containers\Array.h] [Line: 2196]
+[2026.11.26-06.04.56:648][  9]LogWindows: Error: [Callstack] 0x00007ffba488cb44 UnrealEditor-MW.dll!UMWGameplayHUDSubsystem::SMWGameplayHUD::DrawRecoverySlot() [C:\workspace\UE\ProjectMW\Source\MW\UI\Gameplay\MWGameplayHUDSubsystem.cpp:375]
+
+Rebuild after fixing the recovery slot:
+Result: Succeeded
+Total execution time: 22.26 seconds
+
+Final build, original 3-player run:
+[2026.11.26-06.09.06:589][648]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.26-06.09.06:674][649]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.26-06.09.06:757][650]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+[2026.11.26-06.09.25:474][208]LogTemp: Display: MW_MATCH_QA_FULLSCREEN Host=L_Dev_Drive
+[2026.11.26-06.09.48:306][942]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=34160.39, Y=450.01, Z=13980.57)
+[2026.11.26-06.09.48:306][942]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.09.48:344][943]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=34160.39, Y=450.01, Z=13980.57)
+[2026.11.26-06.09.48:344][943]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.09.48:355][943]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=34160.39, Y=450.01, Z=13980.57)
+[2026.11.26-06.09.48:355][943]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.09.48:946][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.09.48:946][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.09.48:951][947]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.09.49:825][956]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.09.49:826][956]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.09.49:830][956]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.09.50:794][965]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.09.50:794][965]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.09.50:800][965]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.09.51:707][971]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.26-06.09.51:753][972]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.26-06.09.51:863][973]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+[2026.11.26-06.10.21:284][754]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.21:284][754]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-06.10.21:313][755]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.21:313][755]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-06.10.21:330][755]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.21:330][755]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-06.10.21:756][758]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-06.10.21:756][758]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-06.10.21:761][758]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-06.10.22:319][764]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-06.10.22:320][764]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-06.10.22:327][764]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-06.10.23:037][771]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-06.10.23:038][771]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-06.10.23:043][771]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-06.10.23:777][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.10.23:778][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.10.23:784][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.10.24:285][783]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.24:294][783]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.24:302][783]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 Camera=V(X=33188.96, Y=-3994.90, Z=8980.57)
+[2026.11.26-06.10.27:688][837]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-06.10.27:690][837]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-06.10.27:691][837]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-06.10.28:283][843]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-06.10.28:283][843]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+[2026.11.26-06.10.28:286][843]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-06.12.20:799][537]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.26-06.12.21:077][539]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.26-06.12.21:292][540]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+[2026.11.26-06.12.26:209][657]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=35586.93, Y=7245.05, Z=8920.00)
+[2026.11.26-06.12.26:209][657]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.12.26:224][658]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=35586.93, Y=7245.05, Z=8920.00)
+[2026.11.26-06.12.26:224][658]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.12.26:232][658]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=35586.93, Y=7245.05, Z=8920.00)
+[2026.11.26-06.12.26:232][658]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-06.12.26:827][663]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.12.26:827][663]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.12.26:828][663]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-06.12.27:659][673]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.12.27:659][673]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.12.27:743][674]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-06.12.28:663][685]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.12.28:663][685]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.12.28:663][685]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-06.12.29:686][693]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.26-06.12.29:765][694]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.26-06.12.29:841][695]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+
+Samples of authority, local UI and widget opacity:
+{"event":"client","timestamp":625440.343,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1920,994],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_FRED_C","epoch":1,"passed":0,"earned":0,"finish":0,"target":550,"results":[]}
+{"event":"client","timestamp":625440.359,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":1,"passed":0,"earned":0,"finish":0,"target":550,"results":[]}
+{"event":"client","timestamp":625440.359,"member":3,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_MAMMOTH_C","epoch":1,"passed":0,"earned":0,"finish":0,"target":550,"results":[]}
+{"event":"server_overlap","timestamp":625440.359,"member":2,"epoch":1,"index":0,"piece":5,"score":0,"finish":1}
+{"event":"client","timestamp":625440.421,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":1,"passed":0,"earned":0,"finish":1,"target":550,"results":[]}
+{"event":"server_overlap","timestamp":625440.89,"member":1,"epoch":1,"index":0,"piece":5,"score":0,"finish":2}
+{"event":"client","timestamp":625440.937,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1920,994],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[]}
+{"event":"client","timestamp":625442.953,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1920,1022],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[]}
+{"event":"client","timestamp":625455.531,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[]}
+{"event":"server_overlap","timestamp":625478.234,"member":3,"epoch":1,"index":0,"piece":5,"score":0,"finish":3}
+{"event":"configuration","timestamp":625478.328,"member":1,"intro":0.8999999761581421,"intro_label":"라운드 {0}","hold":0.6499999761581421}
+{"event":"client","timestamp":625478.375,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"TallyHeading":"라운드 1","PodiumHeading":"결승 순위"}}
+{"event":"configuration","timestamp":625478.406,"member":2,"intro":0.8999999761581421,"intro_label":"라운드 {0}","hold":0.6499999761581421}
+{"event":"client","timestamp":625478.468,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":1,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"TallyHeading":"라운드 1","PodiumHeading":"결승 순위"}}
+{"event":"configuration","timestamp":625478.5,"member":3,"intro":0.8999999761581421,"intro_label":"라운드 {0}","hold":0.6499999761581421}
+{"event":"client","timestamp":625478.578,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":3,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"TallyHeading":"라운드 1","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625478.89,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"TallyHeading":"완주 점수","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625478.921,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":1,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"TallyHeading":"완주 점수","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625478.937,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":3,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"TallyHeading":"완주 점수","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625479.781,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"TallyHeading":"선착 보너스","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625479.812,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":1,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"TallyHeading":"선착 보너스","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625479.843,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":3,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"TallyHeading":"선착 보너스","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625480.75,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":1,"passed":0,"earned":0,"finish":2,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_FRED_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625480.765,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":1,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625480.796,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":1,"passed":0,"earned":0,"finish":3,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"TallyHeading":"누적 순위","PodiumHeading":"결승 순위"}}
+{"event":"client","timestamp":625485.062,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":0,"earned":0,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"client","timestamp":625485.078,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":0,"earned":0,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"client","timestamp":625485.078,"member":3,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_MAMMOTH_C","epoch":2,"passed":0,"earned":0,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_overlap","timestamp":625498.125,"member":1,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"client","timestamp":625498.156,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"drop","timestamp":625501.734,"member":1,"from_z":11149.910566417218,"fall_z":3149.9105664172184}
+{"event":"client","timestamp":625503.906,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":true,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_wait","timestamp":625503.921,"member":1,"remaining":0.800000011920929,"drive":false,"z":11135.115890404775}
+{"event":"client","timestamp":625504.734,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_restored","timestamp":625504.75,"member":1,"checkpoints":1}
+{"event":"server_overlap","timestamp":625504.75,"member":2,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"client","timestamp":625504.812,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"drop","timestamp":625506.484,"member":2,"from_z":11119.878081651965,"fall_z":3119.8780816519647}
+{"event":"client","timestamp":625508.656,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":true,"can_drive":false,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_wait","timestamp":625508.656,"member":2,"remaining":0.800000011920929,"drive":false,"z":11120.57}
+{"event":"client","timestamp":625509.468,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_recovery_restored","timestamp":625509.484,"member":2,"checkpoints":1}
+{"event":"server_overlap","timestamp":625509.484,"member":3,"epoch":2,"index":1,"piece":4,"score":100,"finish":0}
+{"event":"client","timestamp":625509.562,"member":3,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":true,"camera":"BP_MWVehiclePawn_MAMMOTH_C","epoch":2,"passed":1,"earned":100,"finish":0,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_overlap","timestamp":625509.984,"member":2,"epoch":2,"index":0,"piece":8,"score":100,"finish":1}
+{"event":"client","timestamp":625510.015,"member":2,"phase":"<MWRoomPhase.RACING: 9>","size":[800,482],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_DOUG_C","epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_overlap","timestamp":625510.484,"member":1,"epoch":2,"index":0,"piece":8,"score":100,"finish":2}
+{"event":"client","timestamp":625510.515,"member":1,"phase":"<MWRoomPhase.RACING: 9>","size":[1914,1042],"recovering":false,"can_drive":false,"camera":"BP_MWVehiclePawn_FRED_C","epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,300,0,0,300,150],[1,150,0,0,150,0],[3,50,0,0,50,0]]}
+{"event":"server_overlap","timestamp":625511.218,"member":3,"epoch":2,"index":0,"piece":8,"score":100,"finish":3}
+{"event":"client","timestamp":625511.343,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"라운드 2"}}
+{"event":"client","timestamp":625511.421,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"라운드 2"}}
+{"event":"client","timestamp":625511.484,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"라운드 2"}}
+{"event":"client","timestamp":625511.703,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"체크포인트 1 점수"}}
+{"event":"client","timestamp":625511.734,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"체크포인트 1 점수"}}
+{"event":"client","timestamp":625511.75,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"체크포인트 1 점수"}}
+{"event":"client","timestamp":625512.281,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"완주 점수"}}
+{"event":"client","timestamp":625512.312,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"완주 점수"}}
+{"event":"client","timestamp":625512.343,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"완주 점수"}}
+{"event":"client","timestamp":625513.0,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_FRED_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"선착 보너스"}}
+{"event":"client","timestamp":625513.015,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"선착 보너스"}}
+{"event":"client","timestamp":625513.046,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.TALLY: 2>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"선착 보너스"}}
+{"event":"client","timestamp":625513.734,"member":1,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_FRED_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"누적 순위"}}
+{"event":"client","timestamp":625513.765,"member":2,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_DOUG_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"누적 순위"}}
+{"event":"client","timestamp":625513.781,"member":3,"phase":"<MWRoomPhase.ROUND_RESULTS: 11>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,0,100,300,150],[1,400,0,100,150,0],[3,200,0,100,50,0]],"screen":"<MWMatchResultsScreen.ROUND_POSITIONS: 3>","camera":"BP_MWVehiclePawn_MAMMOTH_C","text":{"PodiumHeading":"결승 순위","TallyHeading":"누적 순위"}}
+{"event":"client","timestamp":625514.265,"member":1,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.FINISH_SHOT: 1>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"client","timestamp":625514.281,"member":2,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.FINISH_SHOT: 1>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"client","timestamp":625514.312,"member":3,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.FINISH_SHOT: 1>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"client","timestamp":625517.671,"member":1,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.WINNER: 4>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"client","timestamp":625517.718,"member":2,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.WINNER: 4>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"client","timestamp":625517.781,"member":3,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.WINNER: 4>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"medal","timestamp":625518.218,"member":1,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"medal","timestamp":625518.218,"member":1,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":625518.234,"member":1,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"client","timestamp":625518.234,"member":1,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[1914,1042],"epoch":2,"passed":1,"earned":100,"finish":2,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"medal","timestamp":625518.25,"member":2,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"medal","timestamp":625518.25,"member":2,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":625518.25,"member":2,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"client","timestamp":625518.265,"member":2,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":1,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"event":"medal","timestamp":625518.281,"member":3,"rank":"3위","texture":"T_Bronze_Ribbon_d58438bb23f3"}
+{"event":"medal","timestamp":625518.281,"member":3,"rank":"2위","texture":"T_Silver_Ribbon_876a83b54fcd"}
+{"event":"medal","timestamp":625518.281,"member":3,"rank":"1위","texture":"T_Gold_Ribbon_fcdd58b00bec"}
+{"event":"client","timestamp":625518.281,"member":3,"phase":"<MWRoomPhase.MATCH_RESULTS: 12>","size":[800,482],"epoch":2,"passed":1,"earned":100,"finish":3,"target":550,"results":[[2,700,1,100,300,150],[1,400,2,100,150,0],[3,200,3,100,50,0]],"screen":"<MWMatchResultsScreen.STANDINGS: 5>","camera":"CameraActor","text":{"PodiumHeading":"결승 순위","TallyHeading":"점수 집계"}}
+{"member":1,"event":"unequal_awards","first":{"Sample":625478.875,"Doug":9,"Fred":9,"Mammoth":9},"before":{"Sample":625478.968,"Doug":35,"Fred":35,"Mammoth":35},"shortStop":{"Sample":625479.062,"Doug":62,"Fred":62,"Mammoth":50},"longStop":{"Sample":625479.359,"Doug":150,"Fred":150,"Mammoth":50}}
+{"member":1,"event":"podium_timing","rank":"1위","plate":0.0,"details":0.172}
+{"member":1,"event":"podium_timing","rank":"2위","plate":0.25,"details":0.328}
+{"member":1,"event":"podium_timing","rank":"3위","plate":0.406,"details":0.485}
+{"member":2,"event":"unequal_awards","first":{"Sample":625478.875,"Doug":9,"Fred":9,"Mammoth":9},"before":{"Sample":625478.968,"Doug":36,"Fred":36,"Mammoth":36},"shortStop":{"Sample":625479.062,"Doug":63,"Fred":63,"Mammoth":50},"longStop":{"Sample":625479.359,"Doug":150,"Fred":150,"Mammoth":50}}
+{"member":2,"event":"podium_timing","rank":"1위","plate":0.0,"details":0.141}
+{"member":2,"event":"podium_timing","rank":"2위","plate":0.219,"details":0.297}
+{"member":2,"event":"podium_timing","rank":"3위","plate":0.391,"details":0.469}
+{"member":3,"event":"unequal_awards","first":{"Sample":625478.875,"Doug":9,"Fred":9,"Mammoth":9},"before":{"Sample":625478.968,"Doug":36,"Fred":36,"Mammoth":36},"shortStop":{"Sample":625479.062,"Doug":63,"Fred":63,"Mammoth":50},"longStop":{"Sample":625479.359,"Doug":150,"Fred":150,"Mammoth":50}}
+{"member":3,"event":"podium_timing","rank":"1위","plate":0.0,"details":0.109}
+{"member":3,"event":"podium_timing","rank":"2위","plate":0.203,"details":0.281}
+{"member":3,"event":"podium_timing","rank":"3위","plate":0.359,"details":0.437}
+
+Second recovery capture in the same build:
+{"event": "drop", "timestamp": 625689.515, "member": 1, "from_z": 6088.234676416437, "fall_z": -1911.7653235835633}
+{"event": "client", "timestamp": 625689.703, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "size": [1914, 1042], "recovering": true, "can_drive": false, "camera": "BP_MWVehiclePawn_FRED_C", "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "target": 550, "results": [[2, 300, 0, 0, 300, 150], [1, 150, 0, 0, 150, 0], [3, 50, 0, 0, 50, 0]]}
+{"event": "server_recovery_wait", "timestamp": 625689.718, "member": 1, "remaining": 0.800000011920929, "drive": false, "z": 6100.80045890808}
+{"event": "server_recovery_restored", "timestamp": 625690.562, "member": 1, "checkpoints": 1}
