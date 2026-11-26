@@ -867,11 +867,14 @@ bool AMWGameplayGameMode::TryPassPlayerCheckpoint(AMWVehiclePawn& Vehicle, AActo
 	FMWPlayerRoundState Round = PS->GetRoundState();
 	Round.MemberId = PS->GetLobbyMemberId();
 	++Round.CheckpointsPassed;
-	if (Round.bCheckpointEligible && GS->GetProgress().RaceMode == EMWRaceMode::Normal)
+	const int32 Award = Round.bCheckpointEligible && GS->GetProgressRef().RaceMode == EMWRaceMode::Normal
+		? FMath::Max(0, PointsPerCheckpoint) : 0;
+	if (Round.CheckpointAwards.Num() < FMWPlayerRoundState::MaxCheckpointAwardEntries)
 	{
-		Round.CheckpointScore += 100;
-		Round.TotalScore += 100;
+		Round.CheckpointAwards.Add(Award);
 	}
+	Round.CheckpointScore += Award;
+	Round.TotalScore += Award;
 	Round.bCheckpointEligible = true;
 	PS->ApplyRoundStateFromServer(Round);
 	return true;
@@ -902,7 +905,10 @@ bool AMWGameplayGameMode::TryFinishPlayerRace(AMWVehiclePawn& Vehicle, AActor& F
 	Finished.FinishOrder = NextFinishOrder++;
 	if (Progress.RaceMode == EMWRaceMode::Normal)
 	{
-		Finished.FinishScore = Finished.FinishOrder == 1 ? 300 : Finished.FinishOrder == 2 ? 150 : Finished.FinishOrder == 3 ? 50 : 0;
+		const int32 Index = Finished.FinishOrder - 1;
+		const int32 FinishPoints = FinishPointsByOrder.IsValidIndex(Index) ? FMath::Max(0, FinishPointsByOrder[Index]) : 0;
+		Finished.FirstFinishBonus = Index == 0 ? FMath::Max(0, FirstFinishBonusPoints) : 0;
+		Finished.FinishScore = FinishPoints + Finished.FirstFinishBonus;
 		Finished.TotalScore += Finished.FinishScore;
 	}
 	// 기존 공용 Notify가 서버 차량 정지와 충돌 해제·이동 스냅샷 갱신까지 실행한다.

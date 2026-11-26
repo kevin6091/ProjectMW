@@ -22,6 +22,7 @@ bool FMWPlayerRoundSerializationTest::RunTest(const FString& Parameters)
 		Sent.MemberId = 7;
 		Sent.CheckpointsPassed = 3;
 		Sent.CheckpointScore = 200;
+		Sent.CheckpointAwards = {100, 0, 100};
 		Sent.FinishScore = 50;
 		Sent.TotalScore = 4250;
 		Sent.EliminationOrder = Status == EMWRaceStatus::Eliminated ? 2 : 0;
@@ -48,6 +49,9 @@ bool FMWPlayerRoundSerializationTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Epoch, status and finish order replace the previous snapshot together"), Received == Sent);
 		++Received.FinishOrder;
 		TestFalse(TEXT("A changed finish order is a changed snapshot"), Received == Sent);
+		Received = Sent;
+		Swap(Received.CheckpointAwards[0], Received.CheckpointAwards[1]);
+		TestFalse(TEXT("Award order matters even when the total stays the same"), Received == Sent);
 		TestEqual(TEXT("The snapshot has no unread trailing fields"), Reader.Tell(), Reader.TotalSize());
 	}
 	return true;
@@ -69,6 +73,11 @@ bool FMWProgressResultsSerializationTest::RunTest(const FString& Parameters)
 	Entry.RaceStatus = EMWRaceStatus::Finished;
 	Entry.FinishOrder = Entry.RoundRank = Entry.FinalRank = 1;
 	Entry.TotalScore = 4200;
+	Entry.CheckpointsPassed = 3;
+	Entry.CheckpointScore = 200;
+	Entry.CheckpointAwards = {0, 100, 100};
+	Entry.FinishScore = 300;
+	Entry.FirstFinishBonus = 150;
 	Sent.Results.Add(Entry);
 	TArray<uint8> Bytes;
 	FMemoryWriter Writer(Bytes);

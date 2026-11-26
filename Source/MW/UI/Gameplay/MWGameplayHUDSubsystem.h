@@ -15,6 +15,7 @@ class UGameViewportClient;
 class UFont;
 class UMaterialInterface;
 class UTexture2D;
+class UMWMatchResultsWidget;
 class UMWRaceHUDWidget;
 class UUserWidget;
 
@@ -101,6 +102,9 @@ public:
     TSoftClassPtr<UMWRaceHUDWidget> RaceHUDWidgetClass;
 
     UPROPERTY(Config)
+    TSoftClassPtr<UMWMatchResultsWidget> MatchResultsWidgetClass;
+
+    UPROPERTY(Config)
     TSoftObjectPtr<UFont> DisplayFont;
 
     UPROPERTY(Config)
@@ -148,6 +152,8 @@ public:
     virtual bool IsTickable() const override;
 
     EMWWaitingBoardReadiness GetWaitingBoardReadiness(const APlayerController& PC) const;
+
+    bool RestoreMatchResultsInput(APlayerController& Controller);
 
     virtual TStatId GetStatId() const override;
 
@@ -206,4 +212,13 @@ private:
     TSharedPtr<SWidget> Overlay;
 
     TWeakObjectPtr<UGameViewportClient> Viewport;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMWMatchResultsWidget> MatchResultsWidget;
+
+    int32 AttemptedMatchResultsEpoch = INDEX_NONE;
+    TOptional<EMWRoomPhase> AttemptedResultPhase;
+
+    void RefreshMatchResults();
+    void RemoveMatchResults();
 };

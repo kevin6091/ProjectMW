@@ -80,6 +80,17 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "1"))
 	int32 TargetScore = 4000;
+
+	// 기존 완주 점수를 기본 점수와 선착 보너스로 분리한다. 채점값은 GameMode BP에서 편집한다.
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Race|Scoring", meta = (ClampMin = "0"))
+	int32 PointsPerCheckpoint = 100;
+
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Race|Scoring", meta = (ClampMin = "0"))
+	TArray<int32> FinishPointsByOrder = {150, 150, 50};
+
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Race|Scoring", meta = (ClampMin = "0"))
+	int32 FirstFinishBonusPoints = 150;
+
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "0.1"))
 	float RoundResultsSeconds = 3.f;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "100", Units = "cm"))

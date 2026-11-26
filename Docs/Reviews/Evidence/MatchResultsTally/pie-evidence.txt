@@ -1,0 +1,50 @@
+Result: Succeeded
+[2026.11.26-02.09.55:932][  0]LogPython: MW_RESULTS_TALLY_AUTHORED
+[2026.11.26-02.11.18:437][136]LogAutomationController: Display: Test Completed. Result={Success} Name={AuthorityAndNotify} Path={MW.Gameplay.PlayerRound.AuthorityAndNotify}
+[2026.11.26-02.11.18:510][139]LogAutomationController: Display: Test Completed. Result={Success} Name={ProgressResultsSerialization} Path={MW.Gameplay.PlayerRound.ProgressResultsSerialization}
+[2026.11.26-02.11.18:533][141]LogAutomationController: Display: Test Completed. Result={Success} Name={Serialization} Path={MW.Gameplay.PlayerRound.Serialization}
+[2026.11.26-02.11.22:066][239]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.26-02.11.22:413][338]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.26-02.11.23:231][788]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.26-02.24.35:616][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=7 Member=1 Rank=1 Total=4300 Checkpoints=6 CheckpointScore=600 FinishScore=300
+[2026.11.26-02.24.35:617][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=7 Member=2 Rank=2 Total=3250 Checkpoints=6 CheckpointScore=600 FinishScore=150
+[2026.11.26-02.24.35:617][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=7 Member=3 Rank=3 Total=2550 Checkpoints=6 CheckpointScore=600 FinishScore=50
+[2026.11.26-02.24.35:621][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 Camera=V(X=-18271.72, Y=-50566.31, Z=8856.66)
+[2026.11.26-02.24.35:623][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=7 Member=1 Rank=1 Total=4300 Checkpoints=6 CheckpointScore=600 FinishScore=300
+[2026.11.26-02.24.35:623][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=7 Member=2 Rank=2 Total=3250 Checkpoints=6 CheckpointScore=600 FinishScore=150
+[2026.11.26-02.24.35:623][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=7 Member=3 Rank=3 Total=2550 Checkpoints=6 CheckpointScore=600 FinishScore=50
+[2026.11.26-02.24.35:625][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 Camera=V(X=-18271.72, Y=-50566.31, Z=8856.66)
+[2026.11.26-02.24.35:628][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=7 Member=1 Rank=1 Total=4300 Checkpoints=6 CheckpointScore=600 FinishScore=300
+[2026.11.26-02.24.35:628][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=7 Member=2 Rank=2 Total=3250 Checkpoints=6 CheckpointScore=600 FinishScore=150
+[2026.11.26-02.24.35:629][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=7 Member=3 Rank=3 Total=2550 Checkpoints=6 CheckpointScore=600 FinishScore=50
+[2026.11.26-02.24.35:631][ 39]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 Camera=V(X=-18271.72, Y=-50566.31, Z=8856.66)
+[2026.11.26-02.24.39:024][143]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/8 Label=체크포인트 1 점수
+[2026.11.26-02.24.39:026][143]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/8 Label=체크포인트 1 점수
+[2026.11.26-02.24.39:027][143]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/8 Label=체크포인트 1 점수
+[2026.11.26-02.24.40:207][170]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/8 Label=체크포인트 2 점수
+[2026.11.26-02.24.40:212][170]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/8 Label=체크포인트 2 점수
+[2026.11.26-02.24.40:212][170]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/8 Label=체크포인트 2 점수
+[2026.11.26-02.24.41:339][202]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/8 Label=체크포인트 3 점수
+[2026.11.26-02.24.41:343][202]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/8 Label=체크포인트 3 점수
+[2026.11.26-02.24.41:344][202]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/8 Label=체크포인트 3 점수
+[2026.11.26-02.24.42:524][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=4/8 Label=체크포인트 4 점수
+[2026.11.26-02.24.42:529][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=4/8 Label=체크포인트 4 점수
+[2026.11.26-02.24.42:529][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=4/8 Label=체크포인트 4 점수
+[2026.11.26-02.24.43:616][262]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=5/8 Label=체크포인트 5 점수
+[2026.11.26-02.24.43:621][262]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=5/8 Label=체크포인트 5 점수
+[2026.11.26-02.24.43:622][262]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=5/8 Label=체크포인트 5 점수
+[2026.11.26-02.24.44:840][294]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=6/8 Label=체크포인트 6 점수
+[2026.11.26-02.24.44:844][294]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=6/8 Label=체크포인트 6 점수
+[2026.11.26-02.24.44:845][294]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=6/8 Label=체크포인트 6 점수
+[2026.11.26-02.24.45:940][324]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=7/8 Label=완주 점수
+[2026.11.26-02.24.45:944][324]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=7/8 Label=완주 점수
+[2026.11.26-02.24.45:945][324]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=7/8 Label=완주 점수
+[2026.11.26-02.24.47:092][355]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=8/8 Label=1위 완주 보너스
+[2026.11.26-02.24.47:095][355]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=8/8 Label=1위 완주 보너스
+[2026.11.26-02.24.47:096][355]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=8/8 Label=1위 완주 보너스
+[2026.11.26-02.24.48:283][384]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-02.24.48:289][384]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-02.24.48:291][384]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-02.24.50:278][439]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=EMWMatchResultsScreen::Standings
+[2026.11.26-02.24.50:281][439]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=EMWMatchResultsScreen::Standings
+[2026.11.26-02.24.50:284][439]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=EMWMatchResultsScreen::Standings

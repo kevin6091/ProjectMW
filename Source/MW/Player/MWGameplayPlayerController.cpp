@@ -2,6 +2,7 @@
 
 #include "Player/MWGameplayPlayerController.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
+#include "UI/Gameplay/MWGameplayHUDSubsystem.h"
 #include "Gameplay/Items/MWItemComponent.h"
 #include "Algo/AllOf.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
@@ -140,6 +141,15 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode(bool bRestoreConstructi
 		TrackSelectionWidget->RemoveFromParent();
 		TrackSelectionWidget = nullptr;
 	}
+
+    if (Phase == EMWRoomPhase::MatchResults)
+    {
+        if (auto* HUDSubsystem = GetWorld()->GetSubsystem<UMWGameplayHUDSubsystem>();
+            HUDSubsystem && HUDSubsystem->RestoreMatchResultsInput(*this))
+        {
+            return;
+        }
+    }
 
 	if (Phase == EMWRoomPhase::Failed)
 	{

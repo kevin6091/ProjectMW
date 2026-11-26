@@ -80,6 +80,15 @@ struct MW_API FMWPlayerRoundState
 	UPROPERTY(BlueprintReadOnly, Category = "MW|Race")
 	int32 FinishScore = 0;
 
+	// 표시용 통과 기록의 전송 한도다. 이 한도를 넘겨도 누적 점수는 계속 집계한다.
+	static constexpr int32 MaxCheckpointAwardEntries = 1024;
+
+	UPROPERTY()
+	TArray<int32> CheckpointAwards;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MW|Race")
+	int32 FirstFinishBonus = 0;
+
 	UPROPERTY(BlueprintReadOnly, Category = "MW|Race")
 	int32 TotalScore = 0;
 

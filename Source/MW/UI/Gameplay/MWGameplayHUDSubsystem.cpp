@@ -26,6 +26,7 @@
 #include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "UI/Gameplay/MWGameplaySign.h"
+#include "UI/Gameplay/MWMatchResultsWidget.h"
 #include "UI/Gameplay/MWRaceHUDWidget.h"
 #include "Widgets/SNullWidget.h"
 #include "UI/Common/MWParticipantPalette.h"
@@ -50,6 +51,7 @@ public:
     SLATE_ARGUMENT(APlayerController*, Controller)
     SLATE_ARGUMENT(FMWPIEHUDPreview, PIEPreview)
     SLATE_ATTRIBUTE(EMWItemId, HeldItem)
+    SLATE_ATTRIBUTE(bool, MatchResultsActive)
     SLATE_ARGUMENT(TSharedPtr<SWidget>, RaceHUD)
     SLATE_ARGUMENT(UUserWidget*, Panels)
     SLATE_END_ARGS()
@@ -60,6 +62,7 @@ public:
         Controller = Args._Controller;
         PIEPreview = Args._PIEPreview;
         HeldItem = Args._HeldItem;
+        MatchResultsActive = Args._MatchResultsActive;
         const auto* Settings = GetDefault<UMWGameplayHUDSubsystem>();
         InitializeLayout(*Settings);
         UUserWidget* Panels = Args._Panels;
@@ -144,30 +147,15 @@ public:
         ChildSlot[SNew(SOverlay)
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]
-            + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
-            [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
-                .Text_Lambda([this] { return ScoreText(); })
-                .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ScoreText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })]
             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
             [SNew(SBorder).Padding(28).BorderBackgroundColor(FLinearColor(0.025f, 0.035f, 0.05f, 0.94f))
                 .Visibility_Lambda([this] { return !PIEPreview.IsEnabled() && !ResultsText().IsEmpty() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
                 [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20)).Text_Lambda([this] { return ResultsText(); })]]];
     }
 
-    FText ScoreText() const
-    {
-        const auto* PC = Controller.Get();
-        const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
-        const auto* PS = PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr;
-        if (!GS || !PS || GS->GetProgress().RoundEpoch <= 0) return FText::GetEmpty();
-        const auto Progress = GS->GetProgress();
-        const FString Mode = Progress.RaceMode == EMWRaceMode::SuddenDeath
-            ? (PS->GetRoundState().bRaceParticipant ? TEXT("서든데스  ") : TEXT("서든데스 관전  ")) : TEXT("");
-        return FText::FromString(FString::Printf(TEXT("%s점수 %d / %d"), *Mode, PS->GetRoundState().TotalScore, Progress.TargetScore));
-    }
-
     FText ResultsText() const
     {
+        if (MatchResultsActive.Get()) return FText::GetEmpty();
         const auto* PC = Controller.Get();
         const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
         if (!GS) return FText::GetEmpty();
@@ -567,6 +555,7 @@ private:
     TWeakObjectPtr<USizeBox> ItemSlot;
     float ItemDesignSize = 0.f;
     TAttribute<EMWItemId> HeldItem;
+    TAttribute<bool> MatchResultsActive;
     TWeakObjectPtr<const AMWVehiclePawn> ItemSlotVehicle;
     EMWItemId DisplayedItem = EMWItemId::None;
     EMWItemId TargetItem = EMWItemId::None;
@@ -688,6 +677,11 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
                   .PIEPreview(PIEPreview)
+                  .MatchResultsActive_Lambda([WeakThis]
+                  {
+                      const auto* HUD = WeakThis.Get();
+                      return HUD && IsValid(HUD->MatchResultsWidget);
+                  })
                   .RaceHUD(RaceHUDWidget ? RaceHUDWidget->TakeWidget() : SNullWidget::NullWidget)
                   .HeldItem_Lambda(
                       [WeakThis]
@@ -697,6 +691,7 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
                       });
     Viewport = GameViewport;
     GameViewport->AddViewportWidgetContent(Overlay.ToSharedRef(), 20);
+    RefreshMatchResults();
     UE_LOG(LogMWInGameUI, Verbose, TEXT("Attached gameplay HUD in %s to %s"), *GetNameSafe(World), *GetNameSafe(PC));
 }
 
@@ -719,6 +714,7 @@ void UMWGameplayHUDSubsystem::RefreshGameStateBinding()
         Previous->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameplayStateChanged);
     }
 
+    RemoveMatchResults();
     ObservedGameState = GameState;
     if (GameState)
     {
@@ -733,6 +729,7 @@ void UMWGameplayHUDSubsystem::HandleGameplayStateChanged()
     const AMWGameplayGameState* GameState = ObservedGameState.Get();
     if (!GameState || GameState->GetWorld() != GetWorld())
     {
+        RemoveMatchResults();
         RoomPhase.Reset();
         return;
     }
@@ -740,6 +737,7 @@ void UMWGameplayHUDSubsystem::HandleGameplayStateChanged()
     RoomPhase = GameState->GetRoomPhase();
     UE_LOG(LogMWInGameUI, Verbose, TEXT("[MWRaceHUD] 경기 단계 갱신. World=%s Phase=%s"),
            *GetNameSafe(GetWorld()), *UEnum::GetValueAsString(RoomPhase.GetValue()));
+    RefreshMatchResults();
 }
 
 // 이 기능의 틱 비용을 엔진 통계에서 구분할 수 있도록 식별자를 반환한다.
@@ -790,9 +788,67 @@ void UMWGameplayHUDSubsystem::HandleHeldItemChanged(EMWItemId ItemId)
     }
 }
 
+bool UMWGameplayHUDSubsystem::RestoreMatchResultsInput(APlayerController& Controller)
+{
+    return MatchResultsWidget && MatchResultsWidget->RestoreInput(Controller);
+}
+
+void UMWGameplayHUDSubsystem::RefreshMatchResults()
+{
+    const auto* State = ObservedGameState.Get();
+    if (!State || (State->GetRoomPhase() != EMWRoomPhase::RoundResults && State->GetRoomPhase() != EMWRoomPhase::MatchResults))
+    {
+        RemoveMatchResults();
+        return;
+    }
+
+    APlayerController* Controller = ItemController.Get();
+    const auto& Progress = State->GetProgressRef();
+    // 같은 라운드에서 집계를 끝까지 본 창은 최종 결과에서 합산을 반복하지 않는다.
+    const bool bRoundTallySeen = Progress.Phase == EMWRoomPhase::MatchResults
+        && AttemptedResultPhase == EMWRoomPhase::RoundResults && AttemptedMatchResultsEpoch == Progress.ResultsEpoch
+        && MatchResultsWidget && MatchResultsWidget->HasPresentedRoundTally();
+    if (AttemptedResultPhase.IsSet() && AttemptedResultPhase != Progress.Phase)
+    {
+        RemoveMatchResults();
+    }
+    if (PIEPreview.IsEnabled() || !Controller || Progress.Results.IsEmpty()
+        || Progress.ResultsEpoch != Progress.RoundEpoch || AttemptedMatchResultsEpoch == Progress.ResultsEpoch)
+    {
+        return;
+    }
+
+    // 동일 결과가 재복제돼도 화면 전환과 로컬 포커스를 다시 시작하지 않는다.
+    AttemptedResultPhase = Progress.Phase;
+    AttemptedMatchResultsEpoch = Progress.ResultsEpoch;
+    UClass* WidgetClass = GetDefault<UMWGameplayHUDSubsystem>()->MatchResultsWidgetClass.LoadSynchronous();
+    auto* Widget = WidgetClass ? CreateWidget<UMWMatchResultsWidget>(Controller, WidgetClass) : nullptr;
+    if (Widget && Widget->Present(*State, !bRoundTallySeen))
+    {
+        MatchResultsWidget = Widget;
+    }
+    else
+    {
+        UE_LOG(LogMWInGameUI, Warning, TEXT("경기 결과 WBP를 표시하지 못해 기존 결과 요약을 유지합니다."));
+    }
+}
+
+void UMWGameplayHUDSubsystem::RemoveMatchResults()
+{
+    AttemptedMatchResultsEpoch = INDEX_NONE;
+    AttemptedResultPhase.Reset();
+    if (MatchResultsWidget)
+    {
+        auto* Widget = MatchResultsWidget.Get();
+        MatchResultsWidget = nullptr;
+        Widget->Dismiss();
+    }
+}
+
 // 실제 구독했던 Controller·ItemComponent와 Viewport에서 연결을 해제한다.
 void UMWGameplayHUDSubsystem::RemoveOverlay()
 {
+    RemoveMatchResults();
     if (AMWGameplayGameState* GameState = ObservedGameState.Get())
     {
         GameState->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameplayStateChanged);

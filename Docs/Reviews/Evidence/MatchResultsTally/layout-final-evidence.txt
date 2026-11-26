@@ -1,0 +1,57 @@
+Result: Succeeded
+[2026.11.26-02.53.36:951][  0]LogPython: MW_RACE_LAYOUT_AUTHORED
+[2026.11.26-02.53.36:952][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+[2026.11.26-02.54.50:690][141]LogTemp: Display: MW_MATCH_QA_SHORT_ROUND original=4000 fixture=250 world=L_Dev_Drive
+[2026.11.26-02.55.16:084][421]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-02.55.21:585][711]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-02.55.27:243][  7]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=1
+[2026.11.26-02.55.43:598][742]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=1 Rank=0 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.43:598][742]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=2 Rank=0 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.43:598][742]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=3 Rank=0 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.43:601][742]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-02.55.43:614][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=1 Rank=0 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.43:614][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=2 Rank=0 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.43:614][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=3 Rank=0 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.43:616][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-02.55.43:621][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=1 Rank=0 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.43:621][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=2 Rank=0 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.43:621][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=3 Rank=0 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.43:622][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-02.55.44:549][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-02.55.44:549][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-02.55.44:549][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-02.55.46:549][858]LogMWServer: [MWProgress] EMWRoomPhase::RoundResults -> EMWRoomPhase::MatchResults Round=1 Epoch=1
+[2026.11.26-02.55.46:565][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.46:566][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.46:566][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.46:569][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9935.53, Y=17378.44, Z=7750.00)
+[2026.11.26-02.55.46:575][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.46:575][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.46:575][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.46:579][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9935.53, Y=17378.44, Z=7750.00)
+[2026.11.26-02.55.46:583][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-02.55.46:583][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-02.55.46:583][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-02.55.46:585][858]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9935.53, Y=17378.44, Z=7750.00)
+[2026.11.26-02.55.49:953][  0]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-02.55.49:955][  0]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-02.55.49:956][  0]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-02.55.51:752][ 70]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-02.55.51:754][ 70]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-02.55.51:756][ 70]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+[2026.11.26-02.56.27:078][683]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Overview
+[2026.11.26-02.56.31:086][864]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Overview
+[2026.11.26-02.56.35:100][ 19]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Overview
+{"event": "client", "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "size": [1280, 722], "epoch": 1, "passed": 0, "earned": 0, "finish": 1, "target": 250, "results": [[1, 300, 0, 0, 300, 150], [2, 150, 0, 0, 150, 0], [3, 50, 0, 0, 50, 0]], "screen": "<MWMatchResultsScreen.ROUND_POSITIONS: 3>", "camera": "BP_MWVehiclePawn_FRED_C", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "라운드 순위", "PodiumHeading": "결승 순위"}}
+{"event": "client", "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "size": [800, 482], "epoch": 1, "passed": 0, "earned": 0, "finish": 2, "target": 250, "results": [[1, 300, 0, 0, 300, 150], [2, 150, 0, 0, 150, 0], [3, 50, 0, 0, 50, 0]], "screen": "<MWMatchResultsScreen.ROUND_POSITIONS: 3>", "camera": "BP_MWVehiclePawn_DOUG_C", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "라운드 순위", "PodiumHeading": "결승 순위"}}
+{"event": "client", "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "size": [800, 482], "epoch": 1, "passed": 0, "earned": 0, "finish": 3, "target": 250, "results": [[1, 300, 0, 0, 300, 150], [2, 150, 0, 0, 150, 0], [3, 50, 0, 0, 50, 0]], "screen": "<MWMatchResultsScreen.ROUND_POSITIONS: 3>", "camera": "BP_MWVehiclePawn_MAMMOTH_C", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "라운드 순위", "PodiumHeading": "결승 순위"}}
+{"event": "client", "member": 1, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [1280, 722], "epoch": 1, "passed": 0, "earned": 0, "finish": 1, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.OVERVIEW: 6>", "camera": "CameraActor", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+{"event": "client", "member": 2, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [800, 482], "epoch": 1, "passed": 0, "earned": 0, "finish": 2, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.OVERVIEW: 6>", "camera": "CameraActor", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+{"event": "client", "member": 3, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [800, 482], "epoch": 1, "passed": 0, "earned": 0, "finish": 3, "target": 250, "results": [[1, 300, 1, 0, 300, 150], [2, 150, 2, 0, 150, 0], [3, 50, 3, 0, 50, 0]], "screen": "<MWMatchResultsScreen.OVERVIEW: 6>", "camera": "CameraActor", "text": {"OverviewTitle": "경기 개요", "MatchContext": "최종 라운드 1  ·  목표 250점", "TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+Result: Succeeded
+[2026.11.26-02.58.42:083][585]LogAutomationController: Display: Test Completed. Result={Success} Name={AuthorityAndNotify} Path={MW.Gameplay.PlayerRound.AuthorityAndNotify}
+[2026.11.26-02.58.42:116][587]LogAutomationController: Display: Test Completed. Result={Success} Name={ProgressResultsSerialization} Path={MW.Gameplay.PlayerRound.ProgressResultsSerialization}
+[2026.11.26-02.58.42:131][589]LogAutomationController: Display: Test Completed. Result={Success} Name={Serialization} Path={MW.Gameplay.PlayerRound.Serialization}
+[2026.11.26-02.58.45:212][688]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.26-02.58.45:490][786]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.26-02.58.46:090][236]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}

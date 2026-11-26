@@ -1,5 +1,7 @@
 ﻿#include "System/MWRoomTypes.h"
 
+#include "Engine/NetSerialization.h"
+
 bool FMWGameplayProgress::operator==(const FMWGameplayProgress& Other) const
 {
 	return Phase == Other.Phase
@@ -62,6 +64,7 @@ bool FMWPlayerRoundState::operator==(
 		&& RaceStatus == Other.RaceStatus
 		&& FinishOrder == Other.FinishOrder && MemberId == Other.MemberId
 		&& CheckpointsPassed == Other.CheckpointsPassed && CheckpointScore == Other.CheckpointScore
+		&& CheckpointAwards == Other.CheckpointAwards && FirstFinishBonus == Other.FirstFinishBonus
 		&& FinishScore == Other.FinishScore && TotalScore == Other.TotalScore
 		&& EliminationOrder == Other.EliminationOrder && RoundRank == Other.RoundRank
 		&& FinalRank == Other.FinalRank && bRaceParticipant == Other.bRaceParticipant
@@ -89,7 +92,9 @@ bool FMWPlayerRoundState::NetSerialize(
 	Ar << bRaceParticipant;
 	Ar << bCheckpointEligible;
 
-	bOutSuccess = !Ar.IsError();
+	Ar << FirstFinishBonus;
+	const bool bAwardsSuccess = SafeNetSerializeTArray_Default<MaxCheckpointAwardEntries>(Ar, CheckpointAwards);
+	bOutSuccess = bAwardsSuccess && !Ar.IsError();
 
 	if (Ar.IsLoading() && bOutSuccess)
 	{
