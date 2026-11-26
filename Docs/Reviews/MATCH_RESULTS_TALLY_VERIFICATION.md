@@ -66,7 +66,7 @@ Switch 영상 4:01~4:13의 체크포인트 구간과 10월 30일 영상 9:30~10:
 - 목표 250점의 별도 3인 PIE에서 세 창 모두 완주와 선착 보너스를 한 번씩만 집계했다. 정상 결과에서 최종 결과로 전환된 후 재집계 없이 1위부터 공개했고, 300·150·50점 순위 카드와 세 창의 `계속 → 경기 개요`를 확인했다. [1위 등장](Evidence/MatchResultsTally/after-first-position-entry.png) · [P1](Evidence/MatchResultsTally/after-podium-p1.png) · [P2](Evidence/MatchResultsTally/after-podium-p2.png) · [P3](Evidence/MatchResultsTally/after-podium-p3.png) · [P2 경기 개요](Evidence/MatchResultsTally/after-overview-p2.png) · [최종 검증 로그](Evidence/MatchResultsTally/layout-final-evidence.txt)
 - PIE 전용 목표 변경 명령을 제거한 소스로 Editor 재빌드 및 `MW.Gameplay.PlayerRound`·`MW.Gameplay.RoundLoop` 자동화 6개 재실행까지 통과했다.
 
-### 로컬 에셋 버전
+### `4501245` 검증 시점의 로컬 에셋 버전
 
 | 파일 | SHA-256 |
 | --- | --- |
@@ -75,6 +75,39 @@ Switch 영상 4:01~4:13의 체크포인트 구간과 10월 30일 영상 9:30~10:
 | `WBP_MatchPodiumCard.uasset` | `A5E31F72BE8F5F7B457B1EB54C12377D9DA3CC6D921239095BBBE7C8EFADDD97` |
 | `WBP_MatchResultRow.uasset` | `2996885BA79083614602C56B70E97EB62934B3264463B8823E0798688D8EC67C` · cs:76 원본 |
 
-앞서 만든 `sh:15`는 변경 전 가로 결과표 검토본이다. 위 세 변경 에셋은 현재 작업 공간에서 검증했으며 새 UVCS 인계와 Git 푸시는 확인 대기 상태다.
+앞서 만든 `sh:15`는 변경 전 가로 결과표 검토본이다. 위 해시는 `4501245`의 검증 당시 기록이다.
 
 최신 수정본으로 다시 모의 병합했을 때 기존 `feature/checkpoint-feedback@3aa5884`와 `MWGameplayHUDSubsystem.cpp` 오버레이 슬롯에서 줄 충돌 한 곳이 발생했다. 기존 브랜치가 파란 토스트 슬롯을 추가한 바로 아래에 있던 우상단 점수 슬롯을 이번 브랜치가 제거했기 때문이다. 위의 충돌 없음 결과는 레이아웃 수정 전 검토본에 해당한다.
+
+## 점수 막대와 결승 순위 표지판 연결
+
+10월 30일 멀티플레이 영상 10:38에서 이름은 막대의 채움 경계 위에, 점수는 경계 바로 아래에 함께 움직인다. 11:04에서는 결승선 위 중앙의 1위 카드가 아래 순위 카드보다 크게 보인다. 두 장면을 기준으로 표지판과 이름·점수의 배치를 비교했다.
+
+| 수정 위치 | 편집·실행 동작 |
+| --- | --- |
+| `Content/UI/Results/WBP_MatchScoreColumn.uasset` | `ScoreBar.WidgetStyle.FillImage`에 `T_Road_Sign_Scores_5b1bec523c37`을 연결했다. `MeterSurface`에서 막대와 글자 캔버스를 같은 영역에 채운다. 닉네임과 점수의 간격·가로 정렬·글꼴은 WBP에서 편집한다. |
+| `Source/MW/UI/Gameplay/MWMatchResultsWidget.cpp`의 `SetTallyScore` | 현재 점수와 집계 기준 점수로 채움 비율을 계산한다. 두 글자 슬롯의 세로 앵커에 `1 - 채움 비율`을 적용해 점수 집계 중 같은 높이로 움직이게 했다. 낮은 점수에서도 글자 전체를 읽을 수 있도록 막대 경계에서 자르지 않는다. |
+| `Content/UI/Results/WBP_MatchPodiumCard.uasset` | `CardBackground`에 `T_Road_Sign_Results_a96ddda0cc90`을 연결했다. 이름과 점수를 표지판 안의 같은 줄에 배치했다. 카드 색은 공용 참가자 팔레트에서 읽는다. |
+| `Content/UI/Results/WBP_MatchResults.uasset` 및 `MWMatchResultsWidget.h/.cpp`의 `Present`, `UpdatePodium` | WBP가 중앙의 `WinnerCardHost`, 아래 순위 카드의 크기와 간격, 코스 중앙선을 보는 결승 카메라 구도를 소유한다. `PodiumFit`의 좌우 여백을 대칭으로 지정했다. C++은 서버의 최종 순위 1을 해당 슬롯에 넣고 서버 순서대로 카드를 공개한다. 이전 WBP에 전용 슬롯이 없으면 그 버전의 일반 카드 목록으로 표시한다. |
+
+### Cua Driver 3인 PIE 비교
+
+| 장면 | 수정 전 | 수정 후 |
+| --- | --- | --- |
+| 세로 집계 | [완주 점수 집계](Evidence/MatchResultsTally/score-sign-before-tally-p1.png) | [선착 보너스로 상승 중](Evidence/MatchResultsTally/score-sign-tally-rising-p1.png) · [집계 완료](Evidence/MatchResultsTally/score-sign-tally-final-p1.png) |
+| 결승 순위 | [기존 호스트 순위](Evidence/MatchResultsTally/after-podium-p1.png) | [1위 첫 공개](Evidence/MatchResultsTally/score-sign-winner-entry-p2.png) · [호스트](Evidence/MatchResultsTally/score-sign-podium-p1.png) · [클라이언트 1](Evidence/MatchResultsTally/score-sign-podium-p2.png) · [클라이언트 2](Evidence/MatchResultsTally/score-sign-podium-p3.png) |
+
+- 설원에서 실제 코스에 참가자 세 명의 조각이 설치됐다. 호스트 뷰포트 1280×722와 클라이언트 두 창 800×482에서 점수 집계, 결승 카메라, 1위 선공개, 최종 순위, `계속 → 경기 개요`를 확인했다. 설치 입력과 최종 화면 캡처는 Cua Driver로 수행했다.
+- 각 창에서 막대와 두 글자의 세로 위치를 39번씩 읽었다. 세 창 총 117개 표본에서 두 앵커 모두 `1 - 채움 비율`과 일치했다. 부동소수점 비교 허용 오차는 `0.000002`다. 최종 점수는 세 창 모두 300·150·50점이었다. 정지 화면의 1위 카드는 2·3위 카드의 약 1.5배 너비로 보였다. [빌드·서버·화면·앵커 로그](Evidence/MatchResultsTally/score-sign-pie-evidence.txt)
+- 좌우 여백 수정 전 1위 카드의 중심은 캡처 중앙보다 호스트 15px, 두 클라이언트 13.5px 오른쪽에 있었다. 수정 뒤에는 정지 프레임에서 세 창 모두 가로 오차 0px였다. 이 실행에서는 라운드 집계가 끝나기 전에 최종 결과로 전환되어, 결승 카메라 뒤에서 기존 흐름대로 집계를 다시 표시했다.
+- 결과 장면을 반복해서 보기 위해 PIE 서버 목표만 250점으로 설정했다. 보조 스크립트가 로비·선택 요청을 보내고 차량을 실제 결승 트리거로 이동했다. 완주와 점수는 서버가 판정했다. 검증 뒤 PIE 전용 명령을 제거하고 Editor 재빌드 및 `MW.Gameplay.PlayerRound`·`MW.Gameplay.RoundLoop` 자동화 6개를 통과했다.
+
+### 검토용 로컬 WBP 해시
+
+| 파일 | SHA-256 |
+| --- | --- |
+| `WBP_MatchScoreColumn.uasset` | `5021011559E17E6A594459488D57B052C44036C5FDAA4C54E87F5562D2A5A299` |
+| `WBP_MatchPodiumCard.uasset` | `3A01441ED91DD7A948CB70D2E68BB271EA96CCC365258D0900E5D9AC1C86FDEF` |
+| `WBP_MatchResults.uasset` | `55BB0A27F619A4FF839A413E95A59BC2B93DE3E7DAECCA0A0CC1970E5DD9F937` |
+
+세 WBP를 컴파일하고 두 브러시 리소스가 지정한 텍스처를 참조하는지 확인했다. 두 텍스처와 `WBP_MatchResultRow`의 해시는 작업 전과 동일하다. 세 WBP는 검토용 로컬본으로 보관한다. Git 푸시와 UVCS 체크인은 사용자 확인 대기다.

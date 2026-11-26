@@ -1,0 +1,107 @@
+2026-11-26 | Final roadsign verification | feature/match-results-tally | base 4501245
+Viewport P1 1280x722, P2/P3 800x482. Server accepted placements for members 1, 2, 3.
+PIE-only target 250. Fixture requested lobby/track selection and advanced vehicles to the actual finish triggers.
+
+== Blueprint compile and brush readback ==
+[2026.11.26-04.02.51:775][  0]LogPython: MW_SCORE_SIGNS_AUTHORED fill=/Game/UI/Common/T_Road_Sign_Scores_5b1bec523c37.T_Road_Sign_Scores_5b1bec523c37 card=/Game/UI/Common/T_Road_Sign_Results_a96ddda0cc90.T_Road_Sign_Results_a96ddda0cc90
+[2026.11.26-04.02.51:777][  0]LogInit: Display: Success - 0 error(s), 1 warning(s)
+
+== Server placements and all three result screens ==
+[2026.11.26-04.03.55:427][198]LogMWServer: [MWTrackPlacement] Placed piece=2 member=3 target=1/0 source=0
+[2026.11.26-04.03.57:652][304]LogMWServer: [MWTrackPlacement] Placed piece=3 member=1 target=2/1 source=0
+[2026.11.26-04.04.02:869][538]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.26-04.04.06:161][666]LogMWServer: [MWProgress] EMWRoomPhase::Countdown -> EMWRoomPhase::Racing Round=1 Epoch=1
+[2026.11.26-04.04.19:003][177]LogMWServer: [MWProgress] EMWRoomPhase::Racing -> EMWRoomPhase::RoundResults Round=1 Epoch=1
+[2026.11.26-04.04.19:028][177]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.04.19:038][177]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.04.19:046][177]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.04.20:172][196]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.04.20:172][196]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.04.20:172][196]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.04.22:013][232]LogMWServer: [MWProgress] EMWRoomPhase::RoundResults -> EMWRoomPhase::MatchResults Round=1 Epoch=1
+[2026.11.26-04.04.22:028][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-04.04.22:028][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-04.04.22:028][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-04.04.22:032][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=8221.13, Y=8242.42, Z=7750.00)
+[2026.11.26-04.04.22:034][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-04.04.22:034][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-04.04.22:036][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-04.04.22:039][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=8221.13, Y=8242.42, Z=7750.00)
+[2026.11.26-04.04.22:042][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=1 Rank=1 Total=300 Checkpoints=0 CheckpointScore=0 FinishScore=300
+[2026.11.26-04.04.22:042][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=2 Rank=2 Total=150 Checkpoints=0 CheckpointScore=0 FinishScore=150
+[2026.11.26-04.04.22:042][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=1 Member=3 Rank=3 Total=50 Checkpoints=0 CheckpointScore=0 FinishScore=50
+[2026.11.26-04.04.22:045][232]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=8221.13, Y=8242.42, Z=7750.00)
+[2026.11.26-04.04.25:431][345]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-04.04.25:432][345]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-04.04.25:435][345]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-04.04.27:232][404]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-04.04.27:234][404]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+[2026.11.26-04.04.27:236][404]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-04.05.08:406][100]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Overview
+[2026.11.26-04.05.15:148][371]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Overview
+[2026.11.26-04.05.42:223][448]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Overview
+
+== Live UMG: both Y anchors compared with 1 - progress bar fill (tolerance 0.000002) ==
+P1 samples=39 mismatches=0 distinct_fill_values=18
+P2 samples=39 mismatches=0 distinct_fill_values=18
+P3 samples=39 mismatches=0 distinct_fill_values=18
+
+== Display window P1: selected samples of the winner progression ==
+name=256 score=12 fill=0.040000 nameY=0.960000 scoreY=0.960000
+name=256 score=36 fill=0.120000 nameY=0.880000 scoreY=0.880000
+name=256 score=70 fill=0.233333 nameY=0.766667 scoreY=0.766667
+name=256 score=108 fill=0.360000 nameY=0.640000 scoreY=0.640000
+name=256 score=136 fill=0.453333 nameY=0.546667 scoreY=0.546667
+name=256 score=149 fill=0.496667 nameY=0.503333 scoreY=0.503333
+name=256 score=154 fill=0.513333 nameY=0.486667 scoreY=0.486667
+name=256 score=176 fill=0.586667 nameY=0.413333 scoreY=0.413333
+name=256 score=206 fill=0.686667 nameY=0.313333 scoreY=0.313333
+name=256 score=234 fill=0.780000 nameY=0.220000 scoreY=0.220000
+name=256 score=261 fill=0.870000 nameY=0.130000 scoreY=0.130000
+name=256 score=285 fill=0.950000 nameY=0.050000 scoreY=0.050000
+name=256 score=299 fill=0.996667 nameY=0.003333 scoreY=0.003333
+
+== Editor rebuild without the PIE helper and gameplay automation ==
+Result: Succeeded
+[2026.11.26-04.07.54:201][586]LogAutomationController: Display: Test Completed. Result={Success} Name={AuthorityAndNotify} Path={MW.Gameplay.PlayerRound.AuthorityAndNotify}
+[2026.11.26-04.07.54:234][588]LogAutomationController: Display: Test Completed. Result={Success} Name={ProgressResultsSerialization} Path={MW.Gameplay.PlayerRound.ProgressResultsSerialization}
+[2026.11.26-04.07.54:249][590]LogAutomationController: Display: Test Completed. Result={Success} Name={Serialization} Path={MW.Gameplay.PlayerRound.Serialization}
+[2026.11.26-04.07.57:251][688]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithoutInitialFit} Path={MW.Gameplay.RoundLoop.ReselectionWithoutInitialFit}
+[2026.11.26-04.07.57:668][787]LogAutomationController: Display: Test Completed. Result={Success} Name={ReselectionWithTwoPreparedOffers} Path={MW.Gameplay.RoundLoop.ReselectionWithTwoPreparedOffers}
+[2026.11.26-04.07.58:205][237]LogAutomationController: Display: Test Completed. Result={Success} Name={ScoringExpansionAndSuddenDeath} Path={MW.Gameplay.RoundLoop.ScoringExpansionAndSuddenDeath}
+[2026.11.26-04.07.58:207][238]LogAutomationCommandLine: Display: ...Automation Test Queue Empty 6 tests performed.
+
+== Cua Driver three-player retest after symmetric podium padding ==
+[2026.11.26-04.11.37:186][  2]LogPython: MW_SCORE_SIGNS_OLD_PADDING left=30.0 right=0.0
+[2026.11.26-04.11.37:431][  2]LogPython: MW_SCORE_SIGNS_NEWPADDING left=30.0 right=30.0
+[2026.11.26-04.12.19:116][608]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-04.12.25:048][920]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-04.12.30:882][192]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.26-04.12.46:930][909]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.46:983][909]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.46:993][909]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.48:400][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.48:401][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.48:401][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.49:930][927]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9739.45, Y=-23474.78, Z=7750.00)
+[2026.11.26-04.12.49:939][927]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9739.45, Y=-23474.78, Z=7750.00)
+[2026.11.26-04.12.49:944][927]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9739.45, Y=-23474.78, Z=7750.00)
+[2026.11.26-04.12.53:318][ 14]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.53:318][ 14]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.53:320][ 14]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/2 Label=완주 점수
+[2026.11.26-04.12.56:438][ 26]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.56:439][ 26]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.56:440][ 26]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/2 Label=선착 보너스
+[2026.11.26-04.12.59:070][ 34]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-04.12.59:071][ 34]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-04.12.59:073][ 34]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-04.13.00:903][ 97]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-04.13.00:905][ 97]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-04.13.00:906][ 97]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+[2026.11.26-04.13.53:824][216]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Overview
+[2026.11.26-04.13.57:338][344]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Overview
+[2026.11.26-04.14.01:464][513]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Overview
+Baseline card offset on the stopped frame: P1 +15px, P2/P3 +13.5px.
+signs-center-final-p1.png: 960x567, sample row=218, card x=220..739, center=479.5, offset=0px
+signs-center-final-p2.png: 804x518, sample row=199, card x=170..633, center=401.5, offset=0px
+signs-center-final-p3.png: 804x518, sample row=199, card x=170..633, center=401.5, offset=0px

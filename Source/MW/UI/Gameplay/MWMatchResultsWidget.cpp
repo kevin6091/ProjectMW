@@ -2,8 +2,10 @@
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
@@ -33,6 +35,7 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
 {
     const FLinearColor Color = GetDefault<UMWParticipantPalette>()->GetColorForMember(Result.MemberId);
     if (MemberAccent) MemberAccent->SetBrushColor(Color);
+    if (CardBackground) CardBackground->SetBrushColor(Color);
     if (ScoreBar) ScoreBar->SetFillColorAndOpacity(Color);
     if (RankLabel)
     {
@@ -71,7 +74,18 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
     TotalScoreLabel->SetText(FText::AsNumber(Score));
     if (ScoreBar)
     {
-        ScoreBar->SetPercent(Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f);
+        const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
+        ScoreBar->SetPercent(Fraction);
+        // 막대와 같은 정규화 높이를 쓴다. 수평 정렬·간격은 디자이너 슬롯 값을 유지한다.
+        for (UTextBlock* Label : {NameLabel.Get(), TotalScoreLabel.Get()})
+        {
+            if (auto* LabelSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Label))
+            {
+                FAnchors Anchors = LabelSlot->GetAnchors();
+                Anchors.Minimum.Y = Anchors.Maximum.Y = 1.f - Fraction;
+                LabelSlot->SetAnchors(Anchors);
+            }
+        }
     }
 }
 
@@ -142,13 +156,24 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
     if (bFinalResults)
     {
+        // 이전 버전의 WBP는 1위 전용 슬롯 없이도 전체 순위를 보여 준다.
+        if (WinnerCardHost) WinnerCardHost->SetVisibility(ESlateVisibility::Collapsed);
         for (const FMWPlayerRoundState& Result : Progress.Results)
         {
             auto* OverviewRow = CreateEntry(ResultRowClass, Result, false);
             auto* PodiumCard = CreateEntry(PodiumCardClass, Result, true);
             if (!OverviewRow || !PodiumCard) return false;
             ResultRows->AddChildToVerticalBox(OverviewRow);
-            PodiumCards->AddChildToVerticalBox(PodiumCard);
+            if (WinnerCardHost && Result.FinalRank == 1)
+            {
+                WinnerCardHost->SetVisibility(ESlateVisibility::HitTestInvisible);
+                WinnerCardHost->SetContent(PodiumCard);
+            }
+            else
+            {
+                PodiumCards->AddChildToVerticalBox(PodiumCard);
+            }
+            PodiumRevealOrder.Add(PodiumCard);
         }
     }
     for (const FMWPlayerRoundState& Result : Progress.Results)
@@ -397,11 +422,11 @@ void UMWMatchResultsWidget::EndTally()
 void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 {
     RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, WinnerSeconds);
-    const int32 Count = PodiumCards->GetChildrenCount();
+    const int32 Count = PodiumRevealOrder.Num();
     const float Reveal = RevealElapsed / WinnerSeconds * Count;
     for (int32 Index = 0; Index < Count; ++Index)
     {
-        UWidget* Card = PodiumCards->GetChildAt(Index);
+        UWidget* Card = PodiumRevealOrder[Index];
         const float Alpha = FMath::SmoothStep(0.f, 1.f, Reveal - Index);
         Card->SetRenderOpacity(Alpha);
         Card->SetRenderTranslation(CardEntryOffset * (1.f - Alpha));

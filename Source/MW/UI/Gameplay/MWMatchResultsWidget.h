@@ -43,6 +43,7 @@ public:
 
 private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> MemberAccent;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> CardBackground;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> NameLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
@@ -82,6 +83,8 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UHorizontalBox> TallyColumns;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> PodiumPanel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UVerticalBox> PodiumCards;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> WinnerCardHost;
+    UPROPERTY(Transient) TArray<TObjectPtr<UMWMatchResultRowWidget>> PodiumRevealOrder;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
     TSubclassOf<UMWMatchResultRowWidget> ResultRowClass;
