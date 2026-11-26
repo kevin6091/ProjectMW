@@ -20,14 +20,14 @@ public:
     AMWMountedItemPresentation();
 
     static AMWMountedItemPresentation* Equip(AMWVehiclePawn& Vehicle, const UMWItemDefinitionData& Definition, bool bAnimateAttach);
-    static double GetUseAndDetachDuration(const UMWItemDefinitionData& Definition);
-    void PlayUse();
+    static double GetUseDuration(const UMWItemDefinitionData& Definition, bool bIncludeDetach);
+    void PlayUse(bool bShouldDetach);
 
 private:
-    enum class EStage : uint8 { Attach, Held, Use, Detach };
+    enum class EStage : uint8 { Attach, Held, Use, WindDown, Detach };
 
     bool Start(AMWVehiclePawn& Vehicle, const UMWItemDefinitionData& Definition, bool bAnimateAttach);
-    bool PlaySequence(ULevelSequence& Sequence);
+    bool PlaySequence(ULevelSequence& Sequence, int32 LoopCount = 0, float PlayRate = 1.f);
     void FinishAttach();
     void PlayImpactSound();
     void ReleaseSequence();
@@ -37,10 +37,14 @@ private:
     UPROPERTY(Transient) TObjectPtr<AActor> Visual;
     UPROPERTY(Transient) TObjectPtr<ALevelSequenceActor> SequenceActor;
     UPROPERTY(Transient) TObjectPtr<ULevelSequence> UseSequence;
+    UPROPERTY(Transient) TObjectPtr<ULevelSequence> WindDownSequence;
     UPROPERTY(Transient) TObjectPtr<ULevelSequence> DetachSequence;
     UPROPERTY(Transient) TObjectPtr<USoundBase> UseSound;
     UPROPERTY(Transient) TObjectPtr<USoundBase> ImpactSound;
     EStage Stage = EStage::Attach;
+    int32 UseLoopCount = 0;
+    float UsePlayRate = 1.f;
     float ImpactDelay = 0.f;
     bool bImpactSoundPlayed = false;
+    bool bDetachAfterUse = true;
 };

@@ -116,7 +116,7 @@ void AMWGameplayPlayerController::ServerGrantTestRandomItem_Implementation()
 	{
 		if (auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn()); Vehicle && Vehicle->GetController() == this)
 		{
-			Vehicle->GetItemComponent()->TryGrantRandomItem();
+			Vehicle->GetItemComponent()->RequestRandomItem();
 		}
 	}
 #endif

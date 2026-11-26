@@ -31,6 +31,9 @@ struct FMWItemAreaHitData
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	uint8 UsesPerGrant = 3;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.01", Units = "s"))
 	float ImpactDelay = .10f;
 
@@ -55,6 +58,28 @@ struct FMWItemAreaHitData
 };
 
 USTRUCT(BlueprintType)
+struct FMWItemBurstFireData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	uint8 ShotCount = 6;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.01", Units = "s"))
+	float ShotInterval = 1.f / 6.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", Units = "cm"))
+	float Range = 1000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1", Units = "cm/s"))
+	float KnockbackSpeed = 100.f;
+
+	// 차체 충돌 박스 앞면 중앙을 기준으로 한 판정 시작점이다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Units = "cm"))
+	FVector TraceStartOffset = FVector(-1.0, 0.0, 20.0);
+};
+
+USTRUCT(BlueprintType)
 struct FMWItemPresentationData
 {
 	GENERATED_BODY()
@@ -74,6 +99,9 @@ struct FMWItemPresentationData
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<ULevelSequence> Loop;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSoftObjectPtr<ULevelSequence> WindDown;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<ULevelSequence> Detach;
@@ -115,6 +143,10 @@ public:
 		meta = (EditCondition = "ItemId == EMWItemId::Hammer", EditConditionHides))
 	FMWItemAreaHitData AreaHit;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect",
+		meta = (EditCondition = "ItemId == EMWItemId::MachineGun", EditConditionHides))
+	FMWItemBurstFireData BurstFire;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Presentation")
 	FMWItemPresentationData Presentation;
 
@@ -123,4 +155,5 @@ public:
 	static UMWItemDefinitionData* FindById(EMWItemId Id);
 
 	bool HasValidDefinition() const;
+	bool UsesBurstFire() const { return ItemId == EMWItemId::MachineGun; }
 };

@@ -14,6 +14,21 @@
 #include "MovieScenePossessable.h"
 #include "Sound/SoundBase.h"
 
+namespace
+{
+double GetSequenceDuration(const ULevelSequence* Sequence)
+{
+    const UMovieScene* Scene = Sequence ? Sequence->GetMovieScene() : nullptr;
+    if (!Scene)
+    {
+        return 0.0;
+    }
+    const TRange<FFrameNumber> Range = Scene->GetPlaybackRange();
+    return Range.HasLowerBound() && Range.HasUpperBound()
+        ? Scene->GetTickResolution().AsSeconds(Range.GetUpperBoundValue() - Range.GetLowerBoundValue()) : 0.0;
+}
+}
+
 AMWMountedItemPresentation::AMWMountedItemPresentation()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -44,33 +59,41 @@ AMWMountedItemPresentation* AMWMountedItemPresentation::Equip(AMWVehiclePawn& Ve
     return Presentation;
 }
 
-double AMWMountedItemPresentation::GetUseAndDetachDuration(const UMWItemDefinitionData& Definition)
+double AMWMountedItemPresentation::GetUseDuration(const UMWItemDefinitionData& Definition, bool bIncludeDetach)
 {
-    const auto Duration = [](const TSoftObjectPtr<ULevelSequence>& Asset)
+    double UseDuration = GetSequenceDuration(Definition.Presentation.Use.LoadSynchronous());
+    if (UseDuration <= 0.0)
     {
-        const ULevelSequence* Sequence = Asset.LoadSynchronous();
-        const UMovieScene* Scene = Sequence ? Sequence->GetMovieScene() : nullptr;
-        if (!Scene)
-        {
-            return 0.0;
-        }
-        const TRange<FFrameNumber> Range = Scene->GetPlaybackRange();
-        return Range.HasLowerBound() && Range.HasUpperBound()
-            ? Scene->GetTickResolution().AsSeconds(Range.GetUpperBoundValue() - Range.GetLowerBoundValue()) : 0.0;
-    };
-    const double UseDuration = Duration(Definition.Presentation.Use);
-    const double DetachDuration = Duration(Definition.Presentation.Detach);
-    return UseDuration > 0.0 && DetachDuration > 0.0 ? UseDuration + DetachDuration : 0.0;
+        return 0.0;
+    }
+    if (Definition.UsesBurstFire())
+    {
+        UseDuration = static_cast<double>(Definition.BurstFire.ShotInterval) * Definition.BurstFire.ShotCount;
+    }
+    if (!bIncludeDetach)
+    {
+        return UseDuration;
+    }
+    const double DetachDuration = GetSequenceDuration(Definition.Presentation.Detach.LoadSynchronous());
+    const double WindDownDuration = GetSequenceDuration(Definition.Presentation.WindDown.LoadSynchronous());
+    return DetachDuration > 0.0 && (Definition.Presentation.WindDown.IsNull() || WindDownDuration > 0.0)
+        ? UseDuration + WindDownDuration + DetachDuration : 0.0;
 }
 
-void AMWMountedItemPresentation::PlayUse()
+void AMWMountedItemPresentation::PlayUse(bool bShouldDetach)
 {
     if (Stage == EStage::Attach)
     {
         FinishAttach();
     }
+    else
+    {
+        ReleaseSequence();
+    }
+    bDetachAfterUse = bShouldDetach;
+    bImpactSoundPlayed = false;
     Stage = EStage::Use;
-    if (!PlaySequence(*UseSequence))
+    if (!PlaySequence(*UseSequence, UseLoopCount, UsePlayRate))
     {
         Destroy();
         return;
@@ -87,6 +110,7 @@ bool AMWMountedItemPresentation::Start(AMWVehiclePawn& Vehicle, const UMWItemDef
     UClass* VisualClass = Art.VisualClass.LoadSynchronous();
     ULevelSequence* AttachSequence = Art.Attach.LoadSynchronous();
     UseSequence = Art.Use.LoadSynchronous();
+    WindDownSequence = Art.WindDown.LoadSynchronous();
     DetachSequence = Art.Detach.LoadSynchronous();
     UseSound = Art.UseSound.LoadSynchronous();
     if (Definition.ItemId == EMWItemId::Hammer)
@@ -98,6 +122,16 @@ bool AMWMountedItemPresentation::Start(AMWVehiclePawn& Vehicle, const UMWItemDef
     if (!VisualClass || !AttachSequence || !UseSequence || !DetachSequence || !Hull)
     {
         return false;
+    }
+    if (Definition.UsesBurstFire())
+    {
+        const double ShotAnimationDuration = GetSequenceDuration(UseSequence);
+        if (ShotAnimationDuration <= 0.0)
+        {
+            return false;
+        }
+        UseLoopCount = Definition.BurstFire.ShotCount - 1;
+        UsePlayRate = ShotAnimationDuration / Definition.BurstFire.ShotInterval;
     }
 
     FActorSpawnParameters Params;
@@ -135,10 +169,12 @@ bool AMWMountedItemPresentation::Start(AMWVehiclePawn& Vehicle, const UMWItemDef
     return true;
 }
 
-bool AMWMountedItemPresentation::PlaySequence(ULevelSequence& Sequence)
+bool AMWMountedItemPresentation::PlaySequence(ULevelSequence& Sequence, int32 LoopCount, float PlayRate)
 {
     FMovieSceneSequencePlaybackSettings Settings;
     Settings.FinishCompletionStateOverride = EMovieSceneCompletionModeOverride::ForceKeepState;
+    Settings.LoopCount.Value = LoopCount;
+    Settings.PlayRate = PlayRate;
     ALevelSequenceActor* NewSequenceActor = nullptr;
     ULevelSequencePlayer* Player = ULevelSequencePlayer::CreateLevelSequencePlayer(this, &Sequence, Settings, NewSequenceActor);
     SequenceActor = NewSequenceActor;
@@ -151,7 +187,7 @@ bool AMWMountedItemPresentation::PlaySequence(ULevelSequence& Sequence)
     const TInlineComponentArray<USceneComponent*> Components(Visual.Get());
     for (const FMovieSceneBinding& Binding : AsConst(Scene).GetBindings())
     {
-        // 세 시퀀스는 서로 다른 부품을 움직인다. 원본 바인딩 이름을 실제 장착 부품과 맞춘다.
+        // 원본 시퀀스의 바인딩 이름을 실제 장착 부품과 맞춘다.
         const FGuid Id = Binding.GetObjectGuid();
         UObject* Target = Visual.Get();
         const FMovieScenePossessable* Possessable = Scene.FindPossessable(Id);
@@ -231,7 +267,22 @@ void AMWMountedItemPresentation::Tick(float DeltaSeconds)
         Stage = EStage::Held;
         return;
     }
-    if (Stage == EStage::Use)
+    if (Stage == EStage::Use && !bDetachAfterUse)
+    {
+        Stage = EStage::Held;
+        return;
+    }
+    if (Stage == EStage::Use && WindDownSequence)
+    {
+        Stage = EStage::WindDown;
+        if (PlaySequence(*WindDownSequence))
+        {
+            return;
+        }
+        Destroy();
+        return;
+    }
+    if (Stage == EStage::Use || Stage == EStage::WindDown)
     {
         Stage = EStage::Detach;
         if (PlaySequence(*DetachSequence))

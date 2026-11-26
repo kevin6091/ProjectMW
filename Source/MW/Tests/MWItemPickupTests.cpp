@@ -41,7 +41,7 @@ bool FMWMountedItemCatalog::RunTest(const FString& Parameters)
         {
             TestTrue(Name + TEXT(" has a complete mount, use and detach kit"),
                 Item->Presentation.VisualClass.LoadSynchronous() && Item->Presentation.Attach.LoadSynchronous()
-                && AMWMountedItemPresentation::GetUseAndDetachDuration(*Item) > 0.0);
+                && AMWMountedItemPresentation::GetUseDuration(*Item, true) > 0.0);
         }
     }
     return true;
@@ -55,8 +55,12 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
 {
     const auto* Booster = UMWItemDefinitionData::FindById(EMWItemId::Booster);
     const auto* Hammer = UMWItemDefinitionData::FindById(EMWItemId::Hammer);
+    const auto* TeslaCoil = UMWItemDefinitionData::FindById(EMWItemId::TeslaCoil);
+    const auto* MachineGun = UMWItemDefinitionData::FindById(EMWItemId::MachineGun);
     if (!TestNotNull(TEXT("Booster definition is available through the catalog"), Booster)
-        || !TestNotNull(TEXT("Hammer definition is available through the catalog"), Hammer))
+        || !TestNotNull(TEXT("Hammer definition is available through the catalog"), Hammer)
+        || !TestNotNull(TEXT("Tesla coil definition is available through the catalog"), TeslaCoil)
+        || !TestNotNull(TEXT("Machine gun definition is available through the catalog"), MachineGun))
     {
         return false;
     }
@@ -151,13 +155,40 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
     Progress.Phase = EMWRoomPhase::Racing;
     State->ApplyProgressFromServer(Progress);
     TestTrue(TEXT("A presentation-only item uses the shared slot"), Items->TryGrantItem(EMWItemId::TeslaCoil));
-    TestFalse(TEXT("A random grant does not replace a held item"), Items->TryGrantRandomItem());
+    TestFalse(TEXT("A random grant does not replace a held item"), Items->RequestRandomItem());
     const FVector VelocityBeforePreview = Vehicle->GetVelocity();
     Items->RequestUseItem();
     TestTrue(TEXT("The visual cycle consumes the slot without an effect on driving"),
              Items->GetCurrentItemId() == EMWItemId::None && !Items->IsBoosterActive()
              && !Vehicle->IsItemControlLocked() && Vehicle->GetVelocity().Equals(VelocityBeforePreview));
+
+    auto AdvanceThroughDetach = [World, TeslaCoil]()
+    {
+        constexpr float Step = .05f;
+        const int32 Steps = FMath::CeilToInt(AMWMountedItemPresentation::GetUseDuration(*TeslaCoil, true) / Step) + 2;
+        // 이동은 진행하지 않고 서버 시각과 예약 지급 타이머만 진행한다.
+        for (int32 Tick = 0; Tick < Steps; ++Tick)
+        {
+            ++GFrameCounter;
+            World->Tick(LEVELTICK_TimeOnly, Step);
+            World->GetTimerManager().Tick(Step);
+        }
+    };
+    TestTrue(TEXT("A random draw queues while a used item is detaching"), Items->RequestRandomItem());
+    TestFalse(TEXT("Pressing again does not queue a second draw"), Items->RequestRandomItem());
+    TestEqual(TEXT("An early draw does not give a guaranteed booster"), Items->GetCurrentItemId(), EMWItemId::None);
+    AdvanceThroughDetach();
+    TestTrue(TEXT("The queued draw grants an item when the detach window ends"),
+             Items->GetCurrentItemId() != EMWItemId::None);
     Items->ResetItemState();
+
+    TestTrue(TEXT("The preview can be granted again after a reset"), Items->TryGrantItem(EMWItemId::TeslaCoil));
+    Items->RequestUseItem();
+    TestTrue(TEXT("A second draw can be queued before a reset"), Items->RequestRandomItem());
+    Items->ResetItemState();
+    AdvanceThroughDetach();
+    TestEqual(TEXT("Resetting cancels any queued draw"), Items->GetCurrentItemId(), EMWItemId::None);
+
     MoveTo(Left->GetActorLocation());
     TestEqual(TEXT("A configured pickup grants a hammer through the same slot"),
               Items->GetCurrentItemId(), EMWItemId::Hammer);
@@ -198,7 +229,7 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
     World->GetTimerManager().Tick(0.f);
     Items->RequestUseItem();
     Items->RequestUseItem();
-    TestEqual(TEXT("Hammer use consumes the same slot"), Items->GetCurrentItemId(), EMWItemId::None);
+    TestEqual(TEXT("The first swing keeps the hammer in the slot"), Items->GetCurrentItemId(), EMWItemId::Hammer);
     TestTrue(TEXT("The target is untouched before the impact"), Edge->GetVelocity().IsNearlyZero() && !Edge->IsItemControlLocked());
     ++GFrameCounter;
     World->GetTimerManager().Tick(Hammer->AreaHit.ImpactDelay + .01f);
@@ -213,6 +244,88 @@ bool FMWItemPickupFlow::RunTest(const FString& Parameters)
              OutsideCircle->GetVelocity().SizeSquared2D() < 1.0 && !OutsideCircle->IsItemControlLocked());
     TestTrue(TEXT("A target above the cylinder is untouched"),
              Above->GetVelocity().SizeSquared2D() < 1.0 && !Above->IsItemControlLocked());
+
+    for (const EMWItemId ExpectedItem : {EMWItemId::Hammer, EMWItemId::None})
+    {
+        // 시간만 흘려 차체를 같은 타격 위치에 두고 다음 사용의 서버 제한을 해제한다.
+        constexpr float ClockStep = 0.05f;
+        const int32 ClockTicks = FMath::CeilToInt(Hammer->AreaHit.UseDuration / ClockStep) + 1;
+        for (int32 Tick = 0; Tick < ClockTicks; ++Tick)
+        {
+            World->Tick(LEVELTICK_TimeOnly, ClockStep);
+        }
+        const FVector VelocityBeforeSwing = Edge->GetVelocity();
+        Items->RequestUseItem();
+        Items->RequestUseItem();
+        TestEqual(TEXT("Only the final swing empties the slot"), Items->GetCurrentItemId(), ExpectedItem);
+        ++GFrameCounter;
+        World->GetTimerManager().Tick(Hammer->AreaHit.ImpactDelay + .01f);
+        const double SpeedChange = (Edge->GetVelocity() - VelocityBeforeSwing).Size2D();
+        TestTrue(TEXT("Every remaining swing delivers one hit"),
+            FMath::IsNearlyEqual(SpeedChange, static_cast<double>(Hammer->AreaHit.KnockbackSpeed), 1.0));
+    }
+    const FVector VelocityAfterFinalSwing = Edge->GetVelocity();
+    Items->RequestUseItem();
+    ++GFrameCounter;
+    World->GetTimerManager().Tick(Hammer->AreaHit.ImpactDelay + .01f);
+    TestTrue(TEXT("An exhausted hammer cannot hit again"), Edge->GetVelocity().Equals(VelocityAfterFinalSwing));
+
+    const FMWItemBurstFireData& Burst = MachineGun->BurstFire;
+    const FVector BurstOrigin = AttackOrigin + FVector(0, 650, 0);
+    MoveTo(BurstOrigin);
+    AMWVehiclePawn* Front = SpawnTarget(FVector(400, 650, 0));
+    AMWVehiclePawn* Behind = SpawnTarget(FVector(750, 650, 0));
+    AMWVehiclePawn* Side = SpawnTarget(FVector(0, 1050, 0));
+    const auto TickBurst = [World](float Step)
+    {
+        ++GFrameCounter;
+        World->Tick(LEVELTICK_TimeOnly, Step);
+        World->GetTimerManager().Tick(Step);
+    };
+
+    Items->ResetItemState();
+    TestTrue(TEXT("The machine gun can be granted through the shared slot"), Items->TryGrantItem(EMWItemId::MachineGun));
+    Items->RequestUseItem();
+    Items->RequestUseItem();
+    TestEqual(TEXT("Starting a burst consumes the item once"), Items->GetCurrentItemId(), EMWItemId::None);
+    TickBurst(.01f);
+    TestTrue(TEXT("The first burst shot hits immediately"),
+        Front->GetVelocity().Equals(FVector(Burst.KnockbackSpeed, 0, 0), 1.0));
+    for (int32 Shot = 1; Shot <= Burst.ShotCount; ++Shot)
+    {
+        TickBurst(Burst.ShotInterval);
+    }
+    TestTrue(TEXT("Only the configured shots hit the front vehicle, with no input lock"),
+        Front->GetVelocity().Equals(FVector(Burst.ShotCount * Burst.KnockbackSpeed, 0, 0), 1.0)
+        && !Front->IsItemControlLocked());
+    TestTrue(TEXT("A vehicle behind the first hit receives no knockback"), Behind->GetVelocity().IsNearlyZero());
+    TestTrue(TEXT("A vehicle outside the firing line receives no knockback"), Side->GetVelocity().IsNearlyZero());
+
+    AActor* WallActor = World->SpawnActor<AActor>();
+    UBoxComponent* Wall = NewObject<UBoxComponent>(WallActor);
+    WallActor->SetRootComponent(Wall);
+    Wall->SetBoxExtent(FVector(20, 150, 140));
+    Wall->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    Wall->SetCollisionObjectType(ECC_WorldStatic);
+    Wall->SetCollisionResponseToAllChannels(ECR_Block);
+    Wall->RegisterComponent();
+    WallActor->SetActorLocation(BurstOrigin + FVector(250, 0, 0));
+
+    Items->ResetItemState();
+    TestTrue(TEXT("A new machine gun can be granted after a reset"), Items->TryGrantItem(EMWItemId::MachineGun));
+    const FVector FrontVelocityBeforeWall = Front->GetVelocity();
+    Items->RequestUseItem();
+    TickBurst(.01f);
+    TestTrue(TEXT("A wall in front of the target blocks the shot"), Front->GetVelocity().Equals(FrontVelocityBeforeWall));
+
+    Vehicle->SetActorRotation(FRotator(0, 90, 0));
+    TickBurst(Burst.ShotInterval);
+    TestTrue(TEXT("The next shot uses the current vehicle heading"),
+        Side->GetVelocity().Equals(FVector(0, Burst.KnockbackSpeed, 0), 1.0));
+    Items->ResetItemState();
+    const FVector SideVelocityBeforeReset = Side->GetVelocity();
+    TickBurst(Burst.ShotInterval);
+    TestTrue(TEXT("Resetting cancels the remaining shots"), Side->GetVelocity().Equals(SideVelocityBeforeReset));
 
     // 파괴 뒤 구독이 남는 회귀를 검사한다. 실제 화면 클릭이나 효과음 재생까지 보증하는 검사는 아니다.
     const FName StateChangedFunction(TEXT("HandleGameStateChanged"));

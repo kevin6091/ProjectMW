@@ -4,6 +4,7 @@
 
 #include "Data/MWItemDefinitionData.h"
 #include "Engine/World.h"
+#include "GameFramework/Controller.h"
 #include "Gameplay/Items/MWMountedItemPresentation.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "LogChannel.h"
@@ -44,7 +45,9 @@ void UMWItemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
     if (UWorld* World = GetWorld())
     {
         World->GetTimerManager().ClearTimer(HammerImpactTimer);
+        World->GetTimerManager().ClearTimer(RandomItemRequestTimer);
     }
+    StopBurst();
     RemoveMountedVisual();
     RemoveBoosterVisual();
     Super::EndPlay(EndPlayReason);
@@ -129,34 +132,60 @@ bool UMWItemComponent::TryGrantItem(EMWItemId ItemId)
     }
     else
     {
-        if (MountedPresentation.UseEndsAt > GetServerTime() || !GetMountedItemDefinition(ItemId))
+        const UMWItemDefinitionData* Definition = GetMountedItemDefinition(ItemId);
+        if (!Definition || MountedPresentation.UseEndsAt > GetServerTime())
         {
             return false;
         }
         MountedPresentation.ItemId = ItemId;
         MountedPresentation.UseEndsAt = -1.0;
+        MountedPresentation.UsesRemaining = ItemId == EMWItemId::Hammer ? Definition->AreaHit.UsesPerGrant : 1;
     }
+    GetWorld()->GetTimerManager().ClearTimer(RandomItemRequestTimer);
     ++GrantId;
     SetCurrentItem(ItemId);
     return true;
 }
 
-bool UMWItemComponent::TryGrantRandomItem()
+bool UMWItemComponent::RequestRandomItem()
 {
-    const AActor* Owner = GetOwner();
-    if (!Owner || !Owner->HasAuthority() || !IsItemPlayAllowed() || CurrentItemId != EMWItemId::None)
+    const auto* Vehicle = Cast<AMWVehiclePawn>(GetOwner());
+    if (!Vehicle || !Vehicle->HasAuthority() || !Vehicle->GetController() || !IsItemPlayAllowed()
+        || CurrentItemId != EMWItemId::None)
     {
         return false;
     }
 
-    const bool bMountAvailable = MountedPresentation.UseEndsAt <= GetServerTime();
+    FTimerManager& Timers = GetWorld()->GetTimerManager();
+    if (Timers.TimerExists(RandomItemRequestTimer))
+    {
+        return false;
+    }
+
+    const double TimeUntilMountAvailable = MountedPresentation.UseEndsAt - GetServerTime();
+    if (TimeUntilMountAvailable > 0.0)
+    {
+        // 분리 중에는 후보를 줄이지 않고 같은 요청을 종료 시각에 다시 처리한다.
+        const TWeakObjectPtr<AController> RequestingController(Vehicle->GetController());
+        Timers.SetTimer(RandomItemRequestTimer, FTimerDelegate::CreateWeakLambda(this, [this, RequestingController]()
+        {
+            RandomItemRequestTimer.Invalidate();
+            const auto* OwningVehicle = Cast<AMWVehiclePawn>(GetOwner());
+            if (OwningVehicle && RequestingController.IsValid() && OwningVehicle->GetController() == RequestingController.Get())
+            {
+                RequestRandomItem();
+            }
+        }), static_cast<float>(TimeUntilMountAvailable), false);
+        return true;
+    }
+
     const UEnum* ItemEnum = StaticEnum<EMWItemId>();
     TArray<EMWItemId, TInlineAllocator<12>> Candidates;
     // 마지막 항목은 UHT가 추가한 MAX 센티널이다.
     for (int32 Index = 0; Index < ItemEnum->NumEnums() - 1; ++Index)
     {
         const EMWItemId Id = static_cast<EMWItemId>(ItemEnum->GetValueByIndex(Index));
-        if (Id == EMWItemId::Booster ? BoosterDefinition != nullptr : bMountAvailable && GetMountedItemDefinition(Id))
+        if (Id == EMWItemId::Booster ? BoosterDefinition != nullptr : GetMountedItemDefinition(Id) != nullptr)
         {
             Candidates.Add(Id);
         }
@@ -171,12 +200,12 @@ void UMWItemComponent::RequestUseItem()
     if (Vehicle && Vehicle->IsLocallyControlled() && !Vehicle->IsItemControlLocked() && CurrentItemId != EMWItemId::None)
     {
         UE_LOG(LogMWServer, Verbose, TEXT("[MWItems] Request use vehicle=%s grant=%u"), *Vehicle->GetName(), GrantId);
-        ServerUseItem(GrantId);
+        ServerUseItem(GrantId, MountedPresentation.UsesRemaining);
     }
 }
 
 // 서버가 지급 ID·보유 상태·단계를 재검사해 중복 사용을 막고 종료 시각을 확정한다.
-void UMWItemComponent::ServerUseItem_Implementation(uint32 ExpectedGrantId)
+void UMWItemComponent::ServerUseItem_Implementation(uint32 ExpectedGrantId, uint8 ExpectedUsesRemaining)
 {
     const AMWVehiclePawn* Vehicle = Cast<AMWVehiclePawn>(GetOwner());
     if (!Vehicle || !Vehicle->GetController() || !IsItemPlayAllowed() || Vehicle->IsItemControlLocked()
@@ -187,6 +216,7 @@ void UMWItemComponent::ServerUseItem_Implementation(uint32 ExpectedGrantId)
         return;
     }
 
+    bool bKeepHeldItem = false;
     if (CurrentItemId == EMWItemId::Booster)
     {
         if (!BoosterDefinition || IsBoosterActive())
@@ -197,27 +227,42 @@ void UMWItemComponent::ServerUseItem_Implementation(uint32 ExpectedGrantId)
     }
     else if (const UMWItemDefinitionData* Definition = GetMountedItemDefinition(CurrentItemId))
     {
-        const double PresentationDuration = AMWMountedItemPresentation::GetUseAndDetachDuration(*Definition);
+        const double Now = GetServerTime();
+        if (MountedPresentation.UsesRemaining == 0 || ExpectedUsesRemaining != MountedPresentation.UsesRemaining
+            || MountedPresentation.UseEndsAt > Now)
+        {
+            return;
+        }
+        const bool bFinalUse = MountedPresentation.UsesRemaining == 1;
+        const double PresentationDuration = AMWMountedItemPresentation::GetUseDuration(*Definition, bFinalUse);
         if (PresentationDuration <= 0.0)
         {
             return;
         }
+        --MountedPresentation.UsesRemaining;
+        bKeepHeldItem = !bFinalUse;
         if (CurrentItemId == EMWItemId::Hammer)
         {
-            MountedPresentation.UseEndsAt = GetServerTime() + FMath::Max(PresentationDuration, Definition->AreaHit.UseDuration);
+            MountedPresentation.UseEndsAt = Now + FMath::Max(PresentationDuration, Definition->AreaHit.UseDuration);
             GetWorld()->GetTimerManager().SetTimer(HammerImpactTimer, this, &ThisClass::ResolveHammerHit,
                 Definition->AreaHit.ImpactDelay, false);
         }
         else
         {
-            MountedPresentation.UseEndsAt = GetServerTime() + PresentationDuration;
+            MountedPresentation.UseEndsAt = Now + PresentationDuration;
+            if (Definition->UsesBurstFire())
+            {
+                BurstShotsRemaining = Definition->BurstFire.ShotCount;
+                GetWorld()->GetTimerManager().SetTimer(BurstShotTimer, this, &ThisClass::ResolveBurstShot,
+                    Definition->BurstFire.ShotInterval, true, 0.f);
+            }
         }
     }
     else
     {
         return;
     }
-    SetCurrentItem(EMWItemId::None);
+    SetCurrentItem(bKeepHeldItem ? CurrentItemId : EMWItemId::None);
 }
 
 // 복귀나 경기 단계 전환에서 보유 아이템과 지연된 타격을 함께 정리한다.
@@ -228,6 +273,8 @@ void UMWItemComponent::ResetItemState()
         && (CurrentItemId != EMWItemId::None || BoosterEndsAt > 0.0 || MountedPresentation.ItemId != EMWItemId::None))
     {
         GetWorld()->GetTimerManager().ClearTimer(HammerImpactTimer);
+        GetWorld()->GetTimerManager().ClearTimer(RandomItemRequestTimer);
+        StopBurst();
         MountedPresentation = {};
         BoosterEndsAt = 0.0;
         SetCurrentItem(EMWItemId::None);

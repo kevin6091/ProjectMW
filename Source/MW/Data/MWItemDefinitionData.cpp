@@ -25,6 +25,11 @@ bool UMWItemDefinitionData::HasValidDefinition() const
 	const auto IsPositive = [](float Value) { return FMath::IsFinite(Value) && Value > 0.f; };
 	const bool bHasMountedSequence = !Presentation.VisualClass.IsNull() && !Presentation.Attach.IsNull()
 		&& !Presentation.Use.IsNull() && !Presentation.Detach.IsNull();
+	if (UsesBurstFire())
+	{
+		return bHasMountedSequence && BurstFire.ShotCount > 0 && IsPositive(BurstFire.ShotInterval)
+			&& IsPositive(BurstFire.Range) && IsPositive(BurstFire.KnockbackSpeed) && !BurstFire.TraceStartOffset.ContainsNaN();
+	}
 	switch (ItemId)
 	{
 	case EMWItemId::Booster:
@@ -32,7 +37,8 @@ bool UMWItemDefinitionData::HasValidDefinition() const
 			&& FMath::IsFinite(SpeedBoost.SpeedMultiplier) && SpeedBoost.SpeedMultiplier >= 1.f
 			&& FMath::IsFinite(SpeedBoost.AccelerationMultiplier) && SpeedBoost.AccelerationMultiplier >= 1.f;
 	case EMWItemId::Hammer:
-		return bHasMountedSequence && IsPositive(AreaHit.ImpactDelay) && IsPositive(AreaHit.UseDuration)
+		return bHasMountedSequence && AreaHit.UsesPerGrant > 0
+			&& IsPositive(AreaHit.ImpactDelay) && IsPositive(AreaHit.UseDuration)
 			&& AreaHit.UseDuration >= AreaHit.ImpactDelay
 			&& IsPositive(AreaHit.Radius) && IsPositive(AreaHit.HalfHeight) && IsPositive(AreaHit.KnockbackSpeed)
 			&& FMath::IsFinite(AreaHit.ControlLockDuration) && AreaHit.ControlLockDuration >= 0.f

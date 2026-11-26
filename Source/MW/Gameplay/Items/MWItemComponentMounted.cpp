@@ -32,19 +32,21 @@ void UMWItemComponent::OnRep_MountedPresentation()
 
     const EMWItemId ItemId = MountedPresentation.ItemId;
     const double UseEnd = MountedPresentation.UseEndsAt;
-    const bool bHeld = UseEnd < 0.0;
-    if (ItemId != PresentedMountedItem || (bHeld && LastPresentedUseEnd >= 0.0))
+    const bool bNewEquip = UseEnd < 0.0;
+    if (ItemId != PresentedMountedItem || (bNewEquip && LastPresentedUseEnd >= 0.0))
     {
         RemoveMountedVisual();
         LastPresentedUseEnd = -1.0;
         PresentedMountedItem = ItemId;
     }
 
-    if (ItemId == EMWItemId::None || (!bHeld && UseEnd == LastPresentedUseEnd))
+    if (ItemId == EMWItemId::None || (!bNewEquip && UseEnd == LastPresentedUseEnd))
     {
         return;
     }
-    if (!bHeld && UseEnd <= GetServerTime())
+    const bool bHasUsesRemaining = MountedPresentation.UsesRemaining > 0;
+    const bool bUseInProgress = UseEnd > GetServerTime();
+    if (!bUseInProgress && !bHasUsesRemaining)
     {
         RemoveMountedVisual();
         return;
@@ -53,15 +55,15 @@ void UMWItemComponent::OnRep_MountedPresentation()
     {
         if (const UMWItemDefinitionData* Definition = GetMountedItemDefinition(ItemId))
         {
-            MountedVisual = AMWMountedItemPresentation::Equip(*Vehicle, *Definition, bHeld);
+            MountedVisual = AMWMountedItemPresentation::Equip(*Vehicle, *Definition, bNewEquip);
         }
     }
-    if (!bHeld)
+    if (bUseInProgress)
     {
         LastPresentedUseEnd = UseEnd;
         if (AMWMountedItemPresentation* Visual = MountedVisual.Get())
         {
-            Visual->PlayUse();
+            Visual->PlayUse(!bHasUsesRemaining);
         }
     }
 }

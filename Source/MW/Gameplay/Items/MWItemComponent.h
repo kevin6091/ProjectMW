@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "Engine/TimerHandle.h"
 #include "Gameplay/Items/MWItemTypes.h"
+#include "Engine/NetSerialization.h"
 #include "UObject/SoftObjectPtr.h"
 #include "MWItemComponent.generated.h"
 
@@ -57,6 +58,9 @@ struct FMWMountedItemPresentationState
 
     UPROPERTY()
     double UseEndsAt = -1.0;
+
+    UPROPERTY()
+    uint8 UsesRemaining = 0;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMWHeldItemChanged, EMWItemId, ItemId);
@@ -82,7 +86,9 @@ public:
 
     // 서버 권한·소유 차량·허용 단계·빈 슬롯을 검사한 뒤 지급 ID와 보유 상태를 갱신한다.
     bool TryGrantItem(EMWItemId ItemId);
-    bool TryGrantRandomItem();
+
+    // 사용 연출이 남아 있으면 종료 후 한 번만 무작위 지급을 처리한다.
+    bool RequestRandomItem();
 
     // 로컬 소유 차량의 실제 보유 아이템만 서버 사용 요청으로 전달한다.
     void RequestUseItem();
@@ -159,6 +165,12 @@ private:
     // 보유 값과 외형 상태를 함께 갱신하고 실제 변경만 소유자 UI에 알린다.
     void SetCurrentItem(EMWItemId ItemId);
     void ResolveHammerHit();
+    void ResolveBurstShot();
+    void StopBurst();
+
+    UFUNCTION(NetMulticast, Unreliable)
+    void MulticastDrawBurstTrace(FVector_NetQuantize Start, FVector_NetQuantize End, bool bBlocked, bool bHitVehicle);
+
     const UMWItemDefinitionData* GetMountedItemDefinition(EMWItemId ItemId) const;
     void RemoveMountedVisual();
 
@@ -172,6 +184,9 @@ private:
     EMWItemId PresentedMountedItem = EMWItemId::None;
     double LastPresentedUseEnd = -1.0;
     FTimerHandle HammerImpactTimer;
+    FTimerHandle BurstShotTimer;
+    uint8 BurstShotsRemaining = 0;
+    FTimerHandle RandomItemRequestTimer;
 
     // 기본 외형과 음원을 준비하되 원본 시퀀스는 CDO 시점에 강제로 로드하지 않는다.
     void LoadBoosterVisualAssets();
@@ -256,7 +271,7 @@ private:
     void OnRep_CurrentItem();
 
     UFUNCTION(Server, Reliable)
-    void ServerUseItem(uint32 ExpectedGrantId);
+    void ServerUseItem(uint32 ExpectedGrantId, uint8 ExpectedUsesRemaining);
 
     UPROPERTY(ReplicatedUsing = OnRep_CurrentItem)
     EMWItemId CurrentItemId = EMWItemId::None;
