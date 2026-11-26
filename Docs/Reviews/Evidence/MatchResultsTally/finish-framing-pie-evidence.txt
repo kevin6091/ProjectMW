@@ -1,0 +1,48 @@
+2026-11-26 | Cua Driver 3-player PIE | base 8697e6d
+Reference: 11:03.25 first plate, 11:03.45 second, 11:03.65 third, sampled at 20 fps.
+PIE: threshold first opacity > 0.01, same recording method as the previous comparison.
+PIE-only target 250, actual course and finish triggers with car positions supplied by a fixture.
+
+== WBP compile and presentation ==
+[2026.11.26-05.01.42:635][  2]LogPython: MW_FINISH_FRAMING_AUTHORED camera=(3900,0,2920) aim=(-650,0,510) entrance=0.51 hold=0.04 name_font=52 subtitle=collapsed
+[2026.11.26-05.03.11:646][508]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-05.03.16:981][661]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-05.03.40:339][405]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.26-05.04.00:096][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9014.25, Y=-15129.86, Z=13920.00)
+[2026.11.26-05.04.00:100][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9014.25, Y=-15129.86, Z=13920.00)
+[2026.11.26-05.04.00:106][900]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 Camera=V(X=9014.25, Y=-15129.86, Z=13920.00)
+[2026.11.26-05.04.03:516][958]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-05.04.03:518][958]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-05.04.03:519][958]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-05.04.04:122][963]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings
+[2026.11.26-05.04.04:123][963]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings
+[2026.11.26-05.04.04:123][963]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings
+
+== Per-window UI timing and on-disk asset hashes ==
+P1 first=0.000 second=0.328 third=0.500 settled=0.578 solo_samples=2
+P2 first=0.000 second=0.281 third=0.453 settled=0.547 solo_samples=2
+P3 first=0.000 second=0.250 third=0.407 settled=0.516 solo_samples=2
+Overview/Continue present in 0 samples
+WBP_MatchResults.uasset 7A5600696DBABFE12B644562FD4F3354218AD04827DE1F5917DE3138E5457E3A
+WBP_MatchPodiumCard.uasset A75D67E086A94DB55C5C19DAFEFCBF70165FBC5B20EF128F48C9641650E264EE
+{"event": "reveal", "member": 1, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.3896, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.3896, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.0, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 0.3896, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.235, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.187, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.157, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.0, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.328, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.5779, "3위": 0.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.281, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.5779, "3위": 0.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.25, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 0.5779, "3위": 0.0}}
+{"event": "reveal", "member": 1, "elapsed": 0.407, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.004}}
+{"event": "reveal", "member": 2, "elapsed": 0.375, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.004}}
+{"event": "reveal", "member": 3, "elapsed": 0.328, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.004}}
+{"event": "reveal", "member": 1, "elapsed": 0.5, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.5016}}
+{"event": "reveal", "member": 2, "elapsed": 0.453, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.5016}}
+{"event": "reveal", "member": 3, "elapsed": 0.407, "screen": "<MWMatchResultsScreen.WINNER: 4>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 0.5016}}
+{"event": "reveal", "member": 1, "elapsed": 0.578, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+{"event": "reveal", "member": 2, "elapsed": 0.547, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+{"event": "reveal", "member": 3, "elapsed": 0.516, "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "opacity": {"1위": 1.0, "2위": 1.0, "3위": 1.0}}
+
+== Clean editor rebuild after removing the PIE helper ==
+Result: Succeeded

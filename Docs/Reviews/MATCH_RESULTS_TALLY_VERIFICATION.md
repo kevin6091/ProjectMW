@@ -183,3 +183,24 @@ Switch 영상 4:01~4:13의 체크포인트 구간과 10월 30일 영상 9:30~10:
 이전 개요 트리의 GUID 정리 후 새 프로세스에서 두 WBP를 로드해 컴파일 오류 0건을 확인했다. 저장 없는 검증 전후 해시는 동일하다. 두 WBP는 로컬 검토본이며 Git 푸시와 UVCS 체크인은 확인 대기다.
 
 임시 PIE 명령을 제거하고 UE 5.8 `MWEditor Win64 Development`를 재빌드했다. `MW.Gameplay.PlayerRound`와 `MW.Gameplay.RoundLoop` 자동화 6개가 통과했다.
+
+## 결승 시점과 순위 카드 속도 조정
+
+`8697e6d`의 캡처와 영상 11:03–11:04를 대조했다. 직전 구현에서는 영상의 약 0.20초보다 2위가 0.32~0.41초 늦게 나왔고, 카메라는 결승판 정면에 가까웠다. 영상에서는 결승선 바닥과 차량이 먼저 보이고, 배너에선 이름과 차량이 가장 큰 요소다.
+
+- `WBP_MatchResults`의 `CameraOffset`과 `LookAtOffset`을 결승 소켓에 상대 배치해 시선의 하향 각도를 약 28°로 설정했다. `PodiumHeadingPlate`를 접고, `PodiumFit`과 `WinnerCardExtent`에서 이름판의 위치와 높이를 편집했다. 세 명일 때 각 카드의 명목 진입 시간은 0.17초, 1위 단독 정지는 0.04초다.
+- `WBP_MatchPodiumCard`의 이름 크기는 35에서 52 디자인 단위로 늘렸다. 카드 높이와 메달·차량의 공간을 키우고 점수 크기를 줄였다. 결과에는 ProjectMW의 수평 카드, 참가자 색, 기존 차량 썸네일을 사용한다. 영상의 기울어진 배너와 3D 차량·파티클 구도는 이 캡처와 다르다. 새 시야에서는 결승선이 드러나고 상단 `FINISH` 모형 일부는 화면 경계에 걸린다.
+
+| 첫 이름판이 보인 뒤 | 영상 | 직전 3인 PIE | 이번 3인 PIE |
+| --- | ---: | ---: | ---: |
+| 2위 첫 공개 | 약 0.20초 | 0.515~0.609초 | 0.250~0.328초 |
+| 3위 첫 공개 | 약 0.40초 | 0.750~0.843초 | 0.407~0.500초 |
+
+같은 1280×722 호스트와 924×693·1120×480 클라이언트에서 1위 → 2위 → 3위와 최종 순위 유지를 확인했다. Cua Driver로 코스 조각을 배치했다. 결과 장면을 반복 검토하기 위해 PIE 목표를 250점으로 설정하고 차량을 실제 결승 트리거에 옮겼다. 1위 단독 구간은 위젯 불투명도 표본으로, 카메라·2위 진입·최종 배치는 캡처로 확인했다. [직전 호스트](Evidence/MatchResultsTally/podium-layout-final-p1.png) · [결승 카메라](Evidence/MatchResultsTally/finish-framing-camera-p1.png) · [2위 진입](Evidence/MatchResultsTally/finish-framing-lower-p1.png) · [수정 후 호스트](Evidence/MatchResultsTally/finish-framing-final-p1.png) · [4:3](Evidence/MatchResultsTally/finish-framing-final-p2.png) · [21:9](Evidence/MatchResultsTally/finish-framing-final-p3.png) · [PIE 로그](Evidence/MatchResultsTally/finish-framing-pie-evidence.txt)
+
+| 로컬 WBP | SHA-256 |
+| --- | --- |
+| `WBP_MatchResults.uasset` | `7A5600696DBABFE12B644562FD4F3354218AD04827DE1F5917DE3138E5457E3A` |
+| `WBP_MatchPodiumCard.uasset` | `A75D67E086A94DB55C5C19DAFEFCBF70165FBC5B20EF128F48C9641650E264EE` |
+
+두 WBP는 컴파일 후 3인 PIE에서 사용한 로컬본이다. 임시 PIE 명령을 제거한 뒤 Editor 재빌드도 확인했다. Git 푸시와 UVCS 체크인은 확인 대기다.
