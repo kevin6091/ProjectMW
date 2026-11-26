@@ -1,0 +1,22 @@
+Result: Succeeded
+[2026.11.26-01.39.43:895][  0]LogPython: MW_CHECKPOINT_AUTHORED /Game/UI/Race/WBP_CheckpointFeedback.WBP_CheckpointFeedback
+[2026.11.26-01.53.06:975][ 73]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.26-01.53.26:399][924]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.26-01.53.41:316][540]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.26-01.53.44:558][646]LogMWServer: [MWProgress] EMWRoomPhase::Countdown -> EMWRoomPhase::Racing Round=1 Epoch=1
+[2026.11.26-01.54.07:984][672]LogMWServer: [MWTrackPlacement] Placed piece=5 member=2 target=4/1 source=0
+[2026.11.26-01.55.01:285][592]LogMWServer: [MWTrackPlacement] Placed piece=6 member=3 target=5/1 source=0
+[2026.11.26-01.55.33:877][345]LogMWServer: [MWTrackPlacement] Placed piece=7 member=1 target=6/1 source=0
+[2026.11.26-01.55.37:013][465]LogMWServer: [MWProgress] EMWRoomPhase::Countdown -> EMWRoomPhase::Racing Round=2 Epoch=2
+{"event": "client", "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "size": [1280, 722], "epoch": 2, "passed": 0, "earned": 0, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 1.0, "text": {"AwardLabel": "", "CheckpointLabel": "체크포인트"}}
+{"event": "client", "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 0, "earned": 0, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 1.0, "text": {"AwardLabel": "", "CheckpointLabel": "체크포인트"}}
+{"event": "client", "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 0, "earned": 0, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 1.0, "text": {"AwardLabel": "", "CheckpointLabel": "체크포인트"}}
+{"event": "server_overlap", "member": 1, "epoch": 2, "index": 1, "piece": 4, "score": 100, "finish": 0}
+{"event": "client", "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "size": [1280, 722], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.HIT_TEST_INVISIBLE: 3>", "opacity": 1.0, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}
+{"event": "client", "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "size": [1280, 722], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 0.015, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}
+{"event": "server_overlap", "member": 2, "epoch": 2, "index": 1, "piece": 4, "score": 100, "finish": 0}
+{"event": "client", "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.HIT_TEST_INVISIBLE: 3>", "opacity": 1.0, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}
+{"event": "client", "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 0.001, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}
+{"event": "server_overlap", "member": 3, "epoch": 2, "index": 1, "piece": 4, "score": 100, "finish": 0}
+{"event": "client", "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.HIT_TEST_INVISIBLE: 3>", "opacity": 1.0, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}
+{"event": "client", "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "size": [800, 482], "epoch": 2, "passed": 1, "earned": 100, "finish": 0, "visibility": "<SlateVisibility.COLLAPSED: 1>", "opacity": 0.016, "text": {"AwardLabel": "+100점", "CheckpointLabel": "체크포인트 1"}}

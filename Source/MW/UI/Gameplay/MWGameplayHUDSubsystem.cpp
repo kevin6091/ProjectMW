@@ -4,6 +4,7 @@
 
 #include "Brushes/SlateImageBrush.h"
 #include "UI/Gameplay/MWArrivalScreen.h"
+#include "UI/Gameplay/MWCheckpointFeedbackWidget.h"
 #include "Components/NativeWidgetHost.h"
 #include "Components/SizeBox.h"
 #include "Blueprint/UserWidget.h"
@@ -51,6 +52,7 @@ public:
     SLATE_ARGUMENT(FMWPIEHUDPreview, PIEPreview)
     SLATE_ATTRIBUTE(EMWItemId, HeldItem)
     SLATE_ARGUMENT(TSharedPtr<SWidget>, RaceHUD)
+    SLATE_ARGUMENT(TSharedPtr<SWidget>, CheckpointFeedback)
     SLATE_ARGUMENT(UUserWidget*, Panels)
     SLATE_END_ARGS()
 
@@ -144,6 +146,7 @@ public:
         ChildSlot[SNew(SOverlay)
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Panels ? Panels->TakeWidget() : SNullWidget::NullWidget)]
             + SOverlay::Slot()[MWGameplayUI::FitDesignCanvas(Args._RaceHUD.ToSharedRef(), HAlign_Right, VAlign_Bottom)]
+            + SOverlay::Slot()[Args._CheckpointFeedback.ToSharedRef()]
             + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(24)
             [SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 20))
                 .Text_Lambda([this] { return ScoreText(); })
@@ -636,10 +639,13 @@ bool UMWGameplayHUDSubsystem::IsTickable() const
     const AMWGameplayGameState* GameState = World->GetGameState<AMWGameplayGameState>();
     GameState = IsValid(GameState) ? GameState : nullptr;
     const bool bNeedsStateBinding = ObservedGameState.Get() != GameState || (!GameState && RoomPhase.IsSet());
+    const APlayerController* PC = ItemController.Get();
+    const bool bNeedsCheckpointBinding = CheckpointFeedback
+        && CheckpointPlayer.Get() != (PC ? PC->GetPlayerState<AMWPlayerState>() : nullptr);
 
     // 오버레이 생성 전이라도 원본 상태가 사라졌으면 이전 구독과 캐시를 정리한다.
     const bool bCanAttach = GameState || PIEPreview.IsEnabled();
-    return bNeedsStateBinding || (!Overlay && bCanAttach);
+    return bNeedsStateBinding || bNeedsCheckpointBinding || (!Overlay && bCanAttach);
 }
 
 // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
@@ -653,6 +659,10 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     }
 
     RefreshGameStateBinding();
+    if (const APlayerController* ExistingController = ItemController.Get())
+    {
+        RefreshCheckpointPlayer(ExistingController->GetPlayerState<AMWPlayerState>());
+    }
     if (Overlay || (!ObservedGameState.IsValid() && !PIEPreview.IsEnabled()))
     {
         return;
@@ -684,11 +694,20 @@ void UMWGameplayHUDSubsystem::Tick(float DeltaTime)
     if (!MatchPanels)
         UE_LOG(LogMWInGameUI, Error, TEXT("경기 화면 WBP를 로드할 수 없습니다. MatchPanelsClass=%s"),
             *Settings->MatchPanelsClass.ToSoftObjectPath().ToString());
+    if (ObservedGameState.IsValid())
+    {
+        if (UClass* FeedbackClass = Settings->CheckpointFeedbackClass.LoadSynchronous())
+        {
+            CheckpointFeedback = CreateWidget<UMWCheckpointFeedbackWidget>(PC, FeedbackClass);
+            RefreshCheckpointPlayer(PC->GetPlayerState<AMWPlayerState>());
+        }
+    }
     Overlay = SNew(SMWGameplayHUD).Panels(MatchPanels)
                   .Controller(PC)
                   .Visibility(EVisibility::HitTestInvisible)
                   .PIEPreview(PIEPreview)
                   .RaceHUD(RaceHUDWidget ? RaceHUDWidget->TakeWidget() : SNullWidget::NullWidget)
+                  .CheckpointFeedback(CheckpointFeedback ? CheckpointFeedback->TakeWidget() : SNullWidget::NullWidget)
                   .HeldItem_Lambda(
                       [WeakThis]
                       {
@@ -738,8 +757,51 @@ void UMWGameplayHUDSubsystem::HandleGameplayStateChanged()
     }
 
     RoomPhase = GameState->GetRoomPhase();
+    if (CheckpointFeedback && RoomPhase != EMWRoomPhase::Racing)
+    {
+        CheckpointFeedback->Clear();
+    }
     UE_LOG(LogMWInGameUI, Verbose, TEXT("[MWRaceHUD] 경기 단계 갱신. World=%s Phase=%s"),
            *GetNameSafe(GetWorld()), *UEnum::GetValueAsString(RoomPhase.GetValue()));
+}
+
+void UMWGameplayHUDSubsystem::RefreshCheckpointPlayer(AMWPlayerState* Player)
+{
+    if (!CheckpointFeedback || CheckpointPlayer.Get() == Player)
+    {
+        return;
+    }
+    if (AMWPlayerState* Previous = CheckpointPlayer.Get())
+    {
+        Previous->OnPlayerStateChanged.RemoveDynamic(this, &ThisClass::HandleCheckpointProgress);
+    }
+    CheckpointFeedback->Clear();
+    CheckpointPlayer = Player;
+    LastCheckpointState = Player ? Player->GetRoundState() : FMWPlayerRoundState{};
+    if (Player)
+    {
+        Player->OnPlayerStateChanged.AddUniqueDynamic(this, &ThisClass::HandleCheckpointProgress);
+    }
+}
+
+void UMWGameplayHUDSubsystem::HandleCheckpointProgress()
+{
+    const AMWPlayerState* Player = CheckpointPlayer.Get();
+    if (!Player || !CheckpointFeedback)
+    {
+        return;
+    }
+    const FMWPlayerRoundState Next = Player->GetRoundState();
+    const FMWPlayerRoundState Previous = LastCheckpointState;
+    LastCheckpointState = Next;
+    // 라운드 변경이나 재접속 때 보관된 통과 수를 새 보상으로 표시하지 않는다.
+    const AMWGameplayGameState* State = ObservedGameState.Get();
+    if (State && State->GetRoomPhase() == EMWRoomPhase::Racing && Next.bRaceParticipant
+        && Next.RoundEpoch == State->GetProgressRef().RoundEpoch && Next.RoundEpoch == Previous.RoundEpoch
+        && Next.CheckpointsPassed > Previous.CheckpointsPassed)
+    {
+        CheckpointFeedback->Present(Next.CheckpointsPassed, FMath::Max(0, Next.CheckpointScore - Previous.CheckpointScore));
+    }
 }
 
 // 이 기능의 틱 비용을 엔진 통계에서 구분할 수 있도록 식별자를 반환한다.
@@ -799,6 +861,8 @@ void UMWGameplayHUDSubsystem::RemoveOverlay()
     }
     ObservedGameState.Reset();
     RoomPhase.Reset();
+    RefreshCheckpointPlayer(nullptr);
+    CheckpointFeedback = nullptr;
 
     if (APlayerController* PC = ItemController.Get())
     {

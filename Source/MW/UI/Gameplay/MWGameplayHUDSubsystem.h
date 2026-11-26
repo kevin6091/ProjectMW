@@ -9,6 +9,7 @@
 
 class APawn;
 class AMWGameplayGameState;
+class AMWPlayerState;
 class APlayerController;
 class SWidget;
 class UGameViewportClient;
@@ -16,6 +17,7 @@ class UFont;
 class UMaterialInterface;
 class UTexture2D;
 class UMWRaceHUDWidget;
+class UMWCheckpointFeedbackWidget;
 class UUserWidget;
 
 // 아이템 슬롯의 1920×1080 디자인 좌표와 실제 화면 최소 크기다. SVG 원본 좌표계와는 구분한다.
@@ -141,6 +143,9 @@ public:
     UPROPERTY(Config)
     TSoftClassPtr<UUserWidget> MatchPanelsClass;
 
+    UPROPERTY(Config)
+    TSoftClassPtr<UMWCheckpointFeedbackWidget> CheckpointFeedbackClass;
+
     // 로컬 Controller와 Viewport가 준비됐을 때 기존 HUD 오버레이를 한 번 연결한다.
     virtual void Tick(float DeltaTime) override;
 
@@ -174,6 +179,17 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<UMWRaceHUDWidget> RaceHUDWidget;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UMWCheckpointFeedbackWidget> CheckpointFeedback;
+
+    void RefreshCheckpointPlayer(AMWPlayerState* Player);
+
+    UFUNCTION()
+    void HandleCheckpointProgress();
+
+    TWeakObjectPtr<AMWPlayerState> CheckpointPlayer;
+    FMWPlayerRoundState LastCheckpointState;
 
     // 월드의 실제 GameState가 바뀌면 이전 구독을 해제하고 현재 값을 즉시 읽는다.
     void RefreshGameStateBinding();
