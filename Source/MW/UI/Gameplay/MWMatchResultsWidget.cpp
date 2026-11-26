@@ -311,7 +311,9 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     const FVector LookAt = FinishFrame.TransformPositionNoScale(LookAtOffset);
     FVector CameraLocation = FinishFrame.TransformPositionNoScale(CameraOffset);
     int32 ViewIndex = 0;
-    if (!AlternateCameraOffsets.IsEmpty() && !LookAt.ContainsNaN() && !CameraLocation.ContainsNaN())
+    const bool bHasMotion = bFinalResults && PodiumCameraKeys.Num() >= 2;
+    PodiumCameraTravelScale = 0.f;
+    if ((!AlternateCameraOffsets.IsEmpty() || bHasMotion) && !LookAt.ContainsNaN() && !CameraLocation.ContainsNaN())
     {
         // 가시성 충돌이 없는 트랙 장식도 시야를 가릴 수 있어 렌더 메시 경계까지 검사한다.
         TArray<FBox> TrackBounds;
@@ -326,24 +328,68 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
         }
         FCollisionQueryParams Query(SCENE_QUERY_STAT(MWFinishShotVisibility), true);
         if (IsValid(Finish.Actor.Get())) Query.AddIgnoredActor(Finish.Actor.Get());
-        const auto IsObstructed = [&](const FVector& Location)
+        const auto IsObstructed = [&](const FVector& Location, const FVector& Aim)
         {
-            return GetWorld()->LineTraceTestByChannel(Location, LookAt, ECC_Visibility, Query)
+            return FVector::DistSquared(Location, Aim) <= UE_KINDA_SMALL_NUMBER
+                || GetWorld()->LineTraceTestByChannel(Location, Aim, ECC_Visibility, Query)
                 || TrackBounds.ContainsByPredicate([&](const FBox& Bounds)
                 {
-                    return FMath::LineBoxIntersection(Bounds, Location, LookAt, LookAt - Location);
+                    return FMath::LineBoxIntersection(Bounds, Location, Aim, Aim - Location);
                 });
         };
-        if (IsObstructed(CameraLocation))
+        if (IsObstructed(CameraLocation, LookAt))
         {
             ViewIndex = INDEX_NONE;
             for (int32 Index = 0; Index < AlternateCameraOffsets.Num(); ++Index)
             {
                 const FVector Candidate = FinishFrame.TransformPositionNoScale(AlternateCameraOffsets[Index]);
-                if (!Candidate.ContainsNaN() && !IsObstructed(Candidate))
+                if (!Candidate.ContainsNaN() && !IsObstructed(Candidate, LookAt))
                 {
                     CameraLocation = Candidate;
                     ViewIndex = Index + 1;
+                    break;
+                }
+            }
+        }
+        const auto& Keys = PodiumCameraKeys;
+        if (bHasMotion && ViewIndex != INDEX_NONE && Keys[0].Time == 0.f && Keys.Last().Time == 1.f
+            && Keys[0].CameraDelta.IsZero() && Keys[0].AimDelta.IsZero() && Keys[0].FieldOfViewDelta == 0.f)
+        {
+            // 프레임마다 시점을 튕기지 않도록 경로 전체를 먼저 검사하고 한 배율로 재생한다.
+            constexpr int32 SamplesPerSegment = 6;
+            for (const float Scale : {1.f, .65f, .35f})
+            {
+                bool bClear = true;
+                FVector Previous = CameraLocation;
+                for (int32 Index = 1; bClear && Index < Keys.Num(); ++Index)
+                {
+                    const auto& Start = Keys[Index - 1];
+                    const auto& End = Keys[Index];
+                    if (!(Start.Time < End.Time) || End.CameraDelta.ContainsNaN() || End.AimDelta.ContainsNaN()
+                        || !FMath::IsFinite(End.FieldOfViewDelta))
+                    {
+                        bClear = false;
+                        break;
+                    }
+                    for (int32 Sample = 1; Sample <= SamplesPerSegment; ++Sample)
+                    {
+                        const float Alpha = static_cast<float>(Sample) / SamplesPerSegment;
+                        const FVector Position = CameraLocation + FinishFrame.TransformVectorNoScale(
+                            FMath::Lerp(Start.CameraDelta, End.CameraDelta, Alpha) * Scale);
+                        const FVector Aim = LookAt + FinishFrame.TransformVectorNoScale(
+                            FMath::Lerp(Start.AimDelta, End.AimDelta, Alpha) * Scale);
+                        if (IsObstructed(Position, Aim) || GetWorld()->LineTraceTestByChannel(
+                            Previous, Position, ECC_Visibility, Query))
+                        {
+                            bClear = false;
+                            break;
+                        }
+                        Previous = Position;
+                    }
+                }
+                if (bClear)
+                {
+                    PodiumCameraTravelScale = Scale;
                     break;
                 }
             }
@@ -369,16 +415,40 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     {
         FinishCamera->GetCameraComponent()->SetFieldOfView(CameraFOV);
     }
-    const float Blend = FMath::IsFinite(CameraBlendSeconds) ? FMath::Clamp(CameraBlendSeconds, 0.f, ShotSeconds) : 0.f;
+    FinishCameraOrigin = CameraLocation;
+    FinishCameraBaseFOV = FinishCamera->GetCameraComponent()->FieldOfView;
+    const float Blend = !bHasMotion && FMath::IsFinite(CameraBlendSeconds)
+        ? FMath::Clamp(CameraBlendSeconds, 0.f, ShotSeconds) : 0.f;
     Controller->SetViewTargetWithBlend(FinishCamera, Blend, VTBlend_EaseInOut, 0.f, true);
 
     if (bFinalResults)
     {
         GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginTally, ShotSeconds, false);
     }
-    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s"),
-        *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, ViewIndex, *CameraLocation.ToCompactString());
+    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s TravelScale=%.2f"),
+        *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, ViewIndex,
+        *CameraLocation.ToCompactString(), PodiumCameraTravelScale);
     return true;
+}
+
+void UMWMatchResultsWidget::UpdatePodiumCamera(float SequenceElapsed)
+{
+    if (!FinishCamera || PodiumCameraTravelScale <= 0.f) return;
+    const float Lead = bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds;
+    const float Duration = Lead + GetPodiumDuration();
+    const float Time = Duration > 0.f ? FMath::Clamp(SequenceElapsed / Duration, 0.f, 1.f) : 1.f;
+    int32 Index = 1;
+    while (Index < PodiumCameraKeys.Num() - 1 && Time > PodiumCameraKeys[Index].Time) ++Index;
+    const auto& Start = PodiumCameraKeys[Index - 1];
+    const auto& End = PodiumCameraKeys[Index];
+    const float Alpha = FMath::SmoothStep(Start.Time, End.Time, Time);
+    const FVector Location = FinishCameraOrigin + FinishFrame.TransformVectorNoScale(
+        FMath::Lerp(Start.CameraDelta, End.CameraDelta, Alpha) * PodiumCameraTravelScale);
+    const FVector Aim = FinishFrame.TransformPositionNoScale(LookAtOffset
+        + FMath::Lerp(Start.AimDelta, End.AimDelta, Alpha) * PodiumCameraTravelScale);
+    FinishCamera->SetActorLocationAndRotation(Location, (Aim - Location).Rotation());
+    FinishCamera->GetCameraComponent()->SetFieldOfView(FMath::Clamp(FinishCameraBaseFOV
+        + FMath::Lerp(Start.FieldOfViewDelta, End.FieldOfViewDelta, Alpha) * PodiumCameraTravelScale, 1.f, 179.f));
 }
 
 void UMWMatchResultsWidget::PrepareWinnerVehicleClass(const AMWPlayerState& Player)
@@ -573,6 +643,8 @@ void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTim
         // 결과 복제가 빨라 최종 위젯이 집계를 다시 그리면 차량은 판이 내려간 뒤에 출발한다.
         if (ScoreStages.IsEmpty() || bWinnerLeadAfterTally)
         {
+            UpdatePodiumCamera(bWinnerLeadAfterTally
+                ? FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()) : FinishShotElapsed);
             UpdateWinnerVehicle(FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()));
         }
         return;
@@ -674,6 +746,8 @@ void UMWMatchResultsWidget::BeginWinnerLeadAfterTally()
     Screen = EMWMatchResultsScreen::FinishShot;
     bWinnerLeadAfterTally = true;
     FinishShotElapsed = ShotSeconds - Lead;
+    UpdatePodiumCamera(0.f);
+    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=PodiumApproach"), *GetWorld()->GetOutermost()->GetName());
     UpdateWinnerVehicle(0.f);
     GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, Lead, false);
 }
@@ -700,6 +774,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
     const float TotalSeconds = GetPodiumDuration();
     const float HoldSeconds = TotalSeconds - WinnerSeconds;
     RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, TotalSeconds);
+    UpdatePodiumCamera((bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds) + RevealElapsed);
     UpdateWinnerVehicle(GetWinnerVehicleLead() + RevealElapsed);
     const float CardSeconds = WinnerSeconds / Count;
     // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
@@ -738,6 +813,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 
 void UMWMatchResultsWidget::ShowStandings()
 {
+    UpdatePodiumCamera((bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds) + GetPodiumDuration());
     UpdateWinnerVehicle(GetWinnerVehicleLead() + GetPodiumDuration());
     // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)

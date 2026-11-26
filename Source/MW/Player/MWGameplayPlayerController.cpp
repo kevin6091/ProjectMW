@@ -207,7 +207,11 @@ void AMWGameplayPlayerController::ApplyGameplayInputMode(bool bRestoreConstructi
     else
         SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
-	UpdateRaceViewTarget();
+	// 결과 HUD가 정한 결승 시점을 입력 모드 갱신에서 주행 시점으로 덮지 않는다.
+	if (Phase != EMWRoomPhase::RoundResults && Phase != EMWRoomPhase::MatchResults)
+	{
+		UpdateRaceViewTarget();
+	}
 }
 
 void AMWGameplayPlayerController::UpdateRaceViewTarget()

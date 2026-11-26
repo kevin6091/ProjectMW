@@ -77,6 +77,24 @@ private:
     bool bVehiclePortraitSuppressed = false;
 };
 
+USTRUCT(BlueprintType)
+struct FMWPodiumCameraKey
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0", ClampMax = "1"))
+    float Time = 0.f;
+
+    UPROPERTY(EditAnywhere, meta = (Units = "cm"))
+    FVector CameraDelta = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, meta = (Units = "cm"))
+    FVector AimDelta = FVector::ZeroVector;
+
+    UPROPERTY(EditAnywhere, meta = (Units = "deg"))
+    float FieldOfViewDelta = 0.f;
+};
+
 // 경기 단계는 서버가 소유한다. 이 위젯은 각 창의 점수판과 결승선 연출을 관리한다.
 UCLASS(Abstract)
 class MW_API UMWMatchResultsWidget : public UUserWidget
@@ -131,6 +149,10 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot", meta = (Units = "deg", ClampMin = "0", ClampMax = "179"))
     float CameraFOV = 0.f;
+
+    // 시상 카메라 키는 POSITIONS가 내려간 뒤의 진행률을 기준으로 재생한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot", meta = (TitleProperty = "Time"))
+    TArray<FMWPodiumCameraKey> PodiumCameraKeys;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot")
     TObjectPtr<UNiagaraSystem> CelebrationSystem;
@@ -220,6 +242,9 @@ private:
     bool bWinnerLeadAfterTally = false;
     TArray<TWeakObjectPtr<UNiagaraComponent>> CelebrationComponents;
     FTransform FinishFrame;
+    FVector FinishCameraOrigin = FVector::ZeroVector;
+    float FinishCameraBaseFOV = 0.f;
+    float PodiumCameraTravelScale = 0.f;
     FTimerHandle PresentationTimer;
 
     struct FScoreStage
@@ -243,6 +268,7 @@ private:
     double RoundEndServerTime = 0.0;
 
     bool BeginFinishShot(const AMWGameplayGameState& State);
+    void UpdatePodiumCamera(float SequenceElapsed);
     void PrepareWinnerVehicleClass(const AMWPlayerState& Player);
     float GetWinnerVehicleLead() const;
     float GetPodiumDuration() const;
