@@ -2198,9 +2198,11 @@ bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, f
 	FVector MoveDelta = Delta;
 	float RemainingTime = DeltaTime;
 	bool bUnblocked = true;
+	bool bTriedNearVehicleEscape = false;
 	constexpr int32 MaxContactIterations = 4;
-	for (int32 Iteration = 0; Iteration < MaxContactIterations; ++Iteration)
+	for (int32 Iteration = 0; Iteration < MaxContactIterations;)
 	{
+		const FVector MoveStart = UpdatedComponent->GetComponentLocation();
 		FHitResult Hit(1.f);
 		SafeMoveUpdatedComponent(MoveDelta, TargetRotation, true, Hit);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
@@ -2216,6 +2218,38 @@ bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, f
 		{
 			return bUnblocked;
 		}
+
+		// 접촉 시각이 0으로 보정된 경우, 실제로 제자리에서 막혔을 때만 이탈을 재검사한다.
+		if (!bTriedNearVehicleEscape && Hit.Time <= SMALL_NUMBER
+			&& UpdatedComponent->GetComponentLocation().Equals(MoveStart, UE_SMALL_NUMBER))
+		{
+			bTriedNearVehicleEscape = true;
+			FVector EscapeDelta;
+			if (TryMoveOutOfNearVehicleContact(Hit, MoveDelta, EscapeDelta))
+			{
+				if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent))
+				{
+					return false;
+				}
+				if (const auto* Vehicle = Cast<AMWVehiclePawn>(PawnOwner); Vehicle && !Vehicle->CanDrive())
+				{
+					StopMovementImmediately();
+					return false;
+				}
+
+				// 이탈에 사용한 거리와 시간만 차감하고, 남은 이동은 새 충돌 결과로 처리한다.
+				const double UsedFraction = FMath::Clamp(EscapeDelta.Size() / MoveDelta.Size(), 0.0, 1.0);
+				RemainingTime *= 1.0 - UsedFraction;
+				MoveDelta -= EscapeDelta;
+				if (RemainingTime <= SMALL_NUMBER || MoveDelta.IsNearlyZero(UE_SMALL_NUMBER))
+				{
+					return bUnblocked;
+				}
+				continue;
+			}
+		}
+
+		++Iteration;
 		bUnblocked = false;
 		HandleImpact(Hit, RemainingTime, MoveDelta);
 		if (!IsValid(PawnOwner) || !IsValid(UpdatedComponent) || TryResolveVehicleContact(Hit))
@@ -2243,6 +2277,52 @@ bool UMWVehicleMovementComponent::MoveWithWorldCollision(const FVector& Delta, f
 		MoveDelta = (Velocity + SurfaceVelocity) * RemainingTime;
 	}
 	return false;
+}
+
+bool UMWVehicleMovementComponent::TryMoveOutOfNearVehicleContact(const FHitResult& Hit, const FVector& MoveDelta,
+	FVector& OutEscapeDelta)
+{
+	constexpr double NearContactDistance = 0.02;
+	if (Hit.Distance > NearContactDistance || MoveDelta.IsNearlyZero())
+	{
+		return false;
+	}
+
+	UBoxComponent* OwnBox = Cast<UBoxComponent>(UpdatedPrimitive);
+	const AMWVehiclePawn* OtherPawn = Cast<AMWVehiclePawn>(Hit.GetActor());
+	UBoxComponent* OtherBox = Cast<UBoxComponent>(Hit.GetComponent());
+	if (!IsValid(OwnBox) || !IsValid(OtherPawn) || !IsValid(OtherBox) || OtherPawn == PawnOwner
+		|| OtherBox != OtherPawn->CollisionRoot || OwnBox->GetMoveIgnoreComponents().Contains(OtherBox))
+	{
+		return false;
+	}
+
+	const FVector EscapeDelta = MoveDelta.GetClampedToMaxSize(NearContactDistance);
+	if (FVector::DotProduct(EscapeDelta, Hit.ImpactNormal) <= UE_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	const FVector Start = OwnBox->GetComponentLocation();
+	const FQuat Rotation = OwnBox->GetComponentQuat();
+	FScopedMovementUpdate ScopedMove(OwnBox, EScopedUpdate::DeferredUpdates);
+	FHitResult EscapeHit(1.f);
+
+	// 이 짧은 Sweep에서만 상대 차의 Box를 제외한다. 그 외 장애물은 평소와 같이 검사한다.
+	OwnBox->IgnoreComponentWhenMoving(OtherBox, true);
+	MoveUpdatedComponent(EscapeDelta, Rotation, true, &EscapeHit);
+	OwnBox->IgnoreComponentWhenMoving(OtherBox, false);
+
+	const FVector End = OwnBox->GetComponentLocation();
+	if (EscapeHit.bBlockingHit || !End.Equals(Start + EscapeDelta, UE_KINDA_SMALL_NUMBER)
+		|| IsVehiclePoseBlocked(End, Rotation))
+	{
+		ScopedMove.RevertMove();
+		return false;
+	}
+
+	OutEscapeDelta = End - Start;
+	return true;
 }
 
 bool UMWVehicleMovementComponent::TryResolveVehicleContact(const FHitResult& Hit)

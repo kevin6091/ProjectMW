@@ -72,6 +72,9 @@ protected:
 
 private:
 	friend class AMWVehiclePawn;
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FMWDriveNearVehicleContactTest;
+#endif
 
 	static constexpr ECollisionChannel VehicleGroundChannel = ECC_GameTraceChannel1;
 	static constexpr float MaxImpactYawRate = 150.f;
@@ -227,6 +230,7 @@ private:
 
 	void MoveVehicle(float DeltaTime, TArrayView<const FMWVehicleContactSample> PredictedContacts, FMWVehiclePredictedImpact* OutImpact);
 	bool MoveWithWorldCollision(const FVector& Delta, float DeltaTime, const FVector& SurfaceVelocity);
+	bool TryMoveOutOfNearVehicleContact(const FHitResult& Hit, const FVector& MoveDelta, FVector& OutEscapeDelta);
 
 	bool TryResolveVehicleContact(const FHitResult& Hit);
 

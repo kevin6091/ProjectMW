@@ -488,6 +488,46 @@ bool FMWDriveVehicleContactTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveNearVehicleContactTest, "MW.Vehicle.NearContactEscape",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FMWDriveNearVehicleContactTest::RunTest(const FString& Parameters)
+{
+	MWVehicleTests::FScene Scene;
+	AMWVehiclePawn* Other = Scene.World->SpawnActor<AMWVehiclePawn>(FVector(500, 0, 31), FRotator::ZeroRotator);
+	UBoxComponent* OwnBox = CastChecked<UBoxComponent>(Scene.Vehicle->GetRootComponent());
+	UBoxComponent* OtherBox = CastChecked<UBoxComponent>(Other->GetRootComponent());
+	const FVector Start = OwnBox->GetComponentLocation();
+	const double TouchingDistance = OwnBox->GetScaledBoxExtent().X + OtherBox->GetScaledBoxExtent().X;
+	Other->SetActorLocation(Start + FVector(TouchingDistance + 0.001, 0, 0));
+
+	// 실제 PIE에서 잡힌 형태처럼, 겹침 플래그 없이 시작 위치를 차단하는 접촉을 재현한다.
+	FHitResult Hit(Other, OtherBox, Start, -FVector::ForwardVector);
+	Hit.bBlockingHit = true;
+	Hit.Time = 0.f;
+	Hit.Distance = 0.0001f;
+	FVector EscapeDelta = FVector::ZeroVector;
+	TestFalse(TEXT("An input into the contact cannot use the escape move"),
+		Scene.Movement->TryMoveOutOfNearVehicleContact(Hit, FVector(1, 0, 0), EscapeDelta));
+	TestTrue(TEXT("An input away from the contact can move out"),
+		Scene.Movement->TryMoveOutOfNearVehicleContact(Hit, FVector(-1, 0, 0), EscapeDelta));
+	TestTrue(TEXT("The escape move only uses a small portion of the requested displacement"),
+		EscapeDelta.X < 0.0 && EscapeDelta.Size() < 0.1 && !Scene.Movement->IsVehiclePoseBlocked(
+			OwnBox->GetComponentLocation(), OwnBox->GetComponentQuat()));
+	TestFalse(TEXT("The other vehicle is included in normal sweeps again"),
+		OwnBox->GetMoveIgnoreComponents().Contains(OtherBox));
+
+	// 상대 차량만 제외하는 동안에도 반대쪽 벽에 닿으면 이동을 되돌린다.
+	Scene.Reset(Start);
+	Scene.AddBox(Start - FVector(OwnBox->GetScaledBoxExtent().X + 10.005, 0, 0), FVector(10, 100, 30));
+	TestFalse(TEXT("An escape move cannot bypass a wall"),
+		Scene.Movement->TryMoveOutOfNearVehicleContact(Hit, FVector(-1, 0, 0), EscapeDelta));
+	TestTrue(TEXT("A failed escape leaves the start transform intact"),
+		OwnBox->GetComponentLocation().Equals(Start, UE_KINDA_SMALL_NUMBER));
+	TestFalse(TEXT("A failed escape also restores normal vehicle collision"),
+		OwnBox->GetMoveIgnoreComponents().Contains(OtherBox));
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMWDriveFrameRateTest, "MW.Vehicle.FrameRateAndReset",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FMWDriveFrameRateTest::RunTest(const FString& Parameters)
