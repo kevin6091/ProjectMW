@@ -1,0 +1,179 @@
+[2026.11.26-08.29.35:374][659]LogTemp: Display: MWArrival covered attempt=732576BC4A94BAB8E79DD4B4EB97F396 world=L_Title map=/Game/Levels/L_Dev_Drive t=17411081.320965
+[2026.11.26-08.29.35:728][670]LogTemp: Display: MWArrival covered attempt=13CC054144A26D975ACD6BB0C07F1B10 world=L_Title map=/Game/Levels/L_Dev_Drive t=17411081.675572
+[2026.11.26-08.29.35:731][670]LogTemp: Display: MWArrival covered attempt=309623B545B8A012D2B45DA54919C7B9 world=L_Title map=/Game/Levels/L_Dev_Drive t=17411081.678574
+[2026.11.26-08.29.40:259][721]LogTemp: Display: MWArrival quality fallback attempt=732576BC4A94BAB8E79DD4B4EB97F396 wait=2.04s texture quality /Game/Gameplay/Vehicles/Art/T_Fred_TvehiclefredA7600d6bcebba_4876a47a.T_Fred_TvehiclefredA7600d6bcebba_4876a47a resident=9 installed=12
+[2026.11.26-08.29.40:309][722]LogTemp: Display: MWArrival reveal attempt=732576BC4A94BAB8E79DD4B4EB97F396 world=L_Dev_Drive camera=BP_MWVehiclePawn_FRED_C_0 phase=8 session=0 revision=0 t=17411086.256402
+[2026.11.26-08.29.40:515][726]LogTemp: Display: MWArrival quality fallback attempt=13CC054144A26D975ACD6BB0C07F1B10 wait=2.04s texture quality /Game/Gameplay/Vehicles/Art/T_Doug_TvehicledougA69271b40dd9c_8a104dfc.T_Doug_TvehicledougA69271b40dd9c_8a104dfc resident=10 installed=11
+[2026.11.26-08.29.40:515][727]LogTemp: Display: MWArrival quality fallback attempt=309623B545B8A012D2B45DA54919C7B9 wait=2.04s texture quality /Game/Gameplay/Vehicles/Art/T_Mammoth_TvehiclemammothA327852fb53e4_8cbb4351.T_Mammoth_TvehiclemammothA327852fb53e4_8cbb4351 resident=10 installed=12
+[2026.11.26-08.29.40:566][727]LogTemp: Display: MWArrival reveal attempt=13CC054144A26D975ACD6BB0C07F1B10 world=L_Dev_Drive camera=BP_MWVehiclePawn_DOUG_C_0 phase=8 session=0 revision=0 t=17411086.513586
+[2026.11.26-08.29.40:567][728]LogTemp: Display: MWArrival reveal attempt=309623B545B8A012D2B45DA54919C7B9 world=L_Dev_Drive camera=BP_MWVehiclePawn_MAMMOTH_C_0 phase=8 session=0 revision=0 t=17411086.513785
+[2026.11.26-08.29.42:989][772]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=46470.12, Y=12330.15, Z=8920.00)
+[2026.11.26-08.29.42:989][772]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-08.29.43:014][773]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=46470.12, Y=12330.15, Z=8920.00)
+[2026.11.26-08.29.43:014][773]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-08.29.43:023][773]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=46470.12, Y=12330.15, Z=8920.00)
+[2026.11.26-08.29.43:023][773]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.26-08.29.43:682][777]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-08.29.43:683][777]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-08.29.43:683][777]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.26-08.29.44:526][784]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-08.29.44:526][784]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-08.29.44:527][784]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.26-08.29.45:433][792]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.29.45:434][792]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.29.45:546][793]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.29.50:268][874]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261126-082950
+[2026.11.26-08.29.59:961][ 28]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.29.59:961][ 28]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-08.29.59:997][ 29]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.29.59:997][ 29]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-08.30.00:014][ 29]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.30.00:014][ 29]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.26-08.30.00:578][ 32]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-08.30.00:578][ 32]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-08.30.00:579][ 32]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.26-08.30.01:079][ 36]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-08.30.01:080][ 36]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-08.30.01:081][ 36]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.26-08.30.01:782][ 42]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-08.30.01:782][ 42]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-08.30.01:783][ 42]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.26-08.30.02:476][ 48]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.30.02:477][ 48]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.30.02:478][ 48]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.26-08.30.02:715][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_3 Widget=VerticalMeterExtent Bounds=339.0,490.0,734.3,972.0
+[2026.11.26-08.30.02:715][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_3 Widget=ScoreBar Bounds=339.0,490.0,734.3,972.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_3 Widget=RankLabel Bounds=397.7,336.0,542.7,490.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_3 Widget=TallyVehicleBadge Bounds=355.0,507.0,443.0,595.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_3 Widget=VehiclePortrait Bounds=361.0,513.0,437.0,589.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_4 Widget=VerticalMeterExtent Bounds=762.3,490.0,1157.7,972.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_4 Widget=ScoreBar Bounds=762.3,490.0,1157.7,972.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_4 Widget=RankLabel Bounds=821.0,423.6,966.0,577.6
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_4 Widget=TallyVehicleBadge Bounds=778.3,594.6,866.3,682.6
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_4 Widget=VehiclePortrait Bounds=784.3,600.6,860.3,676.6
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_5 Widget=VerticalMeterExtent Bounds=1185.7,490.0,1581.0,972.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_5 Widget=ScoreBar Bounds=1185.7,490.0,1581.0,972.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_5 Widget=RankLabel Bounds=1244.3,555.1,1389.3,709.1
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_5 Widget=TallyVehicleBadge Bounds=1201.7,726.1,1289.7,814.1
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchScoreColumn_C_5 Widget=VehiclePortrait Bounds=1207.7,732.1,1283.7,808.1
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchResults_C_1 Widget=TallySignFace Bounds=220.0,196.0,1700.0,977.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchResults_C_1 Widget=TallyHeading Bounds=791.5,245.0,1128.5,371.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchResults_C_1 Widget=TallyFit Bounds=220.0,143.0,1700.0,997.0
+[2026.11.26-08.30.02:716][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=1 Owner=WBP_MatchResults_C_1 Widget=TallyStack Bounds=325.0,245.0,1595.0,988.0
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_3 Widget=VerticalMeterExtent Bounds=226.4,326.2,489.7,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_3 Widget=ScoreBar Bounds=226.4,326.2,489.7,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_3 Widget=RankLabel Bounds=265.5,223.7,362.1,326.2
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_3 Widget=TallyVehicleBadge Bounds=237.1,337.6,295.7,396.2
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_3 Widget=VehiclePortrait Bounds=241.1,341.6,291.7,392.2
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_4 Widget=VerticalMeterExtent Bounds=508.4,326.2,771.6,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_4 Widget=ScoreBar Bounds=508.4,326.2,771.6,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_4 Widget=RankLabel Bounds=547.4,282.0,644.0,384.6
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_4 Widget=TallyVehicleBadge Bounds=519.0,395.9,577.6,454.5
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_4 Widget=VehiclePortrait Bounds=523.0,399.9,573.6,450.5
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_5 Widget=VerticalMeterExtent Bounds=790.3,326.2,1053.6,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_5 Widget=ScoreBar Bounds=790.3,326.2,1053.6,647.3
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_5 Widget=RankLabel Bounds=829.4,369.6,925.9,472.2
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_5 Widget=TallyVehicleBadge Bounds=800.9,483.5,859.6,542.1
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchScoreColumn_C_5 Widget=VehiclePortrait Bounds=804.9,487.5,855.6,538.1
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchResults_C_1 Widget=TallySignFace Bounds=147.2,131.4,1132.8,650.6
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchResults_C_1 Widget=TallyHeading Bounds=529.2,164.0,750.8,247.0
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchResults_C_1 Widget=TallyFit Bounds=147.2,96.1,1132.8,663.9
+[2026.11.26-08.30.02:746][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=2 Owner=WBP_MatchResults_C_1 Widget=TallyStack Bounds=217.1,164.0,1062.9,657.9
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_3 Widget=VerticalMeterExtent Bounds=123.1,218.1,299.4,433.0
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_3 Widget=ScoreBar Bounds=123.1,218.1,299.4,433.0
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_3 Widget=RankLabel Bounds=149.3,149.5,213.9,218.1
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_3 Widget=TallyVehicleBadge Bounds=130.3,225.7,169.5,264.9
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_3 Widget=VehiclePortrait Bounds=132.9,228.4,166.8,262.3
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_4 Widget=VerticalMeterExtent Bounds=311.9,218.1,488.1,433.0
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_4 Widget=ScoreBar Bounds=311.9,218.1,488.1,433.0
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_4 Widget=RankLabel Bounds=338.0,188.5,402.7,257.2
+[2026.11.26-08.30.02:779][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_4 Widget=TallyVehicleBadge Bounds=319.0,264.8,358.2,304.0
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_4 Widget=VehiclePortrait Bounds=321.7,267.4,355.6,301.3
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_5 Widget=VerticalMeterExtent Bounds=500.6,218.1,676.9,433.0
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_5 Widget=ScoreBar Bounds=500.6,218.1,676.9,433.0
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_5 Widget=RankLabel Bounds=526.8,247.1,591.4,315.8
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_5 Widget=TallyVehicleBadge Bounds=507.7,323.4,547.0,362.6
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchScoreColumn_C_5 Widget=VehiclePortrait Bounds=510.4,326.1,544.3,359.9
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchResults_C_1 Widget=TallySignFace Bounds=70.1,88.2,729.9,435.2
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchResults_C_1 Widget=TallyHeading Bounds=325.3,110.1,474.7,165.1
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchResults_C_1 Widget=TallyFit Bounds=70.1,64.6,729.9,444.2
+[2026.11.26-08.30.02:780][ 50]LogTemp: Display: MW_RACE_LAYOUT Phase=POSITIONS2 Member=3 Owner=WBP_MatchResults_C_1 Widget=TallyStack Bounds=116.9,110.1,683.1,440.2
+[2026.11.26-08.30.02:976][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=2 Member=1 Rank=1 Total=550 Checkpoints=1 CheckpointScore=100 FinishScore=150
+[2026.11.26-08.30.02:977][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=2 Member=2 Rank=2 Total=450 Checkpoints=1 CheckpointScore=100 FinishScore=300
+[2026.11.26-08.30.02:977][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Epoch=2 Member=3 Rank=3 Total=300 Checkpoints=1 CheckpointScore=100 FinishScore=50
+[2026.11.26-08.30.02:981][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.30.02:986][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=2 Member=1 Rank=1 Total=550 Checkpoints=1 CheckpointScore=100 FinishScore=150
+[2026.11.26-08.30.02:986][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=2 Member=2 Rank=2 Total=450 Checkpoints=1 CheckpointScore=100 FinishScore=300
+[2026.11.26-08.30.02:986][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Epoch=2 Member=3 Rank=3 Total=300 Checkpoints=1 CheckpointScore=100 FinishScore=50
+[2026.11.26-08.30.02:991][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.30.02:998][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=2 Member=1 Rank=1 Total=550 Checkpoints=1 CheckpointScore=100 FinishScore=150
+[2026.11.26-08.30.02:998][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=2 Member=2 Rank=2 Total=450 Checkpoints=1 CheckpointScore=100 FinishScore=300
+[2026.11.26-08.30.02:998][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Epoch=2 Member=3 Rank=3 Total=300 Checkpoints=1 CheckpointScore=100 FinishScore=50
+[2026.11.26-08.30.03:002][ 52]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=61859.98, Y=15621.92, Z=8920.00)
+[2026.11.26-08.30.05:029][ 72]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.26-08.30.05:031][ 72]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.26-08.30.05:031][ 72]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.26-08.30.06:501][ 87]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.26-08.30.06:503][ 87]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.26-08.30.06:504][ 87]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.26-08.30.07:324][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.26-08.30.07:326][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.26-08.30.07:326][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=RankLabel Bounds=338.8,272.0,417.2,346.0
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=PodiumMedal Bounds=287.8,218.8,468.2,399.2
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=VehiclePortrait Bounds=869.9,235.3,998.9,341.6
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=CardBackground Bounds=331.7,276.5,1110.3,341.5
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=RankLabel Bounds=499.7,577.9,564.7,638.9
+[2026.11.26-08.30.07:536][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=PodiumMedal Bounds=458.5,534.6,605.9,682.1
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=VehiclePortrait Bounds=934.3,548.1,1039.8,635.1
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=CardBackground Bounds=494.3,581.8,1130.8,635.0
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=RankLabel Bounds=599.5,816.5,657.9,872.5
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=PodiumMedal Bounds=562.9,778.7,694.5,910.3
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=VehiclePortrait Bounds=987.3,790.7,1081.4,868.3
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=CardBackground Bounds=594.9,820.8,1162.7,868.2
+[2026.11.26-08.30.07:537][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchResults_C_2 Widget=RankLayout Bounds=210.0,82.5,1710.0,997.5
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_0 Widget=RankLabel Bounds=225.9,181.7,278.9,230.7
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_0 Widget=PodiumMedal Bounds=192.3,146.1,312.5,266.2
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_0 Widget=VehiclePortrait Bounds=580.0,157.0,665.9,227.9
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_0 Widget=CardBackground Bounds=221.6,184.5,740.1,227.8
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_1 Widget=RankLabel Bounds=333.6,385.0,376.6,426.0
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_1 Widget=PodiumMedal Bounds=306.0,356.4,404.2,454.6
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_1 Widget=VehiclePortrait Bounds=622.9,365.4,693.1,423.3
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_1 Widget=CardBackground Bounds=329.9,387.8,753.8,423.2
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_2 Widget=RankLabel Bounds=400.1,544.8,438.6,580.8
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_2 Widget=PodiumMedal Bounds=375.6,519.0,463.1,606.6
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_2 Widget=VehiclePortrait Bounds=658.2,527.0,720.9,578.7
+[2026.11.26-08.30.07:570][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchPodiumCard_C_2 Widget=CardBackground Bounds=396.9,547.0,775.0,578.6
+[2026.11.26-08.30.07:571][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=2 Owner=WBP_MatchResults_C_2 Widget=RankLayout Bounds=140.5,55.3,1139.5,664.7
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_0 Widget=RankLabel Bounds=123.4,122.0,157.7,154.0
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_0 Widget=PodiumMedal Bounds=100.3,97.8,180.7,178.2
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_0 Widget=VehiclePortrait Bounds=359.8,105.1,417.4,152.6
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_0 Widget=CardBackground Bounds=119.9,123.5,467.0,152.5
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_1 Widget=RankLabel Bounds=194.9,258.0,223.6,285.0
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_1 Widget=PodiumMedal Bounds=176.4,238.6,242.1,304.4
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_1 Widget=VehiclePortrait Bounds=388.5,244.6,435.6,283.4
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_1 Widget=CardBackground Bounds=192.4,259.6,476.2,283.3
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_2 Widget=RankLabel Bounds=239.6,365.3,265.0,388.3
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_2 Widget=PodiumMedal Bounds=223.0,347.4,281.6,406.1
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_2 Widget=VehiclePortrait Bounds=412.2,352.8,454.1,387.4
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchPodiumCard_C_2 Widget=CardBackground Bounds=237.2,366.2,490.4,387.3
+[2026.11.26-08.30.07:601][ 92]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=3 Owner=WBP_MatchResults_C_2 Widget=RankLayout Bounds=65.6,37.0,734.4,445.0
+[2026.11.26-08.30.24:415][240]LogTemp: Display: MW_RACE_RENDER_END Requested=365 Queued=365 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261126-082950
+{"event": "driven_checkpoint", "timestamp": 633882.671, "wall_time": 1795681792.7462027, "member": 1, "epoch": 2, "piece": 4, "score": 100}
+{"event": "server_recovery_restored", "timestamp": 633886.843, "wall_time": 1795681796.9228296, "member": 1, "checkpoints": 1}
+{"event": "server_recovery_restored", "timestamp": 633888.312, "wall_time": 1795681798.3937151, "member": 2, "checkpoints": 1}
+{"event": "client", "timestamp": 633897.296, "wall_time": 1795681807.3764675, "member": 1, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [1920, 1080], "epoch": 2, "passed": 1, "earned": 100, "finish": 2, "target": 550, "results": [[1, 550, 1, 100, 150, 0], [2, 450, 2, 100, 300, 150], [3, 300, 3, 100, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+{"event": "client", "timestamp": 633897.343, "wall_time": 1795681807.4230828, "member": 2, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [1280, 720], "epoch": 2, "passed": 1, "earned": 100, "finish": 1, "target": 550, "results": [[1, 550, 1, 100, 150, 0], [2, 450, 2, 100, 300, 150], [3, 300, 3, 100, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+{"event": "client", "timestamp": 633897.39, "wall_time": 1795681807.4720182, "member": 3, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "size": [800, 482], "epoch": 2, "passed": 1, "earned": 100, "finish": 3, "target": 550, "results": [[1, 550, 1, 100, 150, 0], [2, 450, 2, 100, 300, 150], [3, 300, 3, 100, 50, 0]], "screen": "<MWMatchResultsScreen.STANDINGS: 5>", "camera": "CameraActor", "text": {"TallyHeading": "점수 집계", "PodiumHeading": "결승 순위"}}
+{"event": "cleanup", "timestamp": 633963.046, "wall_time": 1795681873.1291645, "cycle": 1, "phase": "pre_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 368}
+{"event": "cleanup", "timestamp": 633964.093, "wall_time": 1795681874.175187, "cycle": 1, "phase": "post_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 368}
+[2026.11.26-08.22.16:670][108]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=ClassDefaults
+[2026.11.26-08.22.16:670][108]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=ClassDefaults
+LogEngine: MemReportDeferred: saving to ../../../../../../workspace/UE/ProjectMW/Saved/Profiling/MemReports/L_Title-WindowsEditor-11.26-17.23.11/Pid25576_L_Title-WindowsEditor-26-17.23.11.memreport
+[2026.11.26-08.24.16:022][109]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=ClassDefaults
+[2026.11.26-08.24.16:022][109]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=ClassDefaults
+LogEngine: MemReportDeferred: saving to ../../../../../../workspace/UE/ProjectMW/Saved/Profiling/MemReports/L_Title-WindowsEditor-11.26-17.23.11/Pid25576_L_Title-WindowsEditor-26-17.25.15.memreport
+{"event": "cleanup", "timestamp": 633480.125, "wall_time": 1795681390.212414, "cycle": 1, "phase": "pre_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 369}
+{"event": "cleanup", "timestamp": 633481.203, "wall_time": 1795681391.2799346, "cycle": 1, "phase": "post_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 369}
+{"event": "cleanup", "timestamp": 633604.718, "wall_time": 1795681514.7961316, "cycle": 2, "phase": "pre_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 370}
+{"event": "cleanup", "timestamp": 633605.765, "wall_time": 1795681515.8523638, "cycle": 2, "phase": "post_gc", "cameras": 0, "winner_vehicle": 0, "niagara": 0, "results": 0, "result_rows": 0, "race_hud": 0, "textures": 370}

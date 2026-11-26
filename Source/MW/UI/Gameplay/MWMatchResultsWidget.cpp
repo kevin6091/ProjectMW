@@ -13,15 +13,19 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
+#include "Data/MWVehicleDefinitionData.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Gameplay/Construction/MWTrackConstructionComponent.h"
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
+#include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "System/GameState/MWGameplayGameState.h"
+#include "System/MWAssetManager.h"
 #include "System/MWPlayerState.h"
 #include "TimerManager.h"
 #include "UI/Common/MWParticipantPalette.h"
@@ -112,9 +116,15 @@ void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha,
     TotalScoreLabel->SetRenderOpacity(NameAlpha);
     if (VehiclePortrait)
     {
-        VehiclePortrait->SetRenderOpacity(PortraitAlpha);
+        VehiclePortrait->SetRenderOpacity(bVehiclePortraitSuppressed ? 0.f : PortraitAlpha);
         VehiclePortrait->SetRenderTranslation(PortraitEntryOffset * (1.f - PortraitAlpha));
     }
+}
+
+void UMWMatchResultRowWidget::SetVehiclePortraitSuppressed(bool bSuppressed)
+{
+    bVehiclePortraitSuppressed = bSuppressed;
+    if (bSuppressed && VehiclePortrait) VehiclePortrait->SetRenderOpacity(0.f);
 }
 
 void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
@@ -169,10 +179,10 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
         return false;
     }
 
-    TMap<int32, const AMWPlayerState*> Players;
-    for (const APlayerState* Base : State.PlayerArray)
+    TMap<int32, AMWPlayerState*> Players;
+    for (APlayerState* Base : State.PlayerArray)
     {
-        if (const auto* Player = Cast<AMWPlayerState>(Base))
+        if (auto* Player = Cast<AMWPlayerState>(Base))
         {
             Players.Add(Player->GetLobbyMemberId(), Player);
         }
@@ -210,6 +220,14 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
     if (bFinalResults)
     {
+        if (const auto* Winner = Progress.Results.FindByPredicate([](const FMWPlayerRoundState& Result) { return Result.FinalRank == 1; }))
+        {
+            WinnerPlayer = Players.FindRef(Winner->MemberId);
+            if (const AMWPlayerState* Player = WinnerPlayer.Get(); Player && WinnerVehicleShot.IsValid())
+            {
+                PrepareWinnerVehicleClass(*Player);
+            }
+        }
         // 순위별 슬롯은 WBP가 배치한다. 기존 에셋에서는 하위 카드를 수직 목록에 추가한다.
         UBorder* Hosts[] = {WinnerCardHost.Get(), RunnerUpCardHost.Get(), ThirdPlaceCardHost.Get()};
         UMWMatchResultRowWidget* RankedCards[UE_ARRAY_COUNT(Hosts)] = {};
@@ -363,6 +381,80 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     return true;
 }
 
+void UMWMatchResultsWidget::PrepareWinnerVehicleClass(const AMWPlayerState& Player)
+{
+    const auto& Assets = UMWAssetManager::Get();
+    const auto Id = Player.GetVehicleAssetID();
+    const auto* Definition = Assets.FindLoadedAsset<UMWVehicleDefinitionData>(Id);
+    if (!Definition) Definition = Cast<UMWVehicleDefinitionData>(Assets.FindAssetPath(Id).ResolveObject());
+    if (!Definition) return;
+
+    WinnerVehicleClass = Definition->GetPawnClass();
+    if (WinnerVehicleClass.IsPending())
+    {
+        // 결승 카메라가 보이는 동안 외형을 준비한다. 시상 공개는 파일 I/O를 기다리지 않는다.
+        WinnerVehicleClassLoad = UMWAssetManager::GetStreamableManager().RequestAsyncLoad(WinnerVehicleClass.ToSoftObjectPath());
+    }
+}
+
+float UMWMatchResultsWidget::GetWinnerVehicleLead() const
+{
+    return FMath::Clamp(WinnerVehicleShot.LeadSeconds, 0.f, ShotSeconds);
+}
+
+float UMWMatchResultsWidget::GetPodiumDuration() const
+{
+    const float Reveal = FMath::IsFinite(WinnerSeconds) ? FMath::Max(WinnerSeconds, 0.f) : 0.f;
+    const float Hold = PodiumRevealOrder.Num() > 1 && FMath::IsFinite(FirstPlaceHoldSeconds)
+        ? FMath::Max(FirstPlaceHoldSeconds, 0.f) : 0.f;
+    return Reveal + Hold;
+}
+
+void UMWMatchResultsWidget::UpdateWinnerVehicle(float SequenceElapsed)
+{
+    APlayerController* Controller = GetOwningPlayer();
+    if (!Controller || !FinishCamera || SequenceElapsed < 0.f || PodiumRevealOrder.IsEmpty()) return;
+
+    if (!bWinnerVehicleSpawnAttempted)
+    {
+        const auto* Player = WinnerPlayer.Get();
+        auto* Vehicle = Player ? Player->GetPawn<AMWVehiclePawn>() : nullptr;
+        UClass* VehicleClass = Vehicle ? Vehicle->GetClass() : WinnerVehicleClass.Get();
+        if (!Player || !WinnerVehicleShot.IsValid() || !VehicleClass) return;
+        bWinnerVehicleSpawnAttempted = true;
+
+        FActorSpawnParameters Spawn;
+        Spawn.ObjectFlags = RF_Transient;
+        Spawn.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        auto* Showcase = GetWorld()->SpawnActor<AMWWinnerVehicleShowcase>(Spawn);
+        if (Showcase && Showcase->Initialize(*Controller, Vehicle, VehicleClass))
+        {
+            WinnerShowcase = Showcase;
+            UE_LOG(LogMWMatchResults, Log, TEXT("World=%s WinnerVehicle Member=%d Asset=%s Source=%s"),
+                *GetWorld()->GetOutermost()->GetName(), Player->GetLobbyMemberId(), *Player->GetVehicleAssetID().ToString(),
+                Vehicle ? TEXT("Pawn") : TEXT("ClassDefaults"));
+        }
+        else if (Showcase)
+        {
+            Showcase->Destroy();
+        }
+        if (!WinnerShowcase.IsValid())
+        {
+            UE_LOG(LogMWMatchResults, Warning, TEXT("World=%s WinnerVehicle fallback Member=%d Class=%s"),
+                *GetWorld()->GetOutermost()->GetName(), Player->GetLobbyMemberId(), *GetNameSafe(VehicleClass));
+        }
+    }
+
+    if (AMWWinnerVehicleShowcase* Showcase = WinnerShowcase.Get())
+    {
+        const float Total = GetWinnerVehicleLead() + GetPodiumDuration();
+        if (Showcase->Present(WinnerVehicleShot, FMath::Clamp(SequenceElapsed / Total, 0.f, 1.f)))
+        {
+            PodiumRevealOrder[0]->SetVehiclePortraitSuppressed(true);
+        }
+    }
+}
+
 void UMWMatchResultsWidget::PlayCelebration()
 {
     // 연출 전용이다. 트랙 충돌이나 차량·점수 상태를 건드리지 않는다.
@@ -451,6 +543,7 @@ void UMWMatchResultsWidget::BeginTally()
     }
 
     Screen = EMWMatchResultsScreen::Tally;
+    if (AMWWinnerVehicleShowcase* Showcase = WinnerShowcase.Get()) Showcase->SetActorHiddenInGame(true);
     float RequestedSeconds = 0.f;
     for (const FScoreStage& Stage : ScoreStages) RequestedSeconds += Stage.Duration;
     // 서버 단계가 예약한 종료 시각에 맞추되 항목별 상대 길이와 멈춤은 유지한다.
@@ -474,9 +567,30 @@ void UMWMatchResultsWidget::ShowTallyStage()
 void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTime)
 {
     Super::NativeTick(Geometry, DeltaTime);
+    if (Screen == EMWMatchResultsScreen::FinishShot)
+    {
+        FinishShotElapsed += DeltaTime;
+        // 결과 복제가 빨라 최종 위젯이 집계를 다시 그리면 차량은 판이 내려간 뒤에 출발한다.
+        if (ScoreStages.IsEmpty() || bWinnerLeadAfterTally)
+        {
+            UpdateWinnerVehicle(FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()));
+        }
+        return;
+    }
     if (Screen == EMWMatchResultsScreen::Winner)
     {
         UpdatePodium(DeltaTime);
+        return;
+    }
+    if (Screen == EMWMatchResultsScreen::Standings && WinnerShowcase.IsValid())
+    {
+        FIntPoint Size = FIntPoint::ZeroValue;
+        if (const APlayerController* Controller = GetOwningPlayer()) Controller->GetViewportSize(Size.X, Size.Y);
+        if (Size != SettledViewportSize)
+        {
+            SettledViewportSize = Size;
+            UpdateWinnerVehicle(GetWinnerVehicleLead() + GetPodiumDuration());
+        }
         return;
     }
     if (Screen != EMWMatchResultsScreen::Tally)
@@ -537,11 +651,31 @@ void UMWMatchResultsWidget::EndTally()
         // 확정 라운드 화면을 받지 못한 클라이언트도 집계를 건너뛰지 않고 최종 시상까지 이어 간다.
         if (FMath::IsFinite(RoundPositionsHoldSeconds) && RoundPositionsHoldSeconds > 0.f)
         {
-            GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, RoundPositionsHoldSeconds, false);
+            GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginWinnerLeadAfterTally,
+                RoundPositionsHoldSeconds, false);
             return;
         }
+        BeginWinnerLeadAfterTally();
+        return;
     }
     BeginPodium();
+}
+
+void UMWMatchResultsWidget::BeginWinnerLeadAfterTally()
+{
+    const float Lead = GetWinnerVehicleLead();
+    if (!FinishCamera || !WinnerVehicleShot.IsValid() || Lead <= 0.f)
+    {
+        BeginPodium();
+        return;
+    }
+
+    TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
+    Screen = EMWMatchResultsScreen::FinishShot;
+    bWinnerLeadAfterTally = true;
+    FinishShotElapsed = ShotSeconds - Lead;
+    UpdateWinnerVehicle(0.f);
+    GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, Lead, false);
 }
 
 void UMWMatchResultsWidget::BeginPodium()
@@ -563,10 +697,10 @@ void UMWMatchResultsWidget::BeginPodium()
 void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 {
     const int32 Count = PodiumRevealOrder.Num();
-    const float HoldSeconds = Count > 1 && FMath::IsFinite(FirstPlaceHoldSeconds)
-        ? FMath::Max(FirstPlaceHoldSeconds, 0.f) : 0.f;
-    const float TotalSeconds = WinnerSeconds + HoldSeconds;
+    const float TotalSeconds = GetPodiumDuration();
+    const float HoldSeconds = TotalSeconds - WinnerSeconds;
     RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, TotalSeconds);
+    UpdateWinnerVehicle(GetWinnerVehicleLead() + RevealElapsed);
     const float CardSeconds = WinnerSeconds / Count;
     // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
     for (int32 Index = 0; Index < Count; ++Index)
@@ -604,13 +738,15 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 
 void UMWMatchResultsWidget::ShowStandings()
 {
+    UpdateWinnerVehicle(GetWinnerVehicleLead() + GetPodiumDuration());
     // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)
     {
         Card->SetPodiumEntry(1.f, 1.f, 1.f, 1.f, FVector2D::ZeroVector, FVector2D::ZeroVector);
     }
     Screen = EMWMatchResultsScreen::Standings;
-    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Standings"), *GetWorld()->GetOutermost()->GetName());
+    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Standings WinnerVehicle=%d"),
+        *GetWorld()->GetOutermost()->GetName(), WinnerShowcase.IsValid());
 }
 
 bool UMWMatchResultsWidget::RestoreInput(APlayerController& Controller)
@@ -653,6 +789,14 @@ void UMWMatchResultsWidget::ClearPresentation()
         }
     }
     CelebrationComponents.Reset();
+    if (AMWWinnerVehicleShowcase* Showcase = WinnerShowcase.Get())
+    {
+        Showcase->Destroy();
+    }
+    WinnerShowcase.Reset();
+    if (WinnerVehicleClassLoad && WinnerVehicleClassLoad->IsLoadingInProgress()) WinnerVehicleClassLoad->CancelHandle();
+    WinnerVehicleClassLoad.Reset();
+    WinnerVehicleClass.Reset();
     if (IsValid(FinishCamera))
     {
         if (APlayerController* Controller = GetOwningPlayer(); Controller && Controller->GetViewTarget() == FinishCamera)

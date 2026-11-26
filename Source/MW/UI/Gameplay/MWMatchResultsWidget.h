@@ -3,10 +3,14 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/TimerHandle.h"
 #include "System/MWRoomTypes.h"
+#include "UI/Gameplay/MWWinnerVehicleShowcase.h"
 #include "MWMatchResultsWidget.generated.h"
 
 class ACameraActor;
 class AMWGameplayGameState;
+class AMWPlayerState;
+class AMWVehiclePawn;
+struct FStreamableHandle;
 class UBorder;
 class UHorizontalBox;
 class UImage;
@@ -39,6 +43,7 @@ public:
     void SetResult(const FMWPlayerRoundState& Result, const FText& PlayerName, int32 Rank, UTexture2D* Portrait);
     void SetTallyScore(int32 Score, int32 Target);
     void ShowRank(int32 Rank);
+    void SetVehiclePortraitSuppressed(bool bSuppressed);
     void SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
         const FVector2D& PlateStart, const FVector2D& MedalStart);
 
@@ -69,6 +74,7 @@ private:
     float InitialNameScale = 1.f;
 
     TOptional<int32> ShownScore;
+    bool bVehiclePortraitSuppressed = false;
 };
 
 // 경기 단계는 서버가 소유한다. 이 위젯은 각 창의 점수판과 결승선 연출을 관리한다.
@@ -128,6 +134,9 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot")
     TObjectPtr<UNiagaraSystem> CelebrationSystem;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot")
+    FMWWinnerVehicleShot WinnerVehicleShot;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot")
     TArray<FVector> CelebrationOffsets;
@@ -202,6 +211,13 @@ private:
 
     UPROPERTY(Transient) TObjectPtr<ACameraActor> FinishCamera;
     TWeakObjectPtr<AActor> PreviousViewTarget;
+    TWeakObjectPtr<AMWPlayerState> WinnerPlayer;
+    TWeakObjectPtr<AMWWinnerVehicleShowcase> WinnerShowcase;
+    TSoftClassPtr<AMWVehiclePawn> WinnerVehicleClass;
+    TSharedPtr<FStreamableHandle> WinnerVehicleClassLoad;
+    FIntPoint SettledViewportSize = FIntPoint::ZeroValue;
+    bool bWinnerVehicleSpawnAttempted = false;
+    bool bWinnerLeadAfterTally = false;
     TArray<TWeakObjectPtr<UNiagaraComponent>> CelebrationComponents;
     FTransform FinishFrame;
     FTimerHandle PresentationTimer;
@@ -223,14 +239,20 @@ private:
     int32 CurrentStage = 0;
     float StageElapsed = 0.f;
     float RevealElapsed = 0.f;
+    float FinishShotElapsed = 0.f;
     double RoundEndServerTime = 0.0;
 
     bool BeginFinishShot(const AMWGameplayGameState& State);
+    void PrepareWinnerVehicleClass(const AMWPlayerState& Player);
+    float GetWinnerVehicleLead() const;
+    float GetPodiumDuration() const;
+    void UpdateWinnerVehicle(float SequenceElapsed);
     void PlayCelebration();
     void PrepareTally();
     void BeginTally();
     void ShowTallyStage();
     void EndTally();
+    void BeginWinnerLeadAfterTally();
     void BeginPodium();
     void UpdatePodium(float DeltaTime);
     void ShowStandings();
