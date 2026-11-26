@@ -40,7 +40,7 @@ public:
     void SetTallyScore(int32 Score, int32 Target);
     void ShowRank(int32 Rank);
     void SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
-        const FVector2D& PlateOffset);
+        const FVector2D& PlateStart, const FVector2D& MedalStart);
 
 private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> MemberAccent;
@@ -58,6 +58,9 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "1", ClampMax = "10"))
     int32 ScoreDigits = 1;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
+    float MarkerMinimumFill = 0.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D PortraitEntryOffset = FVector2D::ZeroVector;
@@ -94,6 +97,8 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> PodiumPanel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UVerticalBox> PodiumCards;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> WinnerCardHost;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> RunnerUpCardHost;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> ThirdPlaceCardHost;
     UPROPERTY(Transient) TArray<TObjectPtr<UMWMatchResultRowWidget>> PodiumRevealOrder;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
@@ -178,6 +183,10 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D CardEntryOffset = FVector2D::ZeroVector;
+
+    // 금·은·동 메달의 시작 높이 차이를 뷰포트 높이 비율로 편집한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "-1", ClampMax = "1"))
+    FVector MedalEntryHeightFractions = FVector::ZeroVector;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0", ClampMax = "0.95"))
     float DetailsEntryFraction = 0.35f;

@@ -6,7 +6,9 @@
 #include "UI/Gameplay/MWArrivalScreen.h"
 #include "Components/NativeWidgetHost.h"
 #include "Components/BoxComponent.h"
+#include "Components/Border.h"
 #include "Components/SizeBox.h"
+#include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/SceneComponent.h"
 #include "Data/MWVehicleDefinitionData.h"
@@ -78,6 +80,10 @@ public:
             SelectSign = Panels->GetWidgetFromName(TEXT("SelectSign"));
             BuildSign = Panels->GetWidgetFromName(TEXT("BuildSign"));
             ItemSlot = Cast<USizeBox>(Panels->GetWidgetFromName(TEXT("ItemSlot")));
+            RecoveryPanel = Panels->GetWidgetFromName(TEXT("RecoveryPanel"));
+            RecoveryBadge = Cast<UBorder>(Panels->GetWidgetFromName(TEXT("RecoveryBadge")));
+            RecoveryCountdown = Cast<UTextBlock>(Panels->GetWidgetFromName(TEXT("RecoveryCountdown")));
+            RecoveryFlash = Panels->GetWidgetFromName(TEXT("RecoveryFlash"));
             // WBP가 배치하고, 기존 Slate 모델이 갱신하는 명단 그리드와 아이콘은 호스트에 연결한다.
             auto* RosterHost = Cast<UNativeWidgetHost>(Panels->GetWidgetFromName(TEXT("RosterHost")));
             if (RosterHost) RosterHost->SetContent(SAssignNew(Roster, SGridPanel));
@@ -156,7 +162,8 @@ public:
                 SNew(SOverlay)
                 + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(RecoveryLayout.CountdownInset)
                 [SNew(SHorizontalBox)
-                    .Visibility_Lambda([this] { return GetRecoveringVehicle() ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+                    .Visibility_Lambda([this] { return !HasRecoveryPanel() && GetRecoveringVehicle()
+                        ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
                     + SHorizontalBox::Slot().AutoWidth().Padding(RecoveryLayout.BadgeGap)
                     [SNew(SBorder).BorderImage(&RecoveryBadgeBrush).Padding(RecoveryLayout.BadgePadding)
                         .BorderBackgroundColor_Lambda([this] { return GetPlayerTint(Controller.IsValid() ? Controller->PlayerState : nullptr); })
@@ -203,6 +210,7 @@ public:
         const auto* PC = Controller.Get();
         const auto* GS = PC ? PC->GetWorld()->GetGameState<AMWGameplayGameState>() : nullptr;
         const auto* Vehicle = PC ? PC->GetPawn<AMWVehiclePawn>() : nullptr;
+        RefreshRecoveryPanel();
         const bool bItemPhase = PIEPreview.bItemSlot || (GS && GS->GetRoomPhase() == EMWRoomPhase::Racing);
         const bool bShowItemSlot = bItemPhase && Vehicle && Vehicle->GetItemComponent();
         // 각 패널의 바인딩만 검사한다. 안내판 한 개가 없어도 아이템 슬롯은 기존 동작을 유지한다.
@@ -347,6 +355,33 @@ private:
             ? Vehicle : nullptr;
     }
 
+    bool HasRecoveryPanel() const
+    {
+        return RecoveryPanel.IsValid() && RecoveryBadge.IsValid() && RecoveryCountdown.IsValid();
+    }
+
+    void RefreshRecoveryPanel()
+    {
+        if (!HasRecoveryPanel()) return;
+        const auto* Vehicle = GetRecoveringVehicle();
+        RecoveryPanel->SetVisibility(Vehicle ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        if (Vehicle)
+        {
+            RecoveryBadge->SetBrushColor(GetPlayerTint(Vehicle->GetPlayerState()));
+            RecoveryCountdown->SetText(RecoveryCountdownText());
+        }
+        if (RecoveryFlash.IsValid())
+        {
+            const float Elapsed = Vehicle
+                ? FMath::Max(0.f, RecoveryLayout.RingTravelSeconds - Vehicle->GetCheckpointRecoveryRemaining())
+                : RecoveryLayout.FlashSeconds;
+            const float Alpha = RecoveryLayout.FlashSeconds > UE_SMALL_NUMBER
+                ? 1.f - FMath::Clamp(Elapsed / RecoveryLayout.FlashSeconds, 0.f, 1.f) : 0.f;
+            RecoveryFlash->SetRenderOpacity(Alpha);
+            RecoveryFlash->SetVisibility(Alpha > 0.f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+        }
+    }
+
     FText RecoveryCountdownText() const
     {
         const auto* Vehicle = GetRecoveringVehicle();
@@ -398,8 +433,28 @@ private:
         const float Thickness = FMath::Max(1.f, RecoveryLayout.SlotThickness * Scale);
         FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Ring),
             ESlateDrawEffect::None, Tint, true, Thickness);
-        FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Line),
-            ESlateDrawEffect::None, RecoveryLayout.SlotColor, true, Thickness);
+        const float BreakAlpha = RecoveryLayout.SlotBreakSeconds > UE_SMALL_NUMBER
+            ? 1.f - FMath::Clamp(Remaining / RecoveryLayout.SlotBreakSeconds, 0.f, 1.f) : 0.f;
+        if (BreakAlpha <= 0.f)
+        {
+            FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Line),
+                ESlateDrawEffect::None, RecoveryLayout.SlotColor, true, Thickness);
+            return;
+        }
+        // 투영된 슬롯의 각 변이 중앙에서 떨어지고 짧아지며 사라진다.
+        FLinearColor FragmentTint = RecoveryLayout.SlotColor;
+        FragmentTint.A *= 1.f - BreakAlpha;
+        for (int32 Index = 0; Index < UE_ARRAY_COUNT(Corners); ++Index)
+        {
+            const FVector2f Center = (Line[Index] + Line[Index + 1]) * .5f;
+            const FVector2f Offset = (Center - SlotCenter).GetSafeNormal() *
+                (BreakAlpha * RecoveryLayout.SlotBreakDistance * Scale);
+            TArray<FVector2f> Fragment{
+                FMath::Lerp(Line[Index], Center, BreakAlpha) + Offset,
+                FMath::Lerp(Line[Index + 1], Center, BreakAlpha) + Offset};
+            FSlateDrawElement::MakeLines(DrawElements, Layer, Geometry.ToPaintGeometry(), MoveTemp(Fragment),
+                ESlateDrawEffect::None, FragmentTint, true, Thickness);
+        }
     }
 
     // 크기 설정은 생성 시 한 번 검증한다. 잘못된 입력은 기존 배치로 복구해 NaN·역전된 Clamp를 막는다.
@@ -642,6 +697,10 @@ private:
     TWeakObjectPtr<UWidget> SelectSign;
     TWeakObjectPtr<UWidget> BuildSign;
     TWeakObjectPtr<USizeBox> ItemSlot;
+    TWeakObjectPtr<UWidget> RecoveryPanel;
+    TWeakObjectPtr<UBorder> RecoveryBadge;
+    TWeakObjectPtr<UTextBlock> RecoveryCountdown;
+    TWeakObjectPtr<UWidget> RecoveryFlash;
     float ItemDesignSize = 0.f;
     TAttribute<EMWItemId> HeldItem;
     TAttribute<bool> MatchResultsActive;

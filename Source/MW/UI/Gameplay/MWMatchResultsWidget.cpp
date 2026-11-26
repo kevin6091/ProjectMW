@@ -92,19 +92,20 @@ void UMWMatchResultRowWidget::ShowRank(int32 Rank)
 }
 
 void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
-    const FVector2D& PlateOffset)
+    const FVector2D& PlateStart, const FVector2D& MedalStart)
 {
     // 새 WBP는 메달과 판을 같은 부모의 별도 슬롯에 둔다. 기존 카드는 전체 단위로 진입한다.
     if (PodiumMedal && CardBackground)
     {
         PodiumMedal->SetRenderOpacity(MedalAlpha);
+        PodiumMedal->SetRenderTranslation(MedalStart * (1.f - MedalAlpha));
         CardBackground->SetRenderOpacity(PlateAlpha);
-        CardBackground->SetRenderTranslation(PlateOffset);
+        CardBackground->SetRenderTranslation(PlateStart * (1.f - PlateAlpha));
     }
     else
     {
         SetRenderOpacity(PlateAlpha);
-        SetRenderTranslation(PlateOffset);
+        SetRenderTranslation(PlateStart * (1.f - PlateAlpha));
     }
     NameLabel->SetRenderOpacity(NameAlpha);
     NameLabel->SetRenderScale(FVector2D(FMath::Lerp(InitialNameScale, 1.f, NameAlpha)));
@@ -130,6 +131,8 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
     {
         const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
         ScoreBar->SetPercent(Fraction);
+        // 낮은 점수의 배지가 판 하단을 벗어나지 않도록 WBP가 정한 최소 높이에서 멈춘다.
+        const float MarkerAnchor = 1.f - FMath::Max(Fraction, FMath::Clamp(MarkerMinimumFill, 0.f, 1.f));
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
         for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), static_cast<UWidget*>(RankLabel.Get()),
@@ -138,7 +141,7 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
             if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {
                 FAnchors Anchors = MarkerSlot->GetAnchors();
-                Anchors.Minimum.Y = Anchors.Maximum.Y = 1.f - Fraction;
+                Anchors.Minimum.Y = Anchors.Maximum.Y = MarkerAnchor;
                 MarkerSlot->SetAnchors(Anchors);
             }
         }
@@ -158,7 +161,8 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     bFinalResults = Progress.Phase == EMWRoomPhase::MatchResults;
     if (!Controller || !Controller->IsLocalController() || Controller->GetWorld() != State.GetWorld()
         || !TallyPanel || !TallyColumns || !TallyHeading || !TallyColumnClass
-        || (bFinalResults && (!PodiumPanel || !PodiumCards || !PodiumCardClass))
+        || (bFinalResults && (!PodiumPanel || (!PodiumCards && !(WinnerCardHost && RunnerUpCardHost && ThirdPlaceCardHost))
+            || !PodiumCardClass))
         || (!bFinalResults && Progress.Phase != EMWRoomPhase::RoundResults) || Progress.Results.IsEmpty()
         || Progress.RoundEpoch <= 0 || Progress.ResultsEpoch != Progress.RoundEpoch)
     {
@@ -206,23 +210,32 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
     if (bFinalResults)
     {
-        // 이전 버전의 WBP는 1위 전용 슬롯 없이도 전체 순위를 보여 준다.
-        if (WinnerCardHost) WinnerCardHost->SetVisibility(ESlateVisibility::Collapsed);
+        // 순위별 슬롯은 WBP가 배치한다. 기존 에셋에서는 하위 카드를 수직 목록에 추가한다.
+        UBorder* Hosts[] = {WinnerCardHost.Get(), RunnerUpCardHost.Get(), ThirdPlaceCardHost.Get()};
+        UMWMatchResultRowWidget* RankedCards[UE_ARRAY_COUNT(Hosts)] = {};
+        for (UBorder* Host : Hosts)
+        {
+            if (Host) Host->SetVisibility(ESlateVisibility::Collapsed);
+        }
         for (const FMWPlayerRoundState& Result : Progress.Results)
         {
             if (Result.FinalRank < 1 || Result.FinalRank > 3) continue;
             auto* PodiumCard = CreateEntry(PodiumCardClass, Result);
             if (!PodiumCard) return false;
-            if (WinnerCardHost && Result.FinalRank == 1)
+            if (UBorder* Host = Hosts[Result.FinalRank - 1])
             {
-                WinnerCardHost->SetVisibility(ESlateVisibility::HitTestInvisible);
-                WinnerCardHost->SetContent(PodiumCard);
+                Host->SetVisibility(ESlateVisibility::HitTestInvisible);
+                Host->SetContent(PodiumCard);
             }
             else
             {
                 PodiumCards->AddChildToVerticalBox(PodiumCard);
             }
-            PodiumRevealOrder.Add(PodiumCard);
+            RankedCards[Result.FinalRank - 1] = PodiumCard;
+        }
+        for (UMWMatchResultRowWidget* Card : RankedCards)
+        {
+            if (Card) PodiumRevealOrder.Add(Card);
         }
     }
     for (const FMWPlayerRoundState& Result : Progress.Results)
@@ -566,8 +579,22 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
             return FMath::SmoothStep(CardSeconds * FMath::Clamp(Fraction, 0.f, .95f), CardSeconds, Elapsed);
         };
         const float PlateAlpha = EntryAlpha(PlateEntryFraction);
+        FVector2D EntryStart = CardEntryOffset;
+        FVector2D MedalStart = CardEntryOffset;
+        const FGeometry& CardGeometry = Card->GetCachedGeometry();
+        const FGeometry& ViewGeometry = GetCachedGeometry();
+        if (RunnerUpCardHost && ThirdPlaceCardHost && CardGeometry.GetLocalSize().X > UE_SMALL_NUMBER
+            && ViewGeometry.GetLocalSize().Y > UE_SMALL_NUMBER)
+        {
+            // 카드 로컬 좌표계에서 화면 왼쪽과 카드 폭을 구해 전체 판이 화면 밖에서 시작하게 한다.
+            const FVector2D ViewLeft = CardGeometry.AbsoluteToLocal(ViewGeometry.GetAbsolutePosition());
+            EntryStart.X = FMath::Min(EntryStart.X, ViewLeft.X - CardGeometry.GetLocalSize().X);
+            const FVector2D ViewBottom = CardGeometry.AbsoluteToLocal(ViewGeometry.LocalToAbsolute(
+                FVector2D(0.f, ViewGeometry.GetLocalSize().Y)));
+            MedalStart = FVector2D(EntryStart.X, (ViewBottom.Y - ViewLeft.Y) * MedalEntryHeightFractions[Index]);
+        }
         Card->SetPodiumEntry(EntryAlpha(0.f), PlateAlpha, EntryAlpha(DetailsEntryFraction),
-            EntryAlpha(PortraitEntryFraction), CardEntryOffset * (1.f - PlateAlpha));
+            EntryAlpha(PortraitEntryFraction), EntryStart, MedalStart);
     }
     if (RevealElapsed >= TotalSeconds)
     {
@@ -580,7 +607,7 @@ void UMWMatchResultsWidget::ShowStandings()
     // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)
     {
-        Card->SetPodiumEntry(1.f, 1.f, 1.f, 1.f, FVector2D::ZeroVector);
+        Card->SetPodiumEntry(1.f, 1.f, 1.f, 1.f, FVector2D::ZeroVector, FVector2D::ZeroVector);
     }
     Screen = EMWMatchResultsScreen::Standings;
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=Standings"), *GetWorld()->GetOutermost()->GetName());

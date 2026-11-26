@@ -95,6 +95,15 @@ struct FMWCheckpointRecoveryLayout
     UPROPERTY(EditAnywhere)
     FVector2D RingRadii = FVector2D(42.f, 88.f);
 
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0", Units = "s"))
+    float FlashSeconds = 0.16f;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0", Units = "s"))
+    float SlotBreakSeconds = 0.18f;
+
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
+    float SlotBreakDistance = 28.f;
+
     UPROPERTY(EditAnywhere, meta = (ClampMin = "0"))
     float CountdownCornerRadius = 9.f;
 

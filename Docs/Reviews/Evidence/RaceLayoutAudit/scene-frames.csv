@@ -1,0 +1,29 @@
+scene,event,reference_frame,requested_offset_s,actual_offset_s,host_frame,raw_crc,image
+01-checkpoint,driven visual checker,33829,-1.15,-1.156,33,1f30dfb8,01-checkpoint-0.jpg
+01-checkpoint,driven visual checker,33829,-0.45,-0.432,46,488cb537,01-checkpoint-1.jpg
+01-checkpoint,driven visual checker,33829,0.0,0.0,54,fe39ac30,01-checkpoint-2.jpg
+01-checkpoint,driven visual checker,33829,0.2,0.225,58,72f67d91,01-checkpoint-3.jpg
+01-checkpoint,driven visual checker,33829,0.45,0.421,60,fd7310f4,01-checkpoint-4.jpg
+02-recovery,recovery RPC state,8260,-0.1,-0.096,136,2e9c4f76,02-recovery-0.jpg
+02-recovery,recovery RPC state,8260,0.02,0.005,138,a7302896,02-recovery-1.jpg
+02-recovery,recovery RPC state,8260,0.2,0.202,142,cffe0c86,02-recovery-2.jpg
+02-recovery,recovery RPC state,8260,0.7,0.69,152,ae0231fa,02-recovery-3.jpg
+02-recovery,recovery RPC state,8260,0.88,0.89,156,acea4242,02-recovery-4.jpg
+03-tally,checkpoint award appears,29164,-0.12,-0.148,249,71d2fcc9,03-tally-0.jpg
+03-tally,checkpoint award appears,29164,0.02,0.065,251,5c3e19ff,03-tally-1.jpg
+03-tally,checkpoint award appears,29164,0.18,0.168,252,af7384f8,03-tally-2.jpg
+03-tally,checkpoint award appears,29164,0.4,0.37,254,0662bbeb,03-tally-3.jpg
+03-tally,checkpoint award appears,29164,0.6,0.583,256,99487ac7,03-tally-4.jpg
+04-positions,rank state,29998,-0.12,-0.158,268,5793b756,04-positions-0.jpg
+04-positions,rank state,29998,0.02,0.053,270,8541106e,04-positions-1.jpg
+04-positions,rank state,29998,0.22,0.26,272,464a653c,04-positions-2.jpg
+04-positions,rank state,29998,0.42,0.464,274,614120b7,04-positions-3.jpg
+05-podium,first rank reveal state,30296,-0.18,-0.147,322,159649f4,05-podium-0.jpg
+05-podium,first rank reveal state,30296,0.02,0.117,324,c8a88c67,05-podium-1.jpg
+05-podium,first rank reveal state,30296,0.12,0.117,324,c8a88c67,05-podium-2.jpg
+05-podium,first rank reveal state,30296,0.23,0.212,325,9b34aa48,05-podium-3.jpg
+05-podium,first rank reveal state,30296,0.34,0.303,326,34c6044b,05-podium-4.jpg
+05-podium,first rank reveal state,30296,0.48,0.496,328,a13681e5,05-podium-5.jpg
+05-podium,first rank reveal state,30296,0.71,0.716,330,bc4aeacb,05-podium-6.jpg
+05-podium,first rank reveal state,30296,0.96,0.922,332,fe107710,05-podium-7.jpg
+05-podium,first rank reveal state,30296,1.25,1.281,336,81071148,05-podium-8.jpg
