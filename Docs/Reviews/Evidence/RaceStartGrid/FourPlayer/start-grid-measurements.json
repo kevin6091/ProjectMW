@@ -1,0 +1,779 @@
+{
+  "Snow": {
+    "theme": "(TagName=\"Asset.MapTheme.Environment.Snow\")",
+    "pieces": [
+      "BP_Track_WoodStartCapped_C_0",
+      "BP_Track_WoodStraight_Hole_C_0",
+      "BP_Track_WoodAutoExit_Flat_Left_90_C_0",
+      "BP_Track_WoodBanked_180_Medium_C_0",
+      "BP_Track_WoodElevated_Left_180_Long_C_0",
+      "BP_Track_WoodFinish_C_0"
+    ],
+    "slots": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6002.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6002.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6002.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6002.5
+      ]
+    },
+    "server_wheel_grid": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6098.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6052.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6068.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6062.5
+      ]
+    },
+    "max_pre_green_drift": 0.0,
+    "centers_xy_error": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "after_green_xy_delta": {
+      "1": 1013.575,
+      "2": 931.693,
+      "3": 931.668,
+      "4": 931.714
+    },
+    "stages": {
+      "dark": {
+        "time": 0.2778,
+        "wall_unix": 1795762204.101,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red1": {
+        "time": 1.1988,
+        "wall_unix": 1795762205.003,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red2": {
+        "time": 2.1968,
+        "wall_unix": 1795762223.385,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "green": {
+        "time": 3.3381,
+        "wall_unix": 1795762233.568,
+        "server": "RACING: 9",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          }
+        ]
+      }
+    },
+    "samples": 146
+  },
+  "Toybox": {
+    "theme": "(TagName=\"Asset.MapTheme.Environment.Toybox\")",
+    "pieces": [
+      "BP_Track_WoodStartCapped_C_0",
+      "BP_Track_WoodRight_45_Medium_C_0",
+      "BP_Track_WoodRoundabout_Left_Small_C_0",
+      "BP_Track_WoodRight_60_Medium_C_0",
+      "BP_Track_WoodRight_45_Small_C_0",
+      "BP_Track_WoodFinish_C_0"
+    ],
+    "slots": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6002.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6002.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6002.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6002.5
+      ]
+    },
+    "server_wheel_grid": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6098.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6052.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6068.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6062.5
+      ]
+    },
+    "max_pre_green_drift": 0.0,
+    "centers_xy_error": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "after_green_xy_delta": {
+      "1": 1004.884,
+      "2": 952.504,
+      "3": 952.48,
+      "4": 952.525
+    },
+    "stages": {
+      "waiting": {
+        "time": 0.7151,
+        "wall_unix": 1795762345.633,
+        "server": "PREPARING_RACE: 7",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red1": {
+        "time": 17.2263,
+        "wall_unix": 1795762362.135,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red2": {
+        "time": 18.215,
+        "wall_unix": 1795762369.188,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "green": {
+        "time": 19.2642,
+        "wall_unix": 1795762384.454,
+        "server": "RACING: 9",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          }
+        ]
+      }
+    },
+    "samples": 793
+  },
+  "Tropic": {
+    "theme": "(TagName=\"Asset.MapTheme.Environment.Tropic\")",
+    "pieces": [
+      "BP_Track_WoodStartCapped_C_0",
+      "BP_Track_WoodLift_Button_C_0",
+      "BP_Track_WoodBanked_Right_90_Medium_C_0",
+      "BP_Track_WoodElevated_Left_270_Long_C_0",
+      "BP_Track_WoodLoop_Left_C_0",
+      "BP_Track_WoodFinish_C_0"
+    ],
+    "slots": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6002.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6002.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6002.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6002.5
+      ]
+    },
+    "server_wheel_grid": {
+      "1": [
+        -3314.61,
+        -312.0,
+        6098.5
+      ],
+      "2": [
+        -3314.61,
+        1212.0,
+        6052.5
+      ],
+      "3": [
+        -4364.61,
+        -312.0,
+        6068.5
+      ],
+      "4": [
+        -4364.61,
+        1212.0,
+        6062.5
+      ]
+    },
+    "max_pre_green_drift": 0.0,
+    "centers_xy_error": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "after_green_xy_delta": {
+      "1": 1013.961,
+      "2": 971.212,
+      "3": 971.188,
+      "4": 971.233
+    },
+    "stages": {
+      "dark": {
+        "time": 0.3113,
+        "wall_unix": 1795762473.856,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red1": {
+        "time": 1.1978,
+        "wall_unix": 1795762474.717,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "red2": {
+        "time": 2.183,
+        "wall_unix": 1795762500.461,
+        "server": "COUNTDOWN: 8",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              1.0,
+              1.0,
+              0.0
+            ],
+            "local_driving": false
+          }
+        ]
+      },
+      "green": {
+        "time": 3.3973,
+        "wall_unix": 1795762509.667,
+        "server": "RACING: 9",
+        "states": [
+          {
+            "world": "L_Dev_Drive",
+            "member": 1,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 2,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 3,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          },
+          {
+            "world": "L_Dev_Drive",
+            "member": 4,
+            "lights": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "local_driving": true
+          }
+        ]
+      }
+    },
+    "samples": 130
+  }
+}

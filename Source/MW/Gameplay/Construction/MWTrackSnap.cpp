@@ -41,6 +41,14 @@ bool MWTrackSnap::ReadLocalFrame(const AActor& Track, FName Name, FTransform& Ou
 	return true;
 }
 
+bool MWTrackSnap::ReadStartSlot(const AActor& Track, FName Name, FVector& OutLocation)
+{
+	FTransform Local;
+	if (!ReadLocalFrame(Track, Name, Local)) return false;
+	OutLocation = Track.GetActorTransform().TransformPosition(Local.GetLocation());
+	return true;
+}
+
 bool MWTrackSnap::ReadPort(const AActor& Track, FName Name, FTransform& OutPort)
 {
 	if (!ReadLocalFrame(Track, Name, OutPort))

@@ -281,9 +281,13 @@ bool AMWGameplayPlayerController::IsLocalRaceReady() const
 {
 	const UWorld* World = GetWorld();
 	const auto* GS = World ? World->GetGameState<AMWGameplayGameState>() : nullptr;
+	const auto* App = GetGameInstance();
+	const auto* Arrival = App ? App->GetSubsystem<UMWArrivalScreen>() : nullptr;
 	const auto* PS = GetPlayerState<AMWPlayerState>();
 	const auto* Vehicle = Cast<AMWVehiclePawn>(GetPawn());
+	// 가림막 뒤에서 차량이 준비돼도 모든 참가자가 출발 신호를 볼 수 있어야 한다.
 	if (!IsLocalController() || !HasActorBegunPlay() || !World || !World->AreActorsInitialized()
+		|| (Arrival && Arrival->IsCovered())
 		|| World->IsVisibilityRequestPending() || !GS || !PS || PS->IsInactive() || !PS->IsOwnedBy(this)
 		|| !GS->PlayerArray.Contains(PS) || !IsValid(Vehicle) || Vehicle->GetController() != this
 		|| Vehicle->GetPlayerState() != PS || GetViewTarget() != Vehicle || !IsDrivingInputReady())

@@ -1,0 +1,15 @@
+[2026.11.27-02.03.58:404][  2]LogPython: MW_RACE_START_QA_ARMED
+[2026.11.27-02.04.32:205][936]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.27-02.04.32:311][937]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.27-02.04.32:409][938]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+[2026.11.27-02.04.35:145][983]LogTemp: Display: MWArrival reveal attempt=30F05858413D57F9E4823281F9AD12B8 world=L_Dev_Drive camera=BP_MWVehiclePawn_FRED_C_0 phase=7 session=0 revision=0 t=17474369.472238
+[2026.11.27-02.04.35:147][984]LogMWServer: [MWRaceReady] Member=1 Epoch=1 Course=1 Revision=5 Ready=1/3
+[2026.11.27-02.04.35:296][985]LogTemp: Display: MWArrival reveal attempt=4956D5274798CE60F7EC7387ABBF7FC2 world=L_Dev_Drive camera=BP_MWVehiclePawn_DOUG_C_0 phase=7 session=0 revision=0 t=17474369.623475
+[2026.11.27-02.04.35:362][987]LogMWServer: [MWRaceReady] Member=2 Epoch=1 Course=1 Revision=5 Ready=2/3
+[2026.11.27-02.04.35:428][987]LogTemp: Display: MWArrival reveal attempt=0E2D787E4C556552D135FB8E0B07AA0B world=L_Dev_Drive camera=BP_MWVehiclePawn_MAMMOTH_C_0 phase=7 session=0 revision=0 t=17474369.755882
+[2026.11.27-02.04.35:496][989]LogMWServer: [MWRaceReady] Member=3 Epoch=1 Course=1 Revision=5 Ready=3/3
+[2026.11.27-02.04.35:523][989]LogPython: MW_RACE_START_QA_DARK 2.62
+[2026.11.27-02.04.36:472][  5]LogPython: MW_RACE_START_QA_RED1 3.57
+[2026.11.27-02.04.37:471][ 22]LogPython: MW_RACE_START_QA_RED2 4.5713
+[2026.11.27-02.04.38:602][ 40]LogPython: MW_RACE_START_QA_GREEN 5.7025
+[2026.11.27-02.04.40:771][ 72]LogPython: MW_RACE_START_QA_COMPLETE ['dark', 'done', 'green', 'red1', 'red2', 'started']

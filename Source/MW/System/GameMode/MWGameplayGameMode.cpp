@@ -1054,11 +1054,13 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 	{
 		return;
 	}
+	const AActor* CourseStart = nullptr;
 	if (GS->GetProgress().CourseSessionId > 0)
 	{
 		const auto& Tracks = GS->GetConstructionComponent()->GetPlacementSession().PlacedTracks;
+		CourseStart = Tracks.IsEmpty() ? nullptr : Tracks[0].Actor.Get();
 		AActor* FinishTrack = Tracks.IsEmpty() ? nullptr : Tracks.Last().Actor.Get();
-		if (!IsValid(FinishTrack) || !GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->PrepareCourseFinish(*FinishTrack, FinishTriggerHalfExtent))
+		if (!IsValid(CourseStart) || !IsValid(FinishTrack) || !GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->PrepareCourseFinish(*FinishTrack, FinishTriggerHalfExtent))
 		{
 			FailGameplay(TEXT("현재 코스의 종료 트랙에 결승 영역을 준비하지 못했습니다."));
 			return;
@@ -1067,7 +1069,7 @@ void AMWGameplayGameMode::PrepareRace(const TArray<AMWGameplayPlayerController*>
 
 	TArray<APlayerStart*> PlayerStarts;
 	
-	if (!StartManager.IsValid() || !StartManager->PreparePlayerStarts(Players.Num(), PlayerStarts))
+	if (!StartManager.IsValid() || !StartManager->PreparePlayerStarts(Players.Num(), CourseStart, PlayerStarts))
 	{
 		FailGameplay(FString::Printf(TEXT("참가자 %d명의 출발 위치를 준비하지 못했습니다."), Players.Num()));
 		return;

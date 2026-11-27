@@ -378,6 +378,12 @@ private:
 	void SmoothDrivePresentation(float DeltaTime);
 	FTransform GetLocalDrivePresentation() const;
 	void ResetDrivePresentation();
+
+	// 출발 시점에서 평상시 추적 카메라로 돌아오는 로컬 표시 가중치다.
+	float StartCameraBlend = 0.f;
+	TWeakObjectPtr<AActor> StartCameraTrack;
+	FTransform StartCameraFrame;
+	void UpdateStartCamera(float DeltaTime, FMinimalViewInfo& View);
 	double GetDriveServerTime() const;
 	double GetDrivePredictionTime() const;
 

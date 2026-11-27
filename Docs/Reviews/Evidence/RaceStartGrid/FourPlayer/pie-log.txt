@@ -1,0 +1,82 @@
+--- Snow / session 1 ---
+[2026.11.27-06.48.39:890][884]LogPython: MW_GRID_QA_STATE players=4 phase=TRACK_PLACEMENT: 5
+[2026.11.27-06.48.42:059][961]LogTemp: Display: MWArrival reveal attempt=589DFBCE40085D5B502E8FBF5BCD51B1 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491416.385865
+[2026.11.27-06.48.42:135][964]LogTemp: Display: MWArrival reveal attempt=91F5E9EC4801441887170194B1BB4755 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491416.463417
+[2026.11.27-06.48.42:136][964]LogTemp: Display: MWArrival reveal attempt=02C5A1B741A195BBED07CD8A8366F66F world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491416.463718
+[2026.11.27-06.48.42:136][965]LogTemp: Display: MWArrival reveal attempt=4EC4A1364E48BEB95F59509157929505 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491416.463909
+[2026.11.27-06.49.22:176][554]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.27-06.49.46:113][531]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.27-06.49.54:499][870]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.27-06.50.03:792][256]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.27-06.50.03:793][256]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.27-06.50.03:795][256]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+[2026.11.27-06.50.03:797][256]LogMWServer: [MWRace] 차량 소유 확인. Member=4 Slot=4 Start=PlayerStart_3 Pawn=BP_MWVehiclePawn_Smiet_C_0
+[2026.11.27-06.50.03:820][256]LogMWServer: [MWTrackPlacement] Placed piece=5 member=4 target=4/1 source=0
+[2026.11.27-06.50.03:822][256]LogMWServer: [MWRaceReady] Member=1 Epoch=1 Course=1 Revision=6 Ready=1/4
+[2026.11.27-06.50.03:950][256]LogPython: MW_GRID_QA_STATE players=4 phase=PREPARING_RACE: 7
+[2026.11.27-06.50.04:062][258]LogMWServer: [MWRaceReady] Member=2 Epoch=1 Course=1 Revision=6 Ready=2/4
+[2026.11.27-06.50.04:062][258]LogMWServer: [MWRaceReady] Member=3 Epoch=1 Course=1 Revision=6 Ready=3/4
+[2026.11.27-06.50.04:062][258]LogMWServer: [MWRaceReady] Member=4 Epoch=1 Course=1 Revision=6 Ready=4/4
+[2026.11.27-06.50.04:098][258]LogPython: MW_GRID_QA_STATE players=4 phase=COUNTDOWN: 8
+[2026.11.27-06.50.04:102][258]LogPython: MW_GRID_QA_SIGNAL session=1 theme=(TagName="Asset.MapTheme.Environment.Snow") stage=dark t=0.2778
+[2026.11.27-06.50.05:004][290]LogPython: MW_GRID_QA_SIGNAL session=1 theme=(TagName="Asset.MapTheme.Environment.Snow") stage=red1 t=1.1988
+[2026.11.27-06.50.23:385][933]LogPython: MW_GRID_QA_SIGNAL session=1 theme=(TagName="Asset.MapTheme.Environment.Snow") stage=red2 t=2.1968
+[2026.11.27-06.50.33:522][275]LogPython: MW_GRID_QA_STATE players=4 phase=RACING: 9
+[2026.11.27-06.50.33:569][276]LogPython: MW_GRID_QA_SIGNAL session=1 theme=(TagName="Asset.MapTheme.Environment.Snow") stage=green t=3.3381
+[2026.11.27-06.50.42:926][576]LogPython: MW_GRID_QA_FINISHED session=1 theme=(TagName="Asset.MapTheme.Environment.Snow") stages=['dark', 'green', 'red1', 'red2'] frames=146
+
+--- Toybox / session 2 ---
+[2026.11.27-06.51.18:418][919]LogPython: MW_GRID_QA_STATE players=4 phase=TRACK_PLACEMENT: 5
+[2026.11.27-06.51.20:316][980]LogTemp: Display: MWArrival reveal attempt=66AA872E4D1AD973325C91B31EBE8D1D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491574.644062
+[2026.11.27-06.51.20:706][994]LogTemp: Display: MWArrival reveal attempt=17BBE09A4BBE73899D2DAF9DAB97F512 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491575.032938
+[2026.11.27-06.51.20:706][994]LogTemp: Display: MWArrival reveal attempt=DB952D524FE2B267189E3EAF26177AF4 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491575.033251
+[2026.11.27-06.51.20:706][995]LogTemp: Display: MWArrival reveal attempt=8B79AC2D4D97B98A96F9B297B8469656 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491575.033476
+[2026.11.27-06.51.47:350][ 14]LogMWServer: [MWTrackPlacement] Placed piece=2 member=4 target=1/0 source=0
+[2026.11.27-06.51.47:386][ 14]LogTemp: Display: MW_GRID_QA_REARM world=/Game/Levels/UEDPIE_3_L_Dev_Drive t=17491601.714027
+[2026.11.27-06.51.55:979][357]LogMWServer: [MWTrackPlacement] Placed piece=3 member=1 target=2/1 source=0
+[2026.11.27-06.52.03:856][659]LogMWServer: [MWTrackPlacement] Placed piece=4 member=2 target=3/1 source=0
+[2026.11.27-06.52.24:895][551]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.27-06.52.24:897][551]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.27-06.52.24:899][551]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+[2026.11.27-06.52.24:901][551]LogMWServer: [MWRace] 차량 소유 확인. Member=4 Slot=4 Start=PlayerStart_3 Pawn=BP_MWVehiclePawn_Smiet_C_0
+[2026.11.27-06.52.24:907][551]LogMWServer: [MWTrackPlacement] Placed piece=5 member=3 target=4/1 source=0
+[2026.11.27-06.52.24:909][551]LogMWServer: [MWRaceReady] Member=1 Epoch=1 Course=1 Revision=6 Ready=1/4
+[2026.11.27-06.52.25:024][551]LogPython: MW_GRID_QA_STATE players=4 phase=PREPARING_RACE: 7
+[2026.11.27-06.52.25:170][553]LogMWServer: [MWRaceReady] Member=2 Epoch=1 Course=1 Revision=6 Ready=2/4
+[2026.11.27-06.52.25:170][553]LogMWServer: [MWRaceReady] Member=3 Epoch=1 Course=1 Revision=6 Ready=3/4
+[2026.11.27-06.52.39:053][ 82]LogTemp: Display: MW_GRID_QA_RELEASE world=/Game/Levels/UEDPIE_3_L_Dev_Drive t=17491653.380604
+[2026.11.27-06.52.41:089][166]LogTemp: Display: MWArrival reveal attempt=D9C4DB534D1DDA0E9BE4868C9BB7CD5C world=L_Dev_Drive camera=BP_MWVehiclePawn_Smiet_C_0 phase=7 session=0 revision=0 t=17491655.416058
+[2026.11.27-06.52.41:112][168]LogMWServer: [MWRaceReady] Member=4 Epoch=1 Course=1 Revision=6 Ready=4/4
+[2026.11.27-06.52.41:135][168]LogPython: MW_GRID_QA_STATE players=4 phase=COUNTDOWN: 8
+[2026.11.27-06.52.42:135][211]LogPython: MW_GRID_QA_SIGNAL session=2 theme=(TagName="Asset.MapTheme.Environment.Toybox") stage=red1 t=17.2263
+[2026.11.27-06.52.49:189][493]LogPython: MW_GRID_QA_SIGNAL session=2 theme=(TagName="Asset.MapTheme.Environment.Toybox") stage=red2 t=18.215
+[2026.11.27-06.53.04:424][ 85]LogPython: MW_GRID_QA_STATE players=4 phase=RACING: 9
+[2026.11.27-06.53.04:456][ 86]LogPython: MW_GRID_QA_SIGNAL session=2 theme=(TagName="Asset.MapTheme.Environment.Toybox") stage=green t=19.2642
+[2026.11.27-06.53.15:994][539]LogPython: MW_GRID_QA_FINISHED session=2 theme=(TagName="Asset.MapTheme.Environment.Toybox") stages=['green', 'red1', 'red2', 'waiting'] frames=793
+
+--- Tropic / session 3 ---
+[2026.11.27-06.53.53:464][209]LogPython: MW_GRID_QA_STATE players=4 phase=TRACK_PLACEMENT: 5
+[2026.11.27-06.53.53:614][210]LogTemp: Display: MWArrival reveal attempt=9D7C914E4618B8DF7176D09CE67B242B world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491727.941602
+[2026.11.27-06.53.53:777][213]LogTemp: Display: MWArrival reveal attempt=658F1661402D2C89583177936714C87D world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491728.104393
+[2026.11.27-06.53.53:777][213]LogTemp: Display: MWArrival reveal attempt=F6F5370B47B4C26AA6C0BCB141415190 world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491728.104594
+[2026.11.27-06.53.53:777][213]LogTemp: Display: MWArrival reveal attempt=EACE295641AC1255A8D9ACB39C308B6C world=L_Dev_Drive camera=MWTrackSelectionBoard_0 phase=5 session=1 revision=1 t=17491728.104759
+[2026.11.27-06.54.07:252][728]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.27-06.54.15:226][ 30]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.27-06.54.24:143][369]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=1
+[2026.11.27-06.54.33:502][739]LogMWServer: [MWRace] 차량 소유 확인. Member=1 Slot=1 Start=PlayerStart_0 Pawn=BP_MWVehiclePawn_FRED_C_0
+[2026.11.27-06.54.33:504][739]LogMWServer: [MWRace] 차량 소유 확인. Member=2 Slot=2 Start=PlayerStart_1 Pawn=BP_MWVehiclePawn_DOUG_C_0
+[2026.11.27-06.54.33:506][739]LogMWServer: [MWRace] 차량 소유 확인. Member=3 Slot=3 Start=PlayerStart_2 Pawn=BP_MWVehiclePawn_MAMMOTH_C_0
+[2026.11.27-06.54.33:508][739]LogMWServer: [MWRace] 차량 소유 확인. Member=4 Slot=4 Start=PlayerStart_3 Pawn=BP_MWVehiclePawn_Smiet_C_0
+[2026.11.27-06.54.33:515][739]LogMWServer: [MWTrackPlacement] Placed piece=5 member=4 target=4/0 source=1
+[2026.11.27-06.54.33:517][739]LogMWServer: [MWRaceReady] Member=1 Epoch=1 Course=1 Revision=6 Ready=1/4
+[2026.11.27-06.54.33:656][739]LogPython: MW_GRID_QA_STATE players=4 phase=PREPARING_RACE: 7
+[2026.11.27-06.54.33:807][741]LogMWServer: [MWRaceReady] Member=2 Epoch=1 Course=1 Revision=6 Ready=2/4
+[2026.11.27-06.54.33:807][741]LogMWServer: [MWRaceReady] Member=3 Epoch=1 Course=1 Revision=6 Ready=3/4
+[2026.11.27-06.54.33:807][741]LogMWServer: [MWRaceReady] Member=4 Epoch=1 Course=1 Revision=6 Ready=4/4
+[2026.11.27-06.54.33:851][741]LogPython: MW_GRID_QA_STATE players=4 phase=COUNTDOWN: 8
+[2026.11.27-06.54.33:856][741]LogPython: MW_GRID_QA_SIGNAL session=3 theme=(TagName="Asset.MapTheme.Environment.Tropic") stage=dark t=0.3113
+[2026.11.27-06.54.34:717][769]LogPython: MW_GRID_QA_SIGNAL session=3 theme=(TagName="Asset.MapTheme.Environment.Tropic") stage=red1 t=1.1978
+[2026.11.27-06.55.00:463][631]LogPython: MW_GRID_QA_SIGNAL session=3 theme=(TagName="Asset.MapTheme.Environment.Tropic") stage=red2 t=2.183
+[2026.11.27-06.55.09:613][869]LogPython: MW_GRID_QA_STATE players=4 phase=RACING: 9
+[2026.11.27-06.55.09:668][870]LogPython: MW_GRID_QA_SIGNAL session=3 theme=(TagName="Asset.MapTheme.Environment.Tropic") stage=green t=3.3973
+[2026.11.27-06.55.16:486][ 47]LogPython: MW_GRID_QA_FINISHED session=3 theme=(TagName="Asset.MapTheme.Environment.Tropic") stages=['dark', 'green', 'red1', 'red2'] frames=130

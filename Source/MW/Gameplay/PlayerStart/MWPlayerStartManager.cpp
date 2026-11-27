@@ -4,6 +4,8 @@
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
+#include "Gameplay/Construction/MWTrackSnap.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "LogChannel.h"
 
 AMWPlayerStartManager::AMWPlayerStartManager()
@@ -23,7 +25,7 @@ AMWPlayerStartManager::AMWPlayerStartManager()
 	RearRight  = CreateSlot(TEXT("RearRight"));
 }
 
-bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, TArray<APlayerStart*>& OutStarts)
+bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, const AActor* CourseStart, TArray<APlayerStart*>& OutStarts)
 {
 	OutStarts.Reset();
 	UWorld* World = GetWorld();
@@ -32,6 +34,39 @@ bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, TArray<APlaye
 	if (!World || GetNetMode() == NM_Client || PlayerCount < 1 || PlayerCount > SlotCount)
 	{
 		return false;
+	}
+
+	FTransform StartFrame;
+	const TArray<FName>& Markers = GetDefault<UMWTrackRuntimeSettings>()->StartSlotMarkers;
+	if (CourseStart)
+	{
+		FTransform LocalGrid;
+		if (Markers.Num() < PlayerCount || !MWTrackSnap::ReadStartGrid(*CourseStart, LocalGrid))
+		{
+			UE_LOG(LogMWServer, Error, TEXT("[MWRace] 시작 트랙의 그리드 또는 출발 표식 설정이 없습니다."));
+			return false;
+		}
+		StartFrame = LocalGrid * CourseStart->GetActorTransform();
+	}
+
+	TArray<FTransform, TInlineAllocator<4>> StartTransforms;
+	for (int32 Index = 0; Index < PlayerCount; ++Index)
+	{
+		const UArrowComponent* Slot = Slots[Index];
+		if (!CourseStart)
+		{
+			StartTransforms.Add(Slot->GetComponentTransform());
+			continue;
+		}
+		FVector Position;
+		if (!MWTrackSnap::ReadStartSlot(*CourseStart, Markers[Index], Position))
+		{
+			UE_LOG(LogMWServer, Error, TEXT("[MWRace] 시작 트랙에 출발 표식 %s가 없습니다."), *Markers[Index].ToString());
+			return false;
+		}
+		// 바닥 표식에 테마에서 편집한 차량 시작 높이만 더한다.
+		Position += StartFrame.GetUnitAxis(EAxis::Z) * Slot->GetRelativeLocation().Z;
+		StartTransforms.Emplace(StartFrame.GetRotation(), Position);
 	}
 
 	SpawnedStarts.SetNum(SlotCount);
@@ -45,16 +80,17 @@ bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, TArray<APlaye
 	for (int32 Index = 0; Index < PlayerCount; ++Index)
 	{
 		APlayerStart* Start = SpawnedStarts[Index];
+		const FTransform& Transform = StartTransforms[Index];
+		USceneComponent* Anchor = CourseStart ? GetRootComponent() : Slots[Index];
 		if (!IsValid(Start))
 		{
-			UArrowComponent* Slot = Slots[Index];
-			Start = World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), Slot->GetComponentLocation(), Slot->GetComponentRotation(), Params);
+			Start = World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), Transform.GetLocation(), Transform.Rotator(), Params);
 			if (IsValid(Start))
 			{
 				NewStarts.Add(Start);
 				// 기본 PlayerStart 루트는 Static이므로 이동 가능한 슬롯에 부착하기 전에 바꿉니다.
 				Start->GetRootComponent()->SetMobility(EComponentMobility::Movable);
-				if (!Start->AttachToComponent(Slot, FAttachmentTransformRules::KeepWorldTransform))
+				if (!Start->AttachToComponent(Anchor, FAttachmentTransformRules::KeepWorldTransform))
 				{
 					Start = nullptr;
 				}
@@ -67,9 +103,13 @@ bool AMWPlayerStartManager::PreparePlayerStarts(int32 PlayerCount, TArray<APlaye
 					NewStart->Destroy();
 				}
 				OutStarts.Reset();
-				UE_LOG(LogMWServer, Error, TEXT("[MWRace] 출발 슬롯 %s 준비 실패."), *GetNameSafe(Slot));
+				UE_LOG(LogMWServer, Error, TEXT("[MWRace] 출발 슬롯 %s 준비 실패."), *GetNameSafe(Anchor));
 				return false;
 			}
+		}
+		else
+		{
+			Start->SetActorLocationAndRotation(Transform.GetLocation(), Transform.GetRotation());
 		}
 		OutStarts.Add(Start);
 	}
