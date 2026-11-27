@@ -238,8 +238,57 @@ void AMWVehiclePawn::Tick(float DeltaSeconds)
     // main의 차체 완충을 먼저 계산한 뒤 바퀴·자국 표시를 갱신한다.
     UpdateGroundVisual(DeltaSeconds);
     UpdateWheelVisuals(DeltaSeconds);
+    UpdateCheckpointBlink();
     UpdateExhaustEffect();
     UpdateEngineAudio(DeltaSeconds);
+}
+
+void AMWVehiclePawn::CacheCheckpointBlinkMeshes()
+{
+	TArray<USceneComponent*> Parts;
+	DrivePresentation->GetChildrenComponents(true, Parts);
+	for (USceneComponent* Part : Parts)
+	{
+		if (auto* Mesh = Cast<UMeshComponent>(Part); Mesh && Mesh->GetOwner() == this && !Mesh->IsCollisionEnabled())
+		{
+			CheckpointBlinkMeshes.Add(Mesh);
+		}
+	}
+}
+
+void AMWVehiclePawn::UpdateCheckpointBlink()
+{
+	if (CheckpointBlinkMeshes.IsEmpty()) return;
+
+	bool bHide = false;
+	// 복귀 위치의 스냅샷부터 재생한다. 늦게 수신한 창도 같은 서버 시각으로 점멸을 끝낸다.
+	if (CheckpointBlinkStartedAt >= 0.0 && ServerDriveSnapshot.ServerTimeSeconds >= CheckpointBlinkStartedAt
+		&& CheckpointBlinkInterval > 0.f && !bFinishCollisionDisabled)
+	{
+		const double Elapsed = FMath::Max(0.0, GetDriveServerTime() - CheckpointBlinkStartedAt);
+		bHide = Elapsed < CheckpointBlinkSeconds && (FMath::FloorToInt(Elapsed / CheckpointBlinkInterval) % 2 == 0);
+	}
+	if (bHide == bCheckpointBlinkHidden) return;
+	bCheckpointBlinkHidden = bHide;
+
+	if (bHide)
+	{
+		// 기존에 숨겨 둔 부품은 기록하지 않는다. 카메라와 충돌 계층은 건드리지 않는다.
+		for (const auto& Part : CheckpointBlinkMeshes)
+		{
+			if (UMeshComponent* Mesh = Part.Get(); Mesh && Mesh->GetVisibleFlag())
+			{
+				Mesh->SetVisibility(false);
+				HiddenCheckpointBlinkMeshes.Add(Part);
+			}
+		}
+		return;
+	}
+	for (const auto& Part : HiddenCheckpointBlinkMeshes)
+	{
+		if (UMeshComponent* Mesh = Part.Get()) Mesh->SetVisibility(true);
+	}
+	HiddenCheckpointBlinkMeshes.Reset();
 }
 
 // 캐시한 시각 바퀴의 회전·조향만 갱신한다. 실제 이동 입력과 서버 스냅샷을 덮어쓰지 않는다.
@@ -537,6 +586,7 @@ void AMWVehiclePawn::PrepareForRaceFromServer()
 	VehicleMovement->StopMovementImmediately();
 	// GameMode가 출발 위치를 적용한 뒤 호출한다. Waiting 복제만으로는 충돌을 복원하지 않는다.
 	SetFinishCollisionDisabled(false);
+	CheckpointBlinkStartedAt = -1.0;
 	RefreshDrivePermission();
 	// 이미 정지 중이어도 새 Epoch를 포함한 시작 위치를 반드시 공개한다.
 	ResetDriveStream();
@@ -616,6 +666,7 @@ void AMWVehiclePawn::TeleportSucceeded(bool bIsATest)
 		if (bRespawningAtCheckpoint)
 		{
 			VehicleMovement->StopMovementImmediately();
+			CheckpointBlinkStartedAt = GetDriveServerTime();
 		}
 
 		ItemComponent->ResetItemState();
@@ -665,6 +716,7 @@ void AMWVehiclePawn::BeginPlay()
 			CameraBoom->AttachToComponent(DrivePresentation, FAttachmentTransformRules::KeepWorldTransform);
 		}
 		CameraBoom->AddTickPrerequisiteComponent(PresentationTick);
+		CacheCheckpointBlinkMeshes();
 	}
 	ResetDrivePresentation();
 
