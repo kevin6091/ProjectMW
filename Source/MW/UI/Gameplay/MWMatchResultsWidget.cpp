@@ -1,5 +1,6 @@
 #include "UI/Gameplay/MWMatchResultsWidget.h"
 
+#include "Algo/Count.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -47,6 +48,16 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
         FLinearColor Fill = FMath::Lerp(Color, FLinearColor::White, TallyFillWhiteMix) * TallyFillExposure;
         Fill.A = Color.A;
         ScoreBar->SetFillColorAndOpacity(Fill);
+    }
+    if (TallyFillOutline && FMath::IsFinite(TallyOutlineParticipantMix) && TallyOutlineParticipantMix > 0.f)
+    {
+        // 브러시의 도장색과 알파는 WBP에서 가져오고 참가자색은 테두리에 한 번만 반영한다.
+        FSlateBrush Brush = TallyFillOutline->GetBrush();
+        const FLinearColor Base = Brush.OutlineSettings.Color.GetSpecifiedColor();
+        FLinearColor Outline = FMath::Lerp(Base, Color, FMath::Clamp(TallyOutlineParticipantMix, 0.f, 1.f));
+        Outline.A = Base.A;
+        Brush.OutlineSettings.Color = FSlateColor(Outline);
+        TallyFillOutline->SetBrush(Brush);
     }
     if (RankLabel)
     {
@@ -313,7 +324,7 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
     else
     {
-        BeginTally();
+        BeginTally(State);
     }
     RestoreInput(*Controller);
     return true;
@@ -620,16 +631,30 @@ void UMWMatchResultsWidget::PrepareTally()
     }
 }
 
-void UMWMatchResultsWidget::BeginTally()
+void UMWMatchResultsWidget::BeginTally(const AMWGameplayGameState& State)
 {
-    float TimeBudget = MaxTallySeconds;
+    TallyPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+    const bool bExtendedFinal = FMath::IsFinite(FinalMaxTallySeconds) && FinalMaxTallySeconds > 0.f;
+    const FMWGameplayProgress& Progress = State.GetProgressRef();
+    // 마지막 라운드로 보이는 경우 짧은 서버 대기 구간을 집계 대기로 사용한다.
+    // 최종 점수와 시상은 실제 MatchResults 복제를 받은 뒤에만 표시한다.
+    if (bExtendedFinal && !bFinalResults && !ScoreStages.IsEmpty()
+        && (Progress.RaceMode == EMWRaceMode::SuddenDeath || Algo::CountIf(Progress.Results,
+            [&Progress](const FMWPlayerRoundState& Result) { return Result.TotalScore >= Progress.TargetScore; }) == 1))
+    {
+        Screen = EMWMatchResultsScreen::AwaitingFinalResults;
+        TallyHeading->SetText(LOCTEXT("PreparingMatchTally", "경기 결과 집계 중"));
+        ApplyTallyStartingScores();
+        UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=AwaitingFinalResults"), *GetWorld()->GetOutermost()->GetName());
+        return;
+    }
+
+    float TimeBudget = bFinalResults && bExtendedFinal ? FinalMaxTallySeconds : MaxTallySeconds;
     if (!bFinalResults)
     {
-        const auto* State = GetWorld()->GetGameState<AMWGameplayGameState>();
-        const double Now = State ? State->GetServerWorldTimeSeconds() : RoundEndServerTime;
-        TimeBudget = FMath::Min(TimeBudget, static_cast<float>(RoundEndServerTime - Now) - RoundPositionsHoldSeconds);
+        TimeBudget = FMath::Min(TimeBudget, static_cast<float>(RoundEndServerTime - State.GetServerWorldTimeSeconds())
+            - RoundPositionsHoldSeconds);
     }
-    TallyPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
     if (ScoreStages.IsEmpty() || !FMath::IsFinite(StageSeconds) || StageSeconds <= 0.f
         || !FMath::IsFinite(TimeBudget) || TimeBudget <= 0.f)
     {
@@ -645,6 +670,11 @@ void UMWMatchResultsWidget::BeginTally()
     const float TimeScale = FMath::Min(1.f, TimeBudget / RequestedSeconds);
     for (FScoreStage& Stage : ScoreStages) Stage.Duration *= TimeScale;
     ShowTallyStage();
+    ApplyTallyStartingScores();
+}
+
+void UMWMatchResultsWidget::ApplyTallyStartingScores()
+{
     for (int32 Index = 0; Index < Results.Num(); ++Index)
     {
         CastChecked<UMWMatchResultRowWidget>(TallyColumns->GetChildAt(Index))->SetTallyScore(DisplayedScores[Index], BarScaleScore);
@@ -741,10 +771,12 @@ void UMWMatchResultsWidget::EndTally()
         UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=RoundPositions"), *GetWorld()->GetOutermost()->GetName());
         if (!bFinalResults) return;
         // 확정 라운드 화면을 받지 못한 클라이언트도 집계를 건너뛰지 않고 최종 시상까지 이어 간다.
-        if (FMath::IsFinite(RoundPositionsHoldSeconds) && RoundPositionsHoldSeconds > 0.f)
+        const float HoldSeconds = FMath::IsFinite(FinalMaxTallySeconds) && FinalMaxTallySeconds > 0.f
+            ? FinalPositionsHoldSeconds : RoundPositionsHoldSeconds;
+        if (FMath::IsFinite(HoldSeconds) && HoldSeconds > 0.f)
         {
             GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodiumApproach,
-                RoundPositionsHoldSeconds, false);
+                HoldSeconds, false);
             return;
         }
         BeginPodiumApproach();

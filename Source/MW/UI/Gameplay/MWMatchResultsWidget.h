@@ -31,7 +31,8 @@ enum class EMWMatchResultsScreen : uint8
     Tally,
     RoundPositions,
     Winner,
-    Standings
+    Standings,
+    AwaitingFinalResults
 };
 
 // 집계 열과 순위 카드는 동일한 참가자 데이터를 각 WBP의 바인딩으로 표시한다.
@@ -78,6 +79,10 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "2"))
     float TallyFillExposure = 1.f;
+
+    // 테두리 브러시의 바탕색에 섞을 참가자색의 비율이다. 0이면 기존 단색 브러시를 유지한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
+    float TallyOutlineParticipantMix = 0.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D PortraitEntryOffset = FVector2D::ZeroVector;
@@ -223,6 +228,13 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
     float RoundPositionsHoldSeconds = 0.f;
 
+    // 매치의 최종 결과가 복제된 뒤에만 사용할 별도 재생 예산이다. 0이면 기존 WBP 방식으로 재생한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float FinalMaxTallySeconds = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float FinalPositionsHoldSeconds = 0.f;
+
     // 각 카드의 진입에 배분할 시간이다. 1위 카드가 자리를 잡은 뒤의 정지 시간은 별도다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
     float WinnerSeconds = 0.f;
@@ -292,7 +304,8 @@ private:
     void UpdateWinnerVehicle(float SequenceElapsed);
     void PlayCelebration();
     void PrepareTally();
-    void BeginTally();
+    void BeginTally(const AMWGameplayGameState& State);
+    void ApplyTallyStartingScores();
     void ShowTallyStage();
     void EndTally();
     void BeginPodiumApproach();

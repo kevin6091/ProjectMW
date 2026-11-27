@@ -1,0 +1,61 @@
+[2026.11.27-14.56.48:921][654]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-145648
+[2026.11.27-14.57.21:005][568]LogTemp: Display: MW_RACE_RENDER_END Requested=912 Queued=912 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-145648
+[2026.11.27-14.58.10:890][376]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-145810
+[2026.11.27-14.58.11:679][400]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.00
+[2026.11.27-14.58.11:679][400]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=AwaitingFinalResults
+[2026.11.27-14.58.11:748][401]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.00
+[2026.11.27-14.58.11:748][401]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=AwaitingFinalResults
+[2026.11.27-14.58.11:769][401]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.00
+[2026.11.27-14.58.11:769][401]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=AwaitingFinalResults
+[2026.11.27-14.58.14:659][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.35
+[2026.11.27-14.58.14:659][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/11 Label=라운드 7
+[2026.11.27-14.58.14:669][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.35
+[2026.11.27-14.58.14:669][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/11 Label=라운드 7
+[2026.11.27-14.58.14:680][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=95216.02, Y=-50071.44, Z=21932.70) TravelScale=0.35
+[2026.11.27-14.58.14:680][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/11 Label=라운드 7
+[2026.11.27-14.58.15:538][511]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/11 Label=체크포인트 1 점수
+[2026.11.27-14.58.15:539][511]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/11 Label=체크포인트 1 점수
+[2026.11.27-14.58.15:539][511]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/11 Label=체크포인트 1 점수
+[2026.11.27-14.58.16:813][549]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/11 Label=체크포인트 2 점수
+[2026.11.27-14.58.16:814][549]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/11 Label=체크포인트 2 점수
+[2026.11.27-14.58.16:814][549]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/11 Label=체크포인트 2 점수
+[2026.11.27-14.58.18:048][587]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=4/11 Label=체크포인트 3 점수
+[2026.11.27-14.58.18:048][587]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=4/11 Label=체크포인트 3 점수
+[2026.11.27-14.58.18:049][587]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=4/11 Label=체크포인트 3 점수
+[2026.11.27-14.58.19:308][626]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=5/11 Label=체크포인트 4 점수
+[2026.11.27-14.58.19:310][626]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=5/11 Label=체크포인트 4 점수
+[2026.11.27-14.58.19:310][626]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=5/11 Label=체크포인트 4 점수
+[2026.11.27-14.58.20:538][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=6/11 Label=체크포인트 5 점수
+[2026.11.27-14.58.20:538][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=6/11 Label=체크포인트 5 점수
+[2026.11.27-14.58.20:539][665]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=6/11 Label=체크포인트 5 점수
+[2026.11.27-14.58.21:794][704]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=7/11 Label=체크포인트 6 점수
+[2026.11.27-14.58.21:795][704]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=7/11 Label=체크포인트 6 점수
+[2026.11.27-14.58.21:795][704]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=7/11 Label=체크포인트 6 점수
+[2026.11.27-14.58.23:057][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=8/11 Label=체크포인트 7 점수
+[2026.11.27-14.58.23:058][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=8/11 Label=체크포인트 7 점수
+[2026.11.27-14.58.23:058][743]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=8/11 Label=체크포인트 7 점수
+[2026.11.27-14.58.24:292][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=9/11 Label=체크포인트 8 점수
+[2026.11.27-14.58.24:293][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=9/11 Label=체크포인트 8 점수
+[2026.11.27-14.58.24:294][778]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=9/11 Label=체크포인트 8 점수
+[2026.11.27-14.58.25:544][813]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=10/11 Label=완주 점수
+[2026.11.27-14.58.25:545][813]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=10/11 Label=완주 점수
+[2026.11.27-14.58.25:546][813]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=10/11 Label=완주 점수
+[2026.11.27-14.58.27:209][859]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=11/11 Label=선착 보너스
+[2026.11.27-14.58.27:209][859]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=11/11 Label=선착 보너스
+[2026.11.27-14.58.27:210][859]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=11/11 Label=선착 보너스
+[2026.11.27-14.58.28:991][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-14.58.28:993][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-14.58.28:993][918]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-14.58.30:888][982]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-14.58.30:889][982]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-14.58.30:890][982]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-14.58.31:601][  7]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.27-14.58.31:602][  7]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.27-14.58.31:603][  7]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive WinnerVehicle Member=1 Asset=Asset.Vehicle.FRED Source=Pawn
+[2026.11.27-14.58.33:348][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.27-14.58.33:350][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.27-14.58.33:351][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.27-14.58.34:226][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-14.58.34:226][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-14.58.34:227][ 91]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-14.58.38:950][249]LogTemp: Display: MW_RACE_RENDER_END Requested=871 Queued=871 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-145810

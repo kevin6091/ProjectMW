@@ -1,0 +1,22 @@
+sequence,event,project_frame,original_comparable_frame,event_utc,frame_utc
+checkpoint-recovery-and-tally,approach_input,16,33820,1795791409.511086,1795791409.517
+checkpoint-recovery-and-tally,checkpoint_accepted,29,33829,1795791410.3369195,1795791410.342
+checkpoint-recovery-and-tally,induced_fall,89,,1795791413.039298,1795791413.045
+checkpoint-recovery-and-tally,recovery_start,92,8260,1795791413.1554558,1795791413.161
+checkpoint-recovery-and-tally,recovery_end,113,8332–8348,1795791413.9463341,1795791413.954
+natural-match-finish,AwaitingFinalResults,24,,1795791491.679,1795791491.712
+natural-match-finish,라운드 7,117,29109,1795791494.659,1795791494.644
+natural-match-finish,체크포인트 1 점수,135,29164,1795791495.538,1795791495.545
+natural-match-finish,체크포인트 2 점수,173,29244,1795791496.813,1795791496.82
+natural-match-finish,체크포인트 3 점수,211,29324,1795791498.048,1795791498.055
+natural-match-finish,체크포인트 4 점수,250,29406,1795791499.308,1795791499.316
+natural-match-finish,체크포인트 5 점수,289,29486,1795791500.538,1795791500.545
+natural-match-finish,체크포인트 6 점수,328,29566,1795791501.794,1795791501.803
+natural-match-finish,체크포인트 7 점수,367,29605,1795791503.057,1795791503.065
+natural-match-finish,체크포인트 8 점수,402,,1795791504.292,1795791504.3
+natural-match-finish,완주 점수,437,29688,1795791505.544,1795791505.552
+natural-match-finish,선착 보너스,483,29811,1795791507.209,1795791507.216
+natural-match-finish,RoundPositions,542,29998,1795791508.991,1795791508.999
+natural-match-finish,PodiumApproach,605,30152,1795791510.888,1795791510.884
+natural-match-finish,Winner,687,30304,1795791513.348,1795791513.343
+natural-match-finish,Standings,715,30328,1795791514.226,1795791514.234
