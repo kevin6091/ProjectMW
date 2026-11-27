@@ -1,0 +1,205 @@
+{"type": "phase", "utc_s": 1795789182.813756, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 1, "goal": 4000, "scores": []}
+{"type": "phase", "utc_s": 1795789182.8157554, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 1, "goal": 4000, "scores": []}
+{"type": "phase", "utc_s": 1795789182.8167567, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 1, "goal": 4000, "scores": []}
+{"type": "scoring_gate", "utc_s": 1795789183.2259548, "epoch": 1, "index": 0, "member": 1, "finish": 1, "checkpoints": 0, "points": 300}
+{"type": "scoring_gate", "utc_s": 1795789183.6257052, "epoch": 1, "index": 0, "member": 2, "finish": 2, "checkpoints": 0, "points": 150}
+{"type": "phase", "utc_s": 1795789183.7446675, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 1, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789183.745668, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 1, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789183.746666, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 1, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.2530904, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.2535954, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.2546008, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.5046208, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.5061939, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.5077069, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.8750486, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.9349675, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789188.9366632, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789189.278583, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789189.478381, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789189.4793916, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789192.1474335, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789192.1489472, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "phase", "utc_s": 1795789192.1499543, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 2, "goal": 4000, "scores": [[1, 300, 0], [2, 150, 0], [3, 50, 0]]}
+{"type": "record", "utc_s": 1795789192.1604068, "tag": "checkpoint-recovery-and-tally", "epoch": 2, "seconds": 32}
+{"type": "approach_setup", "utc_s": 1795789192.1679692, "epoch": 2, "piece": 4}
+{"type": "approach_input", "utc_s": 1795789192.7642128, "epoch": 2, "piece": 4}
+{"type": "checkpoint_accepted", "utc_s": 1795789194.3511064, "epoch": 2, "member": 1, "points": 100, "driven": true}
+{"type": "induced_fall", "utc_s": 1795789196.2478783, "epoch": 2}
+{"type": "recovery_start", "utc_s": 1795789196.528849, "epoch": 2, "remaining": 0.7667022347450256}
+{"type": "recovery_end", "utc_s": 1795789197.3612819, "epoch": 2, "drive": true, "elapsed": 0.8279999999795109}
+{"type": "scoring_gate", "utc_s": 1795789197.3633008, "epoch": 2, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 400}
+{"type": "scoring_gate", "utc_s": 1795789197.7548969, "epoch": 2, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 250}
+{"type": "scoring_gate", "utc_s": 1795789198.1785913, "epoch": 2, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 150}
+{"type": "scoring_gate", "utc_s": 1795789198.5908556, "epoch": 2, "index": 0, "member": 1, "finish": 1, "checkpoints": 1, "points": 700}
+{"type": "scoring_gate", "utc_s": 1795789198.990076, "epoch": 2, "index": 0, "member": 2, "finish": 2, "checkpoints": 1, "points": 400}
+{"type": "phase", "utc_s": 1795789199.1203065, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 2, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789199.1213708, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 2, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789199.122381, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 2, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789202.847213, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789202.848211, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789202.85025, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.053223, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.0542343, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.0542343, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.4407854, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.4417968, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.4428031, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.6255734, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.6270843, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789203.6275892, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789206.6509495, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789206.6519551, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "phase", "utc_s": 1795789206.6529424, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 3, "goal": 4000, "scores": [[1, 700, 0], [2, 400, 0], [3, 200, 0]]}
+{"type": "scoring_gate", "utc_s": 1795789207.071318, "epoch": 3, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 800}
+{"type": "scoring_gate", "utc_s": 1795789207.4962835, "epoch": 3, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 500}
+{"type": "scoring_gate", "utc_s": 1795789208.3219366, "epoch": 3, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 300}
+{"type": "scoring_gate", "utc_s": 1795789208.6989384, "epoch": 3, "index": 2, "member": 1, "finish": 0, "checkpoints": 2, "points": 900}
+{"type": "scoring_gate", "utc_s": 1795789209.0719094, "epoch": 3, "index": 2, "member": 2, "finish": 0, "checkpoints": 2, "points": 600}
+{"type": "scoring_gate", "utc_s": 1795789209.939674, "epoch": 3, "index": 2, "member": 3, "finish": 0, "checkpoints": 2, "points": 400}
+{"type": "scoring_gate", "utc_s": 1795789210.3321192, "epoch": 3, "index": 0, "member": 1, "finish": 1, "checkpoints": 2, "points": 1200}
+{"type": "scoring_gate", "utc_s": 1795789210.703637, "epoch": 3, "index": 0, "member": 2, "finish": 2, "checkpoints": 2, "points": 750}
+{"type": "phase", "utc_s": 1795789210.871468, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 3, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789210.8724744, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 3, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789210.8738446, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 3, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789213.9446616, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789213.9456692, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789213.946679, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.17685, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.1786058, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.1796136, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.631319, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.6323278, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.6333385, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.760544, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.760544, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789214.7621493, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789217.7992444, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789217.800757, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "phase", "utc_s": 1795789217.801263, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 4, "goal": 4000, "scores": [[1, 1200, 0], [2, 750, 0], [3, 450, 0]]}
+{"type": "scoring_gate", "utc_s": 1795789218.2282376, "epoch": 4, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 1300}
+{"type": "scoring_gate", "utc_s": 1795789218.6171165, "epoch": 4, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 850}
+{"type": "scoring_gate", "utc_s": 1795789219.0407186, "epoch": 4, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 550}
+{"type": "scoring_gate", "utc_s": 1795789219.5203588, "epoch": 4, "index": 2, "member": 1, "finish": 0, "checkpoints": 2, "points": 1400}
+{"type": "scoring_gate", "utc_s": 1795789219.9385674, "epoch": 4, "index": 2, "member": 2, "finish": 0, "checkpoints": 2, "points": 950}
+{"type": "scoring_gate", "utc_s": 1795789220.3714187, "epoch": 4, "index": 2, "member": 3, "finish": 0, "checkpoints": 2, "points": 650}
+{"type": "scoring_gate", "utc_s": 1795789221.5395932, "epoch": 4, "index": 3, "member": 1, "finish": 0, "checkpoints": 3, "points": 1500}
+{"type": "scoring_gate", "utc_s": 1795789222.7092948, "epoch": 4, "index": 3, "member": 2, "finish": 0, "checkpoints": 3, "points": 1050}
+{"type": "scoring_gate", "utc_s": 1795789223.9170756, "epoch": 4, "index": 3, "member": 3, "finish": 0, "checkpoints": 3, "points": 750}
+{"type": "scoring_gate", "utc_s": 1795789224.2349477, "epoch": 4, "index": 0, "member": 1, "finish": 1, "checkpoints": 3, "points": 1800}
+{"type": "scoring_gate", "utc_s": 1795789224.647955, "epoch": 4, "index": 0, "member": 2, "finish": 2, "checkpoints": 3, "points": 1200}
+{"type": "phase", "utc_s": 1795789224.815249, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 4, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789224.8167741, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 4, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789224.8182888, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 4, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.4271302, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.4276364, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.4276364, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.6439211, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.6454353, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789228.6459415, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.0162144, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.0172274, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.0182357, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.2074435, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.2089503, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789229.2089503, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789232.177535, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789232.177535, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "phase", "utc_s": 1795789232.1790402, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 5, "goal": 4000, "scores": [[1, 1800, 0], [2, 1200, 0], [3, 800, 0]]}
+{"type": "scoring_gate", "utc_s": 1795789232.5997145, "epoch": 5, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 1900}
+{"type": "scoring_gate", "utc_s": 1795789233.0031695, "epoch": 5, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 1300}
+{"type": "scoring_gate", "utc_s": 1795789233.8579156, "epoch": 5, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 900}
+{"type": "scoring_gate", "utc_s": 1795789234.2987597, "epoch": 5, "index": 2, "member": 1, "finish": 0, "checkpoints": 2, "points": 2000}
+{"type": "scoring_gate", "utc_s": 1795789234.6991086, "epoch": 5, "index": 2, "member": 2, "finish": 0, "checkpoints": 2, "points": 1400}
+{"type": "scoring_gate", "utc_s": 1795789235.5419667, "epoch": 5, "index": 2, "member": 3, "finish": 0, "checkpoints": 2, "points": 1000}
+{"type": "scoring_gate", "utc_s": 1795789236.7100468, "epoch": 5, "index": 3, "member": 1, "finish": 0, "checkpoints": 3, "points": 2100}
+{"type": "scoring_gate", "utc_s": 1795789237.9244618, "epoch": 5, "index": 3, "member": 2, "finish": 0, "checkpoints": 3, "points": 1500}
+{"type": "scoring_gate", "utc_s": 1795789239.1890404, "epoch": 5, "index": 3, "member": 3, "finish": 0, "checkpoints": 3, "points": 1100}
+{"type": "scoring_gate", "utc_s": 1795789240.0452414, "epoch": 5, "index": 4, "member": 1, "finish": 0, "checkpoints": 4, "points": 2200}
+{"type": "scoring_gate", "utc_s": 1795789240.8895648, "epoch": 5, "index": 4, "member": 2, "finish": 0, "checkpoints": 4, "points": 1600}
+{"type": "scoring_gate", "utc_s": 1795789241.693477, "epoch": 5, "index": 4, "member": 3, "finish": 0, "checkpoints": 4, "points": 1200}
+{"type": "scoring_gate", "utc_s": 1795789242.083366, "epoch": 5, "index": 5, "member": 1, "finish": 0, "checkpoints": 5, "points": 2300}
+{"type": "scoring_gate", "utc_s": 1795789242.8915374, "epoch": 5, "index": 5, "member": 2, "finish": 0, "checkpoints": 5, "points": 1700}
+{"type": "scoring_gate", "utc_s": 1795789243.7056787, "epoch": 5, "index": 5, "member": 3, "finish": 0, "checkpoints": 5, "points": 1300}
+{"type": "scoring_gate", "utc_s": 1795789244.103952, "epoch": 5, "index": 0, "member": 1, "finish": 1, "checkpoints": 5, "points": 2600}
+{"type": "scoring_gate", "utc_s": 1795789244.5221705, "epoch": 5, "index": 0, "member": 2, "finish": 2, "checkpoints": 5, "points": 1850}
+{"type": "phase", "utc_s": 1795789244.6486259, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 5, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789244.6492586, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 5, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789244.6512766, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 5, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.6228437, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.623856, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.6248627, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.7926242, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.7936244, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789247.794928, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.1460974, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.1471481, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.1471481, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.2729836, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.2744966, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789248.2744966, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789251.268447, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789251.268966, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "phase", "utc_s": 1795789251.2704773, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 6, "goal": 4000, "scores": [[1, 2600, 0], [2, 1850, 0], [3, 1350, 0]]}
+{"type": "scoring_gate", "utc_s": 1795789251.6895983, "epoch": 6, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 2700}
+{"type": "scoring_gate", "utc_s": 1795789252.46015, "epoch": 6, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 1950}
+{"type": "scoring_gate", "utc_s": 1795789252.8571117, "epoch": 6, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 1450}
+{"type": "scoring_gate", "utc_s": 1795789253.269667, "epoch": 6, "index": 2, "member": 1, "finish": 0, "checkpoints": 2, "points": 2800}
+{"type": "scoring_gate", "utc_s": 1795789253.6405375, "epoch": 6, "index": 2, "member": 2, "finish": 0, "checkpoints": 2, "points": 2050}
+{"type": "scoring_gate", "utc_s": 1795789254.0286252, "epoch": 6, "index": 2, "member": 3, "finish": 0, "checkpoints": 2, "points": 1550}
+{"type": "scoring_gate", "utc_s": 1795789255.25967, "epoch": 6, "index": 3, "member": 1, "finish": 0, "checkpoints": 3, "points": 2900}
+{"type": "scoring_gate", "utc_s": 1795789256.5072923, "epoch": 6, "index": 3, "member": 2, "finish": 0, "checkpoints": 3, "points": 2150}
+{"type": "scoring_gate", "utc_s": 1795789257.7743118, "epoch": 6, "index": 3, "member": 3, "finish": 0, "checkpoints": 3, "points": 1650}
+{"type": "scoring_gate", "utc_s": 1795789258.5649233, "epoch": 6, "index": 4, "member": 1, "finish": 0, "checkpoints": 4, "points": 3000}
+{"type": "scoring_gate", "utc_s": 1795789259.367236, "epoch": 6, "index": 4, "member": 2, "finish": 0, "checkpoints": 4, "points": 2250}
+{"type": "scoring_gate", "utc_s": 1795789260.157996, "epoch": 6, "index": 4, "member": 3, "finish": 0, "checkpoints": 4, "points": 1750}
+{"type": "scoring_gate", "utc_s": 1795789260.5703807, "epoch": 6, "index": 5, "member": 1, "finish": 0, "checkpoints": 5, "points": 3100}
+{"type": "scoring_gate", "utc_s": 1795789261.3963964, "epoch": 6, "index": 5, "member": 2, "finish": 0, "checkpoints": 5, "points": 2350}
+{"type": "scoring_gate", "utc_s": 1795789262.2179778, "epoch": 6, "index": 5, "member": 3, "finish": 0, "checkpoints": 5, "points": 1850}
+{"type": "scoring_gate", "utc_s": 1795789262.6318579, "epoch": 6, "index": 0, "member": 1, "finish": 1, "checkpoints": 5, "points": 3400}
+{"type": "scoring_gate", "utc_s": 1795789263.057101, "epoch": 6, "index": 0, "member": 2, "finish": 2, "checkpoints": 5, "points": 2500}
+{"type": "phase", "utc_s": 1795789263.1690023, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 6, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789263.1700072, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 6, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789263.1711373, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 6, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.2849858, "member": 1, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.2870033, "member": 2, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.2885172, "member": 3, "phase": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.5948963, "member": 1, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.5958953, "member": 2, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789266.5968964, "member": 3, "phase": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.0642445, "member": 1, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.0652516, "member": 2, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.0662632, "member": 3, "phase": "<MWRoomPhase.PREPARING_RACE: 7>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.2311854, "member": 1, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.2311854, "member": 2, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789267.2328594, "member": 3, "phase": "<MWRoomPhase.COUNTDOWN: 8>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789270.2677703, "member": 1, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789270.2677703, "member": 2, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "phase", "utc_s": 1795789270.2693381, "member": 3, "phase": "<MWRoomPhase.RACING: 9>", "epoch": 7, "goal": 4000, "scores": [[1, 3400, 0], [2, 2500, 0], [3, 1900, 0]]}
+{"type": "scoring_gate", "utc_s": 1795789270.6821594, "epoch": 7, "index": 1, "member": 1, "finish": 0, "checkpoints": 1, "points": 3500}
+{"type": "scoring_gate", "utc_s": 1795789271.094624, "epoch": 7, "index": 1, "member": 2, "finish": 0, "checkpoints": 1, "points": 2600}
+{"type": "scoring_gate", "utc_s": 1795789271.8387358, "epoch": 7, "index": 1, "member": 3, "finish": 0, "checkpoints": 1, "points": 2000}
+{"type": "scoring_gate", "utc_s": 1795789272.2340038, "epoch": 7, "index": 2, "member": 1, "finish": 0, "checkpoints": 2, "points": 3600}
+{"type": "scoring_gate", "utc_s": 1795789272.621626, "epoch": 7, "index": 2, "member": 2, "finish": 0, "checkpoints": 2, "points": 2700}
+{"type": "scoring_gate", "utc_s": 1795789273.4350793, "epoch": 7, "index": 2, "member": 3, "finish": 0, "checkpoints": 2, "points": 2100}
+{"type": "scoring_gate", "utc_s": 1795789274.640771, "epoch": 7, "index": 3, "member": 1, "finish": 0, "checkpoints": 3, "points": 3700}
+{"type": "scoring_gate", "utc_s": 1795789275.8640716, "epoch": 7, "index": 3, "member": 2, "finish": 0, "checkpoints": 3, "points": 2800}
+{"type": "scoring_gate", "utc_s": 1795789277.051303, "epoch": 7, "index": 3, "member": 3, "finish": 0, "checkpoints": 3, "points": 2200}
+{"type": "scoring_gate", "utc_s": 1795789277.9028454, "epoch": 7, "index": 4, "member": 1, "finish": 0, "checkpoints": 4, "points": 3800}
+{"type": "scoring_gate", "utc_s": 1795789278.7475715, "epoch": 7, "index": 4, "member": 2, "finish": 0, "checkpoints": 4, "points": 2900}
+{"type": "scoring_gate", "utc_s": 1795789279.5551016, "epoch": 7, "index": 4, "member": 3, "finish": 0, "checkpoints": 4, "points": 2300}
+{"type": "scoring_gate", "utc_s": 1795789279.9511795, "epoch": 7, "index": 5, "member": 1, "finish": 0, "checkpoints": 5, "points": 3900}
+{"type": "scoring_gate", "utc_s": 1795789280.8180819, "epoch": 7, "index": 5, "member": 2, "finish": 0, "checkpoints": 5, "points": 3000}
+{"type": "scoring_gate", "utc_s": 1795789281.6250014, "epoch": 7, "index": 5, "member": 3, "finish": 0, "checkpoints": 5, "points": 2400}
+{"type": "scoring_gate", "utc_s": 1795789282.8991568, "epoch": 7, "index": 6, "member": 1, "finish": 0, "checkpoints": 6, "points": 4000}
+{"type": "scoring_gate", "utc_s": 1795789284.116006, "epoch": 7, "index": 6, "member": 2, "finish": 0, "checkpoints": 6, "points": 3100}
+{"type": "scoring_gate", "utc_s": 1795789285.3296902, "epoch": 7, "index": 6, "member": 3, "finish": 0, "checkpoints": 6, "points": 2500}
+{"type": "record", "utc_s": 1795789285.3333542, "tag": "natural-match-finish", "epoch": 7, "seconds": 28}
+{"type": "scoring_gate", "utc_s": 1795789285.73456, "epoch": 7, "index": 0, "member": 1, "finish": 1, "checkpoints": 6, "points": 4300}
+{"type": "scoring_gate", "utc_s": 1795789286.1377897, "epoch": 7, "index": 0, "member": 2, "finish": 2, "checkpoints": 6, "points": 3250}
+{"type": "phase", "utc_s": 1795789286.277958, "member": 1, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 0], [2, 3250, 0], [3, 2550, 0]]}
+{"type": "phase", "utc_s": 1795789286.277958, "member": 2, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 0], [2, 3250, 0], [3, 2550, 0]]}
+{"type": "phase", "utc_s": 1795789286.2806299, "member": 3, "phase": "<MWRoomPhase.ROUND_RESULTS: 11>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 0], [2, 3250, 0], [3, 2550, 0]]}
+{"type": "phase", "utc_s": 1795789289.2310882, "member": 1, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
+{"type": "phase", "utc_s": 1795789289.2326012, "member": 2, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
+{"type": "phase", "utc_s": 1795789289.2336085, "member": 3, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
