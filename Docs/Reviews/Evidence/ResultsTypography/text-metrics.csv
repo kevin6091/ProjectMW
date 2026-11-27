@@ -1,0 +1,283 @@
+case,player,width,height,row,element,text,ink_xyxy,metric_px,value
+before-positions,1,1920,1062,0,heading,누적 순위,"(798, 192, 1116, 271)",face_top_to_ink_top,10.6
+before-positions,1,1920,1062,1,rank_suffix,위,"(527, 467, 551, 497)",suffix_ink_bottom_minus_number_ink_bottom,1
+before-positions,1,1920,1062,2,rank_suffix,위,"(835, 549, 859, 579)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,1,1920,1062,3,rank_suffix,위,"(1143, 540, 1167, 570)",suffix_ink_bottom_minus_number_ink_bottom,0
+before-positions,1,1920,1062,4,rank_suffix,위,"(1451, 508, 1475, 538)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,1,1920,1062,1,score,03000,"(470, 543, 628, 589)",bar_right_minus_ink_right,10.5
+before-positions,1,1920,1062,1,score,03000,"(470, 543, 628, 589)",ink_left_minus_badge_right,12.5
+before-positions,1,1920,1062,1,score,03000,"(470, 543, 628, 589)",bar_right_minus_score_slot_right,6.2
+before-positions,1,1920,1062,2,score,02300,"(778, 624, 936, 670)",bar_right_minus_ink_right,10.2
+before-positions,1,1920,1062,2,score,02300,"(778, 624, 936, 670)",ink_left_minus_badge_right,12.7
+before-positions,1,1920,1062,2,score,02300,"(778, 624, 936, 670)",bar_right_minus_score_slot_right,6.1
+before-positions,1,1920,1062,3,score,02375,"(1086, 615, 1244, 661)",bar_right_minus_ink_right,10.0
+before-positions,1,1920,1062,3,score,02375,"(1086, 615, 1244, 661)",ink_left_minus_badge_right,12.9
+before-positions,1,1920,1062,3,score,02375,"(1086, 615, 1244, 661)",bar_right_minus_score_slot_right,6.2
+before-positions,1,1920,1062,4,score,02650,"(1394, 583, 1552, 629)",bar_right_minus_ink_right,9.8
+before-positions,1,1920,1062,4,score,02650,"(1394, 583, 1552, 629)",ink_left_minus_badge_right,13.1
+before-positions,1,1920,1062,4,score,02650,"(1394, 583, 1552, 629)",bar_right_minus_score_slot_right,6.2
+final-positions,1,1920,1062,0,heading,누적 순위,"(798, 194, 1116, 273)",face_top_to_ink_top,29.3
+final-positions,1,1920,1062,1,rank_suffix,위,"(505, 458, 537, 497)",suffix_ink_bottom_minus_number_ink_bottom,1
+final-positions,1,1920,1062,2,rank_suffix,위,"(824, 540, 856, 579)",suffix_ink_bottom_minus_number_ink_bottom,2
+final-positions,1,1920,1062,3,rank_suffix,위,"(1144, 531, 1176, 570)",suffix_ink_bottom_minus_number_ink_bottom,0
+final-positions,1,1920,1062,4,rank_suffix,위,"(1463, 499, 1495, 538)",suffix_ink_bottom_minus_number_ink_bottom,2
+final-positions,1,1920,1062,1,score,03000,"(446, 547, 604, 593)",bar_right_minus_ink_right,22.7
+final-positions,1,1920,1062,1,score,03000,"(446, 547, 604, 593)",ink_left_minus_badge_right,10.1
+final-positions,1,1920,1062,1,score,03000,"(446, 547, 604, 593)",bar_right_minus_score_slot_right,19.0
+final-positions,1,1920,1062,2,score,02300,"(765, 628, 923, 674)",bar_right_minus_ink_right,23.2
+final-positions,1,1920,1062,2,score,02300,"(765, 628, 923, 674)",ink_left_minus_badge_right,9.5
+final-positions,1,1920,1062,2,score,02300,"(765, 628, 923, 674)",bar_right_minus_score_slot_right,18.9
+final-positions,1,1920,1062,3,score,02375,"(1085, 619, 1243, 665)",bar_right_minus_ink_right,22.8
+final-positions,1,1920,1062,3,score,02375,"(1085, 619, 1243, 665)",ink_left_minus_badge_right,10.0
+final-positions,1,1920,1062,3,score,02375,"(1085, 619, 1243, 665)",bar_right_minus_score_slot_right,19.0
+final-positions,1,1920,1062,4,score,02650,"(1405, 587, 1563, 633)",bar_right_minus_ink_right,22.4
+final-positions,1,1920,1062,4,score,02650,"(1405, 587, 1563, 633)",ink_left_minus_badge_right,10.4
+final-positions,1,1920,1062,4,score,02650,"(1405, 587, 1563, 633)",bar_right_minus_score_slot_right,19.0
+before-low,1,1920,1062,1,score,00000,"(470, 892, 628, 938)",bar_right_minus_ink_right,10.5
+before-low,1,1920,1062,1,score,00000,"(470, 892, 628, 938)",ink_left_minus_badge_right,12.5
+before-low,1,1920,1062,1,score,00000,"(470, 892, 628, 938)",bar_right_minus_score_slot_right,6.2
+before-low,1,1920,1062,2,score,00050,"(778, 886, 936, 932)",bar_right_minus_ink_right,10.2
+before-low,1,1920,1062,2,score,00050,"(778, 886, 936, 932)",ink_left_minus_badge_right,12.7
+before-low,1,1920,1062,2,score,00050,"(778, 886, 936, 932)",bar_right_minus_score_slot_right,6.1
+before-low,1,1920,1062,3,score,00120,"(1086, 878, 1244, 924)",bar_right_minus_ink_right,10.0
+before-low,1,1920,1062,3,score,00120,"(1086, 878, 1244, 924)",ink_left_minus_badge_right,12.9
+before-low,1,1920,1062,3,score,00120,"(1086, 878, 1244, 924)",bar_right_minus_score_slot_right,6.2
+before-low,1,1920,1062,4,score,00500,"(1394, 834, 1552, 880)",bar_right_minus_ink_right,9.8
+before-low,1,1920,1062,4,score,00500,"(1394, 834, 1552, 880)",ink_left_minus_badge_right,13.1
+before-low,1,1920,1062,4,score,00500,"(1394, 834, 1552, 880)",bar_right_minus_score_slot_right,6.2
+final-low,1,1920,1062,1,score,00000,"(446, 896, 604, 942)",bar_right_minus_ink_right,22.7
+final-low,1,1920,1062,1,score,00000,"(446, 896, 604, 942)",ink_left_minus_badge_right,10.1
+final-low,1,1920,1062,1,score,00000,"(446, 896, 604, 942)",bar_right_minus_score_slot_right,19.0
+final-low,1,1920,1062,2,score,00050,"(765, 890, 923, 936)",bar_right_minus_ink_right,23.2
+final-low,1,1920,1062,2,score,00050,"(765, 890, 923, 936)",ink_left_minus_badge_right,9.5
+final-low,1,1920,1062,2,score,00050,"(765, 890, 923, 936)",bar_right_minus_score_slot_right,18.9
+final-low,1,1920,1062,3,score,00120,"(1085, 882, 1243, 928)",bar_right_minus_ink_right,22.8
+final-low,1,1920,1062,3,score,00120,"(1085, 882, 1243, 928)",ink_left_minus_badge_right,10.0
+final-low,1,1920,1062,3,score,00120,"(1085, 882, 1243, 928)",bar_right_minus_score_slot_right,19.0
+final-low,1,1920,1062,4,score,00500,"(1405, 837, 1566, 900)",bar_right_minus_ink_right,19.4
+final-low,1,1920,1062,4,score,00500,"(1405, 837, 1566, 900)",ink_left_minus_badge_right,10.4
+final-low,1,1920,1062,4,score,00500,"(1405, 837, 1566, 900)",bar_right_minus_score_slot_right,19.0
+before-wide-tested,1,1920,1062,1,score,999999,"(469, 426, 660, 472)",bar_right_minus_ink_right,-21.5
+before-wide-tested,1,1920,1062,1,score,999999,"(469, 426, 660, 472)",ink_left_minus_badge_right,11.5
+before-wide-tested,1,1920,1062,1,score,999999,"(469, 426, 660, 472)",bar_right_minus_score_slot_right,-25.8
+before-wide-tested,1,1920,1062,2,score,999999,"(777, 426, 968, 472)",bar_right_minus_ink_right,-21.8
+before-wide-tested,1,1920,1062,2,score,999999,"(777, 426, 968, 472)",ink_left_minus_badge_right,11.7
+before-wide-tested,1,1920,1062,2,score,999999,"(777, 426, 968, 472)",bar_right_minus_score_slot_right,-25.9
+before-wide-tested,1,1920,1062,3,score,999999,"(1085, 431, 1276, 477)",bar_right_minus_ink_right,-22.0
+before-wide-tested,1,1920,1062,3,score,999999,"(1085, 431, 1276, 477)",ink_left_minus_badge_right,11.9
+before-wide-tested,1,1920,1062,3,score,999999,"(1085, 431, 1276, 477)",bar_right_minus_score_slot_right,-25.8
+before-wide-tested,1,1920,1062,4,score,999999,"(1393, 826, 1588, 907)",bar_right_minus_ink_right,-26.2
+before-wide-tested,1,1920,1062,4,score,999999,"(1393, 826, 1588, 907)",ink_left_minus_badge_right,12.1
+before-wide-tested,1,1920,1062,4,score,999999,"(1393, 826, 1588, 907)",bar_right_minus_score_slot_right,-25.8
+after-wide-tested,1,1920,1062,1,score,999999,"(445, 434, 607, 474)",bar_right_minus_ink_right,19.7
+after-wide-tested,1,1920,1062,1,score,999999,"(445, 434, 607, 474)",ink_left_minus_badge_right,9.1
+after-wide-tested,1,1920,1062,1,score,999999,"(445, 434, 607, 474)",bar_right_minus_score_slot_right,17.7
+after-wide-tested,1,1920,1062,2,score,999999,"(764, 434, 926, 474)",bar_right_minus_ink_right,20.2
+after-wide-tested,1,1920,1062,2,score,999999,"(764, 434, 926, 474)",ink_left_minus_badge_right,8.5
+after-wide-tested,1,1920,1062,2,score,999999,"(764, 434, 926, 474)",bar_right_minus_score_slot_right,17.6
+after-wide-tested,1,1920,1062,3,score,999999,"(1084, 439, 1246, 479)",bar_right_minus_ink_right,19.8
+after-wide-tested,1,1920,1062,3,score,999999,"(1084, 439, 1246, 479)",ink_left_minus_badge_right,9.0
+after-wide-tested,1,1920,1062,3,score,999999,"(1084, 439, 1246, 479)",bar_right_minus_score_slot_right,17.6
+after-wide-tested,1,1920,1062,4,score,999999,"(1404, 836, 1568, 906)",bar_right_minus_ink_right,17.4
+after-wide-tested,1,1920,1062,4,score,999999,"(1404, 836, 1568, 906)",ink_left_minus_badge_right,9.4
+after-wide-tested,1,1920,1062,4,score,999999,"(1404, 836, 1568, 906)",bar_right_minus_score_slot_right,17.7
+before-podium,1,1920,1062,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(478, 234, 904, 311)",name_slot_left_minus_medal_right,-2.1
+before-podium,1,1920,1062,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(478, 234, 904, 311)",portrait_left_minus_name_slot_right,3.6
+before-podium,1,1920,1062,2,card_name,밤샘질주 NIGHT SHIFT,"(566, 565, 923, 636)",name_slot_left_minus_medal_right,-2.7
+before-podium,1,1920,1062,2,card_name,밤샘질주 NIGHT SHIFT,"(566, 565, 923, 636)",portrait_left_minus_name_slot_right,5.3
+before-podium,1,1920,1062,3,card_name,VECTOR-9 WIDE INTERSTATE,"(670, 828, 991, 883)",name_slot_left_minus_medal_right,-1.7
+before-podium,1,1920,1062,3,card_name,VECTOR-9 WIDE INTERSTATE,"(670, 828, 991, 883)",portrait_left_minus_name_slot_right,8.4
+final-podium,1,1920,1062,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(494, 237, 889, 308)",name_slot_left_minus_medal_right,14.4
+final-podium,1,1920,1062,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(494, 237, 889, 308)",portrait_left_minus_name_slot_right,19.3
+final-podium,1,1920,1062,2,card_name,밤샘질주 NIGHT SHIFT,"(584, 566, 915, 633)",name_slot_left_minus_medal_right,11.1
+final-podium,1,1920,1062,2,card_name,밤샘질주 NIGHT SHIFT,"(584, 566, 915, 633)",portrait_left_minus_name_slot_right,13.8
+final-podium,1,1920,1062,3,card_name,VECTOR-9 WIDE INTERSTATE,"(683, 831, 975, 881)",name_slot_left_minus_medal_right,10.8
+final-podium,1,1920,1062,3,card_name,VECTOR-9 WIDE INTERSTATE,"(683, 831, 975, 881)",portrait_left_minus_name_slot_right,24.1
+before-positions,2,1280,720,0,heading,누적 순위,"(532, 130, 744, 183)",face_top_to_ink_top,6.6
+before-positions,2,1280,720,1,rank_suffix,위,"(347, 317, 364, 338)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,2,1280,720,2,rank_suffix,위,"(555, 372, 572, 393)",suffix_ink_bottom_minus_number_ink_bottom,1
+before-positions,2,1280,720,3,rank_suffix,위,"(764, 366, 781, 387)",suffix_ink_bottom_minus_number_ink_bottom,0
+before-positions,2,1280,720,4,rank_suffix,위,"(972, 345, 989, 366)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,2,1280,720,1,score,03000,"(308, 369, 411, 398)",bar_right_minus_ink_right,11.2
+before-positions,2,1280,720,1,score,03000,"(308, 369, 411, 398)",ink_left_minus_badge_right,8.3
+before-positions,2,1280,720,1,score,03000,"(308, 369, 411, 398)",bar_right_minus_score_slot_right,7.5
+before-positions,2,1280,720,2,score,02300,"(517, 425, 620, 454)",bar_right_minus_ink_right,10.7
+before-positions,2,1280,720,2,score,02300,"(517, 425, 620, 454)",ink_left_minus_badge_right,8.9
+before-positions,2,1280,720,2,score,02300,"(517, 425, 620, 454)",bar_right_minus_score_slot_right,7.6
+before-positions,2,1280,720,3,score,02375,"(725, 419, 828, 448)",bar_right_minus_ink_right,11.1
+before-positions,2,1280,720,3,score,02375,"(725, 419, 828, 448)",ink_left_minus_badge_right,8.4
+before-positions,2,1280,720,3,score,02375,"(725, 419, 828, 448)",bar_right_minus_score_slot_right,7.5
+before-positions,2,1280,720,4,score,02650,"(934, 397, 1037, 426)",bar_right_minus_ink_right,10.6
+before-positions,2,1280,720,4,score,02650,"(934, 397, 1037, 426)",ink_left_minus_badge_right,9.0
+before-positions,2,1280,720,4,score,02650,"(934, 397, 1037, 426)",bar_right_minus_score_slot_right,7.6
+final-positions,2,1280,720,0,heading,누적 순위,"(532, 132, 744, 185)",face_top_to_ink_top,20.0
+final-positions,2,1280,720,1,rank_suffix,위,"(332, 310, 354, 336)",suffix_ink_bottom_minus_number_ink_bottom,0
+final-positions,2,1280,720,2,rank_suffix,위,"(548, 366, 570, 392)",suffix_ink_bottom_minus_number_ink_bottom,0
+final-positions,2,1280,720,3,rank_suffix,위,"(765, 360, 787, 386)",suffix_ink_bottom_minus_number_ink_bottom,-1
+final-positions,2,1280,720,4,rank_suffix,위,"(981, 338, 1003, 364)",suffix_ink_bottom_minus_number_ink_bottom,0
+final-positions,2,1280,720,1,score,03000,"(292, 372, 395, 401)",bar_right_minus_ink_right,19.2
+final-positions,2,1280,720,1,score,03000,"(292, 372, 395, 401)",ink_left_minus_badge_right,7.0
+final-positions,2,1280,720,1,score,03000,"(292, 372, 395, 401)",bar_right_minus_score_slot_right,16.2
+final-positions,2,1280,720,2,score,02300,"(508, 427, 611, 456)",bar_right_minus_ink_right,19.7
+final-positions,2,1280,720,2,score,02300,"(508, 427, 611, 456)",ink_left_minus_badge_right,6.5
+final-positions,2,1280,720,2,score,02300,"(508, 427, 611, 456)",bar_right_minus_score_slot_right,16.2
+final-positions,2,1280,720,3,score,02375,"(725, 421, 828, 450)",bar_right_minus_ink_right,19.1
+final-positions,2,1280,720,3,score,02375,"(725, 421, 828, 450)",ink_left_minus_badge_right,7.1
+final-positions,2,1280,720,3,score,02375,"(725, 421, 828, 450)",bar_right_minus_score_slot_right,16.2
+final-positions,2,1280,720,4,score,02650,"(941, 400, 1044, 429)",bar_right_minus_ink_right,19.6
+final-positions,2,1280,720,4,score,02650,"(941, 400, 1044, 429)",ink_left_minus_badge_right,6.6
+final-positions,2,1280,720,4,score,02650,"(941, 400, 1044, 429)",bar_right_minus_score_slot_right,16.2
+before-low,2,1280,720,1,score,00000,"(308, 606, 411, 635)",bar_right_minus_ink_right,11.2
+before-low,2,1280,720,1,score,00000,"(308, 606, 411, 635)",ink_left_minus_badge_right,8.3
+before-low,2,1280,720,1,score,00000,"(308, 606, 411, 635)",bar_right_minus_score_slot_right,7.5
+before-low,2,1280,720,2,score,00050,"(517, 602, 620, 631)",bar_right_minus_ink_right,10.7
+before-low,2,1280,720,2,score,00050,"(517, 602, 620, 631)",ink_left_minus_badge_right,8.9
+before-low,2,1280,720,2,score,00050,"(517, 602, 620, 631)",bar_right_minus_score_slot_right,7.6
+before-low,2,1280,720,3,score,00120,"(725, 596, 828, 625)",bar_right_minus_ink_right,11.1
+before-low,2,1280,720,3,score,00120,"(725, 596, 828, 625)",ink_left_minus_badge_right,8.4
+before-low,2,1280,720,3,score,00120,"(725, 596, 828, 625)",bar_right_minus_score_slot_right,7.5
+before-low,2,1280,720,4,score,00500,"(934, 566, 1040, 606)",bar_right_minus_ink_right,7.6
+before-low,2,1280,720,4,score,00500,"(934, 566, 1040, 606)",ink_left_minus_badge_right,9.0
+before-low,2,1280,720,4,score,00500,"(934, 566, 1040, 606)",bar_right_minus_score_slot_right,7.6
+final-low,2,1280,720,1,score,00000,"(292, 608, 395, 637)",bar_right_minus_ink_right,19.2
+final-low,2,1280,720,1,score,00000,"(292, 608, 395, 637)",ink_left_minus_badge_right,7.0
+final-low,2,1280,720,1,score,00000,"(292, 608, 395, 637)",bar_right_minus_score_slot_right,16.2
+final-low,2,1280,720,2,score,00050,"(508, 604, 611, 633)",bar_right_minus_ink_right,19.7
+final-low,2,1280,720,2,score,00050,"(508, 604, 611, 633)",ink_left_minus_badge_right,6.5
+final-low,2,1280,720,2,score,00050,"(508, 604, 611, 633)",bar_right_minus_score_slot_right,16.2
+final-low,2,1280,720,3,score,00120,"(725, 599, 828, 628)",bar_right_minus_ink_right,19.1
+final-low,2,1280,720,3,score,00120,"(725, 599, 828, 628)",ink_left_minus_badge_right,7.1
+final-low,2,1280,720,3,score,00120,"(725, 599, 828, 628)",bar_right_minus_score_slot_right,16.2
+final-low,2,1280,720,4,score,00500,"(941, 555, 1047, 609)",bar_right_minus_ink_right,16.6
+final-low,2,1280,720,4,score,00500,"(941, 555, 1047, 609)",ink_left_minus_badge_right,6.6
+final-low,2,1280,720,4,score,00500,"(941, 555, 1047, 609)",bar_right_minus_score_slot_right,16.2
+before-wide-tested,2,1280,720,1,score,999999,"(308, 291, 432, 320)",bar_right_minus_ink_right,-9.8
+before-wide-tested,2,1280,720,1,score,999999,"(308, 291, 432, 320)",ink_left_minus_badge_right,8.3
+before-wide-tested,2,1280,720,1,score,999999,"(308, 291, 432, 320)",bar_right_minus_score_slot_right,-13.5
+before-wide-tested,2,1280,720,2,score,999999,"(517, 291, 641, 320)",bar_right_minus_ink_right,-10.3
+before-wide-tested,2,1280,720,2,score,999999,"(517, 291, 641, 320)",ink_left_minus_badge_right,8.9
+before-wide-tested,2,1280,720,2,score,999999,"(517, 291, 641, 320)",bar_right_minus_score_slot_right,-13.4
+before-wide-tested,2,1280,720,3,score,999999,"(725, 294, 849, 323)",bar_right_minus_ink_right,-9.9
+before-wide-tested,2,1280,720,3,score,999999,"(725, 294, 849, 323)",ink_left_minus_badge_right,8.4
+before-wide-tested,2,1280,720,3,score,999999,"(725, 294, 849, 323)",bar_right_minus_score_slot_right,-13.5
+before-wide-tested,2,1280,720,4,score,999999,"(934, 560, 1061, 614)",bar_right_minus_ink_right,-13.4
+before-wide-tested,2,1280,720,4,score,999999,"(934, 560, 1061, 614)",ink_left_minus_badge_right,9.0
+before-wide-tested,2,1280,720,4,score,999999,"(934, 560, 1061, 614)",bar_right_minus_score_slot_right,-13.4
+after-wide-tested,2,1280,720,1,score,999999,"(291, 294, 404, 320)",bar_right_minus_ink_right,10.2
+after-wide-tested,2,1280,720,1,score,999999,"(291, 294, 404, 320)",ink_left_minus_badge_right,6.0
+after-wide-tested,2,1280,720,1,score,999999,"(291, 294, 404, 320)",bar_right_minus_score_slot_right,7.6
+after-wide-tested,2,1280,720,2,score,999999,"(507, 294, 620, 320)",bar_right_minus_ink_right,10.7
+after-wide-tested,2,1280,720,2,score,999999,"(507, 294, 620, 320)",ink_left_minus_badge_right,5.5
+after-wide-tested,2,1280,720,2,score,999999,"(507, 294, 620, 320)",bar_right_minus_score_slot_right,7.6
+after-wide-tested,2,1280,720,3,score,999999,"(724, 297, 837, 323)",bar_right_minus_ink_right,10.1
+after-wide-tested,2,1280,720,3,score,999999,"(724, 297, 837, 323)",ink_left_minus_badge_right,6.1
+after-wide-tested,2,1280,720,3,score,999999,"(724, 297, 837, 323)",bar_right_minus_score_slot_right,7.6
+after-wide-tested,2,1280,720,4,score,999999,"(940, 566, 1055, 614)",bar_right_minus_ink_right,8.6
+after-wide-tested,2,1280,720,4,score,999999,"(940, 566, 1055, 614)",ink_left_minus_badge_right,5.6
+after-wide-tested,2,1280,720,4,score,999999,"(940, 566, 1055, 614)",bar_right_minus_score_slot_right,7.6
+before-podium,2,1280,720,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(314, 160, 593, 212)",name_slot_left_minus_medal_right,-1.4
+before-podium,2,1280,720,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(314, 160, 593, 212)",portrait_left_minus_name_slot_right,12.3
+before-podium,2,1280,720,2,card_name,밤샘질주 NIGHT SHIFT,"(373, 383, 620, 436)",name_slot_left_minus_medal_right,-1.9
+before-podium,2,1280,720,2,card_name,밤샘질주 NIGHT SHIFT,"(373, 383, 620, 436)",portrait_left_minus_name_slot_right,2.7
+before-podium,2,1280,720,3,card_name,VECTOR-9 WIDE INTERSTATE,"(444, 561, 665, 598)",name_slot_left_minus_medal_right,-1.2
+before-podium,2,1280,720,3,card_name,VECTOR-9 WIDE INTERSTATE,"(444, 561, 665, 598)",portrait_left_minus_name_slot_right,-1.5
+final-podium,2,1280,720,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(325, 159, 603, 209)",name_slot_left_minus_medal_right,9.8
+final-podium,2,1280,720,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(325, 159, 603, 209)",portrait_left_minus_name_slot_right,1.5
+final-podium,2,1280,720,2,card_name,밤샘질주 NIGHT SHIFT,"(385, 384, 606, 429)",name_slot_left_minus_medal_right,7.5
+final-podium,2,1280,720,2,card_name,밤샘질주 NIGHT SHIFT,"(385, 384, 606, 429)",portrait_left_minus_name_slot_right,12.6
+final-podium,2,1280,720,3,card_name,VECTOR-9 WIDE INTERSTATE,"(453, 563, 660, 598)",name_slot_left_minus_medal_right,7.2
+final-podium,2,1280,720,3,card_name,VECTOR-9 WIDE INTERSTATE,"(453, 563, 660, 598)",portrait_left_minus_name_slot_right,7.1
+before-positions,3,800,482,0,heading,누적 순위,"(327, 87, 470, 123)",face_top_to_ink_top,4.1
+before-positions,3,800,482,1,rank_suffix,위,"(204, 211, 215, 226)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,3,800,482,2,rank_suffix,위,"(343, 248, 354, 263)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,3,800,482,3,rank_suffix,위,"(483, 244, 494, 259)",suffix_ink_bottom_minus_number_ink_bottom,1
+before-positions,3,800,482,4,rank_suffix,위,"(622, 230, 633, 245)",suffix_ink_bottom_minus_number_ink_bottom,2
+before-positions,3,800,482,1,score,03000,"(178, 247, 248, 267)",bar_right_minus_ink_right,6.2
+before-positions,3,800,482,1,score,03000,"(178, 247, 248, 267)",ink_left_minus_badge_right,5.8
+before-positions,3,800,482,1,score,03000,"(178, 247, 248, 267)",bar_right_minus_score_slot_right,5.3
+before-positions,3,800,482,2,score,02300,"(317, 284, 387, 304)",bar_right_minus_ink_right,6.8
+before-positions,3,800,482,2,score,02300,"(317, 284, 387, 304)",ink_left_minus_badge_right,5.3
+before-positions,3,800,482,2,score,02300,"(317, 284, 387, 304)",bar_right_minus_score_slot_right,5.4
+before-positions,3,800,482,3,score,02375,"(457, 280, 527, 300)",bar_right_minus_ink_right,6.3
+before-positions,3,800,482,3,score,02375,"(457, 280, 527, 300)",ink_left_minus_badge_right,5.7
+before-positions,3,800,482,3,score,02375,"(457, 280, 527, 300)",bar_right_minus_score_slot_right,5.3
+before-positions,3,800,482,4,score,02650,"(596, 265, 666, 285)",bar_right_minus_ink_right,6.9
+before-positions,3,800,482,4,score,02650,"(596, 265, 666, 285)",ink_left_minus_badge_right,5.2
+before-positions,3,800,482,4,score,02650,"(596, 265, 666, 285)",bar_right_minus_score_slot_right,5.4
+final-positions,3,800,482,0,heading,누적 순위,"(327, 88, 470, 124)",face_top_to_ink_top,12.7
+final-positions,3,800,482,1,rank_suffix,위,"(194, 207, 208, 226)",suffix_ink_bottom_minus_number_ink_bottom,2
+final-positions,3,800,482,2,rank_suffix,위,"(339, 244, 353, 263)",suffix_ink_bottom_minus_number_ink_bottom,2
+final-positions,3,800,482,3,rank_suffix,위,"(484, 240, 498, 259)",suffix_ink_bottom_minus_number_ink_bottom,1
+final-positions,3,800,482,4,rank_suffix,위,"(629, 225, 643, 244)",suffix_ink_bottom_minus_number_ink_bottom,1
+final-positions,3,800,482,1,score,03000,"(166, 248, 236, 268)",bar_right_minus_ink_right,12.9
+final-positions,3,800,482,1,score,03000,"(166, 248, 236, 268)",ink_left_minus_badge_right,3.6
+final-positions,3,800,482,1,score,03000,"(166, 248, 236, 268)",bar_right_minus_score_slot_right,11.2
+final-positions,3,800,482,2,score,02300,"(311, 285, 381, 305)",bar_right_minus_ink_right,12.8
+final-positions,3,800,482,2,score,02300,"(311, 285, 381, 305)",ink_left_minus_badge_right,3.7
+final-positions,3,800,482,2,score,02300,"(311, 285, 381, 305)",bar_right_minus_score_slot_right,11.2
+final-positions,3,800,482,3,score,02375,"(456, 281, 526, 301)",bar_right_minus_ink_right,12.7
+final-positions,3,800,482,3,score,02375,"(456, 281, 526, 301)",ink_left_minus_badge_right,3.8
+final-positions,3,800,482,3,score,02375,"(456, 281, 526, 301)",bar_right_minus_score_slot_right,11.2
+final-positions,3,800,482,4,score,02650,"(601, 267, 671, 287)",bar_right_minus_ink_right,12.6
+final-positions,3,800,482,4,score,02650,"(601, 267, 671, 287)",ink_left_minus_badge_right,3.9
+final-positions,3,800,482,4,score,02650,"(601, 267, 671, 287)",bar_right_minus_score_slot_right,11.2
+before-low,3,800,482,1,score,00000,"(178, 405, 248, 425)",bar_right_minus_ink_right,6.2
+before-low,3,800,482,1,score,00000,"(178, 405, 248, 425)",ink_left_minus_badge_right,5.8
+before-low,3,800,482,1,score,00000,"(178, 405, 248, 425)",bar_right_minus_score_slot_right,5.3
+before-low,3,800,482,2,score,00050,"(317, 402, 387, 422)",bar_right_minus_ink_right,6.8
+before-low,3,800,482,2,score,00050,"(317, 402, 387, 422)",ink_left_minus_badge_right,5.3
+before-low,3,800,482,2,score,00050,"(317, 402, 387, 422)",bar_right_minus_score_slot_right,5.4
+before-low,3,800,482,3,score,00120,"(457, 399, 527, 419)",bar_right_minus_ink_right,6.3
+before-low,3,800,482,3,score,00120,"(457, 399, 527, 419)",ink_left_minus_badge_right,5.7
+before-low,3,800,482,3,score,00120,"(457, 399, 527, 419)",bar_right_minus_score_slot_right,5.3
+before-low,3,800,482,4,score,00500,"(596, 370, 666, 405)",bar_right_minus_ink_right,6.9
+before-low,3,800,482,4,score,00500,"(596, 370, 666, 405)",ink_left_minus_badge_right,5.2
+before-low,3,800,482,4,score,00500,"(596, 370, 666, 405)",bar_right_minus_score_slot_right,5.4
+final-low,3,800,482,1,score,00000,"(166, 407, 236, 427)",bar_right_minus_ink_right,12.9
+final-low,3,800,482,1,score,00000,"(166, 407, 236, 427)",ink_left_minus_badge_right,3.6
+final-low,3,800,482,1,score,00000,"(166, 407, 236, 427)",bar_right_minus_score_slot_right,11.2
+final-low,3,800,482,2,score,00050,"(311, 404, 381, 424)",bar_right_minus_ink_right,12.8
+final-low,3,800,482,2,score,00050,"(311, 404, 381, 424)",ink_left_minus_badge_right,3.7
+final-low,3,800,482,2,score,00050,"(311, 404, 381, 424)",bar_right_minus_score_slot_right,11.2
+final-low,3,800,482,3,score,00120,"(456, 400, 526, 420)",bar_right_minus_ink_right,12.7
+final-low,3,800,482,3,score,00120,"(456, 400, 526, 420)",ink_left_minus_badge_right,3.8
+final-low,3,800,482,3,score,00120,"(456, 400, 526, 420)",bar_right_minus_score_slot_right,11.2
+final-low,3,800,482,4,score,00500,"(601, 372, 671, 405)",bar_right_minus_ink_right,12.6
+final-low,3,800,482,4,score,00500,"(601, 372, 671, 405)",ink_left_minus_badge_right,3.9
+final-low,3,800,482,4,score,00500,"(601, 372, 671, 405)",bar_right_minus_score_slot_right,11.2
+before-wide-tested,3,800,482,1,score,999999,"(178, 194, 262, 214)",bar_right_minus_ink_right,-7.8
+before-wide-tested,3,800,482,1,score,999999,"(178, 194, 262, 214)",ink_left_minus_badge_right,5.8
+before-wide-tested,3,800,482,1,score,999999,"(178, 194, 262, 214)",bar_right_minus_score_slot_right,-8.7
+before-wide-tested,3,800,482,2,score,999999,"(317, 194, 401, 214)",bar_right_minus_ink_right,-7.2
+before-wide-tested,3,800,482,2,score,999999,"(317, 194, 401, 214)",ink_left_minus_badge_right,5.3
+before-wide-tested,3,800,482,2,score,999999,"(317, 194, 401, 214)",bar_right_minus_score_slot_right,-8.6
+before-wide-tested,3,800,482,3,score,999999,"(457, 196, 541, 216)",bar_right_minus_ink_right,-7.7
+before-wide-tested,3,800,482,3,score,999999,"(457, 196, 541, 216)",ink_left_minus_badge_right,5.7
+before-wide-tested,3,800,482,3,score,999999,"(457, 196, 541, 216)",bar_right_minus_score_slot_right,-8.7
+before-wide-tested,3,800,482,4,score,999999,"(596, 375, 680, 411)",bar_right_minus_ink_right,-7.1
+before-wide-tested,3,800,482,4,score,999999,"(596, 375, 680, 411)",ink_left_minus_badge_right,5.2
+before-wide-tested,3,800,482,4,score,999999,"(596, 375, 680, 411)",bar_right_minus_score_slot_right,-8.6
+after-wide-tested,3,800,482,1,score,999999,"(166, 196, 244, 215)",bar_right_minus_ink_right,4.9
+after-wide-tested,3,800,482,1,score,999999,"(166, 196, 244, 215)",ink_left_minus_badge_right,3.6
+after-wide-tested,3,800,482,1,score,999999,"(166, 196, 244, 215)",bar_right_minus_score_slot_right,3.4
+after-wide-tested,3,800,482,2,score,999999,"(311, 196, 389, 215)",bar_right_minus_ink_right,4.8
+after-wide-tested,3,800,482,2,score,999999,"(311, 196, 389, 215)",ink_left_minus_badge_right,3.7
+after-wide-tested,3,800,482,2,score,999999,"(311, 196, 389, 215)",bar_right_minus_score_slot_right,3.4
+after-wide-tested,3,800,482,3,score,999999,"(456, 198, 534, 217)",bar_right_minus_ink_right,4.7
+after-wide-tested,3,800,482,3,score,999999,"(456, 198, 534, 217)",ink_left_minus_badge_right,3.8
+after-wide-tested,3,800,482,3,score,999999,"(456, 198, 534, 217)",bar_right_minus_score_slot_right,3.4
+after-wide-tested,3,800,482,4,score,999999,"(601, 378, 679, 411)",bar_right_minus_ink_right,4.6
+after-wide-tested,3,800,482,4,score,999999,"(601, 378, 679, 411)",ink_left_minus_badge_right,3.9
+after-wide-tested,3,800,482,4,score,999999,"(601, 378, 679, 411)",bar_right_minus_score_slot_right,3.4
+before-podium,3,800,482,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(183, 108, 363, 141)",name_slot_left_minus_medal_right,-0.9
+before-podium,3,800,482,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(183, 108, 363, 141)",portrait_left_minus_name_slot_right,13.4
+before-podium,3,800,482,2,card_name,밤샘질주 NIGHT SHIFT,"(221, 250, 384, 292)",name_slot_left_minus_medal_right,-1.2
+before-podium,3,800,482,2,card_name,밤샘질주 NIGHT SHIFT,"(221, 250, 384, 292)",portrait_left_minus_name_slot_right,1.2
+before-podium,3,800,482,3,card_name,VECTOR-9 WIDE INTERSTATE,"(269, 377, 402, 400)",name_slot_left_minus_medal_right,-0.7
+before-podium,3,800,482,3,card_name,VECTOR-9 WIDE INTERSTATE,"(269, 377, 402, 400)",portrait_left_minus_name_slot_right,12.3
+final-podium,3,800,482,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(190, 107, 370, 140)",name_slot_left_minus_medal_right,6.5
+final-podium,3,800,482,1,card_name,길모퉁이에서 기다리는 마지막 레이서,"(190, 107, 370, 140)",portrait_left_minus_name_slot_right,6.1
+final-podium,3,800,482,2,card_name,밤샘질주 NIGHT SHIFT,"(230, 257, 379, 288)",name_slot_left_minus_medal_right,5.0
+final-podium,3,800,482,2,card_name,밤샘질주 NIGHT SHIFT,"(230, 257, 379, 288)",portrait_left_minus_name_slot_right,7.0
+final-podium,3,800,482,3,card_name,VECTOR-9 WIDE INTERSTATE,"(275, 376, 408, 399)",name_slot_left_minus_medal_right,4.9
+final-podium,3,800,482,3,card_name,VECTOR-9 WIDE INTERSTATE,"(275, 376, 408, 399)",portrait_left_minus_name_slot_right,6.7

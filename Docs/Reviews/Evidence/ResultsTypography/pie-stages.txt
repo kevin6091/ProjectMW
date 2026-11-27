@@ -1,0 +1,74 @@
+[2026.11.27-12.38.32:782][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.38.32:787][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.38.32:793][494]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.39.55:329][815]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.39.55:334][815]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.39.55:338][815]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.07:115][352]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.07:119][352]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.07:122][352]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.12:021][567]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.40.12:022][567]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.40.12:022][567]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.40.38:333][740]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.38:337][740]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.40.38:341][740]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.43.58:225][967]LogPython: MW_TYPOGRAPHY_SIX_DIGITS rows=12
+[2026.11.27-12.44.36:790][848]LogPython: MW_TYPOGRAPHY_RESULTS_WBPS_COMPILED
+[2026.11.27-12.45.24:997][194]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.25:001][194]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.25:006][194]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.27:126][270]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.27:131][270]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.27:140][270]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.29:140][334]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.29:144][334]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.45.29:147][334]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.46.13:978][140]LogPython: MW_TYPOGRAPHY_SIX_DIGITS rows=12
+[2026.11.27-12.49.27:284][278]LogPython: MW_TYPOGRAPHY_FINAL_CLEARANCE_COMPILED
+[2026.11.27-12.50.08:834][912]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.08:839][912]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.08:847][912]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.11:939][  4]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.11:946][  4]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.11:951][  4]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.14:455][ 83]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.14:462][ 83]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.14:468][ 83]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.17:255][180]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.50.17:256][180]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.50.17:257][180]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-12.50.35:836][818]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.35:842][818]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.50.35:847][818]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.52.24:807][905]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.52.24:810][905]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.52.24:814][905]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.01:437][608]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-12.53.01:456][609]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-12.53.01:464][609]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-12.53.01:915][615]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-12.53.01:916][615]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-12.53.01:917][615]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-12.53.02:793][627]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-12.53.02:794][627]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-12.53.02:795][627]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-12.53.03:766][641]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.03:767][641]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.03:768][641]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.48:339][573]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.27-12.53.48:369][574]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.27-12.53.48:383][574]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/4 Label=라운드 2
+[2026.11.27-12.53.48:682][578]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.27-12.53.48:683][578]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.27-12.53.48:683][578]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/4 Label=체크포인트 1 점수
+[2026.11.27-12.53.49:217][586]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.27-12.53.49:217][586]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.27-12.53.49:218][586]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/4 Label=완주 점수
+[2026.11.27-12.53.49:958][597]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.27-12.53.49:959][597]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.27-12.53.49:959][597]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=4/4 Label=선착 보너스
+[2026.11.27-12.53.50:676][607]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.50:677][607]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.53.50:677][607]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-12.57.18:450][585]LogPython: MW_TYPOGRAPHY_GAME_MODE_RELOADED_AT_ORIGINAL_GOAL
