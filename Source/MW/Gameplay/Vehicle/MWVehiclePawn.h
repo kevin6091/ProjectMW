@@ -233,6 +233,16 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "0", Units = "s"))
     float CheckpointRecoverySeconds = 0.8f;
 
+    // 로컬 카메라 오프셋(cm). X는 진행 방향, Z는 월드 위쪽이다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Camera|Recovery", meta = (Units = "cm"))
+    FVector CheckpointRecoveryCameraOffset = FVector(-740.f, 0.f, 1000.f);
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Camera|Recovery", meta = (ClampMin = "0.01", Units = "s"))
+    float CheckpointRecoveryCameraBlendSeconds = .23f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Camera|Recovery", meta = (Units = "cm"))
+    float CheckpointRecoveryLookAhead = 340.f;
+
     UPROPERTY(ReplicatedUsing = OnRep_CheckpointRecoveryEndServerTime)
     double CheckpointRecoveryEndServerTime = 0.0;
 

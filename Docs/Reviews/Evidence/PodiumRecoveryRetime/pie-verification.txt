@@ -1,0 +1,56 @@
+[2026.11.27-00.18.29:457][  2]LogPython: MW_SCORE_FONT_CALIBRATED
+[2026.11.27-00.19.00:229][163]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=17168.71, Y=4685.85, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.19.00:242][164]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=17168.71, Y=4685.85, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.19.00:249][164]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=0 Camera=V(X=17168.71, Y=4685.85, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.19.07:024][310]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-001907
+[2026.11.27-00.19.16:903][495]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.00
+[2026.11.27-00.19.16:944][496]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.00
+[2026.11.27-00.19.16:952][496]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.00
+[2026.11.27-00.19.19:930][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.65
+[2026.11.27-00.19.19:931][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-00.19.19:937][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.65
+[2026.11.27-00.19.19:937][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-00.19.19:943][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=26268.20, Y=-866.16, Z=10724.09) TravelScale=0.65
+[2026.11.27-00.19.19:943][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-00.19.23:111][563]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.19.23:111][563]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.19.23:112][563]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=PodiumMedal Bounds=263.7,176.0,466.9,379.2
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_0 Widget=CardBackground Bounds=313.1,240.9,1190.6,314.2
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=PodiumMedal Bounds=392.2,522.7,562.1,692.5
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_1 Widget=CardBackground Bounds=433.6,577.0,1166.7,638.3
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=PodiumMedal Bounds=511.3,775.0,665.4,929.0
+[2026.11.27-00.19.23:314][565]LogTemp: Display: MW_RACE_LAYOUT Phase=PODIUM2 Member=1 Owner=WBP_MatchPodiumCard_C_2 Widget=CardBackground Bounds=548.8,824.2,1213.7,879.8
+[2026.11.27-00.19.41:170][747]LogTemp: Display: MW_RACE_RENDER_END Requested=436 Queued=436 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-001907
+[2026.11.27-00.19.59:266][987]LogTemp: Display: MW_LAYOUT4_SHOW before /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080 scores=3000,2300,2375,2650
+[2026.11.27-00.19.59:273][987]LogTemp: Display: MW_LAYOUT4_SHOW before /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720 scores=3000,2300,2375,2650
+[2026.11.27-00.20.25:911][274]LogTemp: Display: MW_LAYOUT4_SHOW after /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080 scores=3000,2300,2375,2650
+[2026.11.27-00.20.25:917][274]LogTemp: Display: MW_LAYOUT4_SHOW after /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720 scores=3000,2300,2375,2650
+BRUSH after ScoreBar Texture=T_Road_Sign_Scores_5b1bec523c37 Source=512x512 Platform=512x512 Resident=10/10 LOD=0 Filter=3 sRGB=1 DrawAs=1 Margin=0.060,0.070,0.060,0.000 UV=0
+BRUSH after TallyBadgeBackground Texture=T_Vehicle_Badge_Background_7d063220e79b Source=511x512 Platform=511x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH after TallyBoltTopLeft Texture=T_Road_Sign_Bolts_442797e33bc2 Source=94x118 Platform=94x118 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH after TallySignFace Texture=T_Road_Sign_Background_852f137d0c4e Source=2048x1024 Platform=2048x1024 Resident=12/12 LOD=1 Filter=3 sRGB=1 DrawAs=1 Margin=0.032,0.064,0.032,0.064 UV=0
+BRUSH after TallySignLogo Texture=T_Make_Way__Logo_Small_Sign_5909de5ef398 Source=1005x1005 Platform=1005x1005 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH after VehiclePortrait Texture=T_MW_VehiclePreview_Doug Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH after VehiclePortrait Texture=T_MW_VehiclePreview_Fred Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH after VehiclePortrait Texture=T_MW_VehiclePreview_Mammoth Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before ScoreBar Texture=T_Road_Sign_Scores_5b1bec523c37 Source=512x512 Platform=512x512 Resident=10/10 LOD=0 Filter=3 sRGB=1 DrawAs=1 Margin=0.060,0.070,0.060,0.000 UV=0
+BRUSH before TallyBadgeBackground Texture=T_Vehicle_Badge_Background_7d063220e79b Source=511x512 Platform=511x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before TallyBoltTopLeft Texture=T_Road_Sign_Bolts_442797e33bc2 Source=94x118 Platform=94x118 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before TallySignFace Texture=T_Road_Sign_Background_852f137d0c4e Source=2048x1024 Platform=2048x1024 Resident=12/12 LOD=1 Filter=3 sRGB=1 DrawAs=1 Margin=0.032,0.064,0.032,0.064 UV=0
+BRUSH before TallySignLogo Texture=T_Make_Way__Logo_Small_Sign_5909de5ef398 Source=1005x1005 Platform=1005x1005 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before VehiclePortrait Texture=T_MW_VehiclePreview_Doug Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before VehiclePortrait Texture=T_MW_VehiclePreview_Fred Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+BRUSH before VehiclePortrait Texture=T_MW_VehiclePreview_Mammoth Source=2048x2048 Platform=512x512 Resident=1/1 LOD=0 Filter=3 sRGB=1 DrawAs=3 Margin=0.000,0.000,0.000,0.000 UV=0
+FONT after NameLabel Face=F_NotoSansKR_Bold_Font Size=23.0 Typeface=Bold Outline=0
+FONT after RankLabel Face=F_NotoSansKR_Bold_Font Size=102.0 Typeface=Bold Outline=0
+FONT after RankSuffix Face=F_NotoSansKR_Bold_Font Size=24.8 Typeface=Bold Outline=0
+FONT after TallyHeading Face=F_NotoSansKR_Bold_Font Size=64.5 Typeface=Bold Outline=0
+FONT after TotalScoreLabel Face=F_NotoSansKR_Bold_Font Size=32.2 Typeface=Bold Outline=0
+FONT after TotalScoreLabel Face=F_NotoSansKR_Bold_Font Size=43.5 Typeface=Bold Outline=2
+FONT before NameLabel Face=F_NotoSansKR_Bold_Font Size=23.0 Typeface=Bold Outline=0
+FONT before RankLabel Face=F_NotoSansKR_Bold_Font Size=102.0 Typeface=Bold Outline=0
+FONT before RankSuffix Face=F_NotoSansKR_Bold_Font Size=24.8 Typeface=Bold Outline=0
+FONT before TallyHeading Face=F_NotoSansKR_Bold_Font Size=64.5 Typeface=Bold Outline=0
+FONT before TotalScoreLabel Face=F_NotoSansKR_Bold_Font Size=32.2 Typeface=Bold Outline=0
+FONT before TotalScoreLabel Face=F_NotoSansKR_Bold_Font Size=43.5 Typeface=Bold Outline=2

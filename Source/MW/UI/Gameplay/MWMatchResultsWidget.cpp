@@ -41,7 +41,12 @@ void UMWMatchResultRowWidget::SetResult(const FMWPlayerRoundState& Result, const
     const FLinearColor Color = GetDefault<UMWParticipantPalette>()->GetColorForMember(Result.MemberId);
     if (MemberAccent) MemberAccent->SetBrushColor(Color);
     if (CardBackground) CardBackground->SetBrushColor(Color);
-    if (ScoreBar) ScoreBar->SetFillColorAndOpacity(Color);
+    if (ScoreBar)
+    {
+        FLinearColor Fill = FMath::Lerp(Color, FLinearColor::White, TallyFillWhiteMix) * TallyFillExposure;
+        Fill.A = Color.A;
+        ScoreBar->SetFillColorAndOpacity(Fill);
+    }
     if (RankLabel)
     {
         RankLabel->SetText(Rank > 0 ? FText::Format(LOCTEXT("Rank", "{0}위"), FText::AsNumber(Rank))
@@ -276,16 +281,15 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
         return false;
     }
     // 라운드 집계도 결승을 배경으로 즉시 시작한다. 카메라 단독 연출은 매치 종료 때만 기다린다.
-    if (BeginFinishShot(State) && bFinalResults)
+    if (BeginFinishShot(State) && bFinalResults && ScoreStages.IsEmpty())
     {
-        Screen = EMWMatchResultsScreen::FinishShot;
-        RestoreInput(*Controller);
+        BeginPodiumApproach();
     }
     else
     {
         BeginTally();
-        RestoreInput(*Controller);
     }
+    RestoreInput(*Controller);
     return true;
 }
 
@@ -421,10 +425,6 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
         ? FMath::Clamp(CameraBlendSeconds, 0.f, ShotSeconds) : 0.f;
     Controller->SetViewTargetWithBlend(FinishCamera, Blend, VTBlend_EaseInOut, 0.f, true);
 
-    if (bFinalResults)
-    {
-        GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginTally, ShotSeconds, false);
-    }
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s TravelScale=%.2f"),
         *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, ViewIndex,
         *CameraLocation.ToCompactString(), PodiumCameraTravelScale);
@@ -434,8 +434,7 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
 void UMWMatchResultsWidget::UpdatePodiumCamera(float SequenceElapsed)
 {
     if (!FinishCamera || PodiumCameraTravelScale <= 0.f) return;
-    const float Lead = bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds;
-    const float Duration = Lead + GetPodiumDuration();
+    const float Duration = ShotSeconds + GetPodiumDuration();
     const float Time = Duration > 0.f ? FMath::Clamp(SequenceElapsed / Duration, 0.f, 1.f) : 1.f;
     int32 Index = 1;
     while (Index < PodiumCameraKeys.Num() - 1 && Time > PodiumCameraKeys[Index].Time) ++Index;
@@ -640,13 +639,8 @@ void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTim
     if (Screen == EMWMatchResultsScreen::FinishShot)
     {
         FinishShotElapsed += DeltaTime;
-        // 결과 복제가 빨라 최종 위젯이 집계를 다시 그리면 차량은 판이 내려간 뒤에 출발한다.
-        if (ScoreStages.IsEmpty() || bWinnerLeadAfterTally)
-        {
-            UpdatePodiumCamera(bWinnerLeadAfterTally
-                ? FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()) : FinishShotElapsed);
-            UpdateWinnerVehicle(FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()));
-        }
+        UpdatePodiumCamera(FinishShotElapsed);
+        UpdateWinnerVehicle(FinishShotElapsed - (ShotSeconds - GetWinnerVehicleLead()));
         return;
     }
     if (Screen == EMWMatchResultsScreen::Winner)
@@ -723,20 +717,19 @@ void UMWMatchResultsWidget::EndTally()
         // 확정 라운드 화면을 받지 못한 클라이언트도 집계를 건너뛰지 않고 최종 시상까지 이어 간다.
         if (FMath::IsFinite(RoundPositionsHoldSeconds) && RoundPositionsHoldSeconds > 0.f)
         {
-            GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginWinnerLeadAfterTally,
+            GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodiumApproach,
                 RoundPositionsHoldSeconds, false);
             return;
         }
-        BeginWinnerLeadAfterTally();
+        BeginPodiumApproach();
         return;
     }
     BeginPodium();
 }
 
-void UMWMatchResultsWidget::BeginWinnerLeadAfterTally()
+void UMWMatchResultsWidget::BeginPodiumApproach()
 {
-    const float Lead = GetWinnerVehicleLead();
-    if (!FinishCamera || !WinnerVehicleShot.IsValid() || Lead <= 0.f)
+    if (!FinishCamera)
     {
         BeginPodium();
         return;
@@ -744,12 +737,11 @@ void UMWMatchResultsWidget::BeginWinnerLeadAfterTally()
 
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
     Screen = EMWMatchResultsScreen::FinishShot;
-    bWinnerLeadAfterTally = true;
-    FinishShotElapsed = ShotSeconds - Lead;
+    // 결과 복제 순서와 관계없이 판 퇴장부터 카메라·차량·카드가 같은 시간을 쓴다.
+    FinishShotElapsed = 0.f;
     UpdatePodiumCamera(0.f);
     UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=PodiumApproach"), *GetWorld()->GetOutermost()->GetName());
-    UpdateWinnerVehicle(0.f);
-    GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, Lead, false);
+    GetWorld()->GetTimerManager().SetTimer(PresentationTimer, this, &ThisClass::BeginPodium, ShotSeconds, false);
 }
 
 void UMWMatchResultsWidget::BeginPodium()
@@ -774,7 +766,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
     const float TotalSeconds = GetPodiumDuration();
     const float HoldSeconds = TotalSeconds - WinnerSeconds;
     RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, TotalSeconds);
-    UpdatePodiumCamera((bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds) + RevealElapsed);
+    UpdatePodiumCamera(ShotSeconds + RevealElapsed);
     UpdateWinnerVehicle(GetWinnerVehicleLead() + RevealElapsed);
     const float CardSeconds = WinnerSeconds / Count;
     // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
@@ -813,7 +805,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
 
 void UMWMatchResultsWidget::ShowStandings()
 {
-    UpdatePodiumCamera((bWinnerLeadAfterTally ? GetWinnerVehicleLead() : ShotSeconds) + GetPodiumDuration());
+    UpdatePodiumCamera(ShotSeconds + GetPodiumDuration());
     UpdateWinnerVehicle(GetWinnerVehicleLead() + GetPodiumDuration());
     // 마지막 프레임과 즉시 표시 경로에서 모두 카드가 제자리에 남도록 한다.
     for (UMWMatchResultRowWidget* Card : PodiumRevealOrder)

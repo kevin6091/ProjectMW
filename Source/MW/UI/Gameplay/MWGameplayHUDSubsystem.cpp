@@ -385,9 +385,18 @@ private:
             CacheRecoverySlots(*Vehicle);
         }
 
-        const float Elapsed = static_cast<float>(CurrentTime - RecoveryStarted);
-        RecoveryPulse = RecoveryLayout.FlashSeconds > UE_SMALL_NUMBER
-            ? 1.f - FMath::SmoothStep(0.f, RecoveryLayout.FlashSeconds, Elapsed) : 0.f;
+        const float FlashElapsed = static_cast<float>(CurrentTime - RecoveryStarted) - RecoveryLayout.FlashDelaySeconds;
+        // 선수 표식이 먼저 보이고 같은 복귀 안에서 펄스가 올라왔다가 사라진다.
+        RecoveryPulse = 0.f;
+        const float FlashDuration = RecoveryLayout.FlashSeconds;
+        if (FlashElapsed > 0.f && FlashElapsed < FlashDuration)
+        {
+            const float Progress = FlashElapsed / FlashDuration;
+            const float Peak = FMath::Clamp(RecoveryLayout.FlashAttackSeconds / FlashDuration,
+                UE_KINDA_SMALL_NUMBER, 1.f - UE_KINDA_SMALL_NUMBER);
+            RecoveryPulse = Progress < Peak ? FMath::SmoothStep(0.f, Peak, Progress)
+                : 1.f - FMath::SmoothStep(Peak, 1.f, Progress);
+        }
         if (RecoveryMarker.IsValid())
         {
             const float Fade = RecoveryLayout.SlotBreakSeconds > UE_SMALL_NUMBER
@@ -410,15 +419,19 @@ private:
         // 보조 슬롯은 복귀 시점에 지지면을 확인한 곳에만 그리는 화면용 가이드다.
         FCollisionQueryParams Params(SCENE_QUERY_STAT(MWRecoverySlotSupport), true, &Vehicle);
         const FVector Lateral = Box->GetRightVector() * RecoveryExtent.Y * 2.f * RecoveryLayout.SlotSpacingInVehicleWidths;
+        const FVector Advance = Box->GetForwardVector() * RecoveryExtent.X * 2.f;
         const FVector Probe = Up * RecoveryExtent.Z;
         for (const float Side : {-1.f, 1.f})
         {
-            const FVector Center = Base + Lateral * Side;
-            FHitResult Surface;
-            if (Vehicle.GetWorld()->LineTraceSingleByChannel(Surface, Center + Probe, Center - Probe, ECC_Visibility, Params)
-                && FVector::DotProduct(Surface.ImpactNormal, Up) > .5f)
+            for (const FVector& Row : {FVector::ZeroVector, Advance})
             {
-                RecoverySlots.Emplace(Rotation, Surface.ImpactPoint);
+                const FVector Center = Base + Row + Lateral * Side;
+                FHitResult Surface;
+                if (Vehicle.GetWorld()->LineTraceSingleByChannel(Surface, Center + Probe, Center - Probe, ECC_Visibility, Params)
+                    && FVector::DotProduct(Surface.ImpactNormal, Up) > .5f)
+                {
+                    RecoverySlots.Emplace(Rotation, Surface.ImpactPoint);
+                }
             }
         }
         UE_LOG(LogMWInGameUI, Verbose, TEXT("World=%s RecoveryGuides=%d"), *Vehicle.GetWorld()->GetName(), RecoverySlots.Num());
@@ -734,7 +747,7 @@ private:
     FSlateColorBrush RecoverySweepBrush{FLinearColor::White};
     FLinearColor RecoverySweepTint = FLinearColor::Transparent;
     TWeakObjectPtr<const AMWVehiclePawn> RecoveryVehicle;
-    TArray<FTransform, TInlineAllocator<3>> RecoverySlots;
+    TArray<FTransform, TInlineAllocator<5>> RecoverySlots;
     FVector RecoveryExtent = FVector::ZeroVector;
     double RecoveryStarted = 0.0;
     float RecoveryInitialRemaining = 0.f;

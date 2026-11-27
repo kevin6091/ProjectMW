@@ -486,7 +486,7 @@ void AMWVehiclePawn::RefreshDrivePermission()
 		*GetName(), bDriveAllowed ? 1 : 0, ServerDriveSnapshot.StreamId, ServerDriveSnapshot.RoundEpoch);
 }
 
-// 기존 차량 시점에 부스터 표시용 카메라 변화를 적용하며 이동·서버 보정 값은 바꾸지 않는다.
+// 소유 창에서만 주행 카메라에 부스터 및 체크포인트 복귀 연출을 더한다.
 void AMWVehiclePawn::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
 {
     Super::CalcCamera(DeltaTime, OutResult);
@@ -503,20 +503,34 @@ void AMWVehiclePawn::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
     const float BlendSeconds = TargetBlend > BoosterCameraBlend ? PullbackSeconds : ReturnSeconds;
     BoosterCameraBlend = FMath::FInterpConstantTo(BoosterCameraBlend, TargetBlend, DeltaTime, 1.f / BlendSeconds);
     const float CameraBlend = FMath::SmoothStep(0.f, 1.f, BoosterCameraBlend);
-    if (CameraBlend <= 0.005f)
+
+    const float RecoveryRemaining = GetCheckpointRecoveryRemaining();
+    const float RecoveryEdge = FMath::Max(CheckpointRecoveryCameraBlendSeconds, UE_KINDA_SMALL_NUMBER);
+    const float RecoveryBlend = RecoveryRemaining > 0.f
+        ? FMath::SmoothStep(0.f, RecoveryEdge, CheckpointRecoverySeconds - RecoveryRemaining)
+            * FMath::SmoothStep(0.f, RecoveryEdge, RecoveryRemaining)
+        : 0.f;
+    if (FMath::Max(CameraBlend, RecoveryBlend) <= 0.005f)
     {
         return;
     }
 
     constexpr float BoostDollyDistance = 190.f;
-    const FVector TargetLocation =
-        OutResult.Location - OutResult.Rotation.Vector() * (BoostDollyDistance * CameraBlend);
-    const FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(BoosterCameraDolly), false, this);
+    const FRotator Heading(0.f, OutResult.Rotation.Yaw, 0.f);
+    const FVector TargetLocation = OutResult.Location - OutResult.Rotation.Vector() * (BoostDollyDistance * CameraBlend)
+        + Heading.RotateVector(CheckpointRecoveryCameraOffset) * RecoveryBlend;
+    const FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(VehiclePresentationCamera), false, this);
     FHitResult Hit;
     const bool bBlocked = GetWorld()->SweepSingleByChannel(
         Hit, OutResult.Location, TargetLocation, FQuat::Identity, CameraBoom->ProbeChannel,
         FCollisionShape::MakeSphere(CameraBoom->ProbeSize), QueryParams);
     OutResult.Location = bBlocked ? Hit.Location : TargetLocation;
+    if (RecoveryBlend > 0.f)
+    {
+        const FVector Focus = GetActorLocation() + Heading.Vector() * CheckpointRecoveryLookAhead;
+        const FQuat DriveView = OutResult.Rotation.Quaternion();
+        OutResult.Rotation = FQuat::Slerp(DriveView, (Focus - OutResult.Location).ToOrientationQuat(), RecoveryBlend).Rotator();
+    }
 }
 
 UPawnMovementComponent* AMWVehiclePawn::GetMovementComponent() const

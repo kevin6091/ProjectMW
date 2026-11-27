@@ -67,6 +67,13 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
     float MarkerMinimumFill = 0.f;
 
+    // 점수판의 도장 브러시에만 적용한다. 커서·차량·시상은 기존 참가자색을 사용한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
+    float TallyFillWhiteMix = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "2"))
+    float TallyFillExposure = 1.f;
+
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D PortraitEntryOffset = FVector2D::ZeroVector;
 
@@ -239,7 +246,6 @@ private:
     TSharedPtr<FStreamableHandle> WinnerVehicleClassLoad;
     FIntPoint SettledViewportSize = FIntPoint::ZeroValue;
     bool bWinnerVehicleSpawnAttempted = false;
-    bool bWinnerLeadAfterTally = false;
     TArray<TWeakObjectPtr<UNiagaraComponent>> CelebrationComponents;
     FTransform FinishFrame;
     FVector FinishCameraOrigin = FVector::ZeroVector;
@@ -278,7 +284,7 @@ private:
     void BeginTally();
     void ShowTallyStage();
     void EndTally();
-    void BeginWinnerLeadAfterTally();
+    void BeginPodiumApproach();
     void BeginPodium();
     void UpdatePodium(float DeltaTime);
     void ShowStandings();
