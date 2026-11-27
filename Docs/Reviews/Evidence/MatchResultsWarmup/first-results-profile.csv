@@ -1,0 +1,16 @@
+case,screen_order,class_resident,class_load_ms,create_ms,present_ms,total_measured_ms,cold_portraits,portrait_load_sum_ms
+before-first,1,0,37.1146,0.6425,35.8080,73.5651,3,5.1504
+before-first,2,1,0.0028,0.6924,3.4098,4.105,0,0.006
+before-first,3,1,0.0024,0.6539,2.6020,3.2583,0,0.0068
+before-repeat,1,1,0.0030,0.6716,2.8420,3.5166,0,0.0082
+before-repeat,2,1,0.0028,0.6374,3.1586,3.7988,0,0.0076
+before-repeat,3,1,0.0031,0.4728,2.6253,3.1012,0,0.007
+after-first,1,1,0.0034,0.9236,4.8576,5.7846,0,0.0099
+after-first,2,1,0.0021,0.6437,3.6109,4.2567,0,0.0086
+after-first,3,1,0.0020,0.6207,3.8090,4.4317,0,0.0094
+after-repeated-editor-first,1,1,0.0035,0.7123,5.2805,5.9963,0,0.0097
+after-repeated-editor-first,2,1,0.0026,0.5730,3.0264,3.602,0,0.008
+after-repeated-editor-first,3,1,0.0033,0.5685,3.0893,3.6611,0,0.0081
+after-repeated-editor-repeat,1,1,0.0038,1.1336,3.3514,4.4888,0,0.0116
+after-repeated-editor-repeat,2,1,0.0028,0.6934,4.0198,4.716,0,0.0071
+after-repeated-editor-repeat,3,1,0.0029,0.5548,2.8778,3.4355,0,0.0096

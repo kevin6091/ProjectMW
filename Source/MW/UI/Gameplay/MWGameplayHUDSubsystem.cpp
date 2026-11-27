@@ -14,6 +14,7 @@
 #include "Data/MWVehicleDefinitionData.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
@@ -31,6 +32,7 @@
 #include "UI/Gameplay/MWGameplaySign.h"
 #include "UI/Gameplay/MWMatchResultsWidget.h"
 #include "UI/Gameplay/MWRaceHUDWidget.h"
+#include "UI/VehicleSelection/MWVehicleSelectionWidget.h"
 #include "UObject/Package.h"
 #include "Widgets/SNullWidget.h"
 #include "UI/Common/MWParticipantPalette.h"
@@ -922,6 +924,7 @@ void UMWGameplayHUDSubsystem::RefreshGameStateBinding()
     }
 
     RemoveMatchResults();
+    ReleaseMatchResultsPreload();
     ObservedGameState = GameState;
     if (GameState)
     {
@@ -942,6 +945,10 @@ void UMWGameplayHUDSubsystem::HandleGameplayStateChanged()
     }
 
     RoomPhase = GameState->GetRoomPhase();
+    if (RoomPhase == EMWRoomPhase::Countdown || RoomPhase == EMWRoomPhase::Racing)
+    {
+        PrefetchMatchResults(*GameState);
+    }
     UE_LOG(LogMWInGameUI, Verbose, TEXT("[MWRaceHUD] 경기 단계 갱신. World=%s Phase=%s"),
            *GetNameSafe(GetWorld()), *UEnum::GetValueAsString(RoomPhase.GetValue()));
     RefreshMatchResults();
@@ -1000,6 +1007,38 @@ bool UMWGameplayHUDSubsystem::RestoreMatchResultsInput(APlayerController& Contro
     return MatchResultsWidget && MatchResultsWidget->RestoreInput(Controller);
 }
 
+void UMWGameplayHUDSubsystem::PrefetchMatchResults(const AMWGameplayGameState& State)
+{
+    const auto& WidgetClass = GetDefault<UMWGameplayHUDSubsystem>()->MatchResultsWidgetClass;
+    if (MatchResultsPreload || PIEPreview.IsEnabled() || WidgetClass.IsNull())
+    {
+        return;
+    }
+
+    // 이번 경기 참가자의 결과판과 차량 썸네일을 첫 집계 전에 준비한다.
+    TArray<FSoftObjectPath> Paths{WidgetClass.ToSoftObjectPath()};
+    const auto& Thumbnails = GetDefault<UMWVehicleSelectionWidget>()->DefaultVehicleThumbnails;
+    for (const APlayerState* Base : State.PlayerArray)
+    {
+        if (const auto* Player = Cast<AMWPlayerState>(Base))
+        {
+            const auto* Thumbnail = Thumbnails.Find(Player->GetVehicleAssetID());
+            if (Thumbnail && !Thumbnail->IsNull()) Paths.AddUnique(Thumbnail->ToSoftObjectPath());
+        }
+    }
+
+    MatchResultsPreload = UMWAssetManager::GetStreamableManager().RequestAsyncLoad(Paths);
+}
+
+void UMWGameplayHUDSubsystem::ReleaseMatchResultsPreload()
+{
+    if (MatchResultsPreload && MatchResultsPreload->IsLoadingInProgress())
+    {
+        MatchResultsPreload->CancelHandle();
+    }
+    MatchResultsPreload.Reset();
+}
+
 void UMWGameplayHUDSubsystem::RefreshMatchResults()
 {
     const auto* State = ObservedGameState.Get();
@@ -1056,6 +1095,7 @@ void UMWGameplayHUDSubsystem::RemoveMatchResults()
 void UMWGameplayHUDSubsystem::RemoveOverlay()
 {
     RemoveMatchResults();
+    ReleaseMatchResultsPreload();
     if (AMWGameplayGameState* GameState = ObservedGameState.Get())
     {
         GameState->OnGameplayStateChanged.RemoveDynamic(this, &ThisClass::HandleGameplayStateChanged);

@@ -1,0 +1,53 @@
+=== cold ===
+[2026.11.27-15.59.42:772][574]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_0_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0525
+[2026.11.27-15.59.42:775][574]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_1_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0327
+[2026.11.27-15.59.42:776][574]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_2_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0326
+[2026.11.27-16.01.36:039][218]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.01.36:040][218]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.01.36:040][218]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.02.08:079][534]LogPython: MW_QA_CLIENT_EXIT L_Dev_Drive member=2
+[2026.11.27-16.02.08:097][534]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.02.08:169][534]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_1_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.03.11:976][626]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.03.12:048][626]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_2_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.03.12:097][626]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.03.12:193][626]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_0_L_Dev_Drive Pending=0 Remains=0
+=== repeated ===
+[2026.11.27-16.04.36:642][176]LogPython: MW_RESULT_GC {'sample': 'before-first-pie', 'working_set_mib': 3178.52, 'private_mib': 4728.79, 'pie_worlds': [], 'MWMatchResultsWidget': 0, 'MWMatchResultRowWidget': 0, 'MWWinnerVehicleShowcase': 0}
+[2026.11.27-16.05.08:069][782]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_0_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0673
+[2026.11.27-16.05.08:072][782]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_1_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0376
+[2026.11.27-16.05.08:074][782]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_2_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0439
+[2026.11.27-16.06.59:824][985]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.06.59:824][985]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.06.59:825][985]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.07.28:676][210]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.07.28:735][210]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_2_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.07.28:744][210]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.07.28:803][210]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_1_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.07.28:812][210]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.07.28:886][210]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_0_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.07.43:093][ 28]LogPython: MW_RESULT_GC {'sample': 'after-match-1', 'working_set_mib': 3918.06, 'private_mib': 5549.16, 'pie_worlds': [], 'MWMatchResultsWidget': 0, 'MWMatchResultRowWidget': 0, 'MWWinnerVehicleShowcase': 0}
+[2026.11.27-16.08.00:310][845]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_0_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0214
+[2026.11.27-16.08.00:313][845]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_1_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0067
+[2026.11.27-16.08.00:316][845]LogMWInGameUI: Display: MW_RESULT_COST Prefetch World=/Game/Levels/UEDPIE_2_L_Dev_Drive Phase=8 Paths=4 RequestMs=0.0082
+[2026.11.27-16.10.25:049][112]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.10.25:049][112]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.10.25:050][112]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.10.35:188][528]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.10.35:252][528]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_2_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.10.35:261][528]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.10.35:336][528]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_1_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.10.35:350][528]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-16.10.35:436][528]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_0_L_Dev_Drive Pending=0 Remains=0
+[2026.11.27-16.10.49:660][355]LogPython: MW_RESULT_GC {'sample': 'after-match-2', 'working_set_mib': 4003.99, 'private_mib': 5708.86, 'pie_worlds': [], 'MWMatchResultsWidget': 0, 'MWMatchResultRowWidget': 0, 'MWWinnerVehicleShowcase': 0}
+=== deferred cancellation test ===
+[2026.11.27-16.20.29:774][818]LogMWInGameUI: Display: MW_QA_STALLED_REQUEST World=/Game/Levels/UEDPIE_0_L_Dev_Drive Stalled=1 Pending=1
+[2026.11.27-16.20.29:776][818]LogMWInGameUI: Display: MW_QA_STALLED_REQUEST World=/Game/Levels/UEDPIE_1_L_Dev_Drive Stalled=1 Pending=1
+[2026.11.27-16.20.29:778][818]LogMWInGameUI: Display: MW_QA_STALLED_REQUEST World=/Game/Levels/UEDPIE_2_L_Dev_Drive Stalled=1 Pending=1
+[2026.11.27-16.22.55:900][819]LogPython: MW_QA_PENDING_EXIT /Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive member=2 phase=<MWRoomPhase.MATCH_RESULTS: 12>
+[2026.11.27-16.22.55:956][819]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_1_L_Dev_Drive Pending=1 Remains=0
+[2026.11.27-16.22.56:236][819]LogMWInGameUI: Display: MW_QA_STALLED_CANCEL World=/Game/Levels/UEDPIE_1_L_Dev_Drive Canceled=1 Active=0
+[2026.11.27-16.25.39:454][978]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_2_L_Dev_Drive Pending=1 Remains=0
+[2026.11.27-16.25.39:561][978]LogMWInGameUI: Display: MW_RESULT_COST PrefetchRelease World=/Game/Levels/UEDPIE_0_L_Dev_Drive Pending=1 Remains=0
+[2026.11.27-16.25.39:879][979]LogMWInGameUI: Display: MW_QA_STALLED_CANCEL World=/Game/Levels/UEDPIE_2_L_Dev_Drive Canceled=1 Active=0
+[2026.11.27-16.25.39:879][979]LogMWInGameUI: Display: MW_QA_STALLED_CANCEL World=/Game/Levels/UEDPIE_0_L_Dev_Drive Canceled=1 Active=0

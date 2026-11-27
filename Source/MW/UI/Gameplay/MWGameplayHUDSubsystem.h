@@ -18,6 +18,7 @@ class UTexture2D;
 class UMWMatchResultsWidget;
 class UMWRaceHUDWidget;
 class UUserWidget;
+struct FStreamableHandle;
 
 // 아이템 슬롯의 1920×1080 디자인 좌표와 실제 화면 최소 크기다. SVG 원본 좌표계와는 구분한다.
 USTRUCT()
@@ -254,9 +255,13 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMWMatchResultsWidget> MatchResultsWidget;
 
+    TSharedPtr<FStreamableHandle> MatchResultsPreload;
+
     int32 AttemptedMatchResultsEpoch = INDEX_NONE;
     TOptional<EMWRoomPhase> AttemptedResultPhase;
 
     void RefreshMatchResults();
     void RemoveMatchResults();
+    void PrefetchMatchResults(const AMWGameplayGameState& State);
+    void ReleaseMatchResultsPreload();
 };
