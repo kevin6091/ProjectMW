@@ -12,6 +12,9 @@
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "System/GameState/MWGameplayGameState.h"
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Sound/SoundBase.h"
@@ -97,6 +100,7 @@ void UMWTrackRuntimeComponent::Configure(const FMWTrackDefinition& InData)
     Piece = InData;
     bConfigured = true;
     const FMWTrackDefinition& Data = Piece;
+    BindStartSignals();
     AActor& Actor = *GetOwner();
     TInlineComponentArray<UStaticMeshComponent*> Visuals(&Actor);
     Motions.Reserve(Data.Motions.Num());
@@ -348,7 +352,8 @@ void UMWTrackRuntimeComponent::SetPreview(bool bInPreview)
             SetTrafficActive(Slot, false);
         }
     }
-    const bool bHasMotion = !Motions.IsEmpty() || !Train.IsEmpty() || !Traffic.IsEmpty();
+    UpdateStartSignals();
+    const bool bHasMotion = !Motions.IsEmpty() || !Train.IsEmpty() || !Traffic.IsEmpty() || !StartSignals.IsEmpty();
     SetComponentTickEnabled(!bPreview && bHasMotion);
 }
 
@@ -819,6 +824,74 @@ void UMWTrackRuntimeComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
     UpdateLift(Time, DeltaTime);
     ApplyMotions(Time, GateAlpha);
     ApplyRollers();
+    UpdateStartSignals();
+}
+
+void UMWTrackRuntimeComponent::BindStartSignals()
+{
+    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
+    if (GetNetMode() == NM_DedicatedServer || !Settings->StartTrackClass.Get() ||
+        !GetOwner()->IsA(Settings->StartTrackClass.Get()) || Settings->GreenSignalRow.IsNone()) return;
+
+    TArray<FName> Names = Settings->RedSignalRows;
+    Names.Add(Settings->GreenSignalRow);
+    TInlineComponentArray<UStaticMeshComponent*> Parts(GetOwner());
+    for (FName Name : Names)
+    {
+        UStaticMeshComponent** Part = Parts.FindByPredicate([Name](const UStaticMeshComponent* Mesh)
+        {
+            return Mesh->GetFName() == Name;
+        });
+        UMaterialInterface* Material = Part ? (*Part)->GetMaterial(0) : nullptr;
+        FLinearColor Color;
+        float Intensity;
+        if (!Material || !Material->GetVectorParameterValue(FHashedMaterialParameterInfo(Settings->SignalColorParameter), Color) ||
+            !Material->GetScalarParameterValue(FHashedMaterialParameterInfo(Settings->SignalIntensityParameter), Intensity))
+        {
+            UE_LOG(LogTemp, Warning, TEXT("시작 트랙의 신호등 행 %s 또는 재질 파라미터를 연결하지 못했습니다."), *Name.ToString());
+            continue;
+        }
+        if (auto* Instance = (*Part)->CreateDynamicMaterialInstance(0, Material))
+        {
+            StartSignals.Add({Instance, Color, Intensity});
+        }
+    }
+    if (StartSignals.Num() != Names.Num())
+    {
+        // 행 하나라도 없으면 색상 순서를 임의로 재해석하지 않는다.
+        StartSignals.Reset();
+    }
+}
+
+void UMWTrackRuntimeComponent::UpdateStartSignals()
+{
+    if (StartSignals.IsEmpty()) return;
+    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
+    const auto* State = GetWorld()->GetGameState<AMWGameplayGameState>();
+    const EMWRoomPhase Phase = !bPreview && State ? State->GetRoomPhase() : EMWRoomPhase::PreparingRace;
+    const int32 RedCount = StartSignals.Num() - 1;
+    int32 LitRed = 0;
+    if (Phase == EMWRoomPhase::Countdown && Settings->StartSignalStepSeconds > 0.f)
+    {
+        const double Remaining = State->GetPhaseSecondsRemaining();
+        LitRed = RedCount - FMath::FloorToInt(FMath::Clamp(Remaining / Settings->StartSignalStepSeconds, 0.0,
+            static_cast<double>(RedCount)));
+    }
+    for (int32 Index = 0; Index < StartSignals.Num(); ++Index)
+    {
+        FStartSignalRow& Row = StartSignals[Index];
+        const bool bLit = Index < RedCount ? Index < LitRed : Phase == EMWRoomPhase::Racing;
+        if (Row.bLit == bLit) continue;
+        Row.bLit = bLit;
+        if (auto* Material = Row.Material.Get())
+        {
+            const float Scale = bLit ? 1.f : Settings->UnlitSignalColorScale;
+            FLinearColor Color = Row.LitColor * Scale;
+            Color.A = Row.LitColor.A;
+            Material->SetVectorParameterValue(Settings->SignalColorParameter, Color);
+            Material->SetScalarParameterValue(Settings->SignalIntensityParameter, bLit ? Row.LitIntensity : 0.f);
+        }
+    }
 }
 
 // 실제 롤러에 닿은 차량에 기존 표면 속도 API로 이동 효과를 전달한다.

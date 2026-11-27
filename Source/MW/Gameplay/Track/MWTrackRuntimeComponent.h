@@ -11,6 +11,7 @@ class UStaticMeshComponent;
 class UAudioComponent;
 class UBoxComponent;
 class UChildActorComponent;
+class UMaterialInstanceDynamic;
 
 // 트랙과 수명을 같이하는 복구 기믹이다. 미리보기와 실제 경기 동작을 구분한다.
 UCLASS()
@@ -143,6 +144,20 @@ private:
 
     // 실제 롤러에 닿은 차량에 기존 표면 속도 API로 이동 효과를 전달한다.
     void ApplyRollers();
+    void BindStartSignals();
+    void UpdateStartSignals();
+
+    struct FStartSignalRow
+    {
+        TWeakObjectPtr<UMaterialInstanceDynamic> Material;
+        FLinearColor LitColor = FLinearColor::White;
+        float LitIntensity = 0.f;
+        bool bLit = true;
+    };
+
+    // 마지막 행은 현재 시작 트랙의 초록불이다.
+    TArray<FStartSignalRow> StartSignals;
+
 
     // 모든 탑승 차량의 발판 참조와 선행 틱 관계를 해제한다.
     void ClearRiders();

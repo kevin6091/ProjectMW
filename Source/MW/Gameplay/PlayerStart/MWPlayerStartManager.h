@@ -17,7 +17,7 @@ public:
 	AMWPlayerStartManager();
 
 	// 서버에서 실제 참가 인원만큼 만들고, 앞왼쪽부터 배정 순서대로 반환합니다.
-	bool PreparePlayerStarts(int32 PlayerCount, TArray<APlayerStart*>& OutStarts);
+	bool PreparePlayerStarts(int32 PlayerCount, const AActor* CourseStart, TArray<APlayerStart*>& OutStarts);
 
 	virtual void Destroyed() override;
 

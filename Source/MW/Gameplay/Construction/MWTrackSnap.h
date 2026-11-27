@@ -17,6 +17,7 @@ public:
 	static MW_API bool ReadPorts(const AActor& Track, FMWTrackPortFrames& OutPorts);
 	static bool ReadFirstPort(const AActor& Track, FTransform& OutPort);
 	static bool ReadStartGrid(const AActor& Track, FTransform& OutFrame);
+	static bool ReadStartSlot(const AActor& Track, FName Name, FVector& OutLocation);
 	static FTransform AlignPorts(const FTransform& Source, const FTransform& Target);
 	static FTransform MakeRawTransform(const FMWTrackPortFrames& Ports, const FMWTrackPlacementSession& Session,
 		const FMWTrackPlacementIntent& Intent);

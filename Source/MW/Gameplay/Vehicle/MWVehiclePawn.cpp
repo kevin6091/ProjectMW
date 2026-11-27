@@ -26,6 +26,9 @@
 #include "System/MWDriveTestGameMode.h"
 #include "System/GameMode/MWGameplayGameMode.h"
 #include "Gameplay/Track/MWTrackRuntimeSubsystem.h"
+#include "Gameplay/Construction/MWTrackConstructionComponent.h"
+#include "Gameplay/Construction/MWTrackSnap.h"
+#include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "LogChannel.h"
 
 bool AMWVehiclePawn::IsVisualBranch(USceneComponent* Component)
@@ -490,6 +493,7 @@ void AMWVehiclePawn::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
         return;
     }
 
+    UpdateStartCamera(DeltaTime, OutResult);
     const float TimeRemaining = ItemComponent->GetBoosterTimeRemaining();
     constexpr float PullbackSeconds = 1.40f;
     constexpr float ReturnSeconds = 0.36f;
@@ -511,6 +515,45 @@ void AMWVehiclePawn::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
         Hit, OutResult.Location, TargetLocation, FQuat::Identity, CameraBoom->ProbeChannel,
         FCollisionShape::MakeSphere(CameraBoom->ProbeSize), QueryParams);
     OutResult.Location = bBlocked ? Hit.Location : TargetLocation;
+}
+
+void AMWVehiclePawn::UpdateStartCamera(float DeltaTime, FMinimalViewInfo& View)
+{
+    const auto* Settings = GetDefault<UMWTrackRuntimeSettings>();
+    const auto* State = GetWorld()->GetGameState<AMWGameplayGameState>();
+    if (!State || Settings->StartCameraOffset.IsNearlyZero()) return;
+    const auto& Progress = State->GetProgressRef();
+    const bool bWideView = Progress.CourseSessionId > 0 &&
+        (Progress.Phase == EMWRoomPhase::PreparingRace || Progress.Phase == EMWRoomPhase::Countdown);
+    if (bWideView)
+    {
+        const auto& Tracks = State->GetConstructionComponent()->GetPlacementSession().PlacedTracks;
+        AActor* Track = Tracks.IsEmpty() ? nullptr : Tracks[0].Actor.Get();
+        if (!IsValid(Track)) return;
+        if (StartCameraTrack.Get() != Track)
+        {
+            FTransform Local;
+            if (!MWTrackSnap::ReadStartGrid(*Track, Local)) return;
+            StartCameraFrame = Local * Track->GetActorTransform();
+            StartCameraTrack = Track;
+        }
+        StartCameraBlend = 1.f;
+    }
+    else if (Progress.Phase == EMWRoomPhase::Racing && Settings->StartCameraBlendSeconds > 0.f)
+    {
+        StartCameraBlend = FMath::Max(0.f, StartCameraBlend - DeltaTime / Settings->StartCameraBlendSeconds);
+    }
+    else
+    {
+        StartCameraBlend = 0.f;
+    }
+
+    if (StartCameraBlend <= 0.f || !StartCameraTrack.IsValid()) return;
+    const FVector WideLocation = StartCameraFrame.TransformPosition(Settings->StartCameraOffset);
+    const FVector Focus = StartCameraFrame.TransformPosition(Settings->StartCameraFocus);
+    const float Blend = FMath::SmoothStep(0.f, 1.f, StartCameraBlend);
+    View.Location = FMath::Lerp(View.Location, WideLocation, Blend);
+    View.Rotation = FQuat::Slerp(View.Rotation.Quaternion(), (Focus - WideLocation).ToOrientationQuat(), Blend).Rotator();
 }
 
 UPawnMovementComponent* AMWVehiclePawn::GetMovementComponent() const
