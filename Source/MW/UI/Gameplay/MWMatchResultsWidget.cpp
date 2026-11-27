@@ -155,6 +155,14 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
         const float Fill = FMath::Lerp(FMath::Clamp(TallyBaseFraction, 0.f, 1.f), 1.f, Fraction);
         ScoreBar->SetPercent(Fill);
         const float MarkerAnchor = 1.f - Fill;
+        if (auto* OutlineSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(TallyFillOutline))
+        {
+            // 테두리의 여백과 굵기는 WBP에서 편집하고, 위쪽 경계만 채움 진행률과 함께 움직인다.
+            FAnchors Anchors = OutlineSlot->GetAnchors();
+            Anchors.Minimum.Y = MarkerAnchor;
+            OutlineSlot->SetAnchors(Anchors);
+            TallyFillOutline->SetVisibility(Fill > 0.f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+        }
         UWidget* NameMarker = TallyNameMarker ? TallyNameMarker.Get() : NameLabel.Get();
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();

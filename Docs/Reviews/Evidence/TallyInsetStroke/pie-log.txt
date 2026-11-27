@@ -1,0 +1,41 @@
+[2026.11.27-08.44.40:780][  2]LogPython: MW_TALLY_INSET_STROKE_WBP_COMPILED
+[2026.11.27-08.45.02:600][193]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.LOBBY: 0>", "players": 1, "worlds": ["/Game/Levels/UEDPIE_0_L_Title.L_Title", "/Temp/Untitled_1.Untitled", "/Temp/Untitled_2.Untitled"]}
+[2026.11.27-08.45.03:508][196]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.LOBBY: 0>", "players": 1, "worlds": ["/Game/Levels/UEDPIE_0_L_Title.L_Title", "/Game/Levels/UEDPIE_1_L_Title.L_Title", "/Game/Levels/UEDPIE_2_L_Title.L_Title"]}
+[2026.11.27-08.45.03:734][197]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.LOBBY: 0>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Title.L_Title", "/Game/Levels/UEDPIE_1_L_Title.L_Title", "/Game/Levels/UEDPIE_2_L_Title.L_Title"]}
+[2026.11.27-08.45.03:920][198]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.VEHICLE_SELECTION: 2>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Title.L_Title", "/Game/Levels/UEDPIE_1_L_Title.L_Title", "/Game/Levels/UEDPIE_2_L_Title.L_Title"]}
+[2026.11.27-08.45.04:070][199]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.TRAVELING: 3>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Title.L_Title", "/Game/Levels/UEDPIE_1_L_Title.L_Title", "/Game/Levels/UEDPIE_2_L_Title.L_Title"]}
+[2026.11.27-08.45.06:536][299]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.TRAVELING: 3>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_1_L_Title.L_Title", "/Game/Levels/UEDPIE_2_L_Title.L_Title", "/Temp/Untitled_3.Untitled"]}
+[2026.11.27-08.45.06:722][300]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.TRAVELING: 3>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_2_L_Title.L_Title", "/Temp/Untitled_3.Untitled", "/Temp/Untitled_4.Untitled"]}
+[2026.11.27-08.45.06:933][301]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "players": 1, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Title.L_Title", "/Temp/Untitled_4.Untitled"]}
+[2026.11.27-08.45.07:216][302]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "players": 1, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Temp/Untitled_5.Untitled"]}
+[2026.11.27-08.45.07:361][303]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "players": 2, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.07:739][304]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.07:955][305]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.08:302][308]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_RACE: 7>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.08:425][310]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.COUNTDOWN: 8>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.11:436][451]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.RACING: 9>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.45.11:536][451]LogPython: MW_TALLY_GEOMETRY_VIEWPORT member=1 requested=(1920, 1080)
+[2026.11.27-08.45.11:619][451]LogPython: MW_TALLY_GEOMETRY_VIEWPORT member=2 requested=(1280, 720)
+[2026.11.27-08.45.11:702][451]LogPython: MW_TALLY_GEOMETRY_VIEWPORT member=3 requested=(800, 482)
+[2026.11.27-08.45.15:072][575]LogTemp: Display: MW_POSITION_SHOW after tally-high 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.45.15:076][575]LogTemp: Display: MW_POSITION_SHOW after tally-high 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.45.15:080][575]LogTemp: Display: MW_POSITION_SHOW after tally-high 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.45.29:428][141]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.45.29:432][141]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.45.29:437][141]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.45.31:558][219]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.45.31:562][219]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.45.31:566][219]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.45.33:846][297]LogTemp: Display: MW_POSITION_SHOW after positions-high 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.45.33:851][297]LogTemp: Display: MW_POSITION_SHOW after positions-high 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.45.33:856][297]LogTemp: Display: MW_POSITION_SHOW after positions-high 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.46.01:889][420]LogPython: MW_TALLY_PIE_FINISH_TEST member=1 pos=<Struct 'Vector' (0x00000268C31FE950) {x: 15306.757624, y: 1353.744740, z: 8864.169998}>
+[2026.11.27-08.46.02:244][434]LogPython: MW_TALLY_PIE_FINISH_TEST member=2 pos=<Struct 'Vector' (0x00000268C31FE9F0) {x: 15252.408119, y: 1556.589832, z: 8864.169998}>
+[2026.11.27-08.46.02:619][450]LogPython: MW_TALLY_PIE_FINISH_TEST member=3 pos=<Struct 'Vector' (0x00000268C31FE950) {x: 15198.058615, y: 1759.434924, z: 8864.169998}>
+[2026.11.27-08.46.02:674][451]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.ROUND_RESULTS: 11>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.46.02:676][451]LogPython: MW_TALLY_PIE_LIVE_RESULTS [{'member': 1, 'score': 300}, {'member': 2, 'score': 150}, {'member': 3, 'score': 50}]
+[2026.11.27-08.46.21:923][345]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_CONSTRUCTION: 4>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.46.22:063][346]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.TRACK_PLACEMENT: 5>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.46.22:334][349]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.PREPARING_RACE: 7>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.46.22:458][351]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.COUNTDOWN: 8>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}
+[2026.11.27-08.46.25:439][468]LogPython: MW_TALLY_PIE_STAGE {"race": "<MWRoomPhase.RACING: 9>", "players": 3, "worlds": ["/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive", "/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive"]}

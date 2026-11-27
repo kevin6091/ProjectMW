@@ -57,6 +57,7 @@ private:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> NameLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> TallyFillOutline;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> VehiclePortrait;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyNameMarker;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
