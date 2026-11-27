@@ -1,0 +1,70 @@
+[2026.11.27-08.14.28:098][  2]LogPython: MW_TALLY_GEOMETRY_WBP_COMPILED
+[2026.11.27-08.14.28:314][  2]LogPython: MW_TALLY_GEOMETRY_HEADER_COMPILED
+[2026.11.27-08.14.28:515][  2]LogPython: MW_TALLY_GEOMETRY_FILL_BRUSH_COMPILED
+[2026.11.27-08.15.47:322][  2]LogTemp: Display: MW_MATCH_QA_PLACE Member=1 Port=0 Result=0
+[2026.11.27-08.15.47:412][  3]LogTemp: Display: MW_MATCH_QA_PLACE Member=2 Port=0 Result=0
+[2026.11.27-08.15.47:540][  4]LogTemp: Display: MW_MATCH_QA_PLACE Member=3 Port=0 Result=0
+[2026.11.27-08.16.49:216][847]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.49:216][847]LogTemp: Display: MW_POSITION_SHOW before tally-final 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.16.49:219][847]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.49:219][847]LogTemp: Display: MW_POSITION_SHOW before tally-final 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.16.49:223][847]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.49:223][847]LogTemp: Display: MW_POSITION_SHOW before tally-final 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.16.52:530][961]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.52:530][961]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.16.52:535][961]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.52:535][961]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.16.52:539][961]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.52:539][961]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.16.55:538][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.55:538][ 64]LogTemp: Display: MW_POSITION_SHOW before tally-mid 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.16.55:544][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.55:544][ 64]LogTemp: Display: MW_POSITION_SHOW before tally-mid 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.16.55:547][ 64]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.55:547][ 64]LogTemp: Display: MW_POSITION_SHOW before tally-mid 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.16.58:022][162]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.58:022][162]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.16.58:027][162]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.58:027][162]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.16.58:032][162]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.16.58:032][162]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.17.00:522][261]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.00:522][261]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.17.00:526][261]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.00:526][261]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.17.00:530][261]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.00:530][261]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.17.03:156][369]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.03:156][369]LogTemp: Display: MW_POSITION_SHOW after positions-tied-cap 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.17.03:160][369]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.03:160][369]LogTemp: Display: MW_POSITION_SHOW after positions-tied-cap 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.17.03:164][369]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.03:164][369]LogTemp: Display: MW_POSITION_SHOW after positions-tied-cap 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.17.05:713][473]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.05:713][473]LogTemp: Display: MW_POSITION_SHOW after positions 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.17.05:716][473]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.05:716][473]LogTemp: Display: MW_POSITION_SHOW after positions 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.17.05:719][473]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.05:719][473]LogTemp: Display: MW_POSITION_SHOW after positions 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.17.08:176][580]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.08:176][580]LogTemp: Display: MW_POSITION_SHOW after tally-target-reset 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1062
+[2026.11.27-08.17.08:181][580]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.08:181][580]LogTemp: Display: MW_POSITION_SHOW after tally-target-reset 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-08.17.08:184][580]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.08:184][580]LogTemp: Display: MW_POSITION_SHOW after tally-target-reset 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-08.17.29:503][504]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-08.17.29:517][505]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-08.17.29:524][505]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=1/3 Label=라운드 1
+[2026.11.27-08.17.29:548][505]LogPython: MW_TALLY_PIE_LIVE_RESULTS [{'member': 1, 'score': 300}, {'member': 2, 'score': 150}, {'member': 3, 'score': 50}]
+[2026.11.27-08.17.29:991][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-08.17.29:992][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-08.17.29:997][525]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=2/3 Label=완주 점수
+[2026.11.27-08.17.30:871][565]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-08.17.30:893][566]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-08.17.30:898][566]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Tally Stage=3/3 Label=선착 보너스
+[2026.11.27-08.17.31:844][614]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.31:864][615]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=RoundPositions
+[2026.11.27-08.17.31:868][615]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=RoundPositions
+
+[2026.11.27-08.18.20:698][171]LogMWServer: [MWProgress] EMWRoomPhase::RoundResults -> EMWRoomPhase::PreparingConstruction Round=2 Epoch=2
+MWEditor Win64 Development with temporary fixtures removed: Result: Succeeded

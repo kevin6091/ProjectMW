@@ -85,6 +85,7 @@ private:
     float InitialNameScale = 1.f;
 
     TOptional<int32> ShownScore;
+    int32 ShownScaleScore = 0;
     bool bVehiclePortraitSuppressed = false;
 };
 

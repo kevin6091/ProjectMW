@@ -135,14 +135,19 @@ void UMWMatchResultRowWidget::SetVehiclePortraitSuppressed(bool bSuppressed)
 
 void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
 {
-    if (ShownScore.IsSet() && ShownScore.GetValue() == Score)
+    const bool bSameScore = ShownScore.IsSet() && ShownScore.GetValue() == Score;
+    if (bSameScore && ShownScaleScore == Target)
     {
         return;
     }
     ShownScore = Score;
-    FNumberFormattingOptions ScoreFormat;
-    ScoreFormat.SetUseGrouping(ScoreDigits <= 1).SetMinimumIntegralDigits(FMath::Clamp(ScoreDigits, 1, 10));
-    TotalScoreLabel->SetText(FText::AsNumber(Score, &ScoreFormat));
+    ShownScaleScore = Target;
+    if (!bSameScore)
+    {
+        FNumberFormattingOptions ScoreFormat;
+        ScoreFormat.SetUseGrouping(ScoreDigits <= 1).SetMinimumIntegralDigits(FMath::Clamp(ScoreDigits, 1, 10));
+        TotalScoreLabel->SetText(FText::AsNumber(Score, &ScoreFormat));
+    }
     if (ScoreBar)
     {
         const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
