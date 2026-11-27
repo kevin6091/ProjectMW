@@ -1,0 +1,76 @@
+[2026.11.27-00.50.55:973][293]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=-1 Camera=V(X=16764.95, Y=2699.28, Z=3920.00) TravelScale=0.00
+[2026.11.27-00.50.55:989][294]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=-1 Camera=V(X=16764.95, Y=2699.28, Z=3920.00) TravelScale=0.00
+[2026.11.27-00.50.55:997][294]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=-1 Camera=V(X=16764.95, Y=2699.28, Z=3920.00) TravelScale=0.00
+[2026.11.27-00.51.02:666][425]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-005102
+[2026.11.27-00.51.12:569][648]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.51.12:597][649]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.51.12:608][649]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.00
+[2026.11.27-00.51.15:549][682]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.65
+[2026.11.27-00.51.15:554][682]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.65
+[2026.11.27-00.51.15:560][682]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=1710.80, Y=-9950.67, Z=8920.00) TravelScale=0.65
+[2026.11.27-00.51.18:680][729]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.51.18:681][729]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.51.18:681][729]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.51.36:742][965]LogTemp: Display: MW_RACE_RENDER_END Requested=539 Queued=539 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-005102
+[2026.11.27-00.51.55:365][250]LogTemp: Display: MW_POSITION_SHOW before tally 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.51.55:368][250]LogTemp: Display: MW_POSITION_SHOW before tally 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.51.57:547][280]LogTemp: Display: MW_POSITION_SHOW after tally 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.51.57:550][280]LogTemp: Display: MW_POSITION_SHOW after tally 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.51.59:692][310]LogTemp: Display: MW_POSITION_SHOW before tally-late 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.51.59:695][310]LogTemp: Display: MW_POSITION_SHOW before tally-late 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.02:040][342]LogTemp: Display: MW_POSITION_SHOW after tally-late 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.02:042][342]LogTemp: Display: MW_POSITION_SHOW after tally-late 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.04:210][373]LogTemp: Display: MW_POSITION_SHOW before ranks 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.04:213][373]LogTemp: Display: MW_POSITION_SHOW before ranks 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.06:441][401]LogTemp: Display: MW_POSITION_SHOW after ranks 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.06:444][401]LogTemp: Display: MW_POSITION_SHOW after ranks 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.08:776][430]LogTemp: Display: MW_POSITION_SHOW before podium 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.08:780][430]LogTemp: Display: MW_POSITION_SHOW before podium 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.09:361][439]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.09:361][439]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.11:850][472]LogTemp: Display: MW_POSITION_SHOW after podium 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.11:855][472]LogTemp: Display: MW_POSITION_SHOW after podium 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.12:409][479]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.12:410][479]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.14:878][511]LogTemp: Display: MW_POSITION_SHOW before tally-late 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.14:881][511]LogTemp: Display: MW_POSITION_SHOW before tally-late 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.16:974][536]LogTemp: Display: MW_POSITION_SHOW after tally-late 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.16:977][536]LogTemp: Display: MW_POSITION_SHOW after tally-late 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.19:110][563]LogTemp: Display: MW_POSITION_SHOW before ranks 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.19:113][563]LogTemp: Display: MW_POSITION_SHOW before ranks 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.21:380][591]LogTemp: Display: MW_POSITION_SHOW after ranks 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.21:383][591]LogTemp: Display: MW_POSITION_SHOW after ranks 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.23:691][615]LogTemp: Display: MW_POSITION_SHOW before tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.23:694][615]LogTemp: Display: MW_POSITION_SHOW before tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.26:038][637]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.26:042][637]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.28:394][661]LogTemp: Display: MW_POSITION_SHOW before podium 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.28:398][661]LogTemp: Display: MW_POSITION_SHOW before podium 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.28:964][669]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.28:965][669]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.31:306][697]LogTemp: Display: MW_POSITION_SHOW after podium 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.52.31:310][697]LogTemp: Display: MW_POSITION_SHOW after podium 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.52.31:889][704]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.52.31:889][704]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-00.57.00:094][696]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=2 Camera=V(X=20064.67, Y=-4707.49, Z=8960.00) TravelScale=0.00
+[2026.11.27-00.57.00:107][697]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=2 Camera=V(X=20064.67, Y=-4707.49, Z=8960.00) TravelScale=0.00
+[2026.11.27-00.57.00:113][697]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=5 Epoch=1 View=2 Camera=V(X=20064.67, Y=-4707.49, Z=8960.00) TravelScale=0.00
+[2026.11.27-00.57.06:723][840]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-005706
+[2026.11.27-00.57.18:306][ 92]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.00
+[2026.11.27-00.57.18:332][ 93]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.00
+[2026.11.27-00.57.18:344][ 93]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.00
+[2026.11.27-00.57.21:319][122]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.35
+[2026.11.27-00.57.21:325][122]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.35
+[2026.11.27-00.57.21:331][122]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=8 Epoch=2 View=0 Camera=V(X=46611.36, Y=-28285.51, Z=3980.58) TravelScale=0.35
+[2026.11.27-00.57.24:387][166]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.57.24:388][166]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.57.24:388][166]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-00.57.40:842][393]LogTemp: Display: MW_RACE_RENDER_END Requested=552 Queued=552 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-005706
+[2026.11.27-00.57.59:391][645]LogTemp: Display: MW_POSITION_SHOW before ranks 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.57.59:393][645]LogTemp: Display: MW_POSITION_SHOW before ranks 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.58.01:732][674]LogTemp: Display: MW_POSITION_SHOW after ranks 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.58.01:735][674]LogTemp: Display: MW_POSITION_SHOW after ranks 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.58.04:091][707]LogTemp: Display: MW_POSITION_SHOW before ranks 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.58.04:094][707]LogTemp: Display: MW_POSITION_SHOW before ranks 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-00.58.06:490][738]LogTemp: Display: MW_POSITION_SHOW after ranks 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-00.58.06:494][738]LogTemp: Display: MW_POSITION_SHOW after ranks 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720

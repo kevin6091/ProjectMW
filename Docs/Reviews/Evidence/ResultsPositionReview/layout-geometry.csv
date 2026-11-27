@@ -1,0 +1,689 @@
+sample,world,row,widget,x1,y1,x2,y2,text
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,245.0,1282.5,371.0,체크포인트 1 점수
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,346.0,611.2,727.3,641.2,길모퉁이 레이서
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,734.3,972.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,661.2,443.0,749.2,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,660.7,628.0,749.7,02720
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,667.2,437.0,743.2,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,769.3,696.8,1150.7,726.8,VECTOR-9
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,762.3,490.0,1157.7,972.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,778.3,746.8,866.3,834.8,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,876.3,746.3,1051.3,835.3,02010
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,784.3,752.8,860.3,828.8,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,1192.7,657.0,1574.0,687.0,NIGHT SHIFT
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1185.7,490.0,1581.0,972.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1201.7,707.0,1289.7,795.0,-
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1299.7,706.5,1474.7,795.5,02340
+before-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1207.7,713.0,1283.7,789.0,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,164.0,852.3,247.0,체크포인트 1 점수
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,231.1,407.0,485.0,427.0,길모퉁이 레이서
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,489.7,647.3,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,440.3,295.7,498.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,440.6,420.7,498.6,02720
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,444.3,291.7,494.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,513.0,464.0,767.0,483.9,VECTOR-9
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,508.4,326.2,771.6,647.3,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,519.0,497.3,577.6,555.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,584.3,497.6,702.6,555.6,02010
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,523.0,501.3,573.6,551.9,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,795.0,437.5,1048.9,457.5,NIGHT SHIFT
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,790.3,326.2,1053.6,647.3,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,800.9,470.8,859.6,529.4,-
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,866.2,471.1,984.5,529.1,02340
+before-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,804.9,474.8,855.6,525.4,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,233.0,1282.5,359.0,체크포인트 1 점수
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,440.0,385.0,1480.0,988.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,466.0,596.2,760.7,639.2,길모퉁이 레이서
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,454.0,490.0,772.7,972.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,476.8,656.2,564.8,744.2,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,574.8,655.7,749.8,744.7,02720
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,482.8,662.2,558.8,738.2,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,812.7,681.8,1107.3,724.8,VECTOR-9
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,800.7,490.0,1119.3,972.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,823.5,741.8,911.5,829.8,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,921.5,741.3,1096.5,830.3,02010
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,829.5,747.8,905.5,823.8,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,1159.3,642.0,1454.0,685.0,NIGHT SHIFT
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1147.3,490.0,1466.0,972.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1170.2,702.0,1258.2,790.0,-
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1268.2,701.5,1443.2,790.5,02340
+after-tally-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1176.2,708.0,1252.2,784.0,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,156.0,852.3,239.0,체크포인트 1 점수
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,293.7,256.3,986.3,657.9,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,311.0,397.0,507.2,425.6,길모퉁이 레이서
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,303.0,326.2,515.2,647.3,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,317.3,437.0,375.9,495.6,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,382.6,437.3,500.9,495.3,02720
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,321.3,441.0,371.9,491.6,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,541.9,454.0,738.1,482.6,VECTOR-9
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,533.9,326.2,746.1,647.3,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,548.2,493.9,606.8,552.5,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,613.5,494.2,731.8,552.2,02010
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,552.2,497.9,602.8,548.5,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,772.8,427.5,969.0,456.1,NIGHT SHIFT
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,764.8,326.2,977.0,647.3,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,779.1,467.5,837.7,526.1,-
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,844.3,467.8,962.7,525.8,02340
+after-tally-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,783.1,471.4,833.7,522.1,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,245.0,1282.5,371.0,체크포인트 1 점수
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,346.0,565.5,727.3,595.5,길모퉁이 레이서
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,734.3,972.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,615.5,443.0,703.5,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,615.0,628.0,704.0,03100
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,621.5,437.0,697.5,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,769.3,672.7,1150.7,702.7,VECTOR-9
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,762.3,490.0,1157.7,972.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,778.3,722.7,866.3,810.7,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,876.3,722.2,1051.3,811.2,02210
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,784.3,728.7,860.3,804.7,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,1192.7,625.7,1574.0,655.7,NIGHT SHIFT
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1185.7,490.0,1581.0,972.0,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1201.7,675.7,1289.7,763.7,-
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1299.7,675.2,1474.7,764.2,02600
+before-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1207.7,681.7,1283.7,757.7,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,164.0,852.3,247.0,체크포인트 1 점수
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,231.1,376.5,485.0,396.5,길모퉁이 레이서
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,489.7,647.3,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,409.8,295.7,468.4,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,410.1,420.7,468.1,03100
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,413.8,291.7,464.4,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,513.0,447.9,767.0,467.9,VECTOR-9
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,508.4,326.2,771.6,647.3,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,519.0,481.2,577.6,539.8,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,584.3,481.5,702.6,539.5,02210
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,523.0,485.2,573.6,535.8,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,795.0,416.6,1048.9,436.6,NIGHT SHIFT
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,790.3,326.2,1053.6,647.3,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,800.9,449.9,859.6,508.5,-
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,866.2,450.2,984.5,508.2,02600
+before-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,804.9,453.9,855.6,504.5,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,233.0,1282.5,359.0,체크포인트 1 점수
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,440.0,385.0,1480.0,988.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,466.0,550.5,760.7,593.5,길모퉁이 레이서
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,454.0,490.0,772.7,972.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,476.8,610.5,564.8,698.5,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,574.8,610.0,749.8,698.9,03100
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,482.8,616.5,558.8,692.5,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,812.7,657.7,1107.3,700.7,VECTOR-9
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,800.7,490.0,1119.3,972.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,823.5,717.7,911.5,805.7,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,921.5,717.2,1096.5,806.2,02210
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,829.5,723.7,905.5,799.7,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,1159.3,610.7,1454.0,653.7,NIGHT SHIFT
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1147.3,490.0,1466.0,972.0,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1170.2,670.7,1258.2,758.7,-
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1268.2,670.2,1443.2,759.2,02600
+after-tally-late-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1176.2,676.7,1252.2,752.7,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,156.0,852.3,239.0,체크포인트 1 점수
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,293.7,256.3,986.3,657.9,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,311.0,366.5,507.2,395.1,길모퉁이 레이서
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,303.0,326.2,515.2,647.3,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,317.3,406.5,375.9,465.1,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,382.6,406.8,500.9,464.8,03100
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,321.3,410.5,371.9,461.1,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,541.9,437.9,738.1,466.6,VECTOR-9
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,533.9,326.2,746.1,647.3,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,548.2,477.9,606.8,536.5,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,613.5,478.2,731.8,536.2,02210
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,552.2,481.9,602.8,532.5,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,772.8,406.6,969.0,435.3,NIGHT SHIFT
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,764.8,326.2,977.0,647.3,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,779.1,446.6,837.7,505.2,-
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,844.3,446.9,962.7,504.9,02600
+after-tally-late-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,783.1,450.6,833.7,501.2,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,478.3,203.5,824.7,371.0,길모퉁이 레이서
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,321.1,235.6,409.5,319.6,1위
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,PodiumMedal,263.7,176.0,466.9,379.2,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,CardBackground,313.1,157.9,1190.6,397.3,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,919.6,181.7,1065.1,327.2,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,571.6,545.6,861.0,685.9,NIGHT SHIFT
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,439.7,572.1,514.6,643.1,2위
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,PodiumMedal,392.2,522.7,562.1,692.5,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,CardBackground,433.6,507.6,1166.7,707.6,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,940.3,527.5,1061.8,649.0,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,674.0,795.5,936.5,923.3,VECTOR-9
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,554.7,820.5,622.0,883.5,3위
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,PodiumMedal,511.3,775.0,665.4,929.0,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,CardBackground,548.8,761.3,1213.7,942.7,-
+before-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1008.4,779.3,1118.6,889.6,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,319.2,135.7,549.9,247.7,길모퉁이 레이서
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,214.2,156.7,273.7,213.7,1위
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,PodiumMedal,176.2,117.5,311.6,252.9,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,CardBackground,209.2,105.5,793.6,265.0,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,613.1,121.4,710.0,218.3,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,381.3,364.2,574.0,456.7,NIGHT SHIFT
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,293.1,382.0,343.7,428.0,2위
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,PodiumMedal,261.9,348.5,375.0,461.6,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,CardBackground,289.4,338.4,777.7,471.6,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,626.9,351.7,707.8,432.6,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,449.6,530.7,624.3,614.6,VECTOR-9
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,369.9,546.8,415.1,588.8,3위
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,PodiumMedal,341.2,516.5,443.8,619.1,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,CardBackground,366.1,507.4,809.0,628.2,-
+before-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,672.2,519.4,745.6,592.8,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,461.5,200.3,913.2,350.6,길모퉁이 레이서
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,321.1,225.5,409.5,309.5,1위
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,PodiumMedal,263.7,165.9,466.9,369.2,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,CardBackground,312.3,136.8,1191.4,398.3,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,964.9,155.6,1117.6,308.4,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,557.3,541.7,931.9,670.8,NIGHT SHIFT
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,439.7,563.9,514.6,634.9,2위
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,PodiumMedal,392.2,514.5,562.1,684.3,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,CardBackground,432.9,490.2,1167.4,708.6,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,978.1,505.9,1105.7,633.5,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,659.8,800.5,1000.4,938.1,VECTOR-9
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,554.7,831.5,622.0,894.5,3위
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,PodiumMedal,511.3,786.0,665.4,940.0,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,CardBackground,548.2,763.9,1214.4,962.1,-
+after-podium-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1042.7,778.2,1158.5,893.9,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,308.0,134.6,604.5,233.6,길모퉁이 레이서
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,214.2,150.0,273.7,207.0,1위
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,PodiumMedal,176.2,110.8,311.6,246.2,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,CardBackground,208.6,91.5,794.1,265.6,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,643.3,104.0,745.0,205.7,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,371.8,361.0,624.5,446.8,NIGHT SHIFT
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,293.1,376.6,343.7,422.6,2위
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,PodiumMedal,261.9,343.0,375.0,456.1,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,CardBackground,288.9,326.8,778.1,472.3,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,652.1,337.3,737.1,422.3,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,440.1,533.1,671.1,625.0,VECTOR-9
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,369.9,554.1,415.1,596.1,3위
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,PodiumMedal,341.2,523.8,443.8,626.4,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,CardBackground,365.7,509.1,809.4,641.1,-
+after-podium-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,695.1,518.6,772.2,595.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,245.0,1282.5,371.0,체크포인트 1 점수
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,346.0,565.5,621.5,595.5,길모퉁이 레이서
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,615.5,443.0,703.5,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,615.0,628.0,704.0,03100
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,621.5,437.0,697.5,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,663.5,672.7,939.0,702.7,VECTOR-9
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,672.5,722.7,760.5,810.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,770.5,722.2,945.5,811.2,02210
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,678.5,728.7,754.5,804.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,981.0,625.7,1256.5,655.7,NIGHT SHIFT
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,990.0,675.7,1078.0,763.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1088.0,675.2,1263.0,764.2,02600
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,996.0,681.7,1072.0,757.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,NameLabel,1298.5,594.4,1574.0,624.4,푸른질주
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1307.5,644.4,1395.5,732.4,-
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1405.5,643.9,1580.5,732.9,02860
+before-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1313.5,650.4,1389.5,726.4,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,164.0,852.3,247.0,체크포인트 1 점수
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,231.1,376.5,414.6,396.5,길모퉁이 레이서
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,409.8,295.7,468.4,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,410.1,420.7,468.1,03100
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,413.8,291.7,464.4,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,442.5,447.9,626.0,467.9,VECTOR-9
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,448.5,481.2,507.1,539.8,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,513.8,481.5,632.1,539.5,02210
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,452.5,485.2,503.1,535.8,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,654.0,416.6,837.5,436.6,NIGHT SHIFT
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,660.0,449.9,718.6,508.5,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,725.2,450.2,843.6,508.2,02600
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,664.0,453.9,714.6,504.5,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,NameLabel,865.4,395.8,1048.9,415.7,푸른질주
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,871.4,429.1,930.0,487.7,-
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,936.7,429.4,1055.0,487.4,02860
+before-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,875.4,433.0,926.0,483.7,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,233.0,1282.5,359.0,체크포인트 1 점수
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,351.0,550.5,616.5,593.5,길모퉁이 레이서
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,347.2,610.5,435.2,698.5,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,445.2,610.0,620.2,698.9,03100
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,353.2,616.5,429.2,692.5,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,668.5,657.7,934.0,700.7,VECTOR-9
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,664.8,717.7,752.8,805.7,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,762.8,717.2,937.8,806.2,02210
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,670.8,723.7,746.8,799.7,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,986.0,610.7,1251.5,653.7,NIGHT SHIFT
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,982.2,670.7,1070.2,758.7,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1080.2,670.2,1255.2,759.2,02600
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,988.2,676.7,1064.2,752.7,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,NameLabel,1303.5,579.4,1569.0,622.4,푸른질주
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1299.8,639.4,1387.8,727.4,-
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1397.8,638.9,1572.8,727.9,02860
+after-tally-late-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1305.8,645.4,1381.8,721.4,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,156.0,852.3,239.0,체크포인트 1 점수
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,234.4,366.5,411.2,395.1,길모퉁이 레이서
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,231.7,406.5,290.4,465.1,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,297.0,406.8,415.3,464.8,03100
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,235.7,410.5,286.4,461.1,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,445.9,437.9,622.7,466.6,VECTOR-9
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,443.2,477.9,501.8,536.5,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,508.5,478.2,626.8,536.2,02210
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,447.2,481.9,497.8,532.5,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,657.3,406.6,834.1,435.3,NIGHT SHIFT
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,654.7,446.6,713.3,505.2,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,719.9,446.9,838.2,504.9,02600
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,658.6,450.6,709.3,501.2,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,NameLabel,868.8,385.8,1045.6,414.4,푸른질주
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,866.1,425.7,924.7,484.3,-
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,931.4,426.0,1049.7,484.0,02860
+after-tally-late-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,870.1,429.7,920.7,480.3,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,245.0,1282.5,371.0,체크포인트 1 점수
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,346.0,828.1,621.5,858.1,길모퉁이 레이서
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,878.1,443.0,966.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,877.6,628.0,966.6,00500
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,884.1,437.0,960.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,663.5,828.1,939.0,858.1,VECTOR-9
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,672.5,878.1,760.5,966.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,770.5,877.6,945.5,966.6,00250
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,678.5,884.1,754.5,960.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,981.0,828.1,1256.5,858.1,NIGHT SHIFT
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,990.0,878.1,1078.0,966.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1088.0,877.6,1263.0,966.6,00120
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,996.0,884.1,1072.0,960.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,NameLabel,1298.5,828.1,1574.0,858.1,푸른질주
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1307.5,878.1,1395.5,966.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1405.5,877.6,1580.5,966.6,00050
+before-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1313.5,884.1,1389.5,960.1,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,164.0,852.3,247.0,체크포인트 1 점수
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,231.1,551.4,414.6,571.4,길모퉁이 레이서
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,584.7,295.7,643.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,585.0,420.7,643.0,00500
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,588.7,291.7,639.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,442.5,551.4,626.0,571.4,VECTOR-9
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,448.5,584.7,507.1,643.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,513.8,585.0,632.1,643.0,00250
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,452.5,588.7,503.1,639.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,654.0,551.4,837.5,571.4,NIGHT SHIFT
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,660.0,584.7,718.6,643.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,725.2,585.0,843.6,643.0,00120
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,664.0,588.7,714.6,639.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,NameLabel,865.4,551.4,1048.9,571.4,푸른질주
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,871.4,584.7,930.0,643.4,-
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,936.7,585.0,1055.0,643.0,00050
+before-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,875.4,588.7,926.0,639.4,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,637.5,233.0,1282.5,359.0,체크포인트 1 점수
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,351.0,813.1,616.5,856.1,길모퉁이 레이서
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,347.2,873.1,435.2,961.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,445.2,872.6,620.2,961.6,00500
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,353.2,879.1,429.2,955.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,668.5,813.1,934.0,856.1,VECTOR-9
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,664.8,873.1,752.8,961.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,762.8,872.6,937.8,961.6,00250
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,670.8,879.1,746.8,955.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,986.0,813.1,1251.5,856.1,NIGHT SHIFT
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,982.2,873.1,1070.2,961.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1080.2,872.6,1255.2,961.6,00120
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,988.2,879.1,1064.2,955.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,NameLabel,1303.5,813.1,1569.0,856.1,푸른질주
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1299.8,873.1,1387.8,961.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1397.8,872.6,1572.8,961.6,00050
+after-tally-low-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1305.8,879.1,1381.8,955.1,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,427.7,156.0,852.3,239.0,체크포인트 1 점수
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,234.4,541.5,411.2,570.1,길모퉁이 레이서
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,231.7,581.4,290.4,640.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,297.0,581.7,415.3,639.7,00500
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,235.7,585.4,286.4,636.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,445.9,541.5,622.7,570.1,VECTOR-9
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,443.2,581.4,501.8,640.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,508.5,581.7,626.8,639.7,00250
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,447.2,585.4,497.8,636.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,657.3,541.5,834.1,570.1,NIGHT SHIFT
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,654.7,581.4,713.3,640.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,719.9,581.7,838.2,639.7,00120
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,658.6,585.4,709.3,636.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,NameLabel,868.8,541.5,1045.6,570.1,푸른질주
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,866.1,581.4,924.7,640.0,-
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,931.4,581.7,1049.7,639.7,00050
+after-tally-low-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,870.1,585.4,920.7,636.0,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,478.3,203.5,824.7,371.0,길모퉁이 레이서
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,321.1,235.6,409.5,319.6,1위
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,PodiumMedal,263.7,176.0,466.9,379.2,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,CardBackground,313.1,157.9,1190.6,397.3,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,919.6,181.7,1065.1,327.2,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,571.6,545.6,861.0,685.9,푸른질주
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,439.7,572.1,514.6,643.1,2위
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,PodiumMedal,392.2,522.7,562.1,692.5,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,CardBackground,433.6,507.6,1166.7,707.6,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,940.3,527.5,1061.8,649.0,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,674.0,795.5,936.5,923.3,NIGHT SHIFT
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,554.7,820.5,622.0,883.5,3위
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,PodiumMedal,511.3,775.0,665.4,929.0,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,CardBackground,548.8,761.3,1213.7,942.7,-
+before-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1008.4,779.3,1118.6,889.6,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,319.2,135.7,549.9,247.7,길모퉁이 레이서
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,214.2,156.7,273.7,213.7,1위
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,PodiumMedal,176.2,117.5,311.6,252.9,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,CardBackground,209.2,105.5,793.6,265.0,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,613.1,121.4,710.0,218.3,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,381.3,364.2,574.0,456.7,푸른질주
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,293.1,382.0,343.7,428.0,2위
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,PodiumMedal,261.9,348.5,375.0,461.6,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,CardBackground,289.4,338.4,777.7,471.6,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,626.9,351.7,707.8,432.6,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,449.6,530.7,624.3,614.6,NIGHT SHIFT
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,369.9,546.8,415.1,588.8,3위
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,PodiumMedal,341.2,516.5,443.8,619.1,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,CardBackground,366.1,507.4,809.0,628.2,-
+before-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,672.2,519.4,745.6,592.8,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,NameLabel,461.5,200.3,913.2,350.6,길모퉁이 레이서
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,321.1,225.5,409.5,309.5,1위
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,PodiumMedal,263.7,165.9,466.9,369.2,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,CardBackground,312.3,136.8,1191.4,398.3,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,964.9,155.6,1117.6,308.4,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,NameLabel,555.5,536.7,856.7,685.2,푸른질주
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,439.7,563.9,514.6,634.9,2위
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,PodiumMedal,392.2,514.5,562.1,684.3,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,CardBackground,432.9,490.2,1167.4,708.6,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,978.1,505.9,1105.7,633.5,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,NameLabel,661.2,812.2,996.8,926.7,NIGHT SHIFT
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,554.7,831.5,622.0,894.5,3위
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,PodiumMedal,511.3,786.0,665.4,940.0,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,CardBackground,548.2,763.9,1214.4,962.1,-
+after-podium-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1042.7,778.2,1158.5,893.9,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,NameLabel,308.0,134.6,604.5,233.6,길모퉁이 레이서
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,214.2,150.0,273.7,207.0,1위
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,PodiumMedal,176.2,110.8,311.6,246.2,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,CardBackground,208.6,91.5,794.1,265.6,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,643.3,104.0,745.0,205.7,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,NameLabel,370.7,358.3,571.3,456.2,푸른질주
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,293.1,376.6,343.7,422.6,2위
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,PodiumMedal,261.9,343.0,375.0,456.1,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,CardBackground,288.9,326.8,778.1,472.3,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,652.1,337.3,737.1,422.3,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,NameLabel,440.9,540.2,669.1,618.0,NIGHT SHIFT
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,369.9,554.1,415.1,596.1,3위
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,PodiumMedal,341.2,523.8,443.8,626.4,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,CardBackground,365.7,509.1,809.4,641.1,-
+after-podium-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,695.1,518.6,772.2,595.7,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,791.5,245.0,1128.5,371.0,누적 순위
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,734.3,972.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,569.7,443.0,657.7,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,569.2,628.0,658.2,03480
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,397.7,398.7,542.7,552.7,1
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankSuffix,556.7,502.7,634.7,549.7,위
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,575.7,437.0,651.7,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,762.3,490.0,1157.7,972.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,778.3,698.6,866.3,786.6,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,876.3,698.1,1051.3,787.1,02410
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,821.0,527.6,966.0,681.6,3
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankSuffix,980.0,631.6,1058.0,678.6,위
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,784.3,704.6,860.3,780.6,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1185.7,490.0,1581.0,972.0,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1201.7,644.4,1289.7,732.4,-
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1299.7,643.9,1474.7,732.9,02860
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,1244.3,473.4,1389.3,627.4,2
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankSuffix,1403.3,577.4,1481.3,624.4,위
+before-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1207.7,650.4,1283.7,726.4,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,529.2,164.0,750.8,247.0,누적 순위
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,489.7,647.3,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,379.3,295.7,437.9,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,379.6,420.7,437.6,03480
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,265.5,265.4,362.1,368.0,1
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankSuffix,371.4,334.7,423.3,366.0,위
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,383.3,291.7,433.9,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,508.4,326.2,771.6,647.3,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,519.0,465.2,577.6,523.8,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,584.3,465.5,702.6,523.5,02410
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,547.4,351.3,644.0,453.8,3
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankSuffix,653.3,420.5,705.3,451.8,위
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,523.0,469.2,573.6,519.8,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,790.3,326.2,1053.6,647.3,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,800.9,429.1,859.6,487.7,-
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,866.2,429.4,984.5,487.4,02860
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,829.4,315.2,925.9,417.7,2
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankSuffix,935.3,384.4,987.2,415.7,위
+before-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,804.9,433.0,855.6,483.7,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,791.5,233.0,1128.5,359.0,누적 순위
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,440.0,385.0,1480.0,988.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,454.0,490.0,772.7,972.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,476.8,564.7,564.8,652.7,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,574.8,564.2,749.8,653.2,03480
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,555.3,380.7,636.3,578.7,1
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankSuffix,640.3,497.7,671.3,546.7,위
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,482.8,570.7,558.8,646.7,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,800.7,490.0,1119.3,972.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,823.5,693.6,911.5,781.6,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,921.5,693.1,1096.5,782.1,02410
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,902.0,509.6,983.0,707.6,3
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankSuffix,987.0,626.6,1018.0,675.6,위
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,829.5,699.6,905.5,775.6,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,1147.3,490.0,1466.0,972.0,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,1170.2,639.4,1258.2,727.4,-
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1268.2,638.9,1443.2,727.9,02860
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,1248.7,455.4,1329.7,653.4,2
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankSuffix,1333.7,572.4,1364.7,621.4,위
+after-ranks-3,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,1176.2,645.4,1252.2,721.4,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,529.2,156.0,750.8,239.0,누적 순위
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,293.7,256.3,986.3,657.9,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,303.0,326.2,515.2,647.3,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,317.3,376.0,375.9,434.6,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,382.6,376.3,500.9,434.3,03480
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,370.1,253.3,424.8,385.3,1
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankSuffix,427.5,332.0,448.1,364.0,위
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,321.3,380.0,371.9,430.6,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,533.9,326.2,746.1,647.3,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,548.2,461.8,606.8,520.4,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,613.5,462.1,731.8,520.1,02410
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,601.0,339.2,655.7,471.2,3
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankSuffix,658.3,417.8,679.0,449.8,위
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,552.2,465.8,602.8,516.4,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,764.8,326.2,977.0,647.3,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,779.1,425.7,837.7,484.3,-
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,844.3,426.0,962.7,484.0,02860
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,831.9,303.0,886.5,435.0,2
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankSuffix,889.2,381.7,909.9,413.7,위
+after-ranks-3,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,783.1,429.7,833.7,480.3,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,133.0,1021.0,255.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,147.0,992.0,997.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,791.5,245.0,1128.5,371.0,누적 순위
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,355.0,569.7,443.0,657.7,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,453.0,569.2,628.0,658.2,03480
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,344.8,398.7,489.8,552.7,1
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankSuffix,503.7,502.7,581.8,549.7,위
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,361.0,575.7,437.0,651.7,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,672.5,698.6,760.5,786.6,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,770.5,698.1,945.5,787.1,02410
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,662.2,527.6,807.2,681.6,4
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankSuffix,821.2,631.6,899.2,678.6,위
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,678.5,704.6,754.5,780.6,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,990.0,644.4,1078.0,732.4,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1088.0,643.9,1263.0,732.9,02860
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,979.8,473.4,1124.8,627.4,3
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankSuffix,1138.8,577.4,1216.8,624.4,위
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,996.0,650.4,1072.0,726.4,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1307.5,604.6,1395.5,692.6,-
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1405.5,604.1,1580.5,693.1,03190
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,RankLabel,1297.2,433.6,1442.2,587.6,2
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,RankSuffix,1456.2,537.6,1534.2,584.6,위
+before-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1313.5,610.6,1389.5,686.6,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,89.4,680.6,170.6,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,98.7,661.3,663.9,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,529.2,164.0,750.8,247.0,누적 순위
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,237.1,379.3,295.7,437.9,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,302.3,379.6,420.7,437.6,03480
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,230.2,265.4,326.8,368.0,1
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankSuffix,336.1,334.7,388.1,366.0,위
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,241.1,383.3,291.7,433.9,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,448.5,465.2,507.1,523.8,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,513.8,465.5,632.1,523.5,02410
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,441.7,351.3,538.3,453.8,4
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankSuffix,547.6,420.5,599.5,451.8,위
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,452.5,469.2,503.1,519.8,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,660.0,429.1,718.6,487.7,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,725.2,429.4,843.6,487.4,02860
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,653.2,315.2,749.7,417.7,3
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankSuffix,759.0,384.4,811.0,415.7,위
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,664.0,433.0,714.6,483.7,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,871.4,402.6,930.0,461.2,-
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,936.7,402.9,1055.0,460.9,03190
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,RankLabel,864.6,288.7,961.2,391.2,2
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,RankSuffix,970.5,357.9,1022.5,389.2,위
+before-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,875.4,406.6,926.0,457.2,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignFace,220.0,196.0,1700.0,977.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignLogo,899.0,122.0,1021.0,244.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallySignPole,928.0,143.0,992.0,997.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyHeading,791.5,233.0,1128.5,359.0,누적 순위
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,0,TallyColumns,325.0,385.0,1595.0,988.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,ScoreBar,339.0,490.0,628.5,972.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TallyVehicleBadge,347.2,564.7,435.2,652.7,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,TotalScoreLabel,445.2,564.2,620.2,653.2,03480
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankLabel,425.8,380.7,506.8,578.7,1
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,RankSuffix,510.8,497.7,541.8,546.7,위
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,1,VehiclePortrait,353.2,570.7,429.2,646.7,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,ScoreBar,656.5,490.0,946.0,972.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TallyVehicleBadge,664.8,693.6,752.8,781.6,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,TotalScoreLabel,762.8,693.1,937.8,782.1,02410
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankLabel,743.2,509.6,824.2,707.6,4
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,RankSuffix,828.2,626.6,859.2,675.6,위
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,2,VehiclePortrait,670.8,699.6,746.8,775.6,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,ScoreBar,974.0,490.0,1263.5,972.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TallyVehicleBadge,982.2,639.4,1070.2,727.4,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,TotalScoreLabel,1080.2,638.9,1255.2,727.9,02860
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankLabel,1060.8,455.4,1141.8,653.4,3
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,RankSuffix,1145.8,572.4,1176.8,621.4,위
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,3,VehiclePortrait,988.2,645.4,1064.2,721.4,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,ScoreBar,1291.5,490.0,1581.0,972.0,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TallyVehicleBadge,1299.8,599.6,1387.8,687.6,-
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,TotalScoreLabel,1397.8,599.1,1572.8,688.1,03190
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,RankLabel,1378.2,415.6,1459.2,613.6,2
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,RankSuffix,1463.2,532.6,1494.2,581.6,위
+after-ranks-4,/Game/Levels/UEDPIE_0_L_Dev_Drive,4,VehiclePortrait,1305.8,605.6,1381.8,681.6,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignFace,147.2,131.4,1132.8,650.6,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignLogo,599.4,82.1,680.6,163.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallySignPole,618.7,96.1,661.3,663.9,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyHeading,529.2,156.0,750.8,239.0,누적 순위
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,0,TallyColumns,217.1,256.3,1062.9,657.9,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,ScoreBar,226.4,326.2,419.2,647.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TallyVehicleBadge,231.7,376.0,290.4,434.6,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,TotalScoreLabel,297.0,376.3,415.3,434.3,03480
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankLabel,283.8,253.3,338.5,385.3,1
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,RankSuffix,341.1,332.0,361.8,364.0,위
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,1,VehiclePortrait,235.7,380.0,286.4,430.6,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,ScoreBar,437.9,326.2,630.7,647.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TallyVehicleBadge,443.2,461.8,501.8,520.4,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,TotalScoreLabel,508.5,462.1,626.8,520.1,02410
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankLabel,495.3,339.2,549.9,471.2,4
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,RankSuffix,552.6,417.8,573.3,449.8,위
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,2,VehiclePortrait,447.2,465.8,497.8,516.4,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,ScoreBar,649.3,326.2,842.1,647.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TallyVehicleBadge,654.7,425.7,713.3,484.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,TotalScoreLabel,719.9,426.0,838.2,484.0,02860
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankLabel,706.7,303.0,761.4,435.0,3
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,RankSuffix,764.1,381.7,784.7,413.7,위
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,3,VehiclePortrait,658.6,429.7,709.3,480.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,ScoreBar,860.8,326.2,1053.6,647.3,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TallyVehicleBadge,866.1,399.2,924.7,457.8,-
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,TotalScoreLabel,931.4,399.5,1049.7,457.5,03190
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,RankLabel,918.2,276.6,972.9,408.6,2
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,RankSuffix,975.5,355.3,996.2,387.3,위
+after-ranks-4,/Game/Levels/UEDPIE_1_L_Dev_Drive,4,VehiclePortrait,870.1,403.2,920.7,453.9,-

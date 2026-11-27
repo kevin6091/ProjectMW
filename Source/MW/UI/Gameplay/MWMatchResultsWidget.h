@@ -17,6 +17,7 @@ class UImage;
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UProgressBar;
+class USizeBox;
 class UTextBlock;
 class UTexture2D;
 class UVerticalBox;
@@ -52,6 +53,7 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> CardBackground;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> RankSuffix;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyRankGroup;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> NameLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
@@ -125,6 +127,7 @@ private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyPanel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> TallyHeading;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UHorizontalBox> TallyColumns;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USizeBox> TallyColumnExtent;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> PodiumPanel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UVerticalBox> PodiumCards;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> WinnerCardHost;
@@ -136,6 +139,10 @@ private:
     TSubclassOf<UMWMatchResultRowWidget> TallyColumnClass;
     UPROPERTY(EditDefaultsOnly, Category = "MW|Results")
     TSubclassOf<UMWMatchResultRowWidget> PodiumCardClass;
+
+    // 열 개수에 따른 폭은 WBP가 보유한다. 빈 항목은 슬롯의 원래 폭을 쓴다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally")
+    TMap<int32, float> TallyWidthByPlayerCount;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Finish Shot", meta = (Units = "s", ClampMin = "0"))
     float ShotSeconds = 0.f;

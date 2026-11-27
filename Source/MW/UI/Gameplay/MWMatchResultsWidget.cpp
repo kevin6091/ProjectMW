@@ -9,6 +9,7 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
+#include "Components/SizeBox.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -93,7 +94,7 @@ void UMWMatchResultRowWidget::ShowRank(int32 Rank)
             const FText Number = FText::AsNumber(Rank);
             RankLabel->SetText(RankSuffix ? Number : FText::Format(LOCTEXT("Rank", "{0}위"), Number));
         }
-        if (UWidgetLayoutLibrary::SlotAsCanvasSlot(RankLabel))
+        if (TallyRankGroup || UWidgetLayoutLibrary::SlotAsCanvasSlot(RankLabel))
         {
             NameLabel->SetVisibility(Rank > 0 ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
         }
@@ -150,8 +151,10 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
         const float MarkerAnchor = 1.f - FMath::Max(Fraction, FMath::Clamp(MarkerMinimumFill, 0.f, 1.f));
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
-        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), static_cast<UWidget*>(RankLabel.Get()),
-            static_cast<UWidget*>(RankSuffix.Get()), ScoreMarker})
+        // 새 점수판은 숫자와 접미사를 한 슬롯에 두어 높이와 간격을 같이 유지한다.
+        UWidget* RankMarker = TallyRankGroup ? TallyRankGroup.Get() : RankLabel.Get();
+        UWidget* SuffixMarker = TallyRankGroup ? nullptr : RankSuffix.Get();
+        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), RankMarker, SuffixMarker, ScoreMarker})
         {
             if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {
@@ -194,6 +197,14 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
     }
 
     Results = Progress.Results;
+    if (TallyColumnExtent)
+    {
+        const float* Width = TallyWidthByPlayerCount.Find(Results.Num());
+        if (Width && FMath::IsFinite(*Width) && *Width > 0.f)
+        {
+            TallyColumnExtent->SetWidthOverride(*Width);
+        }
+    }
     RoundNumber = Progress.RoundIndex;
     BarScaleScore = Progress.TargetScore;
     RoundEndServerTime = Progress.PhaseEndServerTime;
