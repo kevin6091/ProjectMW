@@ -5,10 +5,12 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Gameplay/Construction/MWTrackPreview.h"
+#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "Gameplay/Construction/MWTrackSnap.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
 #include "Gameplay/Track/MWTrackRuntimeSettings.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
+#include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "System/GameMode/MWGameplayGameMode.h"
 #include "System/GameState/MWGameplayGameState.h"
 #include "System/MWPlayerState.h"
@@ -342,6 +344,36 @@ FMWTrackRaceProgress UMWTrackRuntimeSubsystem::GetTrackRaceProgress(AMWVehiclePa
         return Racer->Progress;
     }
     return {};
+}
+
+bool UMWTrackRuntimeSubsystem::ShouldRecoverUnsupportedFall(AMWVehiclePawn& Vehicle,
+    const FMWTrackPlacementSession& Course, double FallbackZ, double ProbeInterval)
+{
+    FRacer* Racer = Racers.Find(&Vehicle);
+    const auto* Movement = Cast<UMWVehicleMovementComponent>(Vehicle.GetMovementComponent());
+    if (!Racer || !Movement || !FMath::IsFinite(ProbeInterval) || ProbeInterval <= 0.0)
+    {
+        return false;
+    }
+    if (!Movement->IsDescendingWithoutSupport())
+    {
+        Racer->NextFallProbeAt.Reset();
+        return false;
+    }
+
+    // 상승과 짧은 접지 끊김을 지나 실제 하강을 확인한다. 계속 떨어질 때만 같은 간격으로 재검사한다.
+    const double Now = GetWorld()->GetTimeSeconds();
+    if (!Racer->NextFallProbeAt.IsSet())
+    {
+        Racer->NextFallProbeAt = Now + ProbeInterval;
+        return false;
+    }
+    if (Now < Racer->NextFallProbeAt.GetValue())
+    {
+        return false;
+    }
+    Racer->NextFallProbeAt = Now + ProbeInterval;
+    return !Movement->MayContactTrackDuringFall(Course.PlacedTracks, FallbackZ);
 }
 
 // 서버에서 기록한 유효 복귀 Transform만 사용해 기존 차량을 복귀시킨다.

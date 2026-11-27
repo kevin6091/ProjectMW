@@ -1,0 +1,17 @@
+MWEditor Win64 Development (UE 5.8.4)
+Result: Succeeded
+Total execution time: 166.40 seconds
+
+PIE Racing and trial start/end (UTC)
+[2026.11.27-05.11.16:871][315]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-05.11.16:872][315]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-05.11.16:887][315]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-05.11.16:913][315]LogPython: MW_REMOTE_BLINK_READY session=1
+[2026.11.27-05.15.44:199][425]LogPython: MW_FALL_CASE_START jump P1 {'launch': [-1670.0116, 375.0, 6190.7999], 'initial_velocity': [649.9921, -0.0, 553.2019], 'checkpoint': [-2620.0, 375.0, 6101.0], 'lower_road': [-1670.0116, 375.0, 5999.9999]}
+[2026.11.27-05.15.49:202][680]LogPython: MW_FALL_CASE_FINISH jump 256
+[2026.11.27-05.15.51:231][779]LogPython: MW_FALL_CASE_START lower P3 {'launch': [-1920.1376, 2109.2, 7400.0001], 'initial_velocity': [-0.0, -1734.2, -550.0002], 'checkpoint': [-2870.0, 375.0, 6071.0], 'lower_road': [-1920.1376, 375.0, 5999.9999]}
+[2026.11.27-05.15.56:246][ 39]LogPython: MW_FALL_CASE_FINISH lower 261
+[2026.11.27-05.15.58:091][140]LogPython: MW_FALL_CASE_START void P1 {'launch': [-2620.0, 17520.9876, 6101.0], 'initial_velocity': [0.0, 0.0, 0.0], 'checkpoint': [-2620.0, 375.0, 6101.0], 'lower_road': None}
+[2026.11.27-05.16.03:101][403]LogPython: MW_FALL_CASE_FINISH void 264
+[2026.11.27-05.17.55:531][436]LogPython: MW_FALL_CASE_START baseline P1 {'launch': [-2620.0, 17520.9876, 6101.0], 'initial_velocity': [0.0, 0.0, 0.0], 'checkpoint': [-2620.0, 375.0, 6101.0], 'lower_road': None}
+[2026.11.27-05.18.00:559][667]LogPython: MW_FALL_CASE_FINISH baseline 232

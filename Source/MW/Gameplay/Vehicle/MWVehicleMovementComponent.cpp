@@ -3,7 +3,9 @@
 #include "Gameplay/Vehicle/MWVehicleMovementComponent.h"
 #include "Gameplay/Vehicle/MWVehiclePawn.h"
 #include "Gameplay/Items/MWItemComponent.h"
+#include "Gameplay/Construction/MWTrackPlacementTypes.h"
 #include "Gameplay/Track/MWTrackRuntimeComponent.h"
+#include "Algo/AnyOf.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
@@ -1233,6 +1235,73 @@ void UMWVehicleMovementComponent::UpdateAirVelocity(float DeltaTime)
 
 	Velocity.Z += GravityZ * DeltaTime;
 	Velocity.Z = FMath::Max(Velocity.Z, -DriveConfig.MaxFallSpeed);
+}
+
+bool UMWVehicleMovementComponent::IsDescendingWithoutSupport() const
+{
+	return bDriveConfigReady && !bGrounded && Velocity.Z < 0.0;
+}
+
+bool UMWVehicleMovementComponent::MayContactTrackDuringFall(TConstArrayView<FMWPlacedTrack> Tracks, double FallbackZ) const
+{
+	const UWorld* World = GetWorld();
+	const double Gravity = -GetGravityZ() * DriveConfig.GravityScale;
+	const double TerminalSpeed = DriveConfig.MaxFallSpeed;
+	if (!World || !UpdatedPrimitive || !IsDescendingWithoutSupport() || Velocity.ContainsNaN()
+		|| !FMath::IsFinite(Gravity) || Gravity <= SMALL_NUMBER || TerminalSpeed <= SMALL_NUMBER)
+	{
+		return true;
+	}
+
+	const FVector Start = UpdatedPrimitive->GetComponentLocation();
+	const FCollisionShape Chassis = UpdatedPrimitive->GetCollisionShape();
+	const double Drop = Start.Z - FallbackZ;
+	if (!Chassis.IsBox() || Drop <= 0.0)
+	{
+		return true;
+	}
+
+	const double InitialSpeed = FMath::Min(-Velocity.Z, TerminalSpeed);
+	const double TimeToTerminal = (TerminalSpeed - InitialSpeed) / Gravity;
+	const double DropToTerminal = (InitialSpeed + TerminalSpeed) * TimeToTerminal / 2.0;
+	const double Duration = Drop <= DropToTerminal
+		? 2.0 * Drop / (InitialSpeed + FMath::Sqrt(FMath::Square(InitialSpeed) + 2.0 * Gravity * Drop))
+		: TimeToTerminal + (Drop - DropToTerminal) / TerminalSpeed;
+	const FVector HorizontalVelocity(Velocity.X, Velocity.Y, 0.0);
+	const auto PositionAt = [&](double Time)
+	{
+		const double AccelerationTime = FMath::Min(Time, TimeToTerminal);
+		const double Distance = (InitialSpeed + Gravity * AccelerationTime / 2.0) * AccelerationTime
+			+ TerminalSpeed * (Time - AccelerationTime);
+		return Start + HorizontalVelocity * Time - FVector::UpVector * Distance;
+	};
+
+	// 구간을 직선으로 검사할 때의 포물선 오차를 기존 접지 검사 거리 안으로 제한한다.
+	const double Tolerance = FMath::Max<double>(DriveConfig.GroundProbeDistance, UE_KINDA_SMALL_NUMBER);
+	const double Step = FMath::Sqrt(8.0 * Tolerance / Gravity);
+	const FQuat Rotation = UpdatedPrimitive->GetComponentQuat();
+	const FCollisionShape Probe = FCollisionShape::MakeBox(Chassis.GetBox() + FVector(Tolerance));
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(MWTrackFallLanding), false, PawnOwner);
+	FVector From = Start;
+	for (double Time = 0.0; Time < Duration;)
+	{
+		Time = Time < TimeToTerminal ? FMath::Min3(Time + Step, TimeToTerminal, Duration) : Duration;
+		const FVector To = PositionAt(Time);
+		FHitResult Hit;
+		while (World->SweepSingleByChannel(Hit, From, To, Rotation, VehicleGroundChannel, Probe, Params))
+		{
+			const AActor* HitActor = Hit.GetActor();
+			if (!HitActor || Algo::AnyOf(Tracks, [HitActor](const FMWPlacedTrack& Track) { return Track.Actor == HitActor; }))
+			{
+				// 노면 접촉과 차체 궤적을 바꿀 수 있는 코스 접촉은 실제 충돌 처리 뒤 다시 판단한다.
+				return true;
+			}
+			// 지형과 장식은 경기 코스의 착지 후보가 아니다. 같은 구간에서 그 뒤의 트랙도 확인한다.
+			Params.AddIgnoredActor(HitActor);
+		}
+		From = To;
+	}
+	return false;
 }
 
 void UMWVehicleMovementComponent::ApplyExternalVelocityChange(const FVector& DeltaVelocity)

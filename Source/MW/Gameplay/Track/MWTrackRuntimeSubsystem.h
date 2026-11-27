@@ -8,6 +8,7 @@
 
 class AMWVehiclePawn;
 class UMWTrackRuntimeComponent;
+struct FMWTrackPlacementSession;
 
 // 현재 차량의 체크포인트·완주·경과 시간을 외부에서 조회하는 값이다.
 USTRUCT(BlueprintType)
@@ -47,6 +48,9 @@ public:
     // 서버에서 기록한 유효 복귀 Transform만 사용해 기존 차량을 복귀시킨다.
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "MW|Race")
     bool RespawnAtTrackCheckpoint(AMWVehiclePawn* Vehicle);
+
+    bool ShouldRecoverUnsupportedFall(AMWVehiclePawn& Vehicle, const FMWTrackPlacementSession& Course,
+        double FallbackZ, double ProbeInterval);
 
     // Racing 진입 시 차량 기록을 새로 시작한다. 출발 볼륨의 재진입을 기다리지 않는다.
     void BeginPlayerRace(AMWVehiclePawn& Vehicle, int32 RoundEpoch);
@@ -90,6 +94,7 @@ private:
         TArray<FTransform> RespawnTransforms;
 
         double StartTime = -1;
+        TOptional<double> NextFallProbeAt;
         FTransform StartTransform = FTransform::Identity;
     };
 
