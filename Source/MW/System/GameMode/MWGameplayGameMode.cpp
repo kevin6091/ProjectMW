@@ -934,11 +934,15 @@ void AMWGameplayGameMode::CheckPlayerRaceFailure(AMWVehiclePawn& Vehicle)
 {
 	const auto* GS = GetGameState<AMWGameplayGameState>();
 	if (!HasAuthority() || !GS || !Vehicle.CanDrive()) return;
-	const FBox Bounds = GS->GetConstructionComponent()->GetPlacementSession().CourseBounds;
-	if (Bounds.IsValid && FMath::IsFinite(FallRecoveryDepth) && FallRecoveryDepth > 0.f
-		&& Vehicle.GetActorLocation().Z < Bounds.Min.Z - FallRecoveryDepth)
+	const FMWTrackPlacementSession& Course = GS->GetConstructionComponent()->GetPlacementSession();
+	if (!Course.CourseBounds.IsValid || !FMath::IsFinite(FallRecoveryDepth) || FallRecoveryDepth <= 0.f) return;
+
+	const double FallbackZ = Course.CourseBounds.Min.Z - FallRecoveryDepth;
+	auto* Runtime = GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>();
+	if (Vehicle.GetActorLocation().Z < FallbackZ
+		|| Runtime->ShouldRecoverUnsupportedFall(Vehicle, Course, FallbackZ, FallRecoveryProbeInterval))
 	{
-		GetWorld()->GetSubsystem<UMWTrackRuntimeSubsystem>()->RespawnAtTrackCheckpoint(&Vehicle);
+		Runtime->RespawnAtTrackCheckpoint(&Vehicle);
 	}
 }
 

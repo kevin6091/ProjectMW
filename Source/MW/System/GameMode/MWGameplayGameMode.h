@@ -84,6 +84,9 @@ private:
 	float RoundResultsSeconds = 3.f;
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "100", Units = "cm"))
 	float FallRecoveryDepth = 1000.f;
+	// 첫 하강 검사까지의 유예와 이후 노면 확인 주기다. 0이면 기존 하한으로만 복귀한다.
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "0", Units = "s"))
+	float FallRecoveryProbeInterval = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "MW|Race", meta = (ClampMin = "1.0"))
 	float RacePreparationTimeoutSeconds = 30.f;

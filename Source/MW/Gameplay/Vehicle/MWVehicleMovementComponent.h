@@ -15,6 +15,7 @@ class AMWVehiclePawn;
 class UMWItemComponent;
 class UMWTrackRuntimeComponent;
 class USphereComponent;
+struct FMWPlacedTrack;
 
 /**
  *
@@ -49,6 +50,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="MW|Drive")
 	bool IsGrounded() const { return bGrounded; }
+	bool IsDescendingWithoutSupport() const;
+	bool MayContactTrackDuringFall(TConstArrayView<FMWPlacedTrack> Tracks, double FallbackZ) const;
 
 	void ResetDriveInput();
 

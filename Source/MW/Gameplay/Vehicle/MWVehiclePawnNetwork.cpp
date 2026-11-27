@@ -59,6 +59,7 @@ void AMWVehiclePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AMWVehiclePawn, ServerDriveSnapshot);
+	DOREPLIFETIME(AMWVehiclePawn, CheckpointBlinkStartedAt);
 }
 
 void AMWVehiclePawn::ResetDriveStream()

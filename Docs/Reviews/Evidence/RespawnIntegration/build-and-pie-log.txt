@@ -1,0 +1,32 @@
+MWEditor Win64 Development (UE 5.8.4)
+Result: Succeeded
+Total execution time: 126.32 seconds
+
+PIE launch, placement, racing and integrated fall trials (UTC)
+[2026.11.27-06.23.47:075][189]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.27-06.23.52:482][440]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.27-06.23.58:710][727]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.27-06.24.01:804][867]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=1 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-06.24.01:805][867]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-06.24.01:811][867]LogMWServer: [MWGameplayState] World=L_Dev_Drive Authority=0 Phase=EMWRoomPhase::Racing Round=1 Epoch=1 End=0.00 Mode=EMWRaceMode::Normal Course=1/5
+[2026.11.27-06.26.28:000][843]LogPython: MW_RESPAWN_INTEGRATED_READY default_probe=1.0
+[2026.11.27-06.28.48:245][ 79]LogPython: MW_RESPAWN_INTEGRATED_READY default_probe=1.0
+[2026.11.27-06.29.04:404][916]LogPython: MW_RESPAWN_INTEGRATED_START trial=p2-normal member=2 origin=[-2620.01172, 525.0, 6058.45801] launch=[-2620.01172, 3350.72861, 6058.45801] legacy_z=2899.999
+[2026.11.27-06.29.05:710][964]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p2-normal t=1.30402 xyz=[-2620.0, 525.0, 6055.00002]
+[2026.11.27-06.29.07:578][  6]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p2-normal samples=91
+[2026.11.27-06.29.11:240][123]LogPython: MW_RESPAWN_INTEGRATED_START trial=p3-normal member=3 origin=[-2870.08808, 375.0, 6067.76316] launch=[-2870.08808, 3371.52861, 6067.76316] legacy_z=2899.999
+[2026.11.27-06.29.12:488][163]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p3-normal t=1.26905 xyz=[-2870.0, 375.0, 6071.0]
+[2026.11.27-06.29.14:242][237]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p3-normal samples=115
+[2026.11.27-06.29.17:752][406]LogPython: MW_RESPAWN_INTEGRATED_START trial=p2-capture member=2 origin=[-2620.01172, 525.0, 6058.45801] launch=[-2620.01172, 3350.72861, 6058.45801] legacy_z=2899.999
+[2026.11.27-06.29.19:057][465]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p2-capture t=1.30495 xyz=[-2620.0, 525.0, 6055.00002]
+[2026.11.27-06.29.19:059][465]LogPython: MW_RESPAWN_INTEGRATED_CAPTURE trial=p2-capture t=1.30495
+[2026.11.27-06.29.22:748][635]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p2-capture samples=230
+[2026.11.27-06.29.59:258][481]LogPython: MW_RESPAWN_INTEGRATED_START trial=p2-normal-repeat member=2 origin=[-2620.01172, 525.0, 6058.45801] launch=[-2620.01172, 3350.72861, 6058.45801] legacy_z=2899.999
+[2026.11.27-06.30.00:499][543]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p2-normal-repeat t=1.24225 xyz=[-2620.0, 525.0, 6055.00002]
+[2026.11.27-06.30.02:285][631]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p2-normal-repeat samples=151
+[2026.11.27-06.30.03:734][706]LogPython: MW_RESPAWN_INTEGRATED_START trial=p3-normal-repeat member=3 origin=[-2870.08808, 375.0, 6067.76316] launch=[-2870.08808, 3371.52861, 6067.76316] legacy_z=2899.999
+[2026.11.27-06.30.04:943][765]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p3-normal-repeat t=1.21060 xyz=[-2870.0, 375.0, 6071.0]
+[2026.11.27-06.30.06:746][854]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p3-normal-repeat samples=149
+[2026.11.27-06.30.33:721][264]LogPython: MW_RESPAWN_INTEGRATED_START trial=p2-fall-frame member=2 origin=[-2620.01172, 525.0, 6058.45801] launch=[-2620.01172, 3350.72861, 6058.45801] legacy_z=2899.999
+[2026.11.27-06.30.35:033][324]LogPython: MW_RESPAWN_INTEGRATED_RETURN trial=p2-fall-frame t=1.30807 xyz=[-2620.0, 525.0, 6055.00002]
+[2026.11.27-06.30.36:750][401]LogPython: MW_RESPAWN_INTEGRATED_DONE trial=p2-fall-frame samples=138

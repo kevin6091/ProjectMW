@@ -15,6 +15,7 @@ class UCameraComponent;
 class UNiagaraComponent;
 class UAudioComponent;
 class UBoxComponent;
+class UMeshComponent;
 class USphereComponent;
 class USceneComponent;
 class UMWVehicleMovementComponent;
@@ -195,6 +196,21 @@ private:
     void StopEngineAudio();
 
 	bool IsVisualBranch(USceneComponent* Component);
+	void CacheCheckpointBlinkMeshes();
+	void UpdateCheckpointBlink();
+
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Checkpoint Recovery", meta = (ClampMin = "0", Units = "s"))
+	float CheckpointBlinkSeconds = 0.9f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "MW|Checkpoint Recovery", meta = (ClampMin = "0.05", Units = "s"))
+	float CheckpointBlinkInterval = 0.15f;
+
+	UPROPERTY(Replicated)
+	double CheckpointBlinkStartedAt = -1.0;
+
+	TArray<TWeakObjectPtr<UMeshComponent>> CheckpointBlinkMeshes;
+	TArray<TWeakObjectPtr<UMeshComponent>> HiddenCheckpointBlinkMeshes;
+	bool bCheckpointBlinkHidden = false;
 
 	static constexpr float DriveStep = 1.f / 120.f;
 	static constexpr float MaxDriveStepTime = 12.f * DriveStep;

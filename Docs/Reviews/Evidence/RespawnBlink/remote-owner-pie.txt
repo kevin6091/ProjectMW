@@ -1,0 +1,14 @@
+[2026.11.27-04.41.09:245][193]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.27-04.41.28:538][121]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.27-04.41.45:984][  7]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=0
+[2026.11.27-04.41.49:292][140]LogPython: MW_REMOTE_BLINK_READY session=1
+[2026.11.27-04.41.52:758][279]LogPython: MW_REMOTE_BLINK_DROP member=2 role=remote limit=1483.6097067451483 mode=normal
+[2026.11.27-04.41.55:067][365]LogPython: MW_REMOTE_BLINK_FINISHED p2-normal 87
+[2026.11.27-04.42.00:097][571]LogPython: MW_REMOTE_BLINK_DROP member=3 role=remote limit=1483.6097067451483 mode=normal
+[2026.11.27-04.42.02:405][660]LogPython: MW_REMOTE_BLINK_FINISHED p3-normal 90
+[2026.11.27-04.42.21:511][423]LogPython: MW_REMOTE_BLINK_DROP member=2 role=remote limit=1483.6097067451483 mode=capture
+[2026.11.27-04.42.27:725][666]LogPython: MW_REMOTE_BLINK_FINISHED p2-capture 244
+[2026.11.27-04.43.41:126][119]LogMWServer: [MWTrackPlacement] Placed piece=2 member=1 target=1/0 source=0
+[2026.11.27-04.43.59:545][ 34]LogMWServer: [MWTrackPlacement] Placed piece=3 member=2 target=2/1 source=0
+[2026.11.27-04.44.58:895][106]LogMWServer: [MWTrackPlacement] Placed piece=4 member=3 target=3/1 source=1
+[2026.11.27-04.45.01:997][259]LogPython: MW_REMOTE_BLINK_READY session=2
