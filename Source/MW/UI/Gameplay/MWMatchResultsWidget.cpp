@@ -123,7 +123,8 @@ void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha,
             const FGeometry& MedalGeometry = PodiumMedal->GetCachedGeometry();
             const float LayoutScale = MedalGeometry.GetAccumulatedLayoutTransform().GetScale();
             const double Width = MedalGeometry.GetLocalSize().X;
-            if (LayoutScale > UE_SMALL_NUMBER && Width > UE_SMALL_NUMBER)
+            if (LayoutScale > UE_SMALL_NUMBER && Width > UE_SMALL_NUMBER
+                && ViewGeometry->GetLocalSize().X > UE_SMALL_NUMBER)
             {
                 // 판 전체 폭 대신 메달 자신의 오른쪽 끝을 화면 왼쪽에 둬 과도한 진입 거리를 없앤다.
                 // 현재 애니메이션의 이동값을 되먹이지 않도록 렌더 변환 전 레이아웃 경계를 사용한다.
@@ -131,6 +132,11 @@ void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha,
                 const double Left = ViewGeometry->GetLayoutBoundingRect().Left;
                 const double ExtraWidth = Width * FMath::Max(0., PodiumMedal->GetRenderTransform().Scale.X - 1.);
                 MedalStart.X = FMath::Min(0., (Left - Right) / LayoutScale - ExtraWidth);
+            }
+            else
+            {
+                // 첫 레이아웃 전 임시 오프셋이 보이면 다음 프레임에 메달이 왼쪽으로 튄다.
+                MedalAlpha = 0.f;
             }
         }
         PodiumMedal->SetRenderOpacity(MedalAlpha);
@@ -326,7 +332,11 @@ bool UMWMatchResultsWidget::Present(const AMWGameplayGameState& State, bool bPla
 
     if (ResultsPanel) ResultsPanel->SetVisibility(ESlateVisibility::Collapsed);
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
-    if (PodiumPanel) PodiumPanel->SetVisibility(ESlateVisibility::Collapsed);
+    if (PodiumPanel)
+    {
+        PodiumPanelOpacity = PodiumPanel->GetRenderOpacity();
+        PodiumPanel->SetVisibility(ESlateVisibility::Collapsed);
+    }
     if (ContinueButton) ContinueButton->SetVisibility(ESlateVisibility::Collapsed);
     if (!AddToPlayerScreen())
     {
@@ -872,6 +882,12 @@ void UMWMatchResultsWidget::BeginPodiumApproach()
     }
 
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
+    if (PodiumPanel && PodiumMedalEntrySeconds > 0.f && !PodiumMedalDelaySeconds.IsEmpty())
+    {
+        // 첫 메달이 제 좌표에서 들어오도록 결승 접근 중 투명하게 배치만 준비한다.
+        PodiumPanel->SetRenderOpacity(0.f);
+        PodiumPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+    }
     Screen = EMWMatchResultsScreen::FinishShot;
     // 결과 복제 순서와 관계없이 판 퇴장부터 카메라·차량·카드가 같은 시간을 쓴다.
     FinishShotElapsed = 0.f;
@@ -883,6 +899,7 @@ void UMWMatchResultsWidget::BeginPodiumApproach()
 void UMWMatchResultsWidget::BeginPodium()
 {
     TallyPanel->SetVisibility(ESlateVisibility::Collapsed);
+    PodiumPanel->SetRenderOpacity(PodiumPanelOpacity);
     PodiumPanel->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
     PlayCelebration();
     if (!FMath::IsFinite(WinnerSeconds) || WinnerSeconds <= 0.f || PodiumRevealOrder.IsEmpty())
@@ -916,6 +933,18 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
         {
             return FMath::SmoothStep(CardSeconds * FMath::Clamp(Fraction, 0.f, .95f), CardSeconds, Elapsed);
         };
+        float MedalAlpha = EntryAlpha(0.f);
+        if (PodiumMedalDelaySeconds.IsValidIndex(Index) && FMath::IsFinite(PodiumMedalEntrySeconds))
+        {
+            const float Delay = PodiumMedalDelaySeconds[Index];
+            const float Duration = FMath::Min(PodiumMedalEntrySeconds, TotalSeconds - Delay);
+            if (FMath::IsFinite(Delay) && Delay >= 0.f && Duration > UE_SMALL_NUMBER)
+            {
+                // 메달은 먼저 들어오고 끝에서 감속한다. 판과 이름은 기존 순위별 시간으로 재생한다.
+                const float Progress = FMath::Clamp((RevealElapsed - Delay) / Duration, 0.f, 1.f);
+                MedalAlpha = 1.f - FMath::Cube(1.f - Progress);
+            }
+        }
         const float PlateAlpha = EntryAlpha(PlateEntryFraction);
         FVector2D EntryStart = CardEntryOffset;
         FVector2D MedalStart = CardEntryOffset;
@@ -931,7 +960,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
                 FVector2D(0.f, ViewGeometry.GetLocalSize().Y)));
             MedalStart = FVector2D(EntryStart.X, (ViewBottom.Y - ViewLeft.Y) * MedalEntryHeightFractions[Index]);
         }
-        Card->SetPodiumEntry(EntryAlpha(0.f), PlateAlpha, EntryAlpha(DetailsEntryFraction),
+        Card->SetPodiumEntry(MedalAlpha, PlateAlpha, EntryAlpha(DetailsEntryFraction),
             EntryAlpha(PortraitEntryFraction), EntryStart, MedalStart, &ViewGeometry);
     }
     if (RevealElapsed >= TotalSeconds)

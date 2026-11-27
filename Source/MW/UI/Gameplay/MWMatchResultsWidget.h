@@ -252,6 +252,13 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
     float PodiumCardStaggerSeconds = 0.f;
 
+    // 메달은 이름판과 다른 순서로 시작할 수 있다. 배열은 1위부터 순서대로 편집한다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (ClampMin = "0"))
+    TArray<float> PodiumMedalDelaySeconds;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
+    float PodiumMedalEntrySeconds = 0.f;
+
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D CardEntryOffset = FVector2D::ZeroVector;
 
@@ -278,6 +285,7 @@ private:
     TSoftClassPtr<AMWVehiclePawn> WinnerVehicleClass;
     TSharedPtr<FStreamableHandle> WinnerVehicleClassLoad;
     FIntPoint SettledViewportSize = FIntPoint::ZeroValue;
+    float PodiumPanelOpacity = 1.f;
     bool bWinnerVehicleSpawnAttempted = false;
     TArray<TWeakObjectPtr<UNiagaraComponent>> CelebrationComponents;
     FTransform FinishFrame;

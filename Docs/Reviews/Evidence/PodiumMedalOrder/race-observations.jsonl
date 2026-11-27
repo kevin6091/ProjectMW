@@ -1,0 +1,31 @@
+{"type": "checkpoint_accepted", "utc_s": 1795799191.518102, "epoch": 2, "member": 1, "points": 100, "driven": true}
+{"type": "induced_fall", "utc_s": 1795799194.4124575, "epoch": 2, "members": [1]}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.5468636, "epoch": 2, "member": 1, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.5482738, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.549281, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.6955607, "epoch": 2, "member": 1, "active": 1, "remaining": 0.7248978018760681, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.6960664, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.6970744, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "recovery_start", "utc_s": 1795799194.6970744, "epoch": 2, "remaining": 0.7248978018760681}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.8341098, "epoch": 2, "member": 1, "active": 1, "remaining": 0.5836741924285889, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.8341098, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.8351557, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.976778, "epoch": 2, "member": 1, "active": 1, "remaining": 0.44317591190338135, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.9786994, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799194.9786994, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.1078167, "epoch": 2, "member": 1, "active": 1, "remaining": 0.3083239197731018, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.1078167, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.1078167, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.2438447, "epoch": 2, "member": 1, "active": 1, "remaining": 0.17576441168785095, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.2438447, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.245356, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.3882504, "epoch": 2, "member": 1, "active": 1, "remaining": 0.031158313155174255, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.3882504, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.3893118, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.5263672, "epoch": 2, "member": 1, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.5263672, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795799195.5273733, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "recovery_end", "utc_s": 1795799195.5273733, "epoch": 2, "drive": true, "elapsed": 0.8279999999795109}
+{"type": "phase", "utc_s": 1795799278.5905075, "member": 1, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4200, 1], [2, 3150, 2], [3, 2450, 3]]}
+{"type": "phase", "utc_s": 1795799278.5915132, "member": 2, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4200, 1], [2, 3150, 2], [3, 2450, 3]]}
+{"type": "phase", "utc_s": 1795799278.5915132, "member": 3, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4200, 1], [2, 3150, 2], [3, 2450, 3]]}
