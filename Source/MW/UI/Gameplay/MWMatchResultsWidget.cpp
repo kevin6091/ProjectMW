@@ -146,15 +146,17 @@ void UMWMatchResultRowWidget::SetTallyScore(int32 Score, int32 Target)
     if (ScoreBar)
     {
         const float Fraction = Target > 0 ? FMath::Clamp(static_cast<float>(Score) / Target, 0.f, 1.f) : 0.f;
-        ScoreBar->SetPercent(Fraction);
-        // 낮은 점수의 배지가 판 하단을 벗어나지 않도록 WBP가 정한 최소 높이에서 멈춘다.
-        const float MarkerAnchor = 1.f - FMath::Max(Fraction, FMath::Clamp(MarkerMinimumFill, 0.f, 1.f));
+        // 바탕 위에서 점수에 비례해 자라도록 하고, 색 막대와 정보행에 같은 경계를 적용한다.
+        const float Fill = FMath::Lerp(FMath::Clamp(TallyBaseFraction, 0.f, 1.f), 1.f, Fraction);
+        ScoreBar->SetPercent(Fill);
+        const float MarkerAnchor = 1.f - Fill;
+        UWidget* NameMarker = TallyNameMarker ? TallyNameMarker.Get() : NameLabel.Get();
         // 차량 배지와 점수는 한 슬롯에서 움직인다. 기존 WBP에서는 점수 글자 슬롯을 사용한다.
         UWidget* ScoreMarker = TallyScoreMarker ? TallyScoreMarker.Get() : TotalScoreLabel.Get();
         // 새 점수판은 숫자와 접미사를 한 슬롯에 두어 높이와 간격을 같이 유지한다.
         UWidget* RankMarker = TallyRankGroup ? TallyRankGroup.Get() : RankLabel.Get();
         UWidget* SuffixMarker = TallyRankGroup ? nullptr : RankSuffix.Get();
-        for (UWidget* Marker : {static_cast<UWidget*>(NameLabel.Get()), RankMarker, SuffixMarker, ScoreMarker})
+        for (UWidget* Marker : {NameMarker, RankMarker, SuffixMarker, ScoreMarker})
         {
             if (auto* MarkerSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Marker))
             {

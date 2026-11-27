@@ -1,0 +1,73 @@
+[2026.11.27-01.17.05:765][640]LogTemp: Display: MW_POSITION_TEST_NAME Member=1 Nick=길모퉁이레이서야간주행연습은즐겁다
+[2026.11.27-01.17.05:766][640]LogTemp: Display: MW_POSITION_TEST_NAME Member=2 Nick=VECTOR-9-CHAMPIONSHIP-PROTOTYPE-X
+[2026.11.27-01.17.05:766][640]LogTemp: Display: MW_POSITION_TEST_NAME Member=3 Nick=NIGHT SHIFT
+[2026.11.27-01.17.13:660][800]LogTemp: Display: MW_POSITION_TEST_NAME Member=1 Nick=길모퉁이레이서야간주행연습은즐겁다
+[2026.11.27-01.17.13:660][800]LogTemp: Display: MW_POSITION_TEST_NAME Member=2 Nick=VECTOR-9-CHAMPIONSHIP-PROTOTYPE-X
+[2026.11.27-01.17.13:660][800]LogTemp: Display: MW_POSITION_TEST_NAME Member=3 Nick=NIGHT SHIFT
+[2026.11.27-01.17.13:664][800]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-011713
+[2026.11.27-01.17.29:538][ 96]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-01.17.29:539][ 96]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-01.17.29:539][ 96]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-01.17.47:786][345]LogTemp: Display: MW_RACE_RENDER_END Requested=544 Queued=544 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-011713
+[2026.11.27-01.18.01:190][548]LogTemp: Display: MW_POSITION_SHOW before tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.01:193][548]LogTemp: Display: MW_POSITION_SHOW before tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.01:196][548]LogTemp: Display: MW_POSITION_SHOW before tally-low 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.14:356][751]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.14:359][751]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.14:362][751]LogTemp: Display: MW_POSITION_SHOW after tally-low 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.16:627][783]LogTemp: Display: MW_POSITION_SHOW before tally-start 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.16:630][783]LogTemp: Display: MW_POSITION_SHOW before tally-start 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.16:632][783]LogTemp: Display: MW_POSITION_SHOW before tally-start 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.18:827][814]LogTemp: Display: MW_POSITION_SHOW before tally-start 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.18:830][814]LogTemp: Display: MW_POSITION_SHOW before tally-start 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.18:833][814]LogTemp: Display: MW_POSITION_SHOW before tally-start 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.21:070][845]LogTemp: Display: MW_POSITION_SHOW after tally-start 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.21:073][845]LogTemp: Display: MW_POSITION_SHOW after tally-start 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.21:076][845]LogTemp: Display: MW_POSITION_SHOW after tally-start 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.23:585][873]LogTemp: Display: MW_POSITION_SHOW after tally-start 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.23:589][873]LogTemp: Display: MW_POSITION_SHOW after tally-start 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.23:593][873]LogTemp: Display: MW_POSITION_SHOW after tally-start 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.25:798][899]LogTemp: Display: MW_POSITION_SHOW after tally-low 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.25:800][899]LogTemp: Display: MW_POSITION_SHOW after tally-low 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.25:803][899]LogTemp: Display: MW_POSITION_SHOW after tally-low 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.28:169][929]LogTemp: Display: MW_POSITION_SHOW after tally-mid 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.28:172][929]LogTemp: Display: MW_POSITION_SHOW after tally-mid 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.28:176][929]LogTemp: Display: MW_POSITION_SHOW after tally-mid 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.30:512][958]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.30:516][958]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.30:519][958]LogTemp: Display: MW_POSITION_SHOW after tally-mid 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.33:007][985]LogTemp: Display: MW_POSITION_SHOW after tally-final 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.33:009][985]LogTemp: Display: MW_POSITION_SHOW after tally-final 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.33:012][985]LogTemp: Display: MW_POSITION_SHOW after tally-final 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.35:339][ 14]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.35:343][ 14]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.35:347][ 14]LogTemp: Display: MW_POSITION_SHOW after tally-final 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.37:645][ 41]LogTemp: Display: MW_POSITION_SHOW after positions 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.37:650][ 41]LogTemp: Display: MW_POSITION_SHOW after positions 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.37:654][ 41]LogTemp: Display: MW_POSITION_SHOW after positions 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.39:879][ 68]LogTemp: Display: MW_POSITION_SHOW after positions-ties 3 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.39:881][ 68]LogTemp: Display: MW_POSITION_SHOW after positions-ties 3 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.39:883][ 68]LogTemp: Display: MW_POSITION_SHOW after positions-ties 3 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+[2026.11.27-01.18.42:310][ 94]LogTemp: Display: MW_POSITION_SHOW after positions-ties 4 /Game/Levels/UEDPIE_0_L_Dev_Drive 1920x1080
+[2026.11.27-01.18.42:313][ 94]LogTemp: Display: MW_POSITION_SHOW after positions-ties 4 /Game/Levels/UEDPIE_1_L_Dev_Drive 1280x720
+[2026.11.27-01.18.42:316][ 94]LogTemp: Display: MW_POSITION_SHOW after positions-ties 4 /Game/Levels/UEDPIE_2_L_Dev_Drive 800x482
+
+{"event": "drive_arm", "timestamp": 694312.796, "wall_time": 1795742234.5048716, "member": 1, "start_x": 39986.86631367594, "start_y": 16744.69297874445, "start_z": 6150.970000297218, "gate_x": 40160.26660296868, "gate_y": 17391.865552076473, "piece": 4}
+{"event": "drive_sample", "timestamp": 694313.468, "wall_time": 1795742235.1674094, "member": 1, "x": 39987.300907380864, "y": 16746.314988844464, "z": 6148.804386571354, "speed": 66.66666677884541, "passed": 0}
+{"event": "drive_sample", "timestamp": 694313.64, "wall_time": 1795742235.3386197, "member": 1, "x": 39991.78688573049, "y": 16763.057763141616, "z": 6148.804386571354, "speed": 240.00000837735595, "passed": 0}
+{"event": "drive_sample", "timestamp": 694313.781, "wall_time": 1795742235.4899771, "member": 1, "x": 40000.241229237894, "y": 16794.611453575697, "z": 6148.804386571354, "speed": 400.0000160067504, "passed": 0}
+{"event": "drive_sample", "timestamp": 694313.937, "wall_time": 1795742235.638019, "member": 1, "x": 40022.09599448908, "y": 16876.178816995125, "z": 6148.804386571354, "speed": 653.3333614199584, "passed": 0}
+{"event": "drive_sample", "timestamp": 694314.093, "wall_time": 1795742235.7996912, "member": 1, "x": 40054.33177304351, "y": 16996.490678328777, "z": 6148.804386571354, "speed": 906.6667068331665, "passed": 0}
+{"event": "drive_sample", "timestamp": 694314.25, "wall_time": 1795742235.953055, "member": 1, "x": 40096.94856491747, "y": 17155.54703757226, "z": 6148.804386571354, "speed": 1160.000052246375, "passed": 0}
+{"event": "driven_checkpoint", "timestamp": 694314.359, "wall_time": 1795742236.0653677, "member": 1, "epoch": 2, "piece": 4, "score": 100}
+{"event": "drop", "timestamp": 694317.562, "wall_time": 1795742239.2642019, "member": 1, "from_z": 4418.116446424573, "fall_z": -3581.883553575427}
+{"event": "server_recovery_wait", "timestamp": 694317.609, "wall_time": 1795742239.317276, "member": 1, "remaining": 0.800000011920929, "drive": false, "z": 6161.3700030517575}
+{"event": "server_recovery_restored", "timestamp": 694318.437, "wall_time": 1795742240.1455145, "member": 1, "checkpoints": 1}
+{"event": "server_overlap", "timestamp": 694318.453, "wall_time": 1795742240.1475148, "member": 2, "epoch": 2, "index": 1, "piece": 4, "score": 100, "finish": 0}
+{"event": "drop", "timestamp": 694319.0, "wall_time": 1795742240.705341, "member": 2, "from_z": 6975.53943032433, "fall_z": -1024.4605696756698}
+{"event": "server_recovery_wait", "timestamp": 694319.25, "wall_time": 1795742240.9531274, "member": 2, "remaining": 0.800000011920929, "drive": false, "z": 6120.57}
+{"event": "server_recovery_restored", "timestamp": 694320.093, "wall_time": 1795742241.796725, "member": 2, "checkpoints": 1}
+{"event": "server_overlap", "timestamp": 694320.093, "wall_time": 1795742241.7977266, "member": 3, "epoch": 2, "index": 1, "piece": 4, "score": 100, "finish": 0}
+{"event": "server_overlap", "timestamp": 694320.625, "wall_time": 1795742242.332365, "member": 2, "epoch": 2, "index": 0, "piece": 8, "score": 100, "finish": 1}
+{"event": "server_overlap", "timestamp": 694321.171, "wall_time": 1795742242.8682334, "member": 1, "epoch": 2, "index": 0, "piece": 8, "score": 100, "finish": 2}
+{"event": "server_overlap", "timestamp": 694321.687, "wall_time": 1795742243.385893, "member": 3, "epoch": 2, "index": 0, "piece": 8, "score": 100, "finish": 3}

@@ -58,6 +58,7 @@ private:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TotalScoreLabel;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UProgressBar> ScoreBar;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UImage> VehiclePortrait;
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyNameMarker;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyScoreMarker;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidget> TallyVehicleBadge;
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UWidgetSwitcher> RankMedals;
@@ -66,8 +67,9 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "1", ClampMax = "10"))
     int32 ScoreDigits = 1;
 
+    // 0점에도 배지와 점수를 담는 바탕이다. 점수는 이 바탕 위의 가용 높이로 표현한다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
-    float MarkerMinimumFill = 0.f;
+    float TallyBaseFraction = 0.f;
 
     // 점수판의 도장 브러시에만 적용한다. 커서·차량·시상은 기존 참가자색을 사용한다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (ClampMin = "0", ClampMax = "1"))
