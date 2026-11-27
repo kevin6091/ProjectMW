@@ -1,0 +1,12 @@
+event,switch_frame,switch_approach_seconds,before_frame,before_approach_seconds,after_frame,after_approach_seconds
+gold visible,30296,2.4,792,2.79,725,2.467
+silver visible,30293,2.35,796,2.919,730,2.628
+bronze visible,30301,2.483,801,3.075,733,2.75
+first plate visible,30302,2.5,787,2.631,727,2.525
+second plate visible,30315,2.717,794,2.853,732,2.703
+third plate visible,30327,2.917,800,3.045,734,2.79
+winner name visible,30322,2.833,794,2.853,732,2.703
+runner-up name visible,30328,2.933,799,3.014,736,2.874
+third name visible,30335,3.05,804,3.168,738,2.954
+all cards settled (approx),30345,3.217,809,3.329,741,3.062
+Continue text visible,30319,2.783,,,,

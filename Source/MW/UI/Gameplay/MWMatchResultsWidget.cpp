@@ -113,11 +113,26 @@ void UMWMatchResultRowWidget::ShowRank(int32 Rank)
 }
 
 void UMWMatchResultRowWidget::SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
-    const FVector2D& PlateStart, const FVector2D& MedalStart)
+    const FVector2D& PlateStart, FVector2D MedalStart, const FGeometry* ViewGeometry)
 {
     // 새 WBP는 메달과 판을 같은 부모의 별도 슬롯에 둔다. 기존 카드는 전체 단위로 진입한다.
     if (PodiumMedal && CardBackground)
     {
+        if (ViewGeometry)
+        {
+            const FGeometry& MedalGeometry = PodiumMedal->GetCachedGeometry();
+            const float LayoutScale = MedalGeometry.GetAccumulatedLayoutTransform().GetScale();
+            const double Width = MedalGeometry.GetLocalSize().X;
+            if (LayoutScale > UE_SMALL_NUMBER && Width > UE_SMALL_NUMBER)
+            {
+                // 판 전체 폭 대신 메달 자신의 오른쪽 끝을 화면 왼쪽에 둬 과도한 진입 거리를 없앤다.
+                // 현재 애니메이션의 이동값을 되먹이지 않도록 렌더 변환 전 레이아웃 경계를 사용한다.
+                const double Right = MedalGeometry.GetLayoutBoundingRect().Right;
+                const double Left = ViewGeometry->GetLayoutBoundingRect().Left;
+                const double ExtraWidth = Width * FMath::Max(0., PodiumMedal->GetRenderTransform().Scale.X - 1.);
+                MedalStart.X = FMath::Min(0., (Left - Right) / LayoutScale - ExtraWidth);
+            }
+        }
         PodiumMedal->SetRenderOpacity(MedalAlpha);
         PodiumMedal->SetRenderTranslation(MedalStart * (1.f - MedalAlpha));
         CardBackground->SetRenderOpacity(PlateAlpha);
@@ -358,52 +373,52 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     {
         // 가시성 충돌이 없는 트랙 장식도 시야를 가릴 수 있어 렌더 메시 경계까지 검사한다.
         TArray<FBox> TrackBounds;
+        TArray<FBox> FinishApproachBounds;
         for (const FMWPlacedTrack& Piece : Course.PlacedTracks)
         {
             if (Piece.PieceId == Finish.PieceId || !IsValid(Piece.Actor.Get())) continue;
+            auto& Bounds = bHasMotion && Piece.PieceId == Finish.ConnectedTo.PieceId
+                ? FinishApproachBounds : TrackBounds;
             TInlineComponentArray<UStaticMeshComponent*> Meshes(Piece.Actor.Get(), true);
             for (const UStaticMeshComponent* Mesh : Meshes)
             {
-                if (Mesh->IsVisible() && Mesh->GetStaticMesh()) TrackBounds.Add(Mesh->Bounds.GetBox());
+                if (Mesh->IsVisible() && Mesh->GetStaticMesh()) Bounds.Add(Mesh->Bounds.GetBox());
             }
         }
         FCollisionQueryParams Query(SCENE_QUERY_STAT(MWFinishShotVisibility), true);
         if (IsValid(Finish.Actor.Get())) Query.AddIgnoredActor(Finish.Actor.Get());
         const auto IsObstructed = [&](const FVector& Location, const FVector& Aim)
         {
+            const auto BlocksSight = [&](const FBox& Bounds)
+            {
+                return FMath::LineBoxIntersection(Bounds, Location, Aim, Aim - Location);
+            };
             return FVector::DistSquared(Location, Aim) <= UE_KINDA_SMALL_NUMBER
                 || GetWorld()->LineTraceTestByChannel(Location, Aim, ECC_Visibility, Query)
-                || TrackBounds.ContainsByPredicate([&](const FBox& Bounds)
+                || TrackBounds.ContainsByPredicate(BlocksSight)
+                || FinishApproachBounds.ContainsByPredicate([&](const FBox& Bounds)
                 {
-                    return FMath::LineBoxIntersection(Bounds, Location, Aim, Aim - Location);
+                    // 결승에 연결된 도로의 상자가 주시점까지 감싸는 경우다. 실제 가림은 위의 충돌 검사로 확인한다.
+                    return Bounds.IsInsideOrOn(Location) || (!Bounds.IsInsideOrOn(Aim) && BlocksSight(Bounds));
                 });
         };
-        if (IsObstructed(CameraLocation, LookAt))
-        {
-            ViewIndex = INDEX_NONE;
-            for (int32 Index = 0; Index < AlternateCameraOffsets.Num(); ++Index)
-            {
-                const FVector Candidate = FinishFrame.TransformPositionNoScale(AlternateCameraOffsets[Index]);
-                if (!Candidate.ContainsNaN() && !IsObstructed(Candidate, LookAt))
-                {
-                    CameraLocation = Candidate;
-                    ViewIndex = Index + 1;
-                    break;
-                }
-            }
-        }
         const auto& Keys = PodiumCameraKeys;
-        if (bHasMotion && ViewIndex != INDEX_NONE && Keys[0].Time == 0.f && Keys.Last().Time == 1.f
-            && Keys[0].CameraDelta.IsZero() && Keys[0].AimDelta.IsZero() && Keys[0].FieldOfViewDelta == 0.f)
+        const bool bCanAnimate = bHasMotion && Keys[0].Time == 0.f && Keys.Last().Time == 1.f
+            && Keys[0].CameraDelta.IsZero() && Keys[0].AimDelta.IsZero() && Keys[0].FieldOfViewDelta == 0.f;
+        const auto FindClearTravelScale = [&](const FVector& Origin) -> FVector
         {
-            // 프레임마다 시점을 튕기지 않도록 경로 전체를 먼저 검사하고 한 배율로 재생한다.
+            if (!bCanAnimate)
+            {
+                return FVector::ZeroVector;
+            }
+
+            // 재생 중 시점을 바꾸지 않도록 각 후보의 가시성과 이동 경로를 선택 전에 검사한다.
             constexpr int32 SamplesPerSegment = 6;
-            // 코스 높이 때문에 전체 이동이 막혀도 가시성이 확보된 옆 이동은 남긴다.
             for (const FVector& Scale : {FVector(1.), FVector(.65, 1., .65), FVector(.65),
                 FVector(.35, .75, .35), FVector(.35)})
             {
                 bool bClear = true;
-                FVector Previous = CameraLocation;
+                FVector Previous = Origin;
                 for (int32 Index = 1; bClear && Index < Keys.Num(); ++Index)
                 {
                     const auto& Start = Keys[Index - 1];
@@ -411,13 +426,12 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
                     if (!(Start.Time < End.Time) || End.CameraDelta.ContainsNaN() || End.AimDelta.ContainsNaN()
                         || !FMath::IsFinite(End.FieldOfViewDelta))
                     {
-                        bClear = false;
-                        break;
+                        return FVector::ZeroVector;
                     }
                     for (int32 Sample = 1; Sample <= SamplesPerSegment; ++Sample)
                     {
                         const float Alpha = static_cast<float>(Sample) / SamplesPerSegment;
-                        const FVector Position = CameraLocation + FinishFrame.TransformVectorNoScale(
+                        const FVector Position = Origin + FinishFrame.TransformVectorNoScale(
                             FMath::Lerp(Start.CameraDelta, End.CameraDelta, Alpha) * Scale);
                         const FVector Aim = LookAt + FinishFrame.TransformVectorNoScale(
                             FMath::Lerp(Start.AimDelta, End.AimDelta, Alpha) * Scale);
@@ -432,10 +446,52 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
                 }
                 if (bClear)
                 {
-                    PodiumCameraTravelScale = Scale;
-                    break;
+                    return Scale;
                 }
             }
+            return FVector::ZeroVector;
+        };
+
+        ViewIndex = INDEX_NONE;
+        const auto TryCameraOffset = [&](const FVector& Offset, int32 Index)
+        {
+            const FVector Origin = FinishFrame.TransformPositionNoScale(Offset);
+            if (Origin.ContainsNaN() || IsObstructed(Origin, LookAt))
+            {
+                return false;
+            }
+            const FVector TravelScale = FindClearTravelScale(Origin);
+            if (ViewIndex == INDEX_NONE || !TravelScale.IsZero())
+            {
+                CameraLocation = Origin;
+                ViewIndex = Index;
+                PodiumCameraTravelScale = TravelScale;
+            }
+            // 시상은 검증된 이동 후보가 나올 때까지 검사한다. 정지 화면은 첫 가시 후보를 사용한다.
+            return !bCanAnimate || !TravelScale.IsZero();
+        };
+
+        bool bFound = TryCameraOffset(CameraOffset, 0);
+        if (!bFound && bCanAnimate)
+        {
+            // 측면으로 보내기 전에 대체 시점의 높이만 사용해 기본 접근 방향을 보존한다.
+            for (int32 Index = 0; !bFound && Index < AlternateCameraOffsets.Num(); ++Index)
+            {
+                const double Height = AlternateCameraOffsets[Index].Z;
+                if (Height > CameraOffset.Z)
+                {
+                    bFound = TryCameraOffset(FVector(CameraOffset.X, CameraOffset.Y, Height),
+                        AlternateCameraOffsets.Num() + Index + 1);
+                }
+            }
+        }
+        for (int32 Index = 0; !bFound && Index < AlternateCameraOffsets.Num(); ++Index)
+        {
+            bFound = TryCameraOffset(AlternateCameraOffsets[Index], Index + 1);
+        }
+        if (ViewIndex == INDEX_NONE && bCanAnimate)
+        {
+            return false;
         }
     }
     const FVector Direction = LookAt - CameraLocation;
@@ -876,7 +932,7 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
             MedalStart = FVector2D(EntryStart.X, (ViewBottom.Y - ViewLeft.Y) * MedalEntryHeightFractions[Index]);
         }
         Card->SetPodiumEntry(EntryAlpha(0.f), PlateAlpha, EntryAlpha(DetailsEntryFraction),
-            EntryAlpha(PortraitEntryFraction), EntryStart, MedalStart);
+            EntryAlpha(PortraitEntryFraction), EntryStart, MedalStart, &ViewGeometry);
     }
     if (RevealElapsed >= TotalSeconds)
     {

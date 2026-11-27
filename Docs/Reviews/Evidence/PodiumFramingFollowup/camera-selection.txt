@@ -1,0 +1,55 @@
+=== normal course ===
+[2026.11.27-16.18.04:121][787]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.18.04:187][788]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.18.04:225][788]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.18.07:110][885]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.18.07:118][885]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.18.07:126][885]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=18868.18, Y=8970.29, Z=15323.40) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.18.23:097][428]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.18.23:099][428]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.18.23:099][428]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.18.25:450][509]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.27-16.18.25:452][509]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.27-16.18.25:453][509]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.27-16.18.26:173][529]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.18.26:175][529]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.18.26:175][529]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1
+=== blocked candidate and mesh-bounds diagnosis (before correction) ===
+[2026.11.27-16.30.57:409][383]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 8957.850821, y: -72367.758358, z: 11802.760000}> Hit=True WithoutFixture=False
+[2026.11.27-16.30.57:410][383]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 8957.850821, y: -72367.758358, z: 11802.760000}> Hit=True WithoutFixture=False
+[2026.11.27-16.30.57:411][383]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 8957.850821, y: -72367.758358, z: 11802.760000}> Hit=True WithoutFixture=False
+[2026.11.27-16.31.09:568][767]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=-1 Camera=V(X=8957.85, Y=-72367.76, Z=11802.76) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.31.09:619][768]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=-1 Camera=V(X=8957.85, Y=-72367.76, Z=11802.76) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.31.09:649][768]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=-1 Camera=V(X=8957.85, Y=-72367.76, Z=11802.76) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.31.28:563][412]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.27-16.31.28:564][412]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.27-16.31.28:565][412]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.27-16.31.29:288][437]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-16.31.29:288][437]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-16.31.29:289][437]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=0
+[2026.11.27-16.33.33:908][156]LogPython: MW_QA_MESH_BOUND (2920.0, True, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:918][156]LogPython: MW_QA_MESH_BOUND (4300, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:926][156]LogPython: MW_QA_MESH_BOUND (4800, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:935][156]LogPython: MW_QA_MESH_BOUND (5100, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:943][156]LogPython: MW_QA_MESH_BOUND (5600, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:951][156]LogPython: MW_QA_MESH_BOUND (6200, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+[2026.11.27-16.33.33:959][156]LogPython: MW_QA_MESH_BOUND (8760, False, [(22, 'Model_Model_9a75ee37', True), (22, 'Model_RightWall_88a8d504', True), (22, 'Model_LeftCurb_d5bc92a6', True), (22, 'Model_RightCurb_7f993dd2', True), (22, 'Model_Underwall_bff183e7', True)])
+=== blocked candidate after correction ===
+[2026.11.27-16.39.52:848][628]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_0_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 50585.492409, y: -112915.013659, z: 32313.900000}> Hit=True WithoutFixture=False
+[2026.11.27-16.39.52:849][628]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_1_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 50585.492409, y: -112915.013659, z: 32313.900000}> Hit=True WithoutFixture=False
+[2026.11.27-16.39.52:849][628]LogPython: MW_QA_CORRECTED_FRONT_BLOCKER World=/Game/Levels/UEDPIE_2_L_Dev_Drive.L_Dev_Drive Actor=StaticMeshActor_4 Origin=<Struct 'Vector' {x: 50585.492409, y: -112915.013659, z: 32313.900000}> Hit=True WithoutFixture=False
+[2026.11.27-16.40.01:309][909]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=1 Camera=V(X=50511.72, Y=-115643.49, Z=32353.90) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.40.01:367][910]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=1 Camera=V(X=50511.72, Y=-115643.49, Z=32353.90) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.40.01:393][910]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=1 Camera=V(X=50511.72, Y=-115643.49, Z=32353.90) TravelScale=0.00 SideScale=0.00
+[2026.11.27-16.40.04:313][ 13]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=6 Camera=V(X=50585.49, Y=-112915.01, Z=33693.90) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.40.04:319][ 13]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=6 Camera=V(X=50585.49, Y=-112915.01, Z=33693.90) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.40.04:326][ 13]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=6 Camera=V(X=50585.49, Y=-112915.01, Z=33693.90) TravelScale=1.00 SideScale=1.00
+[2026.11.27-16.40.20:580][425]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.40.20:582][425]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.40.20:583][425]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=PodiumApproach
+[2026.11.27-16.40.22:926][507]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Winner
+[2026.11.27-16.40.22:928][507]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Winner
+[2026.11.27-16.40.22:929][507]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Winner
+[2026.11.27-16.40.23:650][532]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.40.23:650][532]LogMWMatchResults: World=/Game/Levels/UEDPIE_1_L_Dev_Drive Screen=Standings WinnerVehicle=1
+[2026.11.27-16.40.23:650][532]LogMWMatchResults: World=/Game/Levels/UEDPIE_2_L_Dev_Drive Screen=Standings WinnerVehicle=1

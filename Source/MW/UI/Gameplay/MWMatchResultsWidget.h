@@ -47,7 +47,7 @@ public:
     void ShowRank(int32 Rank);
     void SetVehiclePortraitSuppressed(bool bSuppressed);
     void SetPodiumEntry(float MedalAlpha, float PlateAlpha, float NameAlpha, float PortraitAlpha,
-        const FVector2D& PlateStart, const FVector2D& MedalStart);
+        const FVector2D& PlateStart, FVector2D MedalStart, const FGeometry* ViewGeometry = nullptr);
 
 private:
     UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UBorder> MemberAccent;
