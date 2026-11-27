@@ -235,12 +235,22 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
     float FinalPositionsHoldSeconds = 0.f;
 
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float FinalFinishReadSeconds = 0.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Tally", meta = (Units = "s", ClampMin = "0"))
+    float FinalBonusReadSeconds = 0.f;
+
     // 각 카드의 진입에 배분할 시간이다. 1위 카드가 자리를 잡은 뒤의 정지 시간은 별도다.
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
     float WinnerSeconds = 0.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
     float FirstPlaceHoldSeconds = 0.f;
+
+    // 0이면 각 판의 기존 순차 재생을 사용한다. 양수이면 앞 판이 이동하는 동안 다음 판도 들어온다.
+    UPROPERTY(EditDefaultsOnly, Category = "MW|Winner", meta = (Units = "s", ClampMin = "0"))
+    float PodiumCardStaggerSeconds = 0.f;
 
     UPROPERTY(EditDefaultsOnly, Category = "MW|Winner")
     FVector2D CardEntryOffset = FVector2D::ZeroVector;
@@ -273,7 +283,7 @@ private:
     FTransform FinishFrame;
     FVector FinishCameraOrigin = FVector::ZeroVector;
     float FinishCameraBaseFOV = 0.f;
-    float PodiumCameraTravelScale = 0.f;
+    FVector PodiumCameraTravelScale = FVector::ZeroVector;
     FTimerHandle PresentationTimer;
 
     struct FScoreStage
@@ -281,6 +291,7 @@ private:
         FText Label;
         TArray<int32> Awards;
         float Duration = 0.f;
+        float MotionSeconds = 0.f;
         int32 LargestAward = 0;
     };
 
@@ -300,6 +311,7 @@ private:
     void UpdatePodiumCamera(float SequenceElapsed);
     void PrepareWinnerVehicleClass(const AMWPlayerState& Player);
     float GetWinnerVehicleLead() const;
+    float GetPodiumCardStagger() const;
     float GetPodiumDuration() const;
     void UpdateWinnerVehicle(float SequenceElapsed);
     void PlayCelebration();

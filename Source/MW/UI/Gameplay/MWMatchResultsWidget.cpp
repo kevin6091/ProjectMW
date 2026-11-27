@@ -353,7 +353,7 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
     FVector CameraLocation = FinishFrame.TransformPositionNoScale(CameraOffset);
     int32 ViewIndex = 0;
     const bool bHasMotion = bFinalResults && PodiumCameraKeys.Num() >= 2;
-    PodiumCameraTravelScale = 0.f;
+    PodiumCameraTravelScale = FVector::ZeroVector;
     if ((!AlternateCameraOffsets.IsEmpty() || bHasMotion) && !LookAt.ContainsNaN() && !CameraLocation.ContainsNaN())
     {
         // 가시성 충돌이 없는 트랙 장식도 시야를 가릴 수 있어 렌더 메시 경계까지 검사한다.
@@ -398,7 +398,9 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
         {
             // 프레임마다 시점을 튕기지 않도록 경로 전체를 먼저 검사하고 한 배율로 재생한다.
             constexpr int32 SamplesPerSegment = 6;
-            for (const float Scale : {1.f, .65f, .35f})
+            // 코스 높이 때문에 전체 이동이 막혀도 가시성이 확보된 옆 이동은 남긴다.
+            for (const FVector& Scale : {FVector(1.), FVector(.65, 1., .65), FVector(.65),
+                FVector(.35, .75, .35), FVector(.35)})
             {
                 bool bClear = true;
                 FVector Previous = CameraLocation;
@@ -462,15 +464,15 @@ bool UMWMatchResultsWidget::BeginFinishShot(const AMWGameplayGameState& State)
         ? FMath::Clamp(CameraBlendSeconds, 0.f, ShotSeconds) : 0.f;
     Controller->SetViewTargetWithBlend(FinishCamera, Blend, VTBlend_EaseInOut, 0.f, true);
 
-    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s TravelScale=%.2f"),
+    UE_LOG(LogMWMatchResults, Log, TEXT("World=%s Screen=FinishShot Piece=%d Epoch=%d View=%d Camera=%s TravelScale=%.2f SideScale=%.2f"),
         *GetWorld()->GetOutermost()->GetName(), Finish.PieceId, Progress.ResultsEpoch, ViewIndex,
-        *CameraLocation.ToCompactString(), PodiumCameraTravelScale);
+        *CameraLocation.ToCompactString(), PodiumCameraTravelScale.X, PodiumCameraTravelScale.Y);
     return true;
 }
 
 void UMWMatchResultsWidget::UpdatePodiumCamera(float SequenceElapsed)
 {
-    if (!FinishCamera || PodiumCameraTravelScale <= 0.f) return;
+    if (!FinishCamera || PodiumCameraTravelScale.IsZero()) return;
     const float Duration = ShotSeconds + GetPodiumDuration();
     const float Time = Duration > 0.f ? FMath::Clamp(SequenceElapsed / Duration, 0.f, 1.f) : 1.f;
     int32 Index = 1;
@@ -484,7 +486,7 @@ void UMWMatchResultsWidget::UpdatePodiumCamera(float SequenceElapsed)
         + FMath::Lerp(Start.AimDelta, End.AimDelta, Alpha) * PodiumCameraTravelScale);
     FinishCamera->SetActorLocationAndRotation(Location, (Aim - Location).Rotation());
     FinishCamera->GetCameraComponent()->SetFieldOfView(FMath::Clamp(FinishCameraBaseFOV
-        + FMath::Lerp(Start.FieldOfViewDelta, End.FieldOfViewDelta, Alpha) * PodiumCameraTravelScale, 1.f, 179.f));
+        + FMath::Lerp(Start.FieldOfViewDelta, End.FieldOfViewDelta, Alpha) * static_cast<float>(PodiumCameraTravelScale.X), 1.f, 179.f));
 }
 
 void UMWMatchResultsWidget::PrepareWinnerVehicleClass(const AMWPlayerState& Player)
@@ -508,10 +510,17 @@ float UMWMatchResultsWidget::GetWinnerVehicleLead() const
     return FMath::Clamp(WinnerVehicleShot.LeadSeconds, 0.f, ShotSeconds);
 }
 
+float UMWMatchResultsWidget::GetPodiumCardStagger() const
+{
+    return PodiumRevealOrder.Num() > 1 && FMath::IsFinite(WinnerSeconds) && WinnerSeconds > 0.f
+        && FMath::IsFinite(PodiumCardStaggerSeconds) && PodiumCardStaggerSeconds > 0.f
+        ? FMath::Min(PodiumCardStaggerSeconds, WinnerSeconds / PodiumRevealOrder.Num()) : 0.f;
+}
+
 float UMWMatchResultsWidget::GetPodiumDuration() const
 {
     const float Reveal = FMath::IsFinite(WinnerSeconds) ? FMath::Max(WinnerSeconds, 0.f) : 0.f;
-    const float Hold = PodiumRevealOrder.Num() > 1 && FMath::IsFinite(FirstPlaceHoldSeconds)
+    const float Hold = PodiumRevealOrder.Num() > 1 && GetPodiumCardStagger() <= 0.f && FMath::IsFinite(FirstPlaceHoldSeconds)
         ? FMath::Max(FirstPlaceHoldSeconds, 0.f) : 0.f;
     return Reveal + Hold;
 }
@@ -587,11 +596,18 @@ void UMWMatchResultsWidget::PrepareTally()
         DisplayedScores.Add(Result.TotalScore - Result.CheckpointScore - Result.FinishScore);
     }
 
-    const auto AddStage = [this](const FText& Label, float Seconds, auto GetAward, bool bKeepEmpty = false)
+    const auto AddStage = [this](const FText& Label, float Seconds, auto GetAward,
+        bool bKeepEmpty = false, float FinalReadSeconds = 0.f)
     {
         FScoreStage Stage;
         Stage.Label = Label;
         Stage.Duration = FMath::IsFinite(Seconds) && Seconds > 0.f ? Seconds : StageSeconds;
+        Stage.MotionSeconds = Stage.Duration * FMath::Clamp(AwardMotionFraction, 0.05f, 1.f);
+        if (bFinalResults && FMath::IsFinite(FinalReadSeconds) && FinalReadSeconds > 0.f)
+        {
+            // 최종 완주와 보너스는 점수 이동이 끝난 뒤에 읽는 시간을 따로 부여한다.
+            Stage.Duration = Stage.MotionSeconds + FinalReadSeconds;
+        }
         for (const FMWPlayerRoundState& Result : Results)
         {
             const int32 Award = GetAward(Result);
@@ -619,13 +635,16 @@ void UMWMatchResultsWidget::PrepareTally()
         }
         return Remainder;
     });
-    AddStage(FinishStageText, FinishStageSeconds, [](const FMWPlayerRoundState& Result) { return Result.FinishScore - Result.FirstFinishBonus; });
-    AddStage(FirstFinishBonusText, BonusStageSeconds, [](const FMWPlayerRoundState& Result) { return Result.FirstFinishBonus; });
+    AddStage(FinishStageText, FinishStageSeconds,
+        [](const FMWPlayerRoundState& Result) { return Result.FinishScore - Result.FirstFinishBonus; }, false, FinalFinishReadSeconds);
+    AddStage(FirstFinishBonusText, BonusStageSeconds,
+        [](const FMWPlayerRoundState& Result) { return Result.FirstFinishBonus; }, false, FinalBonusReadSeconds);
     if (!ScoreStages.IsEmpty() && !RoundIntroFormat.IsEmpty() && FMath::IsFinite(RoundIntroSeconds) && RoundIntroSeconds > 0.f)
     {
         FScoreStage Intro;
         Intro.Label = FText::Format(RoundIntroFormat, FText::AsNumber(RoundNumber));
         Intro.Duration = RoundIntroSeconds;
+        Intro.MotionSeconds = RoundIntroSeconds;
         Intro.Awards.Init(0, Results.Num());
         ScoreStages.Insert(MoveTemp(Intro), 0);
     }
@@ -668,7 +687,11 @@ void UMWMatchResultsWidget::BeginTally(const AMWGameplayGameState& State)
     for (const FScoreStage& Stage : ScoreStages) RequestedSeconds += Stage.Duration;
     // 서버 단계가 예약한 종료 시각에 맞추되 항목별 상대 길이와 멈춤은 유지한다.
     const float TimeScale = FMath::Min(1.f, TimeBudget / RequestedSeconds);
-    for (FScoreStage& Stage : ScoreStages) Stage.Duration *= TimeScale;
+    for (FScoreStage& Stage : ScoreStages)
+    {
+        Stage.Duration *= TimeScale;
+        Stage.MotionSeconds *= TimeScale;
+    }
     ShowTallyStage();
     ApplyTallyStartingScores();
 }
@@ -736,8 +759,7 @@ void UMWMatchResultsWidget::NativeTick(const FGeometry& Geometry, float DeltaTim
         ShowTallyStage();
     }
     const FScoreStage& Stage = ScoreStages[CurrentStage];
-    const float MotionSeconds = Stage.Duration * FMath::Clamp(AwardMotionFraction, 0.05f, 1.f);
-    const float Alpha = FMath::Clamp(StageElapsed / MotionSeconds, 0.f, 1.f);
+    const float Alpha = FMath::Clamp(StageElapsed / Stage.MotionSeconds, 0.f, 1.f);
     // 같은 항목의 모든 열을 같은 속도로 올리고, 각 열의 실제 지급분에 닿으면 그 열만 멈춘다.
     const int32 AwardProgress = FMath::RoundToInt(Stage.LargestAward * Alpha);
     for (int32 Index = 0; Index < Results.Num(); ++Index)
@@ -826,12 +848,13 @@ void UMWMatchResultsWidget::UpdatePodium(float DeltaTime)
     RevealElapsed = FMath::Min(RevealElapsed + DeltaTime, TotalSeconds);
     UpdatePodiumCamera(ShotSeconds + RevealElapsed);
     UpdateWinnerVehicle(GetWinnerVehicleLead() + RevealElapsed);
-    const float CardSeconds = WinnerSeconds / Count;
-    // 1위가 자리를 잡은 뒤 혼자 보이는 시간을 확보하고 나머지를 서버 순위대로 연다.
+    const float Stagger = GetPodiumCardStagger();
+    const float CardSeconds = Stagger > 0.f ? WinnerSeconds - Stagger * (Count - 1) : WinnerSeconds / Count;
+    // 이름이 펴지는 중에도 다음 순위의 메달과 판이 들어올 수 있다.
     for (int32 Index = 0; Index < Count; ++Index)
     {
         UMWMatchResultRowWidget* Card = PodiumRevealOrder[Index];
-        const float Start = Index == 0 ? 0.f : CardSeconds * Index + HoldSeconds;
+        const float Start = Stagger > 0.f ? Stagger * Index : Index == 0 ? 0.f : CardSeconds * Index + HoldSeconds;
         const float Elapsed = RevealElapsed - Start;
         const auto EntryAlpha = [&](float Fraction)
         {

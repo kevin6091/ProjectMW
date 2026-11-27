@@ -1,0 +1,25 @@
+[2026.11.27-15.23.20:257][ 58]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152320-P1
+[2026.11.27-15.23.24:551][186]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152324-P2
+[2026.11.27-15.23.24:554][186]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152324-P3
+[2026.11.27-15.23.27:624][269]LogTemp: Display: MW_RACE_RENDER_END Requested=81 Queued=81 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152324-P2
+[2026.11.27-15.23.27:624][270]LogTemp: Display: MW_RACE_RENDER_END Requested=81 Queued=81 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152324-P3
+[2026.11.27-15.23.52:323][ 15]LogTemp: Display: MW_RACE_RENDER_END Requested=955 Queued=955 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152320-P1
+[2026.11.27-15.24.39:079][662]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=43205.83, Y=-11497.62, Z=27118.48) TravelScale=0.00 SideScale=0.00
+[2026.11.27-15.24.42:068][797]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=0 Camera=V(X=43205.83, Y=-11497.62, Z=27118.48) TravelScale=1.00 SideScale=1.00
+[2026.11.27-15.26.26:595][345]LogPython: MW_QA_CLIENT_EXIT L_Dev_Drive member=2
+[2026.11.27-15.26.26:601][345]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-15.26.58:782][  4]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-15.26.58:885][  4]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-15.28.02:096][261]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152802-P1
+[2026.11.27-15.28.06:387][382]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152806-P2
+[2026.11.27-15.28.06:391][382]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152806-P3
+[2026.11.27-15.28.09:451][465]LogTemp: Display: MW_RACE_RENDER_END Requested=82 Queued=82 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152806-P3
+[2026.11.27-15.28.09:478][466]LogTemp: Display: MW_RACE_RENDER_END Requested=82 Queued=82 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152806-P2
+[2026.11.27-15.28.34:183][219]LogTemp: Display: MW_RACE_RENDER_END Requested=956 Queued=956 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152802-P1
+[2026.11.27-15.29.16:578][711]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=1 Camera=V(X=60013.97, Y=-1681.60, Z=16229.47) TravelScale=0.00 SideScale=0.00
+[2026.11.27-15.29.16:707][713]LogTemp: Display: MW_RACE_RENDER_BEGIN ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152916-P1
+[2026.11.27-15.29.19:563][812]LogMWMatchResults: World=/Game/Levels/UEDPIE_0_L_Dev_Drive Screen=FinishShot Piece=23 Epoch=7 View=1 Camera=V(X=60013.97, Y=-1681.60, Z=16229.47) TravelScale=1.00 SideScale=1.00
+[2026.11.27-15.29.50:792][875]LogTemp: Display: MW_RACE_RENDER_END Requested=1160 Queued=1160 Dropped=0 ../../../../../../workspace/UE/ProjectMW/Saved/Screenshots/RaceRendered/20261127-152916-P1
+[2026.11.27-15.30.32:949][485]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-15.30.33:015][485]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0
+[2026.11.27-15.30.33:108][485]LogMWMatchResults: Display: MW_RESULT_COST Cleanup World=L_Dev_Drive Screen=5 Pending=0 HadHandle=0 HadCamera=1 HadWinner=1 RemainsHandle=0 RemainsCamera=0 RemainsWinner=0 TimerActive=0

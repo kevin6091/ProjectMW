@@ -1,0 +1,32 @@
+{"type": "owner_recovery_sample", "utc_s": 1795793286.5056965, "epoch": 2, "member": 1, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.506696, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.5076964, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.6171043, "epoch": 2, "member": 1, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.6176245, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.6181405, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.7686143, "epoch": 2, "member": 1, "active": 1, "remaining": 0.6875749826431274, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.7691202, "epoch": 2, "member": 2, "active": 1, "remaining": 0.6750081181526184, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.7696264, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "recovery_start", "utc_s": 1795793286.7706347, "epoch": 2, "remaining": 0.6875749826431274}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.882899, "epoch": 2, "member": 1, "active": 1, "remaining": 0.5752823352813721, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.882899, "epoch": 2, "member": 2, "active": 1, "remaining": 0.5626677870750427, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793286.8839047, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.0227325, "epoch": 2, "member": 1, "active": 1, "remaining": 0.4341815114021301, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.0241373, "epoch": 2, "member": 2, "active": 1, "remaining": 0.4214344918727875, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.0241373, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.1701658, "epoch": 2, "member": 1, "active": 1, "remaining": 0.2870907187461853, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.1711738, "epoch": 2, "member": 2, "active": 1, "remaining": 0.2743655741214752, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.1716795, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.310551, "epoch": 2, "member": 1, "active": 1, "remaining": 0.1460397094488144, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.310551, "epoch": 2, "member": 2, "active": 1, "remaining": 0.13349391520023346, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.3115568, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.4551117, "epoch": 2, "member": 1, "active": 1, "remaining": 0.004072412848472595, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.4551117, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": false}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.456629, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.5993857, "epoch": 2, "member": 1, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.5998902, "epoch": 2, "member": 2, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "owner_recovery_sample", "utc_s": 1795793287.6008952, "epoch": 2, "member": 3, "active": 0, "remaining": 0.0, "drive": true}
+{"type": "recovery_end", "utc_s": 1795793287.6008952, "epoch": 2, "drive": true, "elapsed": 0.8279999999795109}
+{"type": "phase", "utc_s": 1795793359.689422, "member": 1, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
+{"type": "phase", "utc_s": 1795793359.689422, "member": 2, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
+{"type": "phase", "utc_s": 1795793359.6905, "member": 3, "phase": "<MWRoomPhase.MATCH_RESULTS: 12>", "epoch": 7, "goal": 4000, "scores": [[1, 4300, 1], [2, 3250, 2], [3, 2550, 3]]}
