@@ -1,0 +1,5 @@
+slope=0.15679 px/point; base=102.9px; full_scale=2998.2 points
+max residual 1.50px
+F29110 2500 @ 499 (60.0 percent board height); 1750 @ 617 (45.7 percent board height); 1525 @ 652 (41.5 percent board height); 1850 @ 601 (47.6 percent board height)
+F29390 2950 @ 428 (68.6 percent board height); 1900 @ 593 (48.6 percent board height); 1675 @ 629 (44.2 percent board height); 2000 @ 576 (50.7 percent board height)
+F30020 3000 @ 421 (69.5 percent board height); 2300 @ 531 (56.1 percent board height); 2375 @ 519 (57.6 percent board height); 2650 @ 476 (62.8 percent board height)
